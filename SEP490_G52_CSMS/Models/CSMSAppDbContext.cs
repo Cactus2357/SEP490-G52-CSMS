@@ -1,0 +1,53 @@
+﻿using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Models.Core;
+using SEP490_G52_CSMS.Models.Employees;
+using SEP490_G52_CSMS.Models.Attendance;
+using SEP490_G52_CSMS.Models.Sales;
+namespace SEP490_G52_CSMS.Models
+{
+    public class CSMSAppDbContext : DbContext
+    {
+        public CSMSAppDbContext(DbContextOptions<CSMSAppDbContext> options) : base(options) { }
+
+        public DbSet<Branch> Branches { get; set; }
+        public DbSet<Employee> Employees { get; set; }
+        public DbSet<BranchManager> BranchManagers { get; set; }
+        public DbSet<FixedShift> FixedShifts { get; set; }
+        public DbSet<WeeklyRosterGrid> WeeklyRosterGrids { get; set; }
+        public DbSet<AttendanceLog> AttendanceLogs { get; set; }
+        public DbSet<CashHandover> CashHandovers { get; set; }
+        public DbSet<LeaveApplication> LeaveApplications { get; set; }
+        public DbSet<ShiftChangeRequest> ShiftChangeRequests { get; set; }
+        public DbSet<ProductCategory> ProductCategories { get; set; }
+        public DbSet<MasterProduct> MasterProducts { get; set; }
+        public DbSet<ProductVariant> ProductVariants { get; set; }
+        public DbSet<BranchMenu> BranchMenus { get; set; }
+        public DbSet<MenuDetail> MenuDetails { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Cấu hình các Composite Key (Khóa phức hợp nhiều trường)
+            modelBuilder.Entity<BranchManager>().HasKey(bm => new { bm.BranchId, bm.ManagerId });
+            modelBuilder.Entity<MenuDetail>().HasKey(md => new { md.MenuId, md.VariantId });
+            modelBuilder.Entity<OrderItem>().HasKey(oi => new { oi.OrderId, oi.VariantId });
+
+            // Cấu hình Unique Constraints (Ràng buộc duy nhất)
+            modelBuilder.Entity<Branch>().HasIndex(b => b.BranchName).IsUnique();
+            modelBuilder.Entity<Employee>().HasIndex(e => e.Username).IsUnique();
+            modelBuilder.Entity<Employee>().HasIndex(e => e.Email).IsUnique();
+            modelBuilder.Entity<Employee>().HasIndex(e => e.CitizenId).IsUnique();
+            modelBuilder.Entity<ProductCategory>().HasIndex(pc => pc.CategoryName).IsUnique();
+            modelBuilder.Entity<MasterProduct>().HasIndex(mp => mp.ProductName).IsUnique();
+
+            modelBuilder.Entity<ProductVariant>()
+                .HasIndex(pv => new { pv.ProductId, pv.SizeVariant }).IsUnique();
+
+            modelBuilder.Entity<AttendanceLog>()
+                .HasIndex(a => new { a.RosterId, a.EmployeeId }).IsUnique();
+
+            base.OnModelCreating(modelBuilder);
+        }
+    }
+}
