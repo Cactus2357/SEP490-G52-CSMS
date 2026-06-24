@@ -29,6 +29,21 @@ namespace SEP490_G52_CSMS.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            // CẤU HÌNH CHO BẢNG NHẬT KÝ CHẤM CÔNG (Sửa lỗi Cascade ở AttendanceLog)
+            modelBuilder.Entity<Attendance.AttendanceLog>(entity =>
+            {
+                // Khóa ngoại trỏ tới bảng Nhân viên
+                entity.HasOne(al => al.Employee)
+                      .WithMany(e => e.AttendanceLogs)
+                      .HasForeignKey(al => al.EmployeeId)
+                      .OnDelete(DeleteBehavior.Restrict); // Đổi thành Restrict
+
+                // Khóa ngoại trỏ tới bảng Lịch trực tuần
+                entity.HasOne(al => al.WeeklyRosterGrid)
+                      .WithMany(w => w.AttendanceLogs) // Hoặc .WithMany() nếu bảng WeeklyRosterGrid không có list này
+                      .HasForeignKey(al => al.RosterId)
+                      .OnDelete(DeleteBehavior.Restrict); // Đổi thành Restrict
+            });
             // CẤU HÌNH CHO BẢNG BÀN GIAO KÉT (SỬA LỖI MULTIPLE CASCADE PATHS)
             modelBuilder.Entity<CashHandover>(entity =>
             {

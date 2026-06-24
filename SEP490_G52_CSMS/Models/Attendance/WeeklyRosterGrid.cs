@@ -35,5 +35,6 @@ namespace SEP490_G52_CSMS.Models.Attendance
 
         [ForeignKey("EmployeeId")]
         public virtual Employees.Employee? Employee { get; set; }
+        public virtual ICollection<AttendanceLog> AttendanceLogs { get; set; } = new HashSet<AttendanceLog>();
     }
 }
