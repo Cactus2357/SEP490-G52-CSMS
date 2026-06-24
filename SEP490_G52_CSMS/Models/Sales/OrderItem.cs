@@ -23,9 +23,9 @@ namespace SEP490_G52_CSMS.Models.Sales
         public decimal UnitPrice { get; set; }
 
         [ForeignKey("OrderId")]
-        public virtual Order Order { get; set; }
+        public virtual Order? Order { get; set; }
 
         [ForeignKey("VariantId")]
-        public virtual ProductVariant ProductVariant { get; set; }
+        public virtual ProductVariant? ProductVariant { get; set; }
     }
 }

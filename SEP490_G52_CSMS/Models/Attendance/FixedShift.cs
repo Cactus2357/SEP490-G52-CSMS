@@ -18,7 +18,7 @@ namespace SEP490_G52_CSMS.Models.Attendance
         [Required]
         [Column("shift_name")]
         [StringLength(50)]
-        public string ShiftName { get; set; }
+        public string? ShiftName { get; set; }
 
         /// <summary> Giờ bắt đầu ca </summary>
         [Required]

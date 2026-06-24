@@ -54,12 +54,12 @@ namespace SEP490_G52_CSMS.Models.Attendance
         public string OverallStatus { get; set; } = "Absent";
 
         [Column("notes")]
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
 
         [ForeignKey("RosterId")]
-        public virtual WeeklyRosterGrid WeeklyRosterGrid { get; set; }
+        public virtual WeeklyRosterGrid? WeeklyRosterGrid { get; set; }
 
         [ForeignKey("EmployeeId")]
-        public virtual Employees.Employee Employee { get; set; }
+        public virtual Employees.Employee? Employee { get; set; }
     }
 }

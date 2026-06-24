@@ -1,5 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Models;
+using System;
+
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddDbContext<CSMSAppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 

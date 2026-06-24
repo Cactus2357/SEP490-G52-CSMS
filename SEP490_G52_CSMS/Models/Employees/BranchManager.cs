@@ -19,9 +19,9 @@ namespace SEP490_G52_CSMS.Models.Employees
         public DateTime AppointedDate { get; set; } = DateTime.Now;
 
         [ForeignKey("BranchId")]
-        public virtual Core.Branch Branch { get; set; }
+        public virtual Core.Branch? Branch { get; set; }
 
         [ForeignKey("ManagerId")]
-        public virtual Employee Manager { get; set; }
+        public virtual Employee? Manager { get; set; }
     }
 }

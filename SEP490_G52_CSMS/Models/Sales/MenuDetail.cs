@@ -14,9 +14,9 @@ namespace SEP490_G52_CSMS.Models.Sales
         public int VariantId { get; set; }
 
         [ForeignKey("MenuId")]
-        public virtual BranchMenu BranchMenu { get; set; }
+        public virtual BranchMenu? BranchMenu { get; set; }
 
         [ForeignKey("VariantId")]
-        public virtual ProductVariant ProductVariant { get; set; }
+        public virtual ProductVariant? ProductVariant { get; set; }
     }
 }

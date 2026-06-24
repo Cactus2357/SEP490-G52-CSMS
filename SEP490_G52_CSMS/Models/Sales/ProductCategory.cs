@@ -17,7 +17,7 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Required]
         [Column("category_name")]
         [StringLength(150)]
-        public string CategoryName { get; set; }
+        public string? CategoryName { get; set; }
 
         [Column("status")]
         [StringLength(50)]

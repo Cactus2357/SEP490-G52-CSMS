@@ -13,10 +13,10 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Key]
         [Column("order_id")]
         [StringLength(50)]
-        public string OrderId { get; set; }
+        public string? OrderId { get; set; }
 
         [Column("branch_id")]
-        public string BranchId { get; set; }
+        public string? BranchId { get; set; }
 
         [Column("cashier_id")]
         public int CashierId { get; set; }
@@ -29,7 +29,7 @@ namespace SEP490_G52_CSMS.Models.Sales
 
         [Column("payment_method")]
         [StringLength(50)]
-        public string PaymentMethod { get; set; }
+        public string? PaymentMethod { get; set; }
 
         [Column("payment_status")]
         [StringLength(50)]
@@ -40,10 +40,10 @@ namespace SEP490_G52_CSMS.Models.Sales
         public string BrewingStatus { get; set; } = "Waiting";
 
         [ForeignKey("BranchId")]
-        public virtual Core.Branch Branch { get; set; }
+        public virtual Core.Branch? Branch { get; set; }
 
         [ForeignKey("CashierId")]
-        public virtual Employees.Employee Cashier { get; set; }
+        public virtual Employees.Employee? Cashier { get; set; }
 
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new HashSet<OrderItem>();
     }

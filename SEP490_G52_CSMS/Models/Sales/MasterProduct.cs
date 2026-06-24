@@ -17,7 +17,7 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Required]
         [Column("product_name")]
         [StringLength(255)]
-        public string ProductName { get; set; }
+        public string? ProductName { get; set; }
 
         [Column("category_id")]
         public int CategoryId { get; set; }
@@ -27,7 +27,7 @@ namespace SEP490_G52_CSMS.Models.Sales
         public string Status { get; set; } = "Active";
 
         [ForeignKey("CategoryId")]
-        public virtual ProductCategory ProductCategory { get; set; }
+        public virtual ProductCategory? ProductCategory { get; set; }
 
         public virtual ICollection<ProductVariant> ProductVariants { get; set; } = new HashSet<ProductVariant>();
     }

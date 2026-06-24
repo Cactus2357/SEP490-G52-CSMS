@@ -28,6 +28,33 @@ namespace SEP490_G52_CSMS.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            // 2. Cấu hình khóa ngoại phức hợp cho bảng LeaveApplication
+            modelBuilder.Entity<Attendance.LeaveApplication>()
+                .HasOne(la => la.Approver)
+                .WithMany()
+                .HasForeignKey(la => new { la.ApprovedBranchId, la.ApprovedManagerId })
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Attendance.LeaveApplication>()
+                .HasOne(la => la.Employee)
+                .WithMany(e => e.LeaveApplications)
+                .HasForeignKey(la => la.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // 3. Cấu hình khóa ngoại phức hợp cho bảng ShiftChangeRequest
+            modelBuilder.Entity<Attendance.ShiftChangeRequest>()
+                .HasOne(scr => scr.Approver)
+                .WithMany()
+                .HasForeignKey(scr => new { scr.ApprovedBranchId, scr.ApprovedManagerId })
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Attendance.ShiftChangeRequest>()
+                .HasOne(scr => scr.RequestingEmployee)
+                .WithMany()
+                .HasForeignKey(scr => scr.RequestingEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
             // Cấu hình các Composite Key (Khóa phức hợp nhiều trường)
             modelBuilder.Entity<BranchManager>().HasKey(bm => new { bm.BranchId, bm.ManagerId });
             modelBuilder.Entity<MenuDetail>().HasKey(md => new { md.MenuId, md.VariantId });

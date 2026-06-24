@@ -28,12 +28,12 @@ namespace SEP490_G52_CSMS.Models.Attendance
         public int EmployeeId { get; set; }
 
         [ForeignKey("BranchId")]
-        public virtual Core.Branch Branch { get; set; }
+        public virtual Core.Branch? Branch { get; set; }
 
         [ForeignKey("ShiftId")]
-        public virtual FixedShift FixedShift { get; set; }
+        public virtual FixedShift? FixedShift { get; set; }
 
         [ForeignKey("EmployeeId")]
-        public virtual Employees.Employee Employee { get; set; }
+        public virtual Employees.Employee? Employee { get; set; }
     }
 }

@@ -19,13 +19,13 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Required]
         [Column("size_variant")]
         [StringLength(20)]
-        public string SizeVariant { get; set; }
+        public string? SizeVariant { get; set; }
 
         [Required]
         [Column("selling_price")]
         public decimal SellingPrice { get; set; }
 
         [ForeignKey("ProductId")]
-        public virtual MasterProduct MasterProduct { get; set; }
+        public virtual MasterProduct? MasterProduct { get; set; }
     }
 }
