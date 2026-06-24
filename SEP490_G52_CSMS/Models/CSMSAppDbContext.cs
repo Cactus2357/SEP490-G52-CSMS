@@ -29,7 +29,27 @@ namespace SEP490_G52_CSMS.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            // CẤU HÌNH CHO BẢNG BÀN GIAO KÉT (SỬA LỖI MULTIPLE CASCADE PATHS)
+            modelBuilder.Entity<CashHandover>(entity =>
+            {
+                // Khóa ngoại 1: Thu ngân bàn giao ca
+                entity.HasOne(ch => ch.OutgoingCashier)
+                      .WithMany() // Hoặc .WithMany(e => e.OutgoingHandovers) nếu có thiết lập bộ sưu tập ở Employee
+                      .HasForeignKey(ch => ch.OutgoingCashierId)
+                      .OnDelete(DeleteBehavior.Restrict); // Đổi CASCADE thành RESTRICT
 
+                // Khóa ngoại 2: Thu ngân nhận ca
+                entity.HasOne(ch => ch.IncomingCashier)
+                      .WithMany() // Hoặc .WithMany(e => e.IncomingHandovers)
+                      .HasForeignKey(ch => ch.IncomingCashierId)
+                      .OnDelete(DeleteBehavior.Restrict); // Đổi CASCADE thành RESTRICT
+
+                // Khóa ngoại 3: Chi nhánh (Nên đổi luôn nếu gặp lỗi tương tự với bảng Branch)
+                entity.HasOne(ch => ch.Branch)
+                      .WithMany()
+                      .HasForeignKey(ch => ch.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
             // 2. Cấu hình khóa ngoại phức hợp cho bảng LeaveApplication
             modelBuilder.Entity<Attendance.LeaveApplication>()
                 .HasOne(la => la.Approver)
