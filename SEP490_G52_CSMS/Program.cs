@@ -1,11 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
+using SEP490_G52_CSMS.Reponsitories;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<CSMSAppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IWeeklyRosterRepository, WeeklyRosterRepository>();
+
+
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 

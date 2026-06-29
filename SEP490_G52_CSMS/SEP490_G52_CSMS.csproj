@@ -20,8 +20,6 @@
 
   <ItemGroup>
     <Folder Include="Commons\" />
-    <Folder Include="Reponsitories\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
