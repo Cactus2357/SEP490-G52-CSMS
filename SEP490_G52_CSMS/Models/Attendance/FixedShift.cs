@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Attendance
@@ -26,7 +26,7 @@ namespace SEP490_G52_CSMS.Models.Attendance
         public TimeSpan StartTime { get; set; }
 
         /// <summary> Giờ kết thúc ca </summary>
-        [Required].
+        [Required]
         [Column("end_time")]
         public TimeSpan EndTime { get; set; }
     }
