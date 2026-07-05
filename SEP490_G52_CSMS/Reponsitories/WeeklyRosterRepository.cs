@@ -31,5 +31,29 @@ namespace SEP490_G52_CSMS.Reponsitories
         {
             await _context.SaveChangesAsync();
         }
+        public async Task<List<FixedShift>> GetAllShiftsAsync()
+        {
+            return await _context.FixedShifts
+                .OrderBy(s => s.StartTime)
+                .ToListAsync();
+        }
+
+        public async Task<List<Employee>> GetEmployeesByRoleAsync(string branchId, string role)
+        {
+            return await _context.Employees
+                .Where(e => e.BranchId == branchId && e.Role == role && e.Status == "Active")
+                .OrderBy(e => e.FullName)
+                .ToListAsync();
+        }
+
+        public async Task<List<WeeklyRosterGrid>> GetRosterForWeekAsync(string branchId, DateTime weekStart, DateTime weekEnd)
+        {
+            return await _context.WeeklyRosterGrids
+                .Include(w => w.Employee)
+                .Where(w => w.BranchId == branchId
+                            && w.AssignmentDate.Date >= weekStart.Date
+                            && w.AssignmentDate.Date <= weekEnd.Date)
+                .ToListAsync();
+        }
     }
 }

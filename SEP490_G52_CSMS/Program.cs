@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Reponsitories;
+using SEP490_G52_CSMS.Services;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,7 @@ builder.Services.AddDbContext<CSMSAppDbContext>(options =>
 
 builder.Services.AddScoped<IWeeklyRosterRepository, WeeklyRosterRepository>();
 
+builder.Services.AddScoped<IWeeklyRosterService, WeeklyRosterService>();
 
 
 // Add services to the container.

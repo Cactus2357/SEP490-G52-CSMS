@@ -1,4 +1,6 @@
-﻿using SEP490_G52_CSMS.Models.Attendance;
+﻿using SEP490_G52_CSMS.Controllers;
+using SEP490_G52_CSMS.Models.Attendance;
+using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Reponsitories;
 
 namespace SEP490_G52_CSMS.Services
@@ -12,6 +14,37 @@ namespace SEP490_G52_CSMS.Services
         public int ShiftId { get; set; }
 
         public List<int> EmployeeIds { get; set; } = new();
+    }
+
+    public class ExistingAssignmentVM
+    {
+        // 0 = Monday ... 6 = Sunday, relative to the week being viewed.
+        public int DayOffset { get; set; }
+
+        public int ShiftId { get; set; }
+
+        public int EmployeeId { get; set; }
+
+        public string EmployeeName { get; set; }
+
+        public string Role { get; set; }
+    }
+
+    public class AddWorkScheduleVM
+    {
+        public string BranchId { get; set; }
+
+        public DateTime WeekStartDate { get; set; }
+
+        public List<FixedShift> Shifts { get; set; } = new();
+
+        public List<Employee> Cashiers { get; set; } = new();
+
+        public List<Employee> Bartenders { get; set; } = new();
+
+        public List<Employee> Bussers { get; set; } = new();
+
+        public List<ExistingAssignmentVM> ExistingAssignments { get; set; } = new();
     }
 
     public class WeeklyRosterService : IWeeklyRosterService
@@ -47,6 +80,42 @@ namespace SEP490_G52_CSMS.Services
             await _repository.SaveAsync();
 
             return "Success";
+        }
+
+        public async Task<AddWorkScheduleVM> GetFormOptionsAsync(string branchId, DateTime weekStartDate)
+        {
+            var shifts = await _repository.GetAllShiftsAsync();
+            var cashiers = await _repository.GetEmployeesByRoleAsync(branchId, "Cashier");
+            var bartenders = await _repository.GetEmployeesByRoleAsync(branchId, "Bartender");
+            var bussers = await _repository.GetEmployeesByRoleAsync(branchId, "Busser");
+
+            var weekEnd = weekStartDate.Date.AddDays(6);
+            var existingRows = await _repository.GetRosterForWeekAsync(branchId, weekStartDate, weekEnd);
+
+            var existingAssignments = existingRows
+                .Select(row => new ExistingAssignmentVM
+                {
+                    DayOffset = (row.AssignmentDate.Date - weekStartDate.Date).Days,
+                    ShiftId = row.ShiftId,
+                    EmployeeId = row.EmployeeId,
+                    EmployeeName = row.Employee?.FullName ?? $"NV#{row.EmployeeId}",
+                    Role = row.Employee?.Role ?? ""
+                })
+                // Defensive: a stray row outside 0..6 (bad data / timezone edge case)
+                // would break the grid's day columns, so drop it instead of crashing.
+                .Where(a => a.DayOffset >= 0 && a.DayOffset <= 6)
+                .ToList();
+
+            return new AddWorkScheduleVM
+            {
+                BranchId = branchId,
+                WeekStartDate = weekStartDate,
+                Shifts = shifts,
+                Cashiers = cashiers,
+                Bartenders = bartenders,
+                Bussers = bussers,
+                ExistingAssignments = existingAssignments
+            };
         }
     }
 }
