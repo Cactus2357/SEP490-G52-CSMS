@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Services;
@@ -36,6 +36,24 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             string result = await _service.CreateAsync(vm);
+
+            if (result != "Success")
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateWorkSchedule([FromBody] CreateRosterVM vm)
+        {
+            if (vm == null || string.IsNullOrWhiteSpace(vm.BranchId))
+            {
+                return BadRequest("Invalid request.");
+            }
+
+            string result = await _service.UpdateAsync(vm);
 
             if (result != "Success")
             {

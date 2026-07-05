@@ -1,4 +1,4 @@
-﻿@model SEP490_G52_CSMS.Services.AddWorkScheduleVM
+@model SEP490_G52_CSMS.Services.AddWorkScheduleVM
 @{
     ViewData["Title"] = "Thêm lịch làm việc theo tuần";
     var dayNames = new[] { "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy", "Chủ nhật" };
@@ -13,6 +13,35 @@
     var existingAssignments = Model.ExistingAssignments ?? new List<SEP490_G52_CSMS.Services.ExistingAssignmentVM>();
 }
 
+<style>
+    .schedule-cell {
+        height: 1px;
+        vertical-align: stretch !important;
+        padding: 0 !important;
+    }
+    .cell-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        align-items: flex-start;
+        text-align: left;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+    .cell-container.no-data {
+        justify-content: center;
+    }
+    .cell-container.has-data {
+        justify-content: space-between;
+    }
+    .employee-entry {
+        white-space: nowrap;
+    }
+    .add-employee-link {
+        white-space: nowrap;
+    }
+</style>
+
 <h2 class="mb-4">THÊM LỊCH LÀM VIỆC THEO TUẦN</h2>
 
 @if (string.IsNullOrWhiteSpace(branchId))
@@ -22,28 +51,49 @@
 
 <!-- Week navigation + scope selection -->
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-    <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-sm btn-outline-secondary"
-           href="@Url.Action("AddWorkSchedule", new { weekStart = Model.WeekStartDate.AddDays(-7).ToString("yyyy-MM-dd") })">&lsaquo;</a>
-        <span class="fw-semibold">
-            Tuần này: @Model.WeekStartDate.ToString("dd/MM") - @weekEnd.ToString("dd/MM/yyyy")
+
+    <div class="input-group" style="width:auto;">
+        <a class="btn btn-outline-secondary"
+           href="@Url.Action("AddWorkSchedule", new { weekStart = Model.WeekStartDate.AddDays(-7).ToString("yyyy-MM-dd") })">
+            &lsaquo;
+        </a>
+
+        <span class="input-group-text fw-semibold">
+            @Model.WeekStartDate.ToString("dd/MM")
+            -
+            @weekEnd.ToString("dd/MM/yyyy")
         </span>
-        <a class="btn btn-sm btn-outline-secondary"
-           href="@Url.Action("AddWorkSchedule", new { weekStart = Model.WeekStartDate.AddDays(7).ToString("yyyy-MM-dd") })">&rsaquo;</a>
+
+        <a class="btn btn-outline-secondary"
+           href="@Url.Action("AddWorkSchedule", new { weekStart = Model.WeekStartDate.AddDays(7).ToString("yyyy-MM-dd") })">
+            &rsaquo;
+        </a>
     </div>
 
     <div class="d-flex align-items-center gap-3">
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="scope" id="scopeSelected" value="selected" checked>
-            <label class="form-check-label" for="scopeSelected">Chỉ áp dụng cho tuần đã chọn</label>
+            <input class="form-check-input" type="radio"
+                   name="scope"
+                   id="scopeSelected"
+                   value="selected"
+                   checked>
+            <label class="form-check-label" for="scopeSelected">
+                Chỉ áp dụng cho tuần đã chọn
+            </label>
         </div>
+
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="scope" id="scopeUpcoming" value="upcoming">
-            <label class="form-check-label" for="scopeUpcoming">Áp dụng cho các tuần tiếp theo</label>
+            <input class="form-check-input" type="radio"
+                   name="scope"
+                   id="scopeUpcoming"
+                   value="upcoming">
+            <label class="form-check-label" for="scopeUpcoming">
+                Áp dụng cho các tuần tiếp theo
+            </label>
         </div>
     </div>
-</div>
 
+</div>
 @if (shifts.Count == 0)
 {
     <div class="alert alert-warning">
@@ -77,7 +127,7 @@ else
                         </td>
                         @for (var d = 0; d < 7; d++)
                         {
-                            <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell"></td>
+                            <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break"></td>
                         }
                     </tr>
                 }
@@ -90,7 +140,6 @@ else
         Chú thích: <span class="me-3">&#128100; Nhân viên thu ngân</span>
         <span class="me-3">&#128100; Nhân viên pha chế</span>
         <span class="me-3">&#128100; Nhân viên vệ sinh</span>
-        <span class="badge bg-secondary">Đã tạo lịch</span> = ca đã có lịch, không thể chỉnh sửa ở màn hình này
     </p>
 
     @if (cashiers.Count == 0)
@@ -201,23 +250,22 @@ else
     // key = "{dayOffset}_{shiftId}" -> { cashier: {id,name}|null, bartenders: [{id,name}], bussers: [{id,name}] }
     const scheduleData = {};
 
-        // Cells that were already saved when the page loaded. These are
-        // rendered read-only (no "+ Thêm nhân viên" link) and are excluded
-        // from the final submit, since re-posting them would just trip the
-        // repository's "already been created" check.
-        const lockedCells = new Set();
+        // Track which cells already existed when the page loaded.
+        const initiallyExistingCells = new Set();
+        // Track which cells have been modified or added during this session.
+        const modifiedCells = new Set();
 
         function cellKey(day, shiftId) {
             return day + '_' + shiftId;
         }
 
-        // Build scheduleData + lockedCells from what the server already has.
+        // Build scheduleData + initiallyExistingCells from what the server already has.
         (function seedExistingAssignments() {
             (existingAssignments || []).forEach(row => {
                 if (!row) return;
 
                 const key = cellKey(row.dayOffset, row.shiftId);
-                lockedCells.add(key);
+                initiallyExistingCells.add(key);
 
                 if (!scheduleData[key]) {
                     scheduleData[key] = { cashier: null, bartenders: [], bussers: [] };
@@ -250,38 +298,34 @@ else
             return y + '-' + m + '-' + d;
         }
 
-        // Renders one grid cell: assigned staff (if any) + either the
-        // "Thêm nhân viên" link (editable) or a "locked" badge (already saved).
+        // Renders one grid cell: assigned staff (if any) + the "+ Thêm nhân viên" button.
         function renderCell(day, shiftId) {
             const cell = document.getElementById('cell_' + day + '_' + shiftId);
             if (!cell) return;
 
             const key = cellKey(day, shiftId);
             const data = scheduleData[key];
-            const isLocked = lockedCells.has(key);
+            const hasData = !!(data && (data.cashier || (data.bartenders && data.bartenders.length > 0) || (data.bussers && data.bussers.length > 0)));
 
-            let html = '<div class="small text-start">';
+            let html = '<div class="cell-container ' + (hasData ? 'has-data' : 'no-data') + '">';
+            html += '<div class="small">';
 
             if (data) {
                 if (data.cashier) {
-                    html += '<div>&#128100; ' + data.cashier.name + '</div>';
+                    html += '<div class="employee-entry">&#128100; ' + data.cashier.name + '</div>';
                 }
                 (data.bartenders || []).forEach(b => {
-                    if (b) html += '<div>&#128100; ' + b.name + '</div>';
+                    if (b) html += '<div class="employee-entry">&#128100; ' + b.name + '</div>';
                 });
                 (data.bussers || []).forEach(b => {
-                    if (b) html += '<div>&#128100; ' + b.name + '</div>';
+                    if (b) html += '<div class="employee-entry">&#128100; ' + b.name + '</div>';
                 });
             }
 
             html += '</div>';
-
-            if (isLocked) {
-                html += '<span class="badge bg-secondary">Đã tạo lịch</span>';
-            } else {
-                html += '<button type="button" class="btn btn-link btn-sm p-0 add-employee-link" ' +
-                        'data-day="' + day + '" data-shift="' + shiftId + '">+ Thêm nhân viên</button>';
-            }
+            html += '<button type="button" class="btn btn-link btn-sm text-decoration-none p-0 add-employee-link" ' +
+                    'data-day="' + day + '" data-shift="' + shiftId + '">+ Thêm nhân viên</button>';
+            html += '</div>';
 
             cell.innerHTML = html;
         }
@@ -320,8 +364,7 @@ else
             });
         }
 
-        // Opens the modal for a given (day, shift) cell. Locked cells never
-        // reach here since they have no "+ Thêm nhân viên" link to click.
+        // Opens the modal for a given (day, shift) cell.
         function openAssignModal(day, shiftId) {
             if (!assignModal) return;
 
@@ -404,11 +447,14 @@ else
 
                 const cashierName = cashierSelect.options[cashierSelect.selectedIndex].text;
 
-                scheduleData[cellKey(currentDay, currentShiftId)] = {
+                const key = cellKey(currentDay, currentShiftId);
+                scheduleData[key] = {
                     cashier: { id: cashierId, name: cashierName },
                     bartenders: tempBartenders.slice(),
                     bussers: tempBussers.slice()
                 };
+
+                modifiedCells.add(key);
 
                 renderCell(currentDay, currentShiftId);
                 if (assignModal) assignModal.hide();
@@ -425,8 +471,7 @@ else
             });
         }
 
-        // Main "Xác nhận": submit every populated, unlocked cell (Step 7-8).
-        // Locked cells (already in the DB when the page loaded) are skipped.
+        // Main "Xác nhận": submit every populated, modified/added cell.
         const btnConfirmAll = document.getElementById('btnConfirmAll');
         if (btnConfirmAll) {
             btnConfirmAll.addEventListener('click', async () => {
@@ -435,9 +480,9 @@ else
                     return;
                 }
 
-                const cellKeys = Object.keys(scheduleData).filter(k => !lockedCells.has(k));
+                const cellKeys = Array.from(modifiedCells);
                 if (cellKeys.length === 0) {
-                    alert('Chưa có ca làm việc mới nào được phân công.');
+                    alert('Không có thay đổi nào để lưu.');
                     return;
                 }
 
@@ -483,8 +528,12 @@ else
                             employeeIds: employeeIds
                         };
 
+                        // Route to AddWorkSchedule for brand new rosters, or UpdateWorkSchedule for existing ones
+                        const isUpdate = initiallyExistingCells.has(key);
+                        const url = isUpdate ? '/WorkSchedule/UpdateWorkSchedule' : '/WorkSchedule/AddWorkSchedule';
+
                         try {
-                            const res = await fetch('/WorkSchedule/AddWorkSchedule', {
+                            const res = await fetch(url, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify(payload)
@@ -503,14 +552,13 @@ else
                 if (errors.length > 0) {
                     alert('Một số ca không thể lưu:\n' + errors.join('\n'));
                 } else {
-                    alert('Thêm lịch làm việc theo tuần thành công!');
+                    alert('Lưu lịch làm việc theo tuần thành công!');
                     window.location.reload();
                 }
             });
         }
 
-        // Initial render: draws every cell, including locked ones seeded from
-        // existingAssignments above.
+        // Initial render: draws every cell, including those seeded from existingAssignments above.
     @foreach (var shift in shifts)
         {
                 for (var d = 0; d < 7; d++)

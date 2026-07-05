@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
@@ -54,6 +54,20 @@ namespace SEP490_G52_CSMS.Reponsitories
                             && w.AssignmentDate.Date >= weekStart.Date
                             && w.AssignmentDate.Date <= weekEnd.Date)
                 .ToListAsync();
+        }
+
+        public async Task<List<WeeklyRosterGrid>> GetRosterForShiftAsync(string branchId, DateTime assignmentDate, int shiftId)
+        {
+            return await _context.WeeklyRosterGrids
+                .Where(w => w.BranchId == branchId
+                            && w.AssignmentDate.Date == assignmentDate.Date
+                            && w.ShiftId == shiftId)
+                .ToListAsync();
+        }
+
+        public void RemoveRange(IEnumerable<WeeklyRosterGrid> rosters)
+        {
+            _context.WeeklyRosterGrids.RemoveRange(rosters);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using SEP490_G52_CSMS.Controllers;
+using SEP490_G52_CSMS.Controllers;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Reponsitories;
@@ -76,6 +76,46 @@ namespace SEP490_G52_CSMS.Services
                 .ToList();
 
             await _repository.AddRangeAsync(rosters);
+
+            await _repository.SaveAsync();
+
+            return "Success";
+        }
+
+        public async Task<string> UpdateAsync(CreateRosterVM vm)
+        {
+            if (vm.EmployeeIds.Count == 0)
+                return "Require at least one employee.";
+
+            var existingRosters = await _repository.GetRosterForShiftAsync(vm.BranchId, vm.AssignmentDate, vm.ShiftId);
+
+            if (existingRosters.Count == 0)
+            {
+                return "This shift has not been created yet.";
+            }
+
+            var existingEmployeeIds = existingRosters.Select(r => r.EmployeeId).ToList();
+            var newEmployeeIds = vm.EmployeeIds.Distinct().ToList();
+
+            var toRemove = existingRosters.Where(r => !newEmployeeIds.Contains(r.EmployeeId)).ToList();
+            var toAddIds = newEmployeeIds.Where(id => !existingEmployeeIds.Contains(id)).ToList();
+
+            if (toRemove.Count > 0)
+            {
+                _repository.RemoveRange(toRemove);
+            }
+
+            if (toAddIds.Count > 0)
+            {
+                var rostersToAdd = toAddIds.Select(id => new WeeklyRosterGrid
+                {
+                    BranchId = vm.BranchId,
+                    AssignmentDate = vm.AssignmentDate,
+                    ShiftId = vm.ShiftId,
+                    EmployeeId = id
+                }).ToList();
+                await _repository.AddRangeAsync(rostersToAdd);
+            }
 
             await _repository.SaveAsync();
 
