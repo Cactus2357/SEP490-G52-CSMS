@@ -1,0 +1,106 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchCreateViewModel
+
+@{
+    ViewData["Title"] = "Thêm chi nhánh mới";
+}
+
+<div class="branch-page">
+    <aside class="branch-sidebar">
+        <div class="sidebar-brand">LOGO</div>
+        <div class="sidebar-menu">
+            <a class="sidebar-link" asp-controller="Branch" asp-action="Index">Quản lý chi nhánh</a>
+            <a class="sidebar-link" href="#">Quản lý danh mục</a>
+            <a class="sidebar-link" href="#">Quản lý sản phẩm</a>
+            <a class="sidebar-link" href="#">Báo cáo doanh thu</a>
+            <a class="sidebar-link" href="#">Xuất báo cáo</a>
+        </div>
+    </aside>
+
+    <section class="branch-main">
+        <div class="branch-header stretch">
+            <div>
+                <h2 class="page-title">THÊM CHI NHÁNH MỚI</h2>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline-secondary btn-icon" type="button">🔍</button>
+                <button class="btn btn-outline-secondary btn-icon" type="button">🔔</button>
+                <button class="btn btn-outline-secondary btn-icon" type="button">👤</button>
+            </div>
+        </div>
+
+        <div class="branch-form-wrapper">
+            <form asp-action="Create" method="post" class="row gx-4 gy-4">
+                <div class="col-lg-7">
+                    <div class="card section-card">
+                        <div class="card-header">Thông tin cơ bản</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="BranchName" class="form-label"></label>
+                                <input asp-for="BranchName" class="form-control form-control-lg" />
+                                <span asp-validation-for="BranchName" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="Address" class="form-label"></label>
+                                <input asp-for="Address" class="form-control form-control-lg" />
+                                <span asp-validation-for="Address" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <input asp-for="PhoneNumber" class="form-control form-control-lg" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control form-control-lg" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card section-card mb-4">
+                        <div class="card-header">Thông tin vận hành</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="OpeningTime" class="form-label"></label>
+                                <input asp-for="OpeningTime" class="form-control form-control-lg" type="time" />
+                                <span asp-validation-for="OpeningTime" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="ClosingTime" class="form-label"></label>
+                                <input asp-for="ClosingTime" class="form-control form-control-lg" type="time" />
+                                <span asp-validation-for="ClosingTime" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card section-card mb-4">
+                        <div class="card-header">Thống tin quản lý</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="ManagerId" class="form-label"></label>
+                                <select asp-for="ManagerId" class="form-select form-select-lg">
+                                    <option value="">Chọn nhân viên quản lý</option>
+                                    @foreach (var manager in Model.Managers)
+                                    {
+                                        <option value="@manager.ManagerId">@manager.ManagerName</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary flex-fill">Lưu dữ liệu</button>
+                        <a class="btn btn-secondary flex-fill" asp-controller="Branch" asp-action="Index">Hủy bỏ</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

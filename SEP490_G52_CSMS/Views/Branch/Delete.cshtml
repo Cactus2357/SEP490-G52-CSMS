@@ -1,0 +1,58 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchDetailViewModel
+
+@{
+    ViewData["Title"] = "Xóa chi nhánh";
+}
+
+<div class="branch-page">
+    <aside class="branch-sidebar">
+        <div class="sidebar-brand">LOGO</div>
+        <div class="sidebar-menu">
+            <a class="sidebar-link" asp-controller="Branch" asp-action="Index">Quản lý chi nhánh</a>
+            <a class="sidebar-link" href="#">Quản lý danh mục</a>
+            <a class="sidebar-link" href="#">Quản lý sản phẩm</a>
+            <a class="sidebar-link" href="#">Báo cáo doanh thu</a>
+            <a class="sidebar-link" href="#">Xuất báo cáo</a>
+        </div>
+    </aside>
+
+    <section class="branch-main">
+        <div class="branch-header stretch">
+            <div>
+                <h2 class="page-title">XÓA CHI NHÁNH</h2>
+                <p class="text-muted">Bạn có chắc chắn muốn xóa chi nhánh này không?</p>
+            </div>
+            <div class="header-actions">
+                <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+            </div>
+        </div>
+
+        <div class="card section-card mb-4">
+            <div class="card-body">
+                <div class="row gx-4 gy-3">
+                    <div class="col-md-6">
+                        <h5>Thông tin chung</h5>
+                        <p><strong>Mã CB:</strong> @Model.BranchId</p>
+                        <p><strong>Tên chi nhánh:</strong> @Model.BranchName</p>
+                        <p><strong>Địa chỉ:</strong> @Model.Address</p>
+                        <p><strong>Quản lý:</strong> @Model.ManagerName</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Thông tin vận hành</h5>
+                        <p><strong>Giờ mở cửa:</strong> @Model.OpeningTime</p>
+                        <p><strong>Giờ đóng cửa:</strong> @Model.ClosingTime</p>
+                        <p><strong>Trạng thái:</strong> @Model.Status</p>
+                        <p><strong>Email:</strong> @Model.Email</p>
+                        <p><strong>Điện thoại:</strong> @Model.PhoneNumber</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form asp-action="DeleteConfirmed" method="post">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+            <a class="btn btn-outline-secondary ms-2" asp-action="Index">Quay lại</a>
+        </form>
+    </section>
+</div>

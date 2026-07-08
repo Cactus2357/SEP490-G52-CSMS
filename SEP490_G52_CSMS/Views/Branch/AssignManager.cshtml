@@ -1,0 +1,50 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchAssignManagerViewModel
+
+@{
+    ViewData["Title"] = "Gán quản lý chi nhánh";
+}
+
+<div class="branch-page">
+    <aside class="branch-sidebar">
+        <div class="sidebar-brand">LOGO</div>
+        <div class="sidebar-menu">
+            <a class="sidebar-link" asp-controller="Branch" asp-action="Index">Quản lý chi nhánh</a>
+            <a class="sidebar-link" href="#">Quản lý danh mục</a>
+            <a class="sidebar-link" href="#">Quản lý sản phẩm</a>
+            <a class="sidebar-link" href="#">Báo cáo doanh thu</a>
+            <a class="sidebar-link" href="#">Xuất báo cáo</a>
+        </div>
+    </aside>
+
+    <section class="branch-main">
+        <div class="branch-header stretch">
+            <div>
+                <h2 class="page-title">GÁN QUẢN LÝ CHI NHÁNH</h2>
+                <p class="text-muted">Chi nhánh: @Model.BranchName (@Model.BranchId)</p>
+            </div>
+            <div class="header-actions">
+                <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.BranchId">Hủy</a>
+            </div>
+        </div>
+
+        <div class="card section-card mb-4">
+            <div class="card-body">
+                <p><strong>Hiện tại:</strong> @Model.CurrentManagerName (@Model.CurrentManagerCode) - @Model.CurrentManagerAssignedDate</p>
+                <form asp-action="AssignManager" method="post">
+                    <input type="hidden" asp-for="BranchId" />
+                    <div class="mb-3">
+                        <label class="form-label">Chọn quản lý mới</label>
+                        <select asp-for="SelectedManagerId" class="form-select form-select-lg">
+                            <option value="">Chọn nhân viên quản lý</option>
+                            @foreach (var manager in Model.Managers)
+                            {
+                                <option value="@manager.ManagerId" selected="@(manager.ManagerId == Model.SelectedManagerId)">@manager.ManagerName</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Xác nhận gán</button>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
