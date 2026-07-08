@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Repositories;
+using SEP490_G52_CSMS.Services.Interfaces;
+using SEP490_G52_CSMS.Services;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +12,8 @@ builder.Services.AddDbContext<CSMSAppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
+builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 
 var app = builder.Build();
 
