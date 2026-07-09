@@ -26,14 +26,15 @@ body {
   display: grid;
   grid-template-columns: 240px 1fr;
   gap: 24px;
-  padding: 24px 0;
+  padding: 24px 32px;
+  min-height: calc(100vh - 140px);
 }
 
 .branch-sidebar {
   background: #f8f9fa;
   border-radius: 1rem;
   padding: 24px 16px;
-  min-height: calc(100vh - 160px);
+  min-height: calc(100vh - 140px);
 }
 
 .sidebar-brand {
@@ -77,14 +78,21 @@ body {
   gap: 16px;
 }
 
-.branch-header h1 {
-  font-size: 2.5rem;
+.branch-header h1,
+.branch-header h2 {
+  font-size: 2rem;
   margin-bottom: 0;
 }
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-add {
+  min-width: 180px;
 }
 
 .btn-icon {
@@ -97,11 +105,36 @@ body {
 }
 
 .branch-toolbar {
-  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  width: 100%;
+}
+
+.search-box .form-control,
+.search-box .input-group-text {
+  border-radius: 0.75rem;
+}
+
+.search-box .input-group-text {
+  border-right: 0;
 }
 
 .search-box .form-control {
-  border-radius: 0.75rem 0 0 0.75rem;
+  border-left: 0;
+}
+
+.btn-add {
+  min-width: 180px;
+}
+
+.search-filters .form-label {
+  margin-bottom: 0.75rem;
+}
+
+.search-filters .btn {
+  margin-top: 0.5rem;
 }
 
 .search-box .input-group-text {
@@ -181,6 +214,45 @@ body {
 
 .section-card {
   border-radius: 1rem;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 0.75rem 1.5rem rgba(18, 56, 122, 0.08);
+}
+
+.section-title {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+  color: #495057;
+  margin-bottom: 0.75rem;
+}
+
+.detail-manager-card {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+}
+
+.detail-manager-card .manager-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12rem;
+  margin-bottom: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.action-button {
+  min-width: 180px;
 }
 
 .branch-form-wrapper {
@@ -197,6 +269,19 @@ body {
   .branch-sidebar {
     min-height: auto;
   }
+}
+
+.search-filters .col-md-3,
+.search-filters .col-md-2 {
+  min-width: 220px;
+}
+
+.search-filters .form-label {
+  margin-bottom: 0.5rem;
+}
+
+.search-filters .btn {
+  margin-top: auto;
 }
 
 .status-chip {

@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Danh sách chi nhánh";
+    ViewData["ContainerClass"] = "container-fluid";
 }
 
 <div class="branch-page">
@@ -22,26 +23,21 @@
                 <h2 class="page-title">DANH SÁCH CÁC CHI NHÁNH</h2>
             </div>
             <div class="header-actions">
+                <a class="btn btn-primary btn-add" asp-controller="Branch" asp-action="Create">+ Thêm chi nhánh</a>
                 <button class="btn btn-outline-secondary btn-icon" type="button">🔍</button>
                 <button class="btn btn-outline-secondary btn-icon" type="button">🔔</button>
                 <button class="btn btn-outline-secondary btn-icon" type="button">👤</button>
             </div>
         </div>
 
-        <div class="branch-toolbar row gx-3 gy-3 align-items-center mb-4">
-            <div class="col-md-6">
+        <form id="searchForm" method="get" class="row gx-3 gy-3 mb-4 align-items-end search-panel">
+            <div class="col-lg-6 col-md-12">
                 <div class="input-group search-box">
                     <span class="input-group-text">🔎</span>
-                    <input type="text" class="form-control" name="searchTerm" value="@Model.SearchTerm" form="searchForm" placeholder="Search: Tên, địa chỉ,..." />
+                    <input type="text" class="form-control" name="searchTerm" value="@Model.SearchTerm" placeholder="Search: Tên, địa chỉ,..." />
                 </div>
             </div>
-            <div class="col-md-6 text-md-end">
-                <a class="btn btn-primary" asp-controller="Branch" asp-action="Create">+ Thêm chi nhánh</a>
-            </div>
-        </div>
-
-        <form id="searchForm" method="get" class="row gx-3 gy-3 mb-4 align-items-end">
-            <div class="col-md-3">
+            <div class="col-lg-2 col-md-4">
                 <label class="form-label">Filter: Trạng thái</label>
                 <select class="form-select" name="statusFilter">
                     @foreach (var option in Model.StatusOptions)
@@ -50,7 +46,7 @@
                     }
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-lg-2 col-md-4">
                 <label class="form-label">Filter: Quản lý</label>
                 <select class="form-select" name="managerId">
                     <option value="">Tất cả</option>
@@ -60,8 +56,8 @@
                     }
                 </select>
             </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-primary w-100" type="submit">Lọc</button>
+            <div class="col-lg-2 col-md-4 text-md-end">
+                <button class="btn btn-outline-primary w-100 btn-filter" type="submit">Lọc</button>
             </div>
         </form>
 

@@ -24,9 +24,6 @@
             </div>
             <div class="header-actions">
                 <span class="status-chip @Model.Status.ToLower()">Trạng thái: @Model.Status</span>
-                <a class="btn btn-secondary" asp-action="Edit" asp-route-id="@Model.BranchId">Sửa thông tin</a>
-                <a class="btn btn-outline-secondary" asp-action="AssignManager" asp-route-id="@Model.BranchId">Thay đổi quản lý</a>
-                <a class="btn btn-danger" asp-action="Deactivate" asp-route-id="@Model.BranchId">Ngừng hoạt động chi nhánh</a>
             </div>
         </div>
 
@@ -34,25 +31,40 @@
             <div class="card-body">
                 <div class="row gx-4 gy-3">
                     <div class="col-md-6">
-                        <h5>Thông tin chung</h5>
-                        <p><strong>Mã CB:</strong> @Model.BranchId</p>
-                        <p><strong>Tên chi nhánh:</strong> @Model.BranchName</p>
-                        <p><strong>Địa chỉ:</strong> @Model.Address</p>
-                        <p><strong>Điện thoại:</strong> @Model.PhoneNumber</p>
-                        <p><strong>Email:</strong> @Model.Email</p>
+                        <h5 class="section-title">Mã chi nhánh</h5>
+                        <p class="mb-2"><strong>Chi nhánh:</strong> @Model.BranchId</p>
+                        <h5 class="section-title mt-4">Địa chỉ</h5>
+                        <p class="mb-2">@Model.Address</p>
+                        <h5 class="section-title mt-4">Điện thoại</h5>
+                        <p class="mb-2">@Model.PhoneNumber</p>
+                        <h5 class="section-title mt-4">Email</h5>
+                        <p class="mb-0">@Model.Email</p>
                     </div>
                     <div class="col-md-6">
-                        <h5>Thông tin vận hành</h5>
-                        <p><strong>Giờ mở cửa:</strong> @Model.OpeningTime</p>
-                        <p><strong>Giờ đóng cửa:</strong> @Model.ClosingTime</p>
-                        <div class="detail-manager-card mt-4 p-3 border rounded">
-                            <h6>QUẢN LÝ CHI NHÁNH</h6>
-                            <p><strong>Hiện tại:</strong> @Model.ManagerName (@Model.ManagerCode)</p>
-                            <p><strong>Ngày bổ nhiệm:</strong> @Model.ManagerAssignedDate</p>
+                        <h5 class="section-title">Giờ mở cửa</h5>
+                        <p class="mb-2">@Model.OpeningTime</p>
+                        <h5 class="section-title mt-4">Giờ đóng cửa</h5>
+                        <p class="mb-2">@Model.ClosingTime</p>
+                        <div class="detail-manager-card mt-4 p-4 rounded">
+                            <h6 class="manager-title">QUẢN LÝ CHI NHÁNH</h6>
+                            <div class="detail-row">
+                                <span>Hiện tại:</span>
+                                <strong>@Model.ManagerName (@Model.ManagerCode)</strong>
+                            </div>
+                            <div class="detail-row">
+                                <span>Ngày bổ nhiệm:</span>
+                                <strong>@Model.ManagerAssignedDate</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="detail-actions mb-4">
+            <a class="btn btn-secondary action-button" asp-action="Edit" asp-route-id="@Model.BranchId">Sửa thông tin</a>
+            <a class="btn btn-outline-secondary action-button" asp-action="AssignManager" asp-route-id="@Model.BranchId">Thay đổi quản lý</a>
+            <a class="btn btn-danger action-button" asp-action="Deactivate" asp-route-id="@Model.BranchId">Ngừng hoạt động chi nhánh</a>
         </div>
     </section>
 </div>
