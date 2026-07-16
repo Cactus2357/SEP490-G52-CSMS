@@ -13,6 +13,8 @@ builder.Services.AddScoped<IWeeklyRosterRepository, WeeklyRosterRepository>();
 
 builder.Services.AddScoped<IWeeklyRosterService, WeeklyRosterService>();
 
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

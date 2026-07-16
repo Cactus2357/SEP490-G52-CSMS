@@ -6,11 +6,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
+using SEP490_G52_CSMS.Services;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -18,11 +22,13 @@ namespace SEP490_G52_CSMS.Controllers
     {
         private readonly CSMSAppDbContext _context;
         private readonly IMemoryCache _cache;
+        private readonly IEmailService _emailService;
 
-        public AuthController(CSMSAppDbContext context, IMemoryCache cache)
+        public AuthController(CSMSAppDbContext context, IMemoryCache cache, IEmailService emailService)
         {
             _context = context;
             _cache = cache;
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -244,8 +250,118 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public IActionResult ForgotPassword()
         {
-            ViewBag.Step = 1;
-            return View();
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.UsernameOrEmail))
+            {
+                return Json(new { success = false, message = "Vui lòng nhập Email hoặc Tên tài khoản." });
+            }
+
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.Username == request.UsernameOrEmail || e.Email == request.UsernameOrEmail);
+
+            if (employee == null || employee.Status != "Active")
+            {
+                return Json(new { success = false, message = "Tài khoản hoặc email không tồn tại trong hệ thống." });
+            }
+
+            if (string.IsNullOrWhiteSpace(employee.Email))
+            {
+                return Json(new { success = false, message = "Tài khoản không được liên kết với email hợp lệ." });
+            }
+
+            string otp = GenerateOtp();
+            var otpKey = $"OTP_{employee.Email}";
+            _cache.Set(otpKey, otp, TimeSpan.FromMinutes(5));
+
+            try
+            {
+                string subject = "[CSMS] Mã xác thực (OTP) đặt lại mật khẩu";
+                string body = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;'>
+                        <h2 style='color: #111827; text-align: center; border-bottom: 1px solid #f3f4f6; padding-bottom: 10px;'>Đặt lại mật khẩu tài khoản CSMS</h2>
+                        <p>Xin chào <strong>{employee.FullName}</strong>,</p>
+                        <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản: <strong>{employee.Username}</strong></p>
+                        <p style='text-align: center; margin: 30px 0;'>
+                            <span style='background-color: #f3f4f6; padding: 12px 24px; font-size: 1.5rem; font-weight: bold; letter-spacing: 4px; color: #2563eb; border-radius: 6px; border: 1px dashed #2563eb;'>{otp}</span>
+                        </p>
+                        <p>Mã xác thực (OTP) này có hiệu lực trong vòng <strong>5 phút</strong>. Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
+                        <p style='color: #6b7280; font-size: 0.85rem; margin-top: 30px;'>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</p>
+                        <p style='margin-top: 20px; border-top: 1px solid #f3f4f6; padding-top: 10px;'>Trân trọng,<br/>Đội ngũ hỗ trợ CSMS</p>
+                    </div>";
+
+                await _emailService.SendEmailAsync(employee.Email, subject, body);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Không thể gửi email OTP: {ex.Message}" });
+            }
+
+            return Json(new { success = true, email = MaskEmail(employee.Email), message = "Mã OTP đã được gửi đến email liên kết." });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.Username == model.UsernameOrEmail || e.Email == model.UsernameOrEmail);
+
+            if (employee == null || employee.Status != "Active")
+            {
+                ModelState.AddModelError("", "Tài khoản hoặc email không tồn tại trong hệ thống.");
+                return View(model);
+            }
+
+            if (string.IsNullOrWhiteSpace(employee.Email))
+            {
+                ModelState.AddModelError("", "Tài khoản không được liên kết với email hợp lệ.");
+                return View(model);
+            }
+
+            var otpKey = $"OTP_{employee.Email}";
+            if (!_cache.TryGetValue(otpKey, out string? cachedOtp) || cachedOtp != model.Otp)
+            {
+                ModelState.AddModelError("", "Mã OTP không hợp lệ hoặc đã hết hạn.");
+                return View(model);
+            }
+
+            if (model.NewPassword != model.ConfirmNewPassword)
+            {
+                ModelState.AddModelError(nameof(model.ConfirmNewPassword), "Mật khẩu mới và Xác nhận mật khẩu mới không trùng khớp. Vui lòng thử lại.");
+                return View(model);
+            }
+
+            if (!IsPasswordComplex(model.NewPassword))
+            {
+                ModelState.AddModelError(nameof(model.NewPassword), "Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm 1 chữ hoa, 1 số và 1 ký tự đặc biệt.");
+                return View(model);
+            }
+
+            if (VerifyPassword(model.NewPassword, employee.Password ?? ""))
+            {
+                ModelState.AddModelError(nameof(model.NewPassword), "Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+                return View(model);
+            }
+
+            // Securely reset password
+            employee.Password = model.NewPassword;
+            await _context.SaveChangesAsync();
+
+            // Clear cache OTP
+            _cache.Remove(otpKey);
+
+            TempData["ForgotPasswordSuccess"] = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.";
+            return RedirectToAction(nameof(Login));
         }
 
         private async Task SignInUserAsync(Employee employee)
@@ -327,6 +443,30 @@ namespace SEP490_G52_CSMS.Controllers
         [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới.")]
         [MaxLength(50)]
         [Display(Name = "Xác nhận mật khẩu mới")]
+        public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
+
+    public class SendOtpRequest
+    {
+        public string? UsernameOrEmail { get; set; }
+    }
+
+    public class ForgotPasswordViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập Email hoặc Tên tài khoản.")]
+        [MaxLength(100)]
+        public string UsernameOrEmail { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập mã OTP.")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã OTP phải có đúng 6 chữ số.")]
+        public string Otp { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
+        [MaxLength(50)]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới.")]
+        [MaxLength(50)]
         public string ConfirmNewPassword { get; set; } = string.Empty;
     }
 
