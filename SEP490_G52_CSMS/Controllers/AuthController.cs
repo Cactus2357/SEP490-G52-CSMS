@@ -147,6 +147,17 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Profile()
+        {
+            var employee = await GetCurrentEmployeeAsync();
+            if (employee == null)
+                return Forbid();
+
+            return View(employee);
+        }
+
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
