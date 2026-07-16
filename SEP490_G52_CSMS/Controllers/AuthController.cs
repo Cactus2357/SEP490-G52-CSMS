@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -148,6 +150,79 @@ namespace SEP490_G52_CSMS.Controllers
 
         [Authorize]
         [HttpGet]
+        public async Task<IActionResult> ChangePassword()
+        {
+            var employee = await GetCurrentEmployeeAsync();
+            if (employee == null)
+                return Forbid();
+
+            return View(new ChangePasswordViewModel());
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            var employee = await GetCurrentEmployeeAsync();
+            if (employee == null)
+                return Forbid();
+
+            // BR-01: mandatory fields (đã bọc bởi [Required] ở ViewModel)
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // BR-05: current password must be correct
+            if (!VerifyPassword(model.CurrentPassword, employee.Password ?? ""))
+            {
+                ModelState.AddModelError(nameof(model.CurrentPassword), "Mật khẩu hiện tại không chính xác.");
+                return View(model);
+            }
+
+            // BR-02: new password and confirm must match
+            if (model.NewPassword != model.ConfirmNewPassword)
+            {
+                ModelState.AddModelError(nameof(model.ConfirmNewPassword),
+                    "Mật khẩu mới và Xác nhận mật khẩu mới không trùng khớp. Vui lòng thử lại.");
+                return View(model);
+            }
+
+            // BR-03: complexity — at least 8 chars, 1 uppercase, 1 digit, 1 special char
+            if (!IsPasswordComplex(model.NewPassword))
+            {
+                ModelState.AddModelError(nameof(model.NewPassword),
+                    "Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm 1 chữ hoa, 1 số và 1 ký tự đặc biệt.");
+                return View(model);
+            }
+
+            // BR-04: new password must not match current password
+            if (VerifyPassword(model.NewPassword, employee.Password ?? ""))
+            {
+                ModelState.AddModelError(nameof(model.NewPassword), "Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+                return View(model);
+            }
+
+            employee.Password = model.NewPassword;
+            await _context.SaveChangesAsync();
+
+            TempData["ChangePasswordSuccess"] = "Đổi mật khẩu thành công!";
+            return RedirectToAction(nameof(ChangePassword));
+        }
+
+        private static bool IsPasswordComplex(string password)
+        {
+            if (string.IsNullOrEmpty(password) || password.Length < 8)
+                return false;
+
+            var hasUpper = Regex.IsMatch(password, "[A-Z]");
+            var hasDigit = Regex.IsMatch(password, "[0-9]");
+            var hasSpecial = Regex.IsMatch(password, @"[^a-zA-Z0-9]");
+
+            return hasUpper && hasDigit && hasSpecial;
+        }
+
+        [Authorize]
+        [HttpGet]
         public async Task<IActionResult> Profile()
         {
             var employee = await GetCurrentEmployeeAsync();
@@ -236,4 +311,23 @@ namespace SEP490_G52_CSMS.Controllers
     {
         public string? FaceData { get; set; }
     }
+
+    public class ChangePasswordViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại.")]
+        [MaxLength(50)]
+        [Display(Name = "Mật khẩu hiện tại")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
+        [MaxLength(50)]
+        [Display(Name = "Mật khẩu mới")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới.")]
+        [MaxLength(50)]
+        [Display(Name = "Xác nhận mật khẩu mới")]
+        public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
+
 }
