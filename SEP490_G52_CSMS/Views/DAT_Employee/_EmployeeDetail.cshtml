@@ -1,0 +1,218 @@
+@model SEP490_G52_CSMS.Models.Employees.Employee
+@{
+    string initials = "NV";
+    if (!string.IsNullOrWhiteSpace(Model.FullName))
+    {
+        var parts = Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+        else if (parts.Length == 1)
+            initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+    }
+
+    string roleText = Model.Role switch
+    {
+        "Cashier"       => "Cashier",
+        "Bartender"     => "Bartender",
+        "Busser"        => "Busser",
+        "BranchManager" => "Branch Manager",
+        _               => Model.Role ?? ""
+    };
+
+    string statusText    = Model.Status == "Active" ? "Đang hoạt động" : "Vô hiệu hóa";
+    string statusColor   = Model.Status == "Active" ? "#16a34a" : "#dc2626";
+    string statusBgColor = Model.Status == "Active" ? "#dcfce7" : "#fee2e2";
+    string statusBorder  = Model.Status == "Active" ? "#bbf7d0" : "#fecaca";
+
+    string citizenId       = Model.CitizenId ?? "";
+    string maskedCitizenId = citizenId;
+    if (citizenId.Length >= 10)
+        maskedCitizenId = citizenId.Substring(0, 3) + "xxx" + citizenId.Substring(citizenId.Length - 6);
+
+    bool hasCccd     = !string.IsNullOrEmpty(Model.CccdFilePath);
+    bool hasContract = !string.IsNullOrEmpty(Model.ContractFilePath);
+}
+
+<style>
+    .dtl-wrap                { font-family: 'Outfit', sans-serif; background: #fff; }
+    .dtl-back-bar            { display: flex; align-items: center; gap: 12px; padding: 20px 24px 16px; border-bottom: 1px solid #e5e7eb; }
+    .dtl-back-btn            { background: none; border: none; padding: 4px; cursor: pointer; color: #111827; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background .15s; }
+    .dtl-back-btn:hover      { background: #f3f4f6; }
+    .dtl-back-title          { font-size: 1rem; font-weight: 700; color: #111827; text-transform: uppercase; letter-spacing: .4px; margin: 0; }
+
+    .dtl-card                { margin: 14px 24px; padding: 14px 18px; border: 2px solid #111827; border-radius: 12px; display: flex; align-items: center; gap: 14px; }
+    .dtl-avatar              { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #111827; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; color: #111827; flex-shrink: 0; }
+    .dtl-card-name           { font-size: 1.05rem; font-weight: 700; color: #111827; margin: 0 0 2px; }
+    .dtl-card-sub            { font-size: .82rem; color: #6b7280; margin: 0; }
+
+    /* Tab nav */
+    .dtl-tabs                { display: flex; gap: 4px; margin: 0 24px 14px; background: #f3f4f6; border: 1.5px solid #111827; border-radius: 8px; padding: 4px; }
+    .dtl-tab                 { flex: 1; padding: 8px 4px; border: none; background: transparent; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9ca3af; border-radius: 5px; cursor: pointer; transition: background .15s, color .15s; font-family: 'Outfit', sans-serif; }
+    .dtl-tab.active          { background: #111827; color: #fff; }
+
+    /* Content panels */
+    .dtl-panel               { display: none; margin: 0 24px; }
+    .dtl-panel.active        { display: block; }
+
+    .dtl-section             { border: 2px dashed #d1d5db; border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+    .dtl-sec-title           { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px dashed #e5e7eb; }
+    .dtl-grid                { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+    .dtl-grid.full           { grid-template-columns: 1fr; }
+    .dtl-lbl                 { font-size: .72rem; color: #9ca3af; margin-bottom: 2px; }
+    .dtl-val                 { font-size: .88rem; font-weight: 600; color: #111827; word-break: break-word; }
+    .dtl-badge               { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600; border: 1px solid; }
+
+    /* File rows */
+    .dtl-file-row            { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e5e7eb; gap: 8px; }
+    .dtl-file-row:last-child { border-bottom: none; }
+    .dtl-file-name           { font-size: .85rem; font-weight: 600; color: #111827; }
+    .dtl-file-sub            { font-size: .75rem; color: #6b7280; }
+    .dtl-file-btn            { font-size: .78rem; font-weight: 600; padding: 5px 14px; border: 1.5px solid #111827; border-radius: 6px; color: #111827; text-decoration: none; white-space: nowrap; transition: background .15s; display: inline-flex; align-items: center; gap: 4px; }
+    .dtl-file-btn:hover      { background: #f3f4f6; color: #111827; }
+    .dtl-file-none           { font-size: .78rem; color: #9ca3af; font-style: italic; }
+
+    .dtl-footer              { height: 20px; }
+</style>
+
+<div class="dtl-wrap">
+    <!-- Header -->
+    <div class="dtl-back-bar">
+        <button class="dtl-back-btn" onclick="closeEmployeeDetail()">
+            <i class="bi bi-arrow-left" style="font-size:1.2rem;"></i>
+        </button>
+        <p class="dtl-back-title">Chi tiết nhân viên</p>
+    </div>
+
+    <!-- Summary card -->
+    <div class="dtl-card">
+        <div class="dtl-avatar">@initials</div>
+        <div>
+            <p class="dtl-card-name">@Model.FullName</p>
+            <p class="dtl-card-sub">@@@Model.Username &nbsp;·&nbsp; NV-@(Model.EmployeeId.ToString("D4"))</p>
+        </div>
+    </div>
+
+    <!-- Tab buttons -->
+    <div class="dtl-tabs">
+        <button class="dtl-tab active" onclick="dtlSwitchTab('account', this)">Tài khoản</button>
+        <button class="dtl-tab"       onclick="dtlSwitchTab('personal', this)">Cá nhân</button>
+        <button class="dtl-tab"       onclick="dtlSwitchTab('docs', this)">Hồ sơ</button>
+    </div>
+
+    <!-- ===== PANEL: TÀI KHOẢN ===== -->
+    <div id="dtl-panel-account" class="dtl-panel active">
+        <div class="dtl-section">
+            <p class="dtl-sec-title">Thông tin tài khoản</p>
+            <div class="dtl-grid">
+                <div>
+                    <div class="dtl-lbl">Tên tài khoản</div>
+                    <div class="dtl-val" style="font-family:monospace;">@@@Model.Username</div>
+                </div>
+                <div>
+                    <div class="dtl-lbl">Role</div>
+                    <div class="dtl-val">@roleText</div>
+                </div>
+                <div>
+                    <div class="dtl-lbl">Chi nhánh</div>
+                    <div class="dtl-val">@(Model.Branch?.BranchName ?? "Chi nhánh Quận 1")</div>
+                </div>
+                <div>
+                    <div class="dtl-lbl">Ngày tạo TK</div>
+                    <div class="dtl-val">12/01/2026</div>
+                </div>
+                <div style="grid-column:1/-1;">
+                    <div class="dtl-lbl">Trạng thái</div>
+                    <span class="dtl-badge"
+                          style="color:@statusColor; background:@statusBgColor; border-color:@statusBorder;">
+                        @statusText
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PANEL: CÁ NHÂN ===== -->
+    <div id="dtl-panel-personal" class="dtl-panel">
+        <div class="dtl-section">
+            <p class="dtl-sec-title">Thông tin cá nhân</p>
+            <div class="dtl-grid full">
+                <div>
+                    <div class="dtl-lbl">Ngày sinh</div>
+                    <div class="dtl-val">@Model.DateOfBirth.ToString("dd/MM/yyyy")</div>
+                </div>
+                <div>
+                    <div class="dtl-lbl">Địa chỉ</div>
+                    <div class="dtl-val">@(Model.Address ?? "—")</div>
+                </div>
+                <div>
+                    <div class="dtl-lbl">CCCD</div>
+                    <div class="dtl-val" style="font-family:monospace;">@maskedCitizenId</div>
+                </div>
+                <div>
+                    <div class="dtl-lbl">Email</div>
+                    <div class="dtl-val">@(Model.Email ?? "—")</div>
+                </div>
+                <div>
+                    <div class="dtl-lbl">Hợp đồng</div>
+                    <div class="dtl-val">
+                        @if (hasContract)
+                        {
+                            <a href="@Model.ContractFilePath" target="_blank" class="dtl-file-btn">
+                                <i class="bi bi-file-earmark-text"></i>Đã có file
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="dtl-file-none">Chưa có file</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PANEL: HỒ SƠ ===== -->
+    <div id="dtl-panel-docs" class="dtl-panel">
+        <div class="dtl-section">
+            <p class="dtl-sec-title">Tài liệu đính kèm</p>
+
+            <div class="dtl-file-row">
+                <div>
+                    <div class="dtl-file-name">Ảnh CCCD</div>
+                    <div class="dtl-file-sub">CCCD_@(Model.EmployeeId).jpg</div>
+                </div>
+                @if (hasCccd)
+                {
+                    <a href="@Model.CccdFilePath" target="_blank" class="dtl-file-btn">
+                        <i class="bi bi-download"></i>Xem file
+                    </a>
+                }
+                else
+                {
+                    <span class="dtl-file-none">Chưa có</span>
+                }
+            </div>
+
+            <div class="dtl-file-row">
+                <div>
+                    <div class="dtl-file-name">Hợp đồng lao động</div>
+                    <div class="dtl-file-sub">HĐLĐ_@(Model.EmploymentType ?? "Full-time").pdf</div>
+                </div>
+                @if (hasContract)
+                {
+                    <a href="@Model.ContractFilePath" target="_blank" class="dtl-file-btn">
+                        <i class="bi bi-download"></i>Xem file
+                    </a>
+                }
+                else
+                {
+                    <span class="dtl-file-none">Chưa có</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="dtl-footer"></div>
+</div>
+
+
