@@ -23,6 +23,7 @@ namespace SEP490_G52_CSMS.Controllers
             _cache = cache;
         }
 
+        [HttpGet]
         public IActionResult Login()
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -112,6 +113,42 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> FaceRegister()
+        {
+            var employee = await GetCurrentEmployeeAsync();
+            if (employee == null)
+                return Forbid();
+
+            return View(employee);
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> FaceRegister([FromBody] FaceRegisterRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.FaceData))
+                return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt trống." });
+
+            var employee = await GetCurrentEmployeeAsync();
+            if (employee == null)
+                return Json(new { success = false, errorMessage = "Bạn cần đăng nhập để thực hiện thao tác này." });
+
+            var duplicate = await _context.Employees
+                .AnyAsync(e => e.FaceData == request.FaceData && e.EmployeeId != employee.EmployeeId);
+
+            if (duplicate)
+                return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt này đã được liên kết với tài khoản khác." });
+
+            employee.FaceData = request.FaceData;
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -136,6 +173,20 @@ namespace SEP490_G52_CSMS.Controllers
             };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+        }
+
+        private async Task<Employee?> GetCurrentEmployeeAsync()
+        {
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(idClaim) || !int.TryParse(idClaim, out var employeeId))
+                return null;
+
+            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == employeeId);
+
+            if (employee == null || employee.Status != "Active")
+                return null;
+
+            return employee;
         }
 
         private bool VerifyPassword(string inputPassword, string storedPassword)
@@ -168,5 +219,10 @@ namespace SEP490_G52_CSMS.Controllers
     public class FaceLoginRequest
     {
         public string? FacialId { get; set; }
+    }
+
+    public class FaceRegisterRequest
+    {
+        public string? FaceData { get; set; }
     }
 }

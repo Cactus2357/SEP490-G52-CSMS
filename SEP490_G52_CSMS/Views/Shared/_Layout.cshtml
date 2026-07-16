@@ -46,11 +46,9 @@
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li>
-                                        <form asp-controller="Auth" asp-action="Logout" method="post">
-                                            <button type="submit" class="dropdown-item">
-                                                Logout
-                                            </button>
-                                        </form>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                                            Đăng xuất
+                                        </button>
                                     </li>
                                 </ul>
                             </li>
@@ -70,6 +68,34 @@
             </div>
         </nav>
     </header>
+    <div class="modal fade" id="logoutConfirmModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
+            <div class="modal-content" style="border-radius: 4px;">
+                <div class="modal-header border-0 justify-content-center pt-4 pb-0">
+                    <h5 class="modal-title fw-bold text-uppercase" id="logoutConfirmModalLabel" style="letter-spacing: 0.5px;">
+                        Đăng xuất tài khoản
+                    </h5>
+                </div>
+                <div class="modal-body text-center px-5 py-4">
+                    <p class="mb-0" style="font-size: 0.95rem; line-height: 1.6;">
+                        Bạn có chắc chắn muốn đăng xuất khỏi hệ thống không? Lưu ý: Hãy đảm bảo
+                        bạn đã bàn giao ca và kết ca thành công trước khi rời máy.
+                    </p>
+                </div>
+                <div class="border-top">
+                    <form id="logoutForm" method="post" asp-controller="Auth" asp-action="Logout" class="d-flex">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn rounded-0 w-50 py-2 border-0 border-end">
+                            Xác nhận
+                        </button>
+                        <button type="button" class="btn rounded-0 w-50 py-2 border-0" data-bs-dismiss="modal">
+                            Huỷ bỏ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
