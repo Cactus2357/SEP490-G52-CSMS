@@ -1,79 +1,161 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+
+    string ActiveIf(string controllerName) =>
+        string.Equals(currentController, controllerName, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - SEP490_G52_CSMS</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>@ViewData["Title"] - CSMS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/SEP490_G52_CSMS.styles.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('toggleIcon');
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+
+            icon.className = isCollapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
+            localStorage.setItem('sidebar-collapsed', isCollapsed ? 'true' : 'false');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                // Remove the no-transition class to allow smooth hover/toggle animations after page load
+                setTimeout(() => {
+                    sidebar.classList.remove('no-transition');
+                }, 50);
+            }
+        });
+    </script>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SEP490_G52_CSMS</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+
+    <div class="app-layout">
+        <div class="sidebar no-transition" id="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-text">CSMS</span>
+                <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Thu gọn / Mở rộng sidebar">
+                    <i class="bi bi-chevron-left" id="toggleIcon"></i>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="scheduleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Lịch làm việc
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="scheduleDropdown">
-                                <li><a class="dropdown-item" asp-area="" asp-controller="WorkSchedule" asp-action="AddWorkSchedule">Thêm lịch làm việc</a></li>
-                            </ul>
-                        </li>
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item dropdown ms-auto">
-                                <a class="nav-link dropdown-toggle text-dark"
-                                   href="#"
-                                   id="userDropdown"
-                                   role="button"
-                                   data-bs-toggle="dropdown"
-                                   aria-expanded="false">
-                                    @User.Identity.Name
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <a class="dropdown-item" asp-controller="Auth" asp-action="Profile">
-                                            <i class="bi bi-person-circle me-2"></i> Hồ sơ cá nhân
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
-                                            <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
-                                        </button>
-                                    </li>
-                                </ul>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item ms-auto">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Auth"
-                                   asp-action="Login">
-                                    Login
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                </div>
             </div>
-        </nav>
-    </header>
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <a href="#" class="menu-link @ActiveIf("DAT_Employee")">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Quản lý nhân viên</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <i class="bi bi-calendar3"></i>
+                        <span>Quản lý lịch làm việc</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>Quản lý đổi ca</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Lịch sử giao ca</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Quản lý thực đơn</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <i class="bi bi-calendar-x"></i>
+                        <span>Quản lý nghỉ phép</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#" class="menu-link">
+                        <i class="bi bi-cart3"></i>
+                        <span>Quản lý đơn đặt hàng</span>
+                    </a>
+                </li>
+            </ul>
+            <script>
+                (function () {
+                    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+                    if (savedCollapsed === 'true') {
+                        document.getElementById('sidebar').classList.add('collapsed');
+                        const icon = document.getElementById('toggleIcon');
+                        if (icon) icon.className = 'bi bi-chevron-right';
+                    }
+                })();
+            </script>
+        </div>
+
+        <div class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <input type="text" class="header-search" placeholder="search">
+                </div>
+                <div class="header-branch">
+                    <span>Chi nhánh Quận 1</span>
+                </div>
+                <div class="header-right">
+                    <button class="header-icon-btn">
+                        <i class="bi bi-bell"></i>
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn user-avatar-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="user-avatar-img @(User.Identity?.IsAuthenticated == true ? "" : "unauthenticated")">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            @if (User.Identity != null && User.Identity.IsAuthenticated)
+                            {
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Auth" asp-action="Profile">
+                                        <i class="bi bi-person-circle me-2"></i> Hồ sơ cá nhân
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                                    </button>
+                                </li>
+                            }
+                            else
+                            {
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Auth" asp-action="Login">
+                                        <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content-area">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
     <div class="modal fade" id="logoutConfirmModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
             <div class="modal-content" style="border-radius: 4px;">
@@ -89,33 +171,19 @@
                     </p>
                 </div>
                 <div class="border-top">
-                    <form id="logoutForm" method="post" asp-controller="Auth" asp-action="Logout" class="d-flex">
+                    <form method="post" asp-controller="Auth" asp-action="Logout" class="d-flex">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn rounded-0 w-50 py-2 border-0 border-end">
-                            Xác nhận
-                        </button>
-                        <button type="button" class="btn rounded-0 w-50 py-2 border-0" data-bs-dismiss="modal">
-                            Huỷ bỏ
-                        </button>
+                        <button type="submit" class="btn rounded-0 w-50 py-2 border-0 border-end">Xác nhận</button>
+                        <button type="button" class="btn rounded-0 w-50 py-2 border-0" data-bs-dismiss="modal">Huỷ bỏ</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - SEP490_G52_CSMS - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>
