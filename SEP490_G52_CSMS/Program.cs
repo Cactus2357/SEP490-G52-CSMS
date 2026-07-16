@@ -16,6 +16,8 @@ builder.Services.AddScoped<IWeeklyRosterService, WeeklyRosterService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
+
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {

@@ -1,33 +1,32 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
-using System;
-using System.Collections.Generic;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Controllers
 {
     public class AuthController : Controller
     {
         private readonly CSMSAppDbContext _context;
+        private readonly IMemoryCache _cache;
 
-        public AuthController(CSMSAppDbContext context)
+        public AuthController(CSMSAppDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         public IActionResult Login()
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
                 return RedirectToAction("Index", "Home");
-            }
             return View();
         }
 
@@ -65,28 +64,19 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 employee.FailedLoginAttempts++;
                 if (employee.FailedLoginAttempts >= 5)
-                {
                     employee.LockoutUntil = DateTime.UtcNow.AddMinutes(5);
-                }
                 await _context.SaveChangesAsync();
 
-                if (employee.FailedLoginAttempts >= 5)
-                {
-                    ModelState.AddModelError("", "Account locked due to multiple failed login attempts.");
-                }
-                else
-                {
-                    ModelState.AddModelError("", "Incorrect username or password. Please try again.");
-                }
+                ModelState.AddModelError("", employee.FailedLoginAttempts >= 5
+                    ? "Account locked due to multiple failed login attempts."
+                    : "Incorrect username or password. Please try again.");
                 return View();
             }
 
             employee.FailedLoginAttempts = 0;
             employee.LockoutUntil = null;
             await _context.SaveChangesAsync();
-
             await SignInUserAsync(employee);
-
             return RedirectToAction("Index", "Home");
         }
 
@@ -94,53 +84,44 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> FaceLogin([FromBody] FaceLoginRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.FacialId))
-            {
                 return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt trống." });
-            }
 
             var employees = await _context.Employees
                 .Where(e => e.FaceData == request.FacialId)
                 .ToListAsync();
 
             if (employees.Count == 0)
-            {
                 return Json(new { success = false, errorMessage = "Face not recognized" });
-            }
 
             if (employees.Count > 1)
-            {
                 return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt bị trùng lặp hệ thống." });
-            }
 
             var employee = employees[0];
 
             if (employee.Status != "Active")
-            {
                 return Json(new { success = false, errorMessage = "Tài khoản đã bị ngừng hoạt động." });
-            }
 
             if (employee.LockoutUntil.HasValue && employee.LockoutUntil.Value > DateTime.UtcNow)
-            {
                 return Json(new { success = false, errorMessage = "Account locked due to multiple failed login attempts." });
-            }
 
             employee.FailedLoginAttempts = 0;
             employee.LockoutUntil = null;
             await _context.SaveChangesAsync();
-
             await SignInUserAsync(employee);
-
             return Json(new { success = true });
         }
 
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login");
+            return RedirectToAction(nameof(Login));
         }
 
+        [HttpGet]
         public IActionResult ForgotPassword()
         {
+            ViewBag.Step = 1;
             return View();
         }
 
@@ -153,27 +134,34 @@ namespace SEP490_G52_CSMS.Controllers
                 new Claim(ClaimTypes.Role, employee.Role ?? "Cashier"),
                 new Claim("Username", employee.Username ?? "")
             };
-
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
         }
 
         private bool VerifyPassword(string inputPassword, string storedPassword)
         {
             if (string.IsNullOrEmpty(inputPassword) || string.IsNullOrEmpty(storedPassword)) return false;
-            if (HashPassword(inputPassword) == storedPassword) return true;
+            //if (HashPassword(inputPassword) == storedPassword) return true;
             return inputPassword == storedPassword;
         }
 
         private string HashPassword(string password)
         {
-            using (var sha256 = SHA256.Create())
-            {
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
-            }
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+        }
+
+        private static string GenerateOtp()
+        {
+            return Random.Shared.Next(100000, 999999).ToString();
+        }
+
+        private static string MaskEmail(string email)
+        {
+            var idx = email.IndexOf('@');
+            if (idx <= 1) return email;
+            return email[0] + new string('*', idx - 1) + email[idx..];
         }
     }
 
