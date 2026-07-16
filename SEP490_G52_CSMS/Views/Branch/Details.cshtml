@@ -30,22 +30,40 @@
         <div class="card section-card mb-4">
             <div class="card-body">
                 <div class="row gx-4 gy-3">
-                    <div class="col-md-6">
+                    <div class="col-md-8">
                         <h5 class="section-title">Mã chi nhánh</h5>
                         <p class="mb-2"><strong>Chi nhánh:</strong> @Model.BranchId</p>
-                        <h5 class="section-title mt-4">Địa chỉ</h5>
+
+                        <h5 class="section-title mt-3">Địa chỉ</h5>
                         <p class="mb-2">@Model.Address</p>
-                        <h5 class="section-title mt-4">Điện thoại</h5>
-                        <p class="mb-2">@Model.PhoneNumber</p>
-                        <h5 class="section-title mt-4">Email</h5>
-                        <p class="mb-0">@Model.Email</p>
+
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <h6 class="small text-uppercase">Điện thoại</h6>
+                                <p class="mb-0">@Model.PhoneNumber</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="small text-uppercase">Email</h6>
+                                <p class="mb-0">@Model.Email</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h5 class="section-title">Giờ mở cửa</h5>
-                        <p class="mb-2">@Model.OpeningTime</p>
-                        <h5 class="section-title mt-4">Giờ đóng cửa</h5>
-                        <p class="mb-2">@Model.ClosingTime</p>
-                        <div class="detail-manager-card mt-4 p-4 rounded">
+
+                    <div class="col-md-4">
+                        <!-- right column intentionally left for future info -->
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h5 class="section-title">Giờ hoạt động</h5>
+                        <p class="mb-2">@Model.OpeningTime &nbsp;-&nbsp; @Model.ClosingTime <span class="text-muted">(hàng ngày)</span></p>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="detail-manager-card p-4 rounded">
                             <h6 class="manager-title">QUẢN LÝ CHI NHÁNH</h6>
                             <div class="detail-row">
                                 <span>Hiện tại:</span>
@@ -64,7 +82,18 @@
         <div class="detail-actions mb-4">
             <a class="btn btn-secondary action-button" asp-action="Edit" asp-route-id="@Model.BranchId">Sửa thông tin</a>
             <a class="btn btn-outline-secondary action-button" asp-action="AssignManager" asp-route-id="@Model.BranchId">Thay đổi quản lý</a>
-            <a class="btn btn-danger action-button" asp-action="Deactivate" asp-route-id="@Model.BranchId">Ngừng hoạt động chi nhánh</a>
+            @if (Model.Status == "Active")
+            {
+                <a class="btn btn-danger action-button" asp-action="Deactivate" asp-route-id="@Model.BranchId">Ngừng hoạt động chi nhánh</a>
+            }
+            else
+            {
+                <form asp-action="ActivateConfirmed" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="branchId" value="@Model.BranchId" />
+                    <button type="submit" class="btn btn-success action-button">Kích hoạt chi nhánh</button>
+                </form>
+            }
         </div>
     </section>
 </div>

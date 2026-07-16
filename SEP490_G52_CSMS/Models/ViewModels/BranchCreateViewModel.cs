@@ -15,6 +15,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string Address { get; set; } = string.Empty;
 
         [Display(Name = "Số điện thoại")]
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
         [StringLength(20, ErrorMessage = "Số điện thoại không được quá 20 ký tự.")]
         public string? PhoneNumber { get; set; }
 

@@ -139,6 +139,21 @@ namespace SEP490_G52_CSMS.Controllers
             return RedirectToAction(nameof(Details), new { id = branchId });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ActivateConfirmed(string branchId)
+        {
+            var result = await _branchService.ActivateBranchAsync(branchId);
+            if (!result.Success)
+            {
+                TempData["ErrorMessage"] = result.Message;
+                return RedirectToAction(nameof(Details), new { id = branchId });
+            }
+
+            TempData["SuccessMessage"] = result.Message;
+            return RedirectToAction(nameof(Details), new { id = branchId });
+        }
+
         public async Task<IActionResult> Edit(string id)
         {
             var model = await _branchService.GetBranchEditModelAsync(id);

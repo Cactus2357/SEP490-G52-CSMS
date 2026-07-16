@@ -13,6 +13,7 @@ namespace SEP490_G52_CSMS.Services
         Task<BranchAssignManagerViewModel?> GetBranchAssignManagerModelAsync(string branchId);
         Task<OperationResult> AssignBranchManagerAsync(BranchAssignManagerViewModel model);
         Task<OperationResult> DeactivateBranchAsync(string branchId);
+        Task<OperationResult> ActivateBranchAsync(string branchId);
         Task<OperationResult> CreateBranchAsync(BranchCreateViewModel model);
         Task<OperationResult> UpdateBranchAsync(BranchEditViewModel model);
         Task<OperationResult> DeleteBranchAsync(string branchId);

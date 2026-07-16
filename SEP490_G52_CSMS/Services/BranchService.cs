@@ -161,6 +161,19 @@ namespace SEP490_G52_CSMS.Services
             return OperationResult.Ok("Chi nhánh đã được ngừng hoạt động.");
         }
 
+        public async Task<OperationResult> ActivateBranchAsync(string branchId)
+        {
+            var branch = await _branchRepository.GetBranchByIdAsync(branchId);
+            if (branch == null)
+            {
+                return OperationResult.Fail("Chi nhánh không tồn tại.");
+            }
+
+            branch.Status = BranchConstants.DefaultStatus;
+            await _branchRepository.UpdateBranchAsync(branch);
+            return OperationResult.Ok("Chi nhánh đã được kích hoạt.");
+        }
+
         public async Task<OperationResult> CreateBranchAsync(BranchCreateViewModel model)
         {
             if (await _branchRepository.BranchNameExistsAsync(model.BranchName.Trim()))

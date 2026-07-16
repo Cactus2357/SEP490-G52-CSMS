@@ -18,15 +18,22 @@
     </aside>
 
     <section class="branch-main">
-        <div class="branch-header stretch">
+        <div class="topbar d-flex justify-content-between align-items-center mb-3">
+            <div class="topbar-left">LOGO</div>
+            <div class="topbar-title">CHI NHÁNH Q.1</div>
+            <div class="topbar-right">
+                <button class="btn btn-outline-secondary btn-icon" type="button">🔍</button>
+                <button class="btn btn-outline-secondary btn-icon" type="button">🔔</button>
+                <button class="btn btn-outline-secondary btn-icon" type="button">👤</button>
+            </div>
+        </div>
+
+        <div class="branch-header stretch d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h2 class="page-title">DANH SÁCH CÁC CHI NHÁNH</h2>
             </div>
             <div class="header-actions">
                 <a class="btn btn-primary btn-add" asp-controller="Branch" asp-action="Create">+ Thêm chi nhánh</a>
-                <button class="btn btn-outline-secondary btn-icon" type="button">🔍</button>
-                <button class="btn btn-outline-secondary btn-icon" type="button">🔔</button>
-                <button class="btn btn-outline-secondary btn-icon" type="button">👤</button>
             </div>
         </div>
 
@@ -100,7 +107,18 @@
                                 <td class="text-end action-cell">
                                     <div class="action-buttons">
                                         <a class="btn btn-sm btn-outline-primary me-2" asp-action="Details" asp-route-id="@branch.BranchId">Chi tiết</a>
-                                        <a class="btn btn-sm btn-outline-danger" asp-action="Deactivate" asp-route-id="@branch.BranchId">Ngừng hoạt động</a>
+                                        @if (branch.Status == "Active")
+                                        {
+                                            <a class="btn btn-sm btn-outline-danger" asp-action="Deactivate" asp-route-id="@branch.BranchId">Ngừng hoạt động</a>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="ActivateConfirmed" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="branchId" value="@branch.BranchId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Kích hoạt</button>
+                                            </form>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -110,24 +128,28 @@
             </table>
         </div>
 
-        @if (Model.TotalPages > 1)
-        {
-            <nav>
-                <ul class="pagination justify-content-center">
-                    <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
-                        <a class="page-link" href="@Url.Action("Index", "Branch", new { page = Model.PageIndex - 1, searchTerm = Model.SearchTerm, statusFilter = Model.StatusFilter, managerId = Model.ManagerId })">&lt; Trước</a>
-                    </li>
-                    @for (var pageIndex = 1; pageIndex <= Model.TotalPages; pageIndex++)
-                    {
-                        <li class="page-item @(pageIndex == Model.PageIndex ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", "Branch", new { page = pageIndex, searchTerm = Model.SearchTerm, statusFilter = Model.StatusFilter, managerId = Model.ManagerId })">@pageIndex</a>
-                        </li>
-                    }
-                    <li class="page-item @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">
-                        <a class="page-link" href="@Url.Action("Index", "Branch", new { page = Model.PageIndex + 1, searchTerm = Model.SearchTerm, statusFilter = Model.StatusFilter, managerId = Model.ManagerId })">Sau &gt;</a>
-                    </li>
-                </ul>
-            </nav>
+        @{
+            var totalPages = Model.TotalPages == 0 ? 1 : Model.TotalPages;
+            var currentPage = Model.PageIndex <= 0 ? 1 : Model.PageIndex;
+            var prevPage = currentPage > 1 ? currentPage - 1 : 1;
+            var nextPage = currentPage < totalPages ? currentPage + 1 : totalPages;
         }
+
+        <nav>
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", "Branch", new { page = prevPage, searchTerm = Model.SearchTerm, statusFilter = Model.StatusFilter, managerId = Model.ManagerId })">&lt; Trước</a>
+                </li>
+                @for (var pageIndex = 1; pageIndex <= totalPages; pageIndex++)
+                {
+                    <li class="page-item @(pageIndex == currentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Index", "Branch", new { page = pageIndex, searchTerm = Model.SearchTerm, statusFilter = Model.StatusFilter, managerId = Model.ManagerId })">@pageIndex</a>
+                    </li>
+                }
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", "Branch", new { page = nextPage, searchTerm = Model.SearchTerm, statusFilter = Model.StatusFilter, managerId = Model.ManagerId })">Sau &gt;</a>
+                </li>
+            </ul>
+        </nav>
     </section>
 </div>

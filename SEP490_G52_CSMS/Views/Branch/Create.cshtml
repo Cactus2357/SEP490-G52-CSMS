@@ -18,6 +18,9 @@
 
     <section class="branch-main">
         <div class="branch-header stretch">
+            <div class="w-100 mb-3">
+                <div class="alert alert-info">Vui lòng điền thông tin chi nhánh. Các trường có dấu <span class="text-danger">*</span> là bắt buộc.</div>
+            </div>
             <div>
                 <h2 class="page-title">THÊM CHI NHÁNH MỚI</h2>
             </div>
@@ -29,6 +32,9 @@
         </div>
 
         <div class="branch-form-wrapper">
+            <div class="mb-3">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" data-valmsg-summary="true"></div>
+            </div>
             <form asp-action="Create" method="post" class="row gx-4 gy-4">
                 <div class="col-lg-7">
                     <div class="card section-card">
@@ -36,11 +42,13 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label asp-for="BranchName" class="form-label"></label>
+                                <span class="text-danger">*</span>
                                 <input asp-for="BranchName" class="form-control form-control-lg" />
                                 <span asp-validation-for="BranchName" class="text-danger"></span>
                             </div>
                             <div class="mb-3">
                                 <label asp-for="Address" class="form-label"></label>
+                                <span class="text-danger">*</span>
                                 <input asp-for="Address" class="form-control form-control-lg" />
                                 <span asp-validation-for="Address" class="text-danger"></span>
                             </div>
