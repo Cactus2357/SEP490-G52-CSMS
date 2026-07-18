@@ -95,8 +95,11 @@ namespace SEP490_G52_CSMS.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.FacialId))
                 return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt trống." });
 
+            // Normalize the incoming facialId (trim whitespace) to prevent minor formatting mismatches
+            var facialId = request.FacialId.Trim();
+
             var employees = await _context.Employees
-                .Where(e => e.FaceData == request.FacialId)
+                .Where(e => e.FaceData != null && e.FaceData.Trim() == facialId)
                 .ToListAsync();
 
             if (employees.Count == 0)
@@ -142,13 +145,16 @@ namespace SEP490_G52_CSMS.Controllers
             if (employee == null)
                 return Json(new { success = false, errorMessage = "Bạn cần đăng nhập để thực hiện thao tác này." });
 
+            // Normalize: trim whitespace before storing or comparing
+            var faceData = request.FaceData.Trim();
+
             var duplicate = await _context.Employees
-                .AnyAsync(e => e.FaceData == request.FaceData && e.EmployeeId != employee.EmployeeId);
+                .AnyAsync(e => e.FaceData != null && e.FaceData.Trim() == faceData && e.EmployeeId != employee.EmployeeId);
 
             if (duplicate)
                 return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt này đã được liên kết với tài khoản khác." });
 
-            employee.FaceData = request.FaceData;
+            employee.FaceData = faceData;
             await _context.SaveChangesAsync();
 
             return Json(new { success = true });

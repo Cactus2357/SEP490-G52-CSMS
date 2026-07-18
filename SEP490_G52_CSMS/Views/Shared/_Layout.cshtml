@@ -1,8 +1,15 @@
 @{
     string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction     = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 
-    string ActiveIf(string controllerName) =>
-        string.Equals(currentController, controllerName, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    // Returns "active" when the current request matches the given controller (and optionally action).
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch     = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -49,44 +56,51 @@
                 </button>
             </div>
             <ul class="sidebar-menu">
+                @* ✅ Linked: DAT_Employee → Index *@
                 <li class="menu-item">
-                    <a href="#" class="menu-link @ActiveIf("DAT_Employee")">
+                    <a asp-controller="DAT_Employee" asp-action="Index"
+                       class="menu-link @ActiveIf("DAT_Employee", "Index")">
                         <i class="bi bi-people-fill"></i>
                         <span>Quản lý nhân viên</span>
                     </a>
                 </li>
+
+                @* ✅ Linked: WorkSchedule → AddWorkSchedule *@
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a asp-controller="WorkSchedule" asp-action="AddWorkSchedule"
+                       class="menu-link @ActiveIf("WorkSchedule", "AddWorkSchedule")">
                         <i class="bi bi-calendar3"></i>
                         <span>Quản lý lịch làm việc</span>
                     </a>
                 </li>
+
+                @* ⏳ Not yet implemented — kept for visual completeness *@
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
                         <i class="bi bi-arrow-left-right"></i>
                         <span>Quản lý đổi ca</span>
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
                         <i class="bi bi-clock-history"></i>
                         <span>Lịch sử giao ca</span>
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
                         <i class="bi bi-journal-text"></i>
                         <span>Quản lý thực đơn</span>
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
                         <i class="bi bi-calendar-x"></i>
                         <span>Quản lý nghỉ phép</span>
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a href="#" class="menu-link">
+                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
                         <i class="bi bi-cart3"></i>
                         <span>Quản lý đơn đặt hàng</span>
                     </a>

@@ -129,6 +129,14 @@ body {
         font-weight: 600;
     }
 
+    /* Items with no controller yet — visually muted, non-clickable */
+    .menu-link.disabled-link {
+        color: #9ca3af;
+        cursor: not-allowed;
+        pointer-events: none;
+        opacity: 0.65;
+    }
+
     .menu-link i {
         font-size: 1.15rem;
         margin-right: 14px;

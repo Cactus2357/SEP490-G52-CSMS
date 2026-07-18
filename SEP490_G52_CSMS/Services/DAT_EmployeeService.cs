@@ -127,7 +127,8 @@ namespace SEP490_G52_CSMS.Services
             var employee = await _repository.GetByIdAsync(employeeId);
             if (employee == null) return false;
 
-            employee.FaceData = faceData;
+            // Normalize: trim whitespace to ensure consistent format for login matching
+            employee.FaceData = faceData?.Trim();
             await _repository.UpdateAsync(employee);
             return true;
         }

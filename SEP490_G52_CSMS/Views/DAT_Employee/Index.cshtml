@@ -1,21 +1,9 @@
 @model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
 @{
-    Layout = null;
+    ViewData["Title"] = "Quản lý Nhân viên";
 }
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản lý Nhân viên - CSMS</title>
-    
-    <!-- Bootstrap 5 CSS & Icons CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+@section Styles {
     <style>
         /* General styling */
         body {
@@ -573,206 +561,123 @@
             color: #ffffff;
         }
     </style>
-</head>
-<body>
+}
 
-<div class="app-layout">
-    <!-- Sidebar Navigation -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-logo">
-            <span class="logo-text">CSMS</span>
-            <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Thu gọn / Mở rộng sidebar">
-                <i class="bi bi-chevron-left" id="toggleIcon"></i>
-            </button>
+<div class="page-header">
+    <h2 class="page-title">Quản lý nhân viên</h2>
+</div>
+
+<!-- Action Bar -->
+<div class="action-bar">
+    <div class="search-filter-group">
+        <div class="input-search-container">
+            <input type="text" id="employeeSearchInput" class="input-search" placeholder="Tìm tên, tài khoản..." onkeyup="filterEmployeesList()">
+            <i class="bi bi-search"></i>
         </div>
-        <ul class="sidebar-menu">
-            <li class="menu-item">
-                <a href="/DAT_Employee" class="menu-link active">
-                    <i class="bi bi-people-fill"></i>
-                    <span>Quản lý nhân viên</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-calendar3"></i>
-                    <span>Quản lý lịch làm việc</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-arrow-left-right"></i>
-                    <span>Quản lý đổi ca</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-clock-history"></i>
-                    <span>Lịch sử giao ca</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Quản lý thực đơn</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-calendar-x"></i>
-                    <span>Quản lý nghỉ phép</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-cart3"></i>
-                    <span>Quản lý đơn đặt hàng</span>
-                </a>
-            </li>
-        </ul>
+        <button class="filter-btn">
+            <i class="bi bi-filter"></i>
+        </button>
     </div>
+    <div class="btn-group-right">
+        <a href="/DAT_Employee/Permissions" class="btn-mockup-secondary text-decoration-none">Phân quyền NV</a>
+        <button class="btn-mockup-primary" data-bs-toggle="modal" data-bs-target="#createEmployeeModal" onclick="loadBranches()">
+            + Tạo NV
+        </button>
+    </div>
+</div>
 
-    <!-- Main Workspace -->
-    <div class="main-wrapper">
-        <!-- Top Navbar Header -->
-        <header class="top-header">
-            <div class="header-left">
-                <input type="text" class="header-search" placeholder="search">
+<!-- Custom Mockup Card List -->
+<div class="employees-list-container">
+    <div id="employeesList">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox d-block fs-2 mb-2"></i>
+                Chưa có nhân viên nào được tạo.
             </div>
-            <div class="header-branch">
-                <span class="text-uppercase" style="letter-spacing: 0.5px; font-weight: 700; color: #111827;">Chi nhánh Quận 1</span>
-            </div>
-            <div class="header-right">
-                <button class="header-icon-btn">
-                    <i class="bi bi-bell"></i>
-                </button>
-                <button class="user-avatar-btn">
-                    <div class="user-avatar-img">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-                </button>
-            </div>
-        </header>
-
-        <!-- Page Content Area -->
-        <main class="content-area">
-            <div class="page-header">
-                <h2 class="page-title">Quản lý nhân viên</h2>
-            </div>
-
-            <!-- Action Bar -->
-            <div class="action-bar">
-                <div class="search-filter-group">
-                    <div class="input-search-container">
-                        <input type="text" id="employeeSearchInput" class="input-search" placeholder="Tìm tên, tài khoản..." onkeyup="filterEmployeesList()">
-                        <i class="bi bi-search"></i>
-                    </div>
-                    <button class="filter-btn">
-                        <i class="bi bi-filter"></i>
-                    </button>
-                </div>
-                <div class="btn-group-right">
-                    <a href="/DAT_Employee/Permissions" class="btn-mockup-secondary text-decoration-none">Phân quyền NV</a>
-                    <button class="btn-mockup-primary" data-bs-toggle="modal" data-bs-target="#createEmployeeModal" onclick="loadBranches()">
-                        + Tạo NV
-                    </button>
-                </div>
-            </div>
-
-            <!-- Custom Mockup Card List -->
-            <div class="employees-list-container">
-                <div id="employeesList">
-                    @if (!Model.Any())
+        }
+        else
+        {
+            @foreach (var emp in Model)
+            {
+                string initials = "";
+                if (!string.IsNullOrWhiteSpace(emp.FullName))
+                {
+                    var parts = emp.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2)
                     {
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox d-block fs-2 mb-2"></i>
-                            Chưa có nhân viên nào được tạo.
+                        initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+                    }
+                    else if (parts.Length == 1)
+                    {
+                        initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+                    }
+                }
+                else
+                {
+                    initials = "NV";
+                }
+
+                string roleText = emp.Role switch
+                {
+                    "Cashier" => "Thu ngân",
+                    "Bartender" => "Pha chế",
+                    "Busser" => "Phục vụ",
+                    "BranchManager" => "Quản lý chi nhánh",
+                    _ => emp.Role ?? ""
+                };
+
+                <div class="employee-card-item" data-fullname="@emp.FullName" data-username="@emp.Username" data-role="@emp.Role">
+                    <div class="card-left-info">
+                        <div class="card-initial-circle">
+                            @initials
                         </div>
-                    }
-                    else
-                    {
-                        @foreach (var emp in Model)
-                        {
-                            string initials = "";
-                            if (!string.IsNullOrWhiteSpace(emp.FullName))
-                            {
-                                var parts = emp.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                                if (parts.Length >= 2)
-                                {
-                                    initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
-                                }
-                                else if (parts.Length == 1)
-                                {
-                                    initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
-                                }
-                            }
-                            else
-                            {
-                                initials = "NV";
-                            }
-
-                            string roleText = emp.Role switch
-                            {
-                                "Cashier" => "Thu ngân",
-                                "Bartender" => "Pha chế",
-                                "Busser" => "Phục vụ",
-                                "BranchManager" => "Quản lý chi nhánh",
-                                _ => emp.Role ?? ""
-                            };
-
-                            <div class="employee-card-item" data-fullname="@emp.FullName" data-username="@emp.Username" data-role="@emp.Role">
-                                <div class="card-left-info">
-                                    <div class="card-initial-circle">
-                                        @initials
-                                    </div>
-                                    <div class="card-text-details">
-                                        <div class="name-type-row">
-                                            <span class="emp-name">@emp.FullName</span>
-                                            <span class="emp-type-label">@emp.EmploymentType</span>
-                                        </div>
-                                        <div class="emp-meta-subtext">
-                                            <span>@@@emp.Username</span> &bull; 
-                                            <span>@roleText</span> &bull; 
-                                            <span>@(emp.Branch?.BranchName ?? "Chi nhánh 1")</span>
-                                            @if (!string.IsNullOrEmpty(emp.FaceData))
-                                            {
-                                                <span class="text-success ms-2" title="Đã đăng ký khuôn mặt">
-                                                    <i class="bi bi-check-circle-fill"></i> FaceID
-                                                </span>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-right-actions">
-                                     @if (emp.Status == "Active")
-                                     {
-                                         <button class="status-block-btn" title="Ngừng hoạt động" onclick="triggerDeactivationCheck(@emp.EmployeeId)">
-                                             <i class="bi bi-slash-circle"></i>
-                                         </button>
-                                     }
-                                     else
-                                     {
-                                         <button class="status-block-btn text-muted" title="Đã ngừng hoạt động" disabled>
-                                             <i class="bi bi-x-circle-fill"></i>
-                                         </button>
-                                     }
-                                    
-                                    <button class="btn-mockup-action" onclick="showEmployeeDetail(@emp.EmployeeId)">View Detail</button>
-                                    
-                                    <button class="btn-mockup-action" onclick="showEmployeeUpdate(@emp.EmployeeId)">+ Update</button>
-                                    
-                                    @if (string.IsNullOrEmpty(emp.FaceData))
-                                    {
-                                        <a href="/DAT_Employee/RegisterFace/@emp.EmployeeId" class="btn-mockup-action-primary">
-                                            + Quét Face
-                                        </a>
-                                    }
-                                </div>
+                        <div class="card-text-details">
+                            <div class="name-type-row">
+                                <span class="emp-name">@emp.FullName</span>
+                                <span class="emp-type-label">@emp.EmploymentType</span>
                             </div>
+                            <div class="emp-meta-subtext">
+                                <span>@@@emp.Username</span> &bull; 
+                                <span>@roleText</span> &bull; 
+                                <span>@(emp.Branch?.BranchName ?? "Chi nhánh 1")</span>
+                                @if (!string.IsNullOrEmpty(emp.FaceData))
+                                {
+                                    <span class="text-success ms-2" title="Đã đăng ký khuôn mặt">
+                                        <i class="bi bi-check-circle-fill"></i> FaceID
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-right-actions">
+                         @if (emp.Status == "Active")
+                         {
+                             <button class="status-block-btn" title="Ngừng hoạt động" onclick="triggerDeactivationCheck(@emp.EmployeeId)">
+                                 <i class="bi bi-slash-circle"></i>
+                             </button>
+                         }
+                         else
+                         {
+                             <button class="status-block-btn text-muted" title="Đã ngừng hoạt động" disabled>
+                                 <i class="bi bi-x-circle-fill"></i>
+                             </button>
+                         }
+                        
+                        <button class="btn-mockup-action" onclick="showEmployeeDetail(@emp.EmployeeId)">View Detail</button>
+                        
+                        <button class="btn-mockup-action" onclick="showEmployeeUpdate(@emp.EmployeeId)">+ Update</button>
+                        
+                        @if (string.IsNullOrEmpty(emp.FaceData))
+                        {
+                            <a href="/DAT_Employee/RegisterFace/@emp.EmployeeId" class="btn-mockup-action-primary">
+                                + Quét Face
+                            </a>
                         }
-                    }
+                    </div>
                 </div>
-            </div>
-        </main>
+            }
+        }
     </div>
 </div>
 
@@ -892,26 +797,104 @@
     </div>
 </div>
 
-<!-- Bootstrap 5 JS Bundle CDN -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- MODAL 3: Chi tiết nhân viên -->
+<div class="modal fade" id="employeeDetailModal" tabindex="-1" aria-labelledby="employeeDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden;" id="employeeDetailModalContent">
+            <div class="text-center py-5">
+                <div class="spinner-border text-dark" role="status"></div>
+                <p class="mt-2 text-muted">Đang tải thông tin...</p>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- MODAL 4: Cập nhật thông tin nhân viên -->
+<div class="modal fade" id="employeeUpdateModal" tabindex="-1" aria-labelledby="employeeUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden;" id="employeeUpdateModalContent">
+            <div class="text-center py-5">
+                <div class="spinner-border text-dark" role="status"></div>
+                <p class="mt-2 text-muted">Đang tải thông tin...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 5: Ngừng hoạt động (Vô hiệu hóa nhân viên) -->
+<div class="modal fade" id="deactivateEmployeeModal" tabindex="-1" aria-labelledby="deactivateEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: 'Outfit', sans-serif;">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="deactivateEmployeeModalLabel">
+                    Ngừng hoạt động
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Employee profile summary -->
+                <div class="d-flex align-items-center gap-3 p-3 mb-3 border border-dark rounded-3">
+                    <div class="rounded-circle border border-dark d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; background: #f3f4f6; font-size: 1.1rem;" id="deactAvatar">NV</div>
+                    <div>
+                        <h6 class="fw-bold m-0" id="deactFullName">Nguyen Minh Anh</h6>
+                        <p class="text-muted m-0" style="font-size: 0.82rem;"><span id="deactUsername">@@minhanhNV</span> &nbsp;·&nbsp; <span id="deactRole">Thu ngân</span></p>
+                    </div>
+                </div>
+
+                <!-- Warning Banner (Conditional) -->
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactWarningBanner" style="background-color: #fffbeb;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-dark">Nhân viên còn ca chưa hoàn thành</div>
+                        <div class="text-muted" style="font-size: 0.8rem;" id="deactWarningText">2 ca chưa được bàn giao. Cần hoàn tất trước khi ngừng hoạt động.</div>
+                    </div>
+                </div>
+
+                <!-- Remaining Shifts Grid (Conditional) -->
+                <div class="mb-3 d-none" id="deactShiftsSection">
+                    <label class="form-label text-muted text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Ca còn lại</label>
+                    <div class="border rounded-3 p-2 bg-light" id="deactShiftsContainer" style="font-size: 0.88rem;">
+                        <!-- Dynamically filled shifts -->
+                    </div>
+                </div>
+
+                <!-- Danger Zone Block -->
+                <div class="alert alert-danger border-danger d-flex align-items-start gap-2" style="background-color: #fef2f2;">
+                    <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-danger">vùng nguy hiểm</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">Tài khoản sẽ bị khoá. Nhân viên không thể đăng nhập hệ thống sau khi ngừng hoạt động.</div>
+                    </div>
+                </div>
+
+                <!-- Form fields -->
+                <div class="mb-3">
+                    <label for="deactReason" class="form-label">Lý do ngừng hoạt động *</label>
+                    <select class="form-select" id="deactReason" required>
+                        <option value="" disabled selected>Chọn lý do...</option>
+                        <option value="Thôi việc / Nghỉ việc">Thôi việc / Nghỉ việc</option>
+                        <option value="Nghỉ chế độ / Thai sản">Nghỉ chế độ / Thai sản</option>
+                        <option value="Đình chỉ / Kỷ luật">Đình chỉ / Kỷ luật</option>
+                        <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="deactNotes" class="form-label">Ghi chú</label>
+                    <textarea class="form-control" id="deactNotes" rows="2" placeholder="Ghi chú thêm nếu có..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between p-3 bg-light">
+                <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                <button type="button" class="btn btn-dark px-4" id="deactConfirmBtn" onclick="confirmDeactivation()" style="border-radius: 8px;">Ngừng hoạt động</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
 <script>
     let currentCreatedEmployeeId = null;
-
-    // Sidebar Toggle Functionality
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const icon = document.getElementById('toggleIcon');
-        const isCollapsed = sidebar.classList.toggle('collapsed');
-        
-        if (isCollapsed) {
-            icon.className = 'bi bi-chevron-right';
-        } else {
-            icon.className = 'bi bi-chevron-left';
-        }
-        
-        localStorage.setItem('sidebar-collapsed', isCollapsed ? 'true' : 'false');
-    }
 
     // Load active branches for dropdown
     async function loadBranches() {
@@ -1065,21 +1048,6 @@
             window.location.reload();
         }
     }
-
-    // Initial sidebar state setup on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        const sidebar = document.getElementById('sidebar');
-        const icon = document.getElementById('toggleIcon');
-        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-        
-        if (savedCollapsed === 'true') {
-            sidebar.classList.add('collapsed');
-            if (icon) icon.className = 'bi bi-chevron-right';
-        } else {
-            sidebar.classList.remove('collapsed');
-            if (icon) icon.className = 'bi bi-chevron-left';
-        }
-    });
 
     // Modal Instances
     let detailModalInstance = null;
@@ -1479,101 +1447,4 @@
         }
     }
 </script>
-
-<!-- MODAL 3: Chi tiết nhân viên -->
-<div class="modal fade" id="employeeDetailModal" tabindex="-1" aria-labelledby="employeeDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden;" id="employeeDetailModalContent">
-            <div class="text-center py-5">
-                <div class="spinner-border text-dark" role="status"></div>
-                <p class="mt-2 text-muted">Đang tải thông tin...</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL 4: Cập nhật thông tin nhân viên -->
-<div class="modal fade" id="employeeUpdateModal" tabindex="-1" aria-labelledby="employeeUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden;" id="employeeUpdateModalContent">
-            <div class="text-center py-5">
-                <div class="spinner-border text-dark" role="status"></div>
-                <p class="mt-2 text-muted">Đang tải thông tin...</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL 5: Ngừng hoạt động (Vô hiệu hóa nhân viên) -->
-<div class="modal fade" id="deactivateEmployeeModal" tabindex="-1" aria-labelledby="deactivateEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: 'Outfit', sans-serif;">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="deactivateEmployeeModalLabel">
-                    Ngừng hoạt động
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <!-- Employee profile summary -->
-                <div class="d-flex align-items-center gap-3 p-3 mb-3 border border-dark rounded-3">
-                    <div class="rounded-circle border border-dark d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; background: #f3f4f6; font-size: 1.1rem;" id="deactAvatar">NV</div>
-                    <div>
-                        <h6 class="fw-bold m-0" id="deactFullName">Nguyen Minh Anh</h6>
-                        <p class="text-muted m-0" style="font-size: 0.82rem;"><span id="deactUsername">@@minhanhNV</span> &nbsp;·&nbsp; <span id="deactRole">Thu ngân</span></p>
-                    </div>
-                </div>
-
-                <!-- Warning Banner (Conditional) -->
-                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactWarningBanner" style="background-color: #fffbeb;">
-                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
-                    <div>
-                        <div class="fw-bold text-dark">Nhân viên còn ca chưa hoàn thành</div>
-                        <div class="text-muted" style="font-size: 0.8rem;" id="deactWarningText">2 ca chưa được bàn giao. Cần hoàn tất trước khi ngừng hoạt động.</div>
-                    </div>
-                </div>
-
-                <!-- Remaining Shifts Grid (Conditional) -->
-                <div class="mb-3 d-none" id="deactShiftsSection">
-                    <label class="form-label text-muted text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Ca còn lại</label>
-                    <div class="border rounded-3 p-2 bg-light" id="deactShiftsContainer" style="font-size: 0.88rem;">
-                        <!-- Dynamically filled shifts -->
-                    </div>
-                </div>
-
-                <!-- Danger Zone Block -->
-                <div class="alert alert-danger border-danger d-flex align-items-start gap-2" style="background-color: #fef2f2;">
-                    <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
-                    <div>
-                        <div class="fw-bold text-danger">vùng nguy hiểm</div>
-                        <div class="text-muted" style="font-size: 0.8rem;">Tài khoản sẽ bị khoá. Nhân viên không thể đăng nhập hệ thống sau khi ngừng hoạt động.</div>
-                    </div>
-                </div>
-
-                <!-- Form fields -->
-                <div class="mb-3">
-                    <label for="deactReason" class="form-label">Lý do ngừng hoạt động *</label>
-                    <select class="form-select" id="deactReason" required>
-                        <option value="" disabled selected>Chọn lý do...</option>
-                        <option value="Thôi việc / Nghỉ việc">Thôi việc / Nghỉ việc</option>
-                        <option value="Nghỉ chế độ / Thai sản">Nghỉ chế độ / Thai sản</option>
-                        <option value="Đình chỉ / Kỷ luật">Đình chỉ / Kỷ luật</option>
-                        <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="deactNotes" class="form-label">Ghi chú</label>
-                    <textarea class="form-control" id="deactNotes" rows="2" placeholder="Ghi chú thêm nếu có..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-between p-3 bg-light">
-                <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
-                <button type="button" class="btn btn-dark px-4" id="deactConfirmBtn" onclick="confirmDeactivation()" style="border-radius: 8px;">Ngừng hoạt động</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-</body>
-</html>
+}

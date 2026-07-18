@@ -1,10 +1,11 @@
-﻿@model SEP490_G52_CSMS.Models.Employees.Employee
+@model SEP490_G52_CSMS.Models.Employees.Employee
 @{
     ViewData["Title"] = "Đăng ký Khuôn mặt";
 }
 
 <!-- FaceIO Library (page-specific, not needed on other pages) -->
 <script src="https://cdn.faceio.net/fio.js"></script>
+<script src="~/js/faceid.js" asp-append-version="true"></script>
 
 <style>
     .scanning-card {
@@ -319,16 +320,12 @@
 </div>
 
 <script>
-    // IMPORTANT: this must be the SAME value used in Login.cshtml.
-    // Login.cshtml currently hardcodes: const FACEIO_APP_ID = "";
-    // Keeping both in sync (ideally injected from a single server-side
-    // config/appsettings value rather than duplicated in two views) is
-    // what guarantees a face registered here can actually be matched
-    // at login time.
-    const FACEIO_APP_ID = "";
+    // Centralized FaceIO configuration read from faceid.js
+    const FACEIO_APP_ID = CSMSFaceIO.getAppId();
 
     const employeeId = @Model.EmployeeId;
     const employeeEmail = '@Model.Email';
+    const employeeUsername = '@Model.Username';
     let webcamStream = null;
     let isScanning = false;
     let scanInterval = null;
@@ -425,45 +422,23 @@
         statusMsg.textContent = "Trạng thái: Đang kết nối FaceIO...";
         statusMsg.className = "w-100 text-center status-bar status-scanning";
 
-        try {
-            const faceio = new faceIO(appId);
-            faceio.enroll({
-                locale: "auto",
-                payload: {
-                    employeeId: employeeId,
-                    email: employeeEmail
-                }
-            }).then(userInfo => {
-                console.log("FaceIO Success:", userInfo);
-
-                // userInfo.facialId is the real FaceIO facial ID. This is the
-                // same kind of value Login.cshtml's runRealFaceIOLogin() will
-                // receive from faceio.authenticate(), so they will match.
+        CSMSFaceIO.enroll({
+            appId: appId,
+            username: employeeUsername,
+            employeeId: employeeId,
+            email: employeeEmail,
+            onSuccess: (facialId, isSimulated) => {
                 captureFaceSnapshot(video);
-                savedFacialId = userInfo.facialId;
+                savedFacialId = facialId;
 
                 const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
                 confirmModal.show();
-            }).catch(errCode => {
-                console.error("FaceIO Error Code:", errCode);
-                let errMsg = "Không hoàn tất đăng ký khuôn mặt.";
-
-                if (errCode === fioErrCode.PERMISSION_REFUSED) {
-                    errMsg = "Quyền truy cập Camera bị từ chối.";
-                } else if (errCode === fioErrCode.NO_FACES_DETECTED) {
-                    errMsg = "Không tìm thấy khuôn mặt trong ống kính.";
-                } else if (errCode === fioErrCode.DUPLICATE_ENROLLMENT) {
-                    errMsg = "Khuôn mặt này đã được liên kết với tài khoản khác.";
-                }
-
-                statusMsg.textContent = `Lỗi FaceIO: ${errMsg} (Mã: ${errCode})`;
+            },
+            onError: (errorMessage) => {
+                statusMsg.textContent = errorMessage;
                 statusMsg.className = "w-100 text-center status-bar status-error";
-            });
-        } catch (err) {
-            console.error("Lỗi khởi tạo thư viện FaceIO:", err);
-            statusMsg.textContent = "Lỗi: Không thể khởi tạo FaceIO.";
-            statusMsg.className = "w-100 text-center status-bar status-error";
-        }
+            }
+        });
     }
 
     function captureFaceSnapshot(video) {
@@ -573,10 +548,8 @@
 
                                     captureFaceSnapshot(video);
 
-                                    // Must match the fixed simulated ID that Login.cshtml's
-                                    // runSimulatedScan() sends to /Auth/FaceLogin, otherwise
-                                    // no employee record will ever match on login.
-                                    savedFacialId = "fio_sim_authenticated_id";
+                                    // Use unique simulated ID based on username
+                                    savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
                                     const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
                                     confirmModal.show();
                                 }
@@ -621,8 +594,8 @@
 
                 captureFaceSnapshot(video);
 
-                // Same fixed simulated ID used everywhere else — see note above.
-                savedFacialId = "fio_sim_authenticated_id";
+                // Use unique simulated ID based on username
+                savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
                 const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
                 confirmModal.show();
             }

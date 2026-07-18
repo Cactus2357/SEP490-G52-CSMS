@@ -1,24 +1,9 @@
 @model SEP490_G52_CSMS.Models.Employees.Employee
 @{
-    Layout = null;
+    ViewData["Title"] = "Đăng ký Khuôn mặt";
 }
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đăng ký Khuôn mặt - CSMS</title>
-    
-    <!-- Bootstrap 5 CSS & Icons CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- FaceIO Library -->
-    <script src="https://cdn.faceio.net/fio.js"></script>
-
+@section Styles {
     <style>
         body {
             font-family: 'Outfit', sans-serif;
@@ -451,182 +436,102 @@
             color: #111827;
         }
     </style>
-</head>
-<body>
+}
 
-<div class="app-layout">
-    <!-- Sidebar Navigation -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-logo">
-            <span class="logo-text">CSMS</span>
-            <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Thu gọn / Mở rộng sidebar">
-                <i class="bi bi-chevron-left" id="toggleIcon"></i>
-            </button>
+<div class="mb-4">
+    <a href="/DAT_Employee" class="text-decoration-none text-secondary" style="font-size: 0.95rem;">
+        <i class="bi bi-arrow-left-circle me-1"></i> Quay lại Danh sách nhân viên
+    </a>
+</div>
+
+<div class="card scanning-card">
+    <div class="card-header-custom">
+        <h3 class="card-title-custom">ĐĂNG KÝ DỮ LIỆU KHUÔN MẶT</h3>
+        <div class="text-muted mt-1" style="font-size: 0.9rem;">
+            Nhân viên: <strong>@Model.FullName</strong> &bull; Username: <code>@Model.Username</code>
         </div>
-        <ul class="sidebar-menu">
-            <li class="menu-item">
-                <a href="/DAT_Employee" class="menu-link active">
-                    <i class="bi bi-people-fill"></i>
-                    <span>Quản lý nhân viên</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-calendar3"></i>
-                    <span>Quản lý lịch làm việc</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-arrow-left-right"></i>
-                    <span>Quản lý đổi ca</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-clock-history"></i>
-                    <span>Lịch sử giao ca</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Quản lý thực đơn</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-calendar-x"></i>
-                    <span>Quản lý nghỉ phép</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <i class="bi bi-cart3"></i>
-                    <span>Quản lý đơn đặt hàng</span>
-                </a>
-            </li>
-        </ul>
     </div>
-
-    <!-- Main Workspace -->
-    <div class="main-wrapper">
-        <!-- Top Navbar Header -->
-        <header class="top-header">
-            <div class="header-left">
-                <input type="text" class="header-search" placeholder="search">
-            </div>
-            <div class="header-branch">
-                <span>Chi nhánh 1</span>
-            </div>
-            <div class="header-right">
-                <button class="header-icon-btn">
-                    <i class="bi bi-bell"></i>
-                </button>
-                <button class="user-avatar-btn">
-                    <div class="user-avatar-img">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-                </button>
-            </div>
-        </header>
-
-        <!-- Page Content Area -->
-        <main class="content-area">
-            <div class="mb-4">
-                <a href="/DAT_Employee" class="text-decoration-none text-secondary" style="font-size: 0.95rem;">
-                    <i class="bi bi-arrow-left-circle me-1"></i> Quay lại Danh sách nhân viên
-                </a>
-            </div>
-
-            <div class="card scanning-card">
-                <div class="card-header-custom">
-                    <h3 class="card-title-custom">ĐĂNG KÝ DỮ LIỆU KHUÔN MẶT</h3>
-                    <div class="text-muted mt-1" style="font-size: 0.9rem;">
-                        Nhân viên: <strong>@Model.FullName</strong> &bull; Username: <code>@Model.Username</code>
+    <div class="card-body p-4">
+        <!-- FaceIO Config Block -->
+        <div class="config-panel mb-4">
+            <h6 class="fw-bold mb-2"><i class="bi bi-gear-fill me-1"></i> Cấu hình FaceIO Public ID</h6>
+            <div class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <input type="text" id="faceioAppId" class="form-control" placeholder="fioXXXXX (Để trống để tự động chạy quét giả lập)">
+                </div>
+                <div class="col-md-6">
+                    <div class="form-text text-muted mb-0 ms-md-2" style="font-size: 0.8rem;">
+                        Đăng ký Public ID miễn phí tại <a href="https://faceio.net" target="_blank" class="text-decoration-underline text-primary">faceio.net</a>. Nhập ID để quét camera thật với FaceIO, hoặc bỏ trống để test offline.
                     </div>
                 </div>
-                <div class="card-body p-4">
-                    <!-- FaceIO Config Block -->
-                    <div class="config-panel mb-4">
-                        <h6 class="fw-bold mb-2"><i class="bi bi-gear-fill me-1"></i> Cấu hình FaceIO Public ID</h6>
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-6">
-                                <input type="text" id="faceioAppId" class="form-control" placeholder="fioXXXXX (Để trống để tự động chạy quét giả lập)">
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Panel: Instructions -->
+            <div class="col-lg-5">
+                <div class="instruction-box h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-3" style="font-size: 1.1rem; border-bottom: 1.5px solid #d1d5db; padding-bottom: 8px;">Hướng dẫn chụp ảnh</h5>
+                        <ul class="ps-3 text-secondary mb-4" style="line-height: 1.8; font-size: 0.9rem;">
+                            <li class="mb-2">Nhìn thẳng trực tiếp vào camera.</li>
+                            <li class="mb-2">Đảm bảo đủ ánh sáng, không đeo kính râm hoặc khẩu trang.</li>
+                            <li>Giữ camera ngang tầm mắt.</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <div class="form-check mb-4">
+                            <input class="form-check-input border-dark" type="checkbox" id="chkAgreement" onchange="toggleScanButton()">
+                            <label class="form-check-label fw-semibold text-dark" for="chkAgreement" style="cursor: pointer; font-size: 0.9rem;">
+                                Tôi đã đọc kỹ hướng dẫn
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button id="btnStartScan" class="btn-mockup-action-primary" onclick="startBiometricScan()" disabled>
+                                Bắt đầu quét
+                            </button>
+                            <a href="/DAT_Employee" class="btn-mockup-action-secondary">
+                                Hủy bỏ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Camera Viewport -->
+            <div class="col-lg-7">
+                <div class="d-flex flex-column align-items-stretch">
+                    <h5 class="fw-bold mb-3" style="font-size: 1.1rem; border-bottom: 1.5px solid #d1d5db; padding-bottom: 8px;">Khung quét camera</h5>
+                    
+                    <div class="camera-frame w-100 mb-3" id="cameraFrame">
+                        <div class="scan-overlay">
+                            <div class="scan-circle" id="scanCircle">
+                                <div class="scan-line"></div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-text text-muted mb-0 ms-md-2" style="font-size: 0.8rem;">
-                                    Đăng ký Public ID miễn phí tại <a href="https://faceio.net" target="_blank" class="text-decoration-underline text-primary">faceio.net</a>. Nhập ID để quét camera thật với FaceIO, hoặc bỏ trống để test offline.
-                                </div>
-                            </div>
+                        </div>
+
+                        <video id="webcamView" class="webcam-video d-none" autoplay playsinline muted></video>
+
+                        <div class="camera-placeholder" id="cameraPlaceholder">
+                            <i class="bi bi-camera-video-fill fs-1 d-block mb-2"></i>
+                            <span class="d-block" style="font-size: 0.9rem;">Camera chưa được kích hoạt</span>
+                            <small class="text-secondary" style="font-size: 0.75rem;">(Hãy tích vào "Tôi đã đọc kỹ hướng dẫn" ở cột bên trái)</small>
                         </div>
                     </div>
 
-                    <div class="row g-4">
-                        <!-- Left Panel: Instructions -->
-                        <div class="col-lg-5">
-                            <div class="instruction-box h-100 d-flex flex-column justify-content-between">
-                                <div>
-                                    <h5 class="fw-bold mb-3" style="font-size: 1.1rem; border-bottom: 1.5px solid #d1d5db; padding-bottom: 8px;">Hướng dẫn chụp ảnh</h5>
-                                    <ul class="ps-3 text-secondary mb-4" style="line-height: 1.8; font-size: 0.9rem;">
-                                        <li class="mb-2">Nhìn thẳng trực tiếp vào camera.</li>
-                                        <li class="mb-2">Đảm bảo đủ ánh sáng, không đeo kính râm hoặc khẩu trang.</li>
-                                        <li>Giữ camera ngang tầm mắt.</li>
-                                    </ul>
-                                </div>
-
-                                <div>
-                                    <div class="form-check mb-4">
-                                        <input class="form-check-input border-dark" type="checkbox" id="chkAgreement" onchange="toggleScanButton()">
-                                        <label class="form-check-label fw-semibold text-dark" for="chkAgreement" style="cursor: pointer; font-size: 0.9rem;">
-                                            Tôi đã đọc kỹ hướng dẫn
-                                        </label>
-                                    </div>
-
-                                    <div class="d-grid gap-2">
-                                        <button id="btnStartScan" class="btn-mockup-action-primary" onclick="startBiometricScan()" disabled>
-                                            Bắt đầu quét
-                                        </button>
-                                        <a href="/DAT_Employee" class="btn-mockup-action-secondary">
-                                            Hủy bỏ
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="w-100 d-none mb-3" id="scanProgressContainer">
+                        <div class="progress" style="height: 8px; border-radius: 4px;">
+                            <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
                         </div>
+                        <div class="text-center text-muted mt-1" style="font-size: 0.8rem;" id="scanProgressText">
+                            Đang phân tích các điểm đặc trưng khuôn mặt (0%)...
+                        </div>
+                    </div>
 
-                        <!-- Right Panel: Camera Viewport -->
-                        <div class="col-lg-7">
-                            <div class="d-flex flex-column align-items-stretch">
-                                <h5 class="fw-bold mb-3" style="font-size: 1.1rem; border-bottom: 1.5px solid #d1d5db; padding-bottom: 8px;">Khung quét camera</h5>
-                                
-                                <div class="camera-frame w-100 mb-3" id="cameraFrame">
-                                    <div class="scan-overlay">
-                                        <div class="scan-circle" id="scanCircle">
-                                            <div class="scan-line"></div>
-                                        </div>
-                                    </div>
-
-                                    <video id="webcamView" class="webcam-video d-none" autoplay playsinline muted></video>
-
-                                    <div class="camera-placeholder" id="cameraPlaceholder">
-                                        <i class="bi bi-camera-video-fill fs-1 d-block mb-2"></i>
-                                        <span class="d-block" style="font-size: 0.9rem;">Camera chưa được kích hoạt</span>
-                                        <small class="text-secondary" style="font-size: 0.75rem;">(Hãy tích vào "Tôi đã đọc kỹ hướng dẫn" ở cột bên trái)</small>
-                                    </div>
-                                </div>
-
-                                <div class="w-100 d-none mb-3" id="scanProgressContainer">
-                                    <div class="progress" style="height: 8px; border-radius: 4px;">
-                                        <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
-                                    </div>
-                                    <div class="text-center text-muted mt-1" style="font-size: 0.8rem;" id="scanProgressText">
-                                        Đang phân tích các điểm đặc trưng khuôn mặt (0%)...
-                                    </div>
-                                </div>
-
-                                <div class="w-100 text-center status-bar status-ready" id="statusMessage">
-                                </div>
+                    <div class="w-100 text-center status-bar status-ready" id="statusMessage">
+                    </div>
 
 <!-- MODAL: Xác nhận khuôn mặt đã quét -->
 <div class="modal fade" id="confirmFaceModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="confirmFaceModalLabel" aria-hidden="true">
@@ -662,12 +567,28 @@
     </div>
 </div>
 
-<!-- Bootstrap 5 JS Bundle CDN -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+@section Scripts {
+<script src="https://cdn.faceio.net/fio.js"></script>
+<script src="~/js/faceid.js" asp-append-version="true"></script>
 <script>
     const employeeId = @Model.EmployeeId;
     const employeeEmail = '@Model.Email';
+    const employeeUsername = '@Model.Username';
+    // Sync the UI App ID input to window.FACEIO_APP_ID so CSMSFaceIO uses it.
+    // If the input is empty, falls back to CentralizedFaceIOConfig.
+    const faceioAppIdInput = document.getElementById('faceioAppId');
+    if (faceioAppIdInput) {
+        faceioAppIdInput.addEventListener('change', () => {
+            const val = faceioAppIdInput.value.trim();
+            window.FACEIO_APP_ID = val || undefined;
+        });
+    }
     let webcamStream = null;
     let isScanning = false;
     let scanInterval = null;
@@ -675,21 +596,6 @@
     let lastVideoTime = -1;
     let capturedImageBase64 = null;
     let savedFacialId = null;
-
-    // Sidebar Toggle Functionality
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const icon = document.getElementById('toggleIcon');
-        const isCollapsed = sidebar.classList.toggle('collapsed');
-        
-        if (isCollapsed) {
-            icon.className = 'bi bi-chevron-right';
-        } else {
-            icon.className = 'bi bi-chevron-left';
-        }
-        
-        localStorage.setItem('sidebar-collapsed', isCollapsed ? 'true' : 'false');
-    }
 
     // Toggle scanning button and webcam feed based on checkbox
     function toggleScanButton() {
@@ -772,12 +678,21 @@
         return faceDetectorInstance;
     }
 
-    // Start scan flow
+    // Start scan flow - use centralized App ID (or UI override if set)
     function startBiometricScan() {
         if (isScanning) return;
-        
-        const appId = document.getElementById('faceioAppId').value.trim();
-        
+
+        // Sync UI input to window.FACEIO_APP_ID before reading it
+        const inputVal = document.getElementById('faceioAppId')?.value?.trim();
+        if (inputVal) {
+            window.FACEIO_APP_ID = inputVal;
+        } else {
+            // Clear override so centralized config is used
+            window.FACEIO_APP_ID = undefined;
+        }
+
+        const appId = CSMSFaceIO.getAppId();
+
         if (appId) {
             runRealFaceIO(appId);
         } else {
@@ -785,51 +700,30 @@
         }
     }
 
-    // Run real FaceIO enroll flow
+    // Run real FaceIO enroll flow using CSMSFaceIO shared script
     function runRealFaceIO(appId) {
         const statusMsg = document.getElementById('statusMessage');
         const video = document.getElementById('webcamView');
         statusMsg.textContent = "Trạng thái: Đang kết nối FaceIO...";
         statusMsg.className = "w-100 text-center status-bar status-scanning";
 
-        try {
-            const faceio = new faceIO(appId);
-            faceio.enroll({
-                locale: "auto",
-                payload: {
-                    employeeId: employeeId,
-                    email: employeeEmail
-                }
-            }).then(userInfo => {
-                console.log("FaceIO Success:", userInfo);
-                
-                // Capture the face image for preview
+        CSMSFaceIO.enroll({
+            appId: appId,
+            username: employeeUsername,
+            employeeId: employeeId,
+            email: employeeEmail,
+            onSuccess: (facialId, isSimulated) => {
                 captureFaceSnapshot(video);
-                savedFacialId = userInfo.facialId;
+                savedFacialId = facialId;
                 
-                // Show confirmation popup modal
                 const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
                 confirmModal.show();
-            }).catch(errCode => {
-                console.error("FaceIO Error Code:", errCode);
-                let errMsg = "Không hoàn tất đăng ký khuôn mặt.";
-                
-                if (errCode === fioErrCode.PERMISSION_REFUSED) {
-                    errMsg = "Quyền truy cập Camera bị từ chối.";
-                } else if (errCode === fioErrCode.NO_FACES_DETECTED) {
-                    errMsg = "Không tìm thấy khuôn mặt trong ống kính.";
-                } else if (errCode === fioErrCode.DUPLICATE_ENROLLMENT) {
-                    errMsg = "Khuôn mặt này đã được liên kết với tài khoản khác.";
-                }
-
-                statusMsg.textContent = `Lỗi FaceIO: ${errMsg} (Mã: ${errCode})`;
+            },
+            onError: (errorMessage) => {
+                statusMsg.textContent = errorMessage;
                 statusMsg.className = "w-100 text-center status-bar status-error";
-            });
-        } catch (err) {
-            console.error("Lỗi khởi tạo thư viện FaceIO:", err);
-            statusMsg.textContent = "Lỗi: Không tìm thấy ứng dụng FaceIO. Vui lòng nhập đúng Public ID.";
-            statusMsg.className = "w-100 text-center status-bar status-error";
-        }
+            }
+        });
     }
 
     // Capture face frame to hidden canvas and convert to base64 for preview
@@ -948,7 +842,7 @@
                                     captureFaceSnapshot(video);
 
                                     // Open confirmation modal
-                                    savedFacialId = "fio_sim_" + Math.random().toString(36).substring(2, 15);
+                                    savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
                                     const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
                                     confirmModal.show();
                                 }
@@ -994,7 +888,7 @@
 
                 captureFaceSnapshot(video);
 
-                savedFacialId = "fio_sim_" + Math.random().toString(36).substring(2, 15);
+                savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
                 const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
                 confirmModal.show();
             }
@@ -1081,21 +975,5 @@
         document.getElementById('statusMessage').textContent = "Trạng thái: Camera hoạt động. Sẵn sàng quét.";
         document.getElementById('statusMessage').className = "w-100 text-center status-bar status-ready";
     }
-
-    // Initial sidebar state setup on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        const sidebar = document.getElementById('sidebar');
-        const icon = document.getElementById('toggleIcon');
-        const savedCollapsed = localStorage.getItem('sidebar-collapsed');
-        
-        if (savedCollapsed === 'true') {
-            sidebar.classList.add('collapsed');
-            if (icon) icon.className = 'bi bi-chevron-right';
-        } else {
-            sidebar.classList.remove('collapsed');
-            if (icon) icon.className = 'bi bi-chevron-left';
-        }
-    });
 </script>
-</body>
-</html>
+}
