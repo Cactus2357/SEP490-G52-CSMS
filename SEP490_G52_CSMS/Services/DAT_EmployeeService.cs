@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Reponsitories;
+using SEP490_G52_CSMS.Repositories;
 
 namespace SEP490_G52_CSMS.Services
 {

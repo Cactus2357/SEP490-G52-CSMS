@@ -1,7 +1,7 @@
 using SEP490_G52_CSMS.Controllers;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Reponsitories;
+using SEP490_G52_CSMS.Repositories;
 
 namespace SEP490_G52_CSMS.Services
 {

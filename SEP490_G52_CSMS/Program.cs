@@ -22,7 +22,7 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Add services to the container.
 builder.Services.AddScoped<SEP490_G52_CSMS.Commons.IDAT_EmailHelper, SEP490_G52_CSMS.Commons.DAT_EmailHelper>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IDAT_EmployeeRepository, SEP490_G52_CSMS.Reponsitories.DAT_EmployeeRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IDAT_EmployeeRepository, SEP490_G52_CSMS.Repositories.DAT_EmployeeRepository>();
 builder.Services.AddScoped<SEP490_G52_CSMS.Services.IDAT_EmployeeService, SEP490_G52_CSMS.Services.DAT_EmployeeService>();
 builder.Services.AddControllersWithViews();
 
