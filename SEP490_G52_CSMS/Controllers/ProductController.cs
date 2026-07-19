@@ -1,0 +1,135 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using SEP490_G52_CSMS.Models.ViewModels.Sales.Product;
+using SEP490_G52_CSMS.Services.Interfaces;
+
+namespace SEP490_G52_CSMS.Controllers
+{
+    public class ProductController : Controller
+    {
+        private readonly IProductService _productService;
+        private readonly IProductCategoryService _productCategoryService;
+
+        public ProductController(
+            IProductService productService,
+            IProductCategoryService productCategoryService)
+        {
+            _productService = productService;
+            _productCategoryService = productCategoryService;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Index(string? searchString)
+        {
+            var products = await _productService
+                .GetProductListAsync(searchString);
+
+            var categories = await _productCategoryService
+                .GetCategoryListAsync(null);
+
+            var model = new ProductIndexViewModel
+            {
+                Products = products,
+                SearchString = searchString,
+                Categories = categories.Select(c => new SelectListItem
+                {
+                    Value = c.CategoryId.ToString(),
+                    Text = c.CategoryName
+                }).ToList()
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(
+            CreateProductViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Dữ liệu sản phẩm không hợp lệ.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var result = await _productService
+                .CreateProductAsync(model);
+
+            if (!result)
+            {
+                TempData["Error"] = "Lỗi trùng tên sản phẩm.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["Success"] = "Thêm sản phẩm thành công.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest();
+            }
+
+            var model = await _productService
+                .GetProductForUpdateAsync(id);
+
+            if (model == null)
+            {
+                return NotFound();
+            }
+
+            await LoadCategoriesAsync(model);
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(
+            UpdateProductViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                await LoadCategoriesAsync(model);
+                return View(model);
+            }
+
+            var result = await _productService
+                .UpdateProductAsync(model);
+
+            if (!result)
+            {
+                ModelState.AddModelError(
+                    nameof(model.ProductName),
+                    "Tên sản phẩm đã tồn tại hoặc dữ liệu không hợp lệ.");
+
+                await LoadCategoriesAsync(model);
+
+                return View(model);
+            }
+
+            TempData["Success"] = "Cập nhật sản phẩm thành công.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task LoadCategoriesAsync(
+            UpdateProductViewModel model)
+        {
+            var categories = await _productCategoryService
+                .GetCategoryListAsync(null);
+
+            model.Categories = categories.Select(c =>
+                new SelectListItem
+                {
+                    Value = c.CategoryId.ToString(),
+                    Text = c.CategoryName,
+                    Selected = c.CategoryId == model.CategoryId
+                }).ToList();
+        }
+    }
+}

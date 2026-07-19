@@ -1,0 +1,117 @@
+﻿@model SEP490_G52_CSMS.Models.ViewModels.Sales.Product.ProductIndexViewModel
+
+<div class="modal fade"
+     id="createProductModel"
+     tabindex="-1"
+     aria-labelledby="createProductModelLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content product-model">
+
+            <form asp-controller="Product"
+                  asp-action="Create"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div class="modal-header">
+                    <h5 class="modal-title"
+                        id="createProductModelLabel">
+                        Thêm sản phẩm mới
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="createProductName"
+                               class="form-label">
+                            Tên sản phẩm
+                        </label>
+
+                        <input type="text"
+                               id="createProductName"
+                               name="ProductName"
+                               class="form-control"
+                               maxlength="255"
+                               required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="createImageUrl"
+                               class="form-label">
+                            Hình ảnh
+                        </label>
+
+                        <input type="text"
+                               id="createImageUrl"
+                               name="ImageUrl"
+                               class="form-control"
+                               maxlength="255"
+                               placeholder="Nhập đường dẫn hình ảnh" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="createCategoryId"
+                               class="form-label">
+                            Danh mục
+                        </label>
+
+                        <select id="createCategoryId"
+                                name="CategoryId"
+                                class="form-select"
+                                required>
+
+                            <option value="">
+                                -- Chọn danh mục --
+                            </option>
+
+                            @foreach (var category in Model.Categories)
+                            {
+                                <option value="@category.Value">
+                                    @category.Text
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="createDescription"
+                               class="form-label">
+                            Mô tả
+                        </label>
+
+                        <textarea id="createDescription"
+                                  name="Description"
+                                  class="form-control"
+                                  rows="5"
+                                  maxlength="500"></textarea>
+                    </div>
+
+                    <input type="hidden"
+                           name="Status"
+                           value="Active" />
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">
+                        Hủy
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Lưu sản phẩm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
