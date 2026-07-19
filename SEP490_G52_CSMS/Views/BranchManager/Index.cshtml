@@ -231,6 +231,155 @@
             .btn-mockup-action-primary:hover {
                 background-color: #eff6ff;
             }
+
+        /* ============ Create Manager Modal (2-step wizard) ============ */
+        #createManagerModal .modal-content {
+            border-radius: 12px;
+            border: 1.5px solid #111827;
+        }
+
+        #createManagerModal .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 22px;
+        }
+
+        .mgr-modal-back-btn {
+            background: none;
+            border: none;
+            color: #111827;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+
+            .mgr-modal-back-btn:hover {
+                background-color: #f3f4f6;
+            }
+
+        .mgr-modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        #createManagerModal .modal-body {
+            padding: 22px;
+        }
+
+        .mgr-section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .mgr-form-group {
+            margin-bottom: 16px;
+        }
+
+            .mgr-form-group:last-child {
+                margin-bottom: 0;
+            }
+
+        .mgr-form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+            .mgr-form-label .required-mark {
+                color: #dc2626;
+            }
+
+        .mgr-form-control {
+            width: 100%;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            padding: 9px 12px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+            .mgr-form-control:focus {
+                border-color: #111827;
+            }
+
+            .mgr-form-control[readonly] {
+                background-color: #f9fafb;
+                color: #111827;
+                font-weight: 600;
+            }
+
+        .mgr-note-box {
+            border: 1.5px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.78rem;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-top: 18px;
+            display: flex;
+            gap: 8px;
+        }
+
+            .mgr-note-box i {
+                color: #9ca3af;
+                font-size: 0.9rem;
+                margin-top: 1px;
+                flex-shrink: 0;
+            }
+
+        .mgr-step-panel {
+            display: none;
+        }
+
+            .mgr-step-panel.active {
+                display: block;
+            }
+
+        #createManagerModal .modal-footer {
+            border-top: 1px solid #e5e7eb;
+            padding: 16px 22px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-mockup-cancel {
+            background-color: #ffffff;
+            color: #374151;
+            border: 1px solid #cccccc;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+            .btn-mockup-cancel:hover {
+                background-color: #f3f4f6;
+            }
+
+        .mgr-field-error {
+            color: #dc2626;
+            font-size: 0.78rem;
+            margin-top: 4px;
+            display: none;
+        }
     </style>
 }
 
@@ -322,6 +471,79 @@
     </div>
 </div>
 
+<!-- MODAL: Tạo tài khoản quản lý chi nhánh (2-step wizard) -->
+<div class="modal fade" id="createManagerModal" tabindex="-1" aria-labelledby="createManagerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="mgr-modal-back-btn" id="mgrModalBackBtn" onclick="mgrGoBack()" title="Quay lại">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <h5 class="mgr-modal-title" id="createManagerModalLabel">Thông tin quản lý</h5>
+            </div>
+            <div class="modal-body">
+                <div id="mgrFormAlert" class="alert alert-danger d-none py-2 px-3" style="font-size:0.85rem;" role="alert"></div>
+
+                <!-- STEP 1: Thông tin quản lý -->
+                <div id="mgrStep1" class="mgr-step-panel active">
+                    <div class="mgr-section-label">Thông tin đăng nhập</div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrFullName">Họ và tên <span class="required-mark">*</span></label>
+                        <input type="text" id="mgrFullName" class="mgr-form-control" placeholder="Nguyễn Văn An">
+                        <div class="mgr-field-error" id="mgrFullNameError">Vui lòng nhập họ và tên.</div>
+                    </div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrEmail">Email <span class="required-mark">*</span></label>
+                        <input type="email" id="mgrEmail" class="mgr-form-control" placeholder="abc@gmail.com">
+                        <div class="mgr-field-error" id="mgrEmailError">Vui lòng nhập email hợp lệ.</div>
+                    </div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrBranch">Chi nhánh <span class="required-mark">*</span></label>
+                        <select id="mgrBranch" class="mgr-form-control">
+                            <option value="">-- Chọn chi nhánh --</option>
+                            @if (ViewBag.Branches != null)
+                            {
+                                @foreach (var branch in (IEnumerable<SEP490_G52_CSMS.Models.Core.Branch>)ViewBag.Branches)
+                                {
+                                    <option value="@branch.BranchId">@branch.BranchName</option>
+                                }
+                            }
+                        </select>
+                        <div class="mgr-field-error" id="mgrBranchError">Vui lòng chọn chi nhánh.</div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Tạo tài khoản quản lý -->
+                <div id="mgrStep2" class="mgr-step-panel">
+                    <div class="mgr-section-label">Thông tin đăng nhập</div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrUsername">Tên tài khoản <span class="required-mark">*</span></label>
+                        <input type="text" id="mgrUsername" class="mgr-form-control" readonly>
+                    </div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrPassword">Mật khẩu <span class="required-mark">*</span></label>
+                        <input type="password" id="mgrPassword" class="mgr-form-control" readonly>
+                    </div>
+
+                    <div class="mgr-note-box">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>*Lưu ý: Tên tài khoản được đặt là tên nhân viên không cách không dấu. Mật khẩu sẽ được random và gửi qua email nhân viên đã đăng kí.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-mockup-cancel" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-mockup-primary" id="mgrPrimaryBtn" onclick="mgrPrimaryAction()">Tạo tài khoản</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Detail / Update panel host (loaded via AJAX, same pattern as Employee module) -->
 <div id="managerDetailPanel"></div>
 <div id="managerUpdatePanel"></div>
@@ -340,7 +562,7 @@
         }
 
         function showManagerDetail(employeeId) {
-            fetch(`/DAT_BManager/DetailPartial/${employeeId}`)
+            fetch(`/BranchManager/DetailPartial/${employeeId}`)
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('managerDetailPanel').innerHTML = html;
@@ -349,7 +571,7 @@
         }
 
         function showManagerUpdate(employeeId) {
-            fetch(`/DAT_BManager/UpdatePartial/${employeeId}`)
+            fetch(`/BranchManager/UpdatePartial/${employeeId}`)
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('managerUpdatePanel').innerHTML = html;
@@ -359,7 +581,7 @@
 
         async function triggerDeactivationCheck(employeeId) {
             try {
-                const response = await fetch(`/DAT_BManager/CheckDeactivation/${employeeId}`);
+                const response = await fetch(`/BranchManager/CheckDeactivation/${employeeId}`);
                 if (!response.ok) {
                     alert('Lỗi tải dữ liệu kiểm tra.');
                     return;
@@ -371,7 +593,7 @@
                 }
                 if (!confirm('Bạn có chắc muốn ngừng hoạt động B Manager này?')) return;
 
-                const deactivateResponse = await fetch('/DAT_BManager/Deactivate', {
+                const deactivateResponse = await fetch('/BranchManager/Deactivate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ employeeId: employeeId })
@@ -385,6 +607,137 @@
             } catch (err) {
                 console.error(err);
                 alert('Không thể kết nối máy chủ.');
+            }
+        }
+
+        /* ================= Create Manager Modal (2-step wizard) ================= */
+        let mgrCurrentStep = 1;
+
+        function mgrResetModal() {
+            mgrCurrentStep = 1;
+            document.getElementById('mgrStep1').classList.add('active');
+            document.getElementById('mgrStep2').classList.remove('active');
+            document.getElementById('createManagerModalLabel').textContent = 'Thông tin quản lý';
+            document.getElementById('mgrPrimaryBtn').textContent = 'Tạo tài khoản';
+            document.getElementById('mgrFormAlert').classList.add('d-none');
+            document.getElementById('mgrFullName').value = '';
+            document.getElementById('mgrEmail').value = '';
+            document.getElementById('mgrBranch').value = '';
+            document.getElementById('mgrUsername').value = '';
+            document.getElementById('mgrPassword').value = '';
+            ['mgrFullNameError', 'mgrEmailError', 'mgrBranchError'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+        }
+
+        document.getElementById('createManagerModal').addEventListener('show.bs.modal', mgrResetModal);
+
+        function mgrShowAlert(message) {
+            const alertBox = document.getElementById('mgrFormAlert');
+            alertBox.textContent = message;
+            alertBox.classList.remove('d-none');
+        }
+
+        function mgrGoBack() {
+            if (mgrCurrentStep === 2) {
+                document.getElementById('mgrStep2').classList.remove('active');
+                document.getElementById('mgrStep1').classList.add('active');
+                document.getElementById('createManagerModalLabel').textContent = 'Thông tin quản lý';
+                document.getElementById('mgrFormAlert').classList.add('d-none');
+                mgrCurrentStep = 1;
+            } else {
+                bootstrap.Modal.getInstance(document.getElementById('createManagerModal')).hide();
+            }
+        }
+
+        function mgrValidateStep1() {
+            const fullName = document.getElementById('mgrFullName').value.trim();
+            const email = document.getElementById('mgrEmail').value.trim();
+            const branchId = document.getElementById('mgrBranch').value;
+            let valid = true;
+
+            document.getElementById('mgrFullNameError').style.display = fullName ? 'none' : 'block';
+            document.getElementById('mgrEmailError').style.display = /\S+@@\S+\.\S+/.test(email) ? 'none' : 'block';
+            document.getElementById('mgrBranchError').style.display = branchId ? 'none' : 'block';
+
+            if (!fullName) valid = false;
+            if (!/\S+@@\S+\.\S+/.test(email)) valid = false;
+            if (!branchId) valid = false;
+
+            return valid;
+        }
+
+        async function mgrPrimaryAction() {
+            document.getElementById('mgrFormAlert').classList.add('d-none');
+
+            if (mgrCurrentStep === 1) {
+                if (!mgrValidateStep1()) return;
+
+                const fullName = document.getElementById('mgrFullName').value.trim();
+                const email = document.getElementById('mgrEmail').value.trim();
+                const btn = document.getElementById('mgrPrimaryBtn');
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch('/BranchManager/GenerateAccount', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fullName: fullName, email: email })
+                    });
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        mgrShowAlert(result.errorMessage || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    document.getElementById('mgrUsername').value = result.username;
+                    document.getElementById('mgrPassword').value = result.password;
+
+                    document.getElementById('mgrStep1').classList.remove('active');
+                    document.getElementById('mgrStep2').classList.add('active');
+                    document.getElementById('createManagerModalLabel').textContent = 'Tạo tài khoản quản lý';
+                    mgrCurrentStep = 2;
+                } catch (err) {
+                    console.error(err);
+                    mgrShowAlert('Không thể kết nối máy chủ.');
+                } finally {
+                    btn.disabled = false;
+                }
+            } else {
+                const btn = document.getElementById('mgrPrimaryBtn');
+                btn.disabled = true;
+
+                const payload = {
+                    fullName: document.getElementById('mgrFullName').value.trim(),
+                    email: document.getElementById('mgrEmail').value.trim(),
+                    branchId: document.getElementById('mgrBranch').value,
+                    username: document.getElementById('mgrUsername').value,
+                    password: document.getElementById('mgrPassword').value
+                };
+
+                try {
+                    const response = await fetch('/BranchManager/CreateAccount', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        mgrShowAlert(result.errorMessage || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    bootstrap.Modal.getInstance(document.getElementById('createManagerModal')).hide();
+                    window.location.reload();
+                } catch (err) {
+                    console.error(err);
+                    mgrShowAlert('Không thể kết nối máy chủ.');
+                    btn.disabled = false;
+                }
             }
         }
     </script>
