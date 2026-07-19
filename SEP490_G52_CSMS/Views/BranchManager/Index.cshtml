@@ -1,0 +1,391 @@
+﻿@model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
+@{
+    ViewData["Title"] = "Quản lý B Manager";
+}
+
+@section Styles {
+    <style>
+        /* ============ Page Header ============ */
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        /* ============ Action Bar ============ */
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+
+        .search-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+            max-width: 450px;
+        }
+
+        .input-search-container {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .input-search {
+            width: 100%;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            padding: 8px 12px 8px 38px;
+            font-size: 0.9rem;
+            background-color: #ffffff;
+            outline: none;
+        }
+
+        .input-search-container i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888888;
+        }
+
+        .filter-btn {
+            background: none;
+            border: none;
+            color: #333333;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .btn-group-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-mockup-primary {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1.5px solid #111827;
+            padding: 8px 18px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 2px 2px 0px #000000;
+            transition: all 0.1s ease;
+        }
+
+            .btn-mockup-primary:hover {
+                background-color: #f3f4f6;
+                transform: translate(1px, 1px);
+                box-shadow: 1px 1px 0px #000000;
+            }
+
+            .btn-mockup-primary:active {
+                transform: translate(2px, 2px);
+                box-shadow: none;
+            }
+
+        /* ============ Card List Container ============ */
+        .managers-list-container {
+            background-color: #ffffff;
+            border: 1.5px solid #d1d5db;
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .manager-card-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #e5e7eb;
+            border-radius: 50px;
+            padding: 12px 28px;
+            margin-bottom: 16px;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+            .manager-card-item:last-child {
+                margin-bottom: 0;
+            }
+
+            .manager-card-item:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+                border-color: #cbd5e1;
+            }
+
+        .card-left-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .card-initial-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1.5px solid #4b5563;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #1f2937;
+            background-color: #ffffff;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        .card-text-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .mgr-name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mgr-meta-subtext {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-right-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .status-block-btn {
+            background: none;
+            border: none;
+            color: #1f2937;
+            font-size: 1.35rem;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+            .status-block-btn:hover {
+                color: #dc2626;
+            }
+
+        .btn-mockup-action {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1px solid #111827;
+            padding: 6px 18px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+            .btn-mockup-action:hover {
+                background-color: #f3f4f6;
+            }
+
+        .btn-mockup-action-primary {
+            background-color: #ffffff;
+            color: #2563eb;
+            border: 1px solid #2563eb;
+            padding: 6px 18px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+            .btn-mockup-action-primary:hover {
+                background-color: #eff6ff;
+            }
+    </style>
+}
+
+<div class="page-header">
+    <h2 class="page-title">Quản lý - Quản lý chi nhánh</h2>
+</div>
+
+<!-- Action Bar -->
+<div class="action-bar">
+    <div class="search-filter-group">
+        <div class="input-search-container">
+            <input type="text" id="managerSearchInput" class="input-search" placeholder="Tìm tên, tài khoản..." onkeyup="filterManagersList()">
+            <i class="bi bi-search"></i>
+        </div>
+        <button class="filter-btn" title="Lọc">
+            <i class="bi bi-filter"></i>
+        </button>
+    </div>
+    <div class="btn-group-right">
+        <button class="btn-mockup-primary" data-bs-toggle="modal" data-bs-target="#createManagerModal">
+            + Tạo quản lí
+        </button>
+    </div>
+</div>
+
+<!-- Manager Card List -->
+<div class="managers-list-container">
+    <div id="managersList">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox d-block fs-2 mb-2"></i>
+                Chưa có B Manager nào được tạo.
+            </div>
+        }
+        else
+        {
+            @foreach (var mgr in Model)
+            {
+                string initials = "NA";
+                if (!string.IsNullOrWhiteSpace(mgr.FullName))
+                {
+                    var parts = mgr.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2)
+                    {
+                        initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+                    }
+                    else if (parts.Length == 1)
+                    {
+                        initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+                    }
+                }
+
+                <div class="manager-card-item" data-fullname="@mgr.FullName" data-username="@mgr.Username" data-managerid="BM@(mgr.EmployeeId.ToString("D3"))">
+                    <div class="card-left-info">
+                        <div class="card-initial-circle">
+                            @initials
+                        </div>
+                        <div class="card-text-details">
+                            <span class="mgr-name">@mgr.FullName</span>
+                            <div class="mgr-meta-subtext">
+                                <span>@@@mgr.Username</span> &bull;
+                                <span>B Manager</span> &bull;
+                                <span>@(mgr.Branch?.BranchName ?? "CN Q1")</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-right-actions">
+                        @if (mgr.Status == "Active")
+                        {
+                            <button class="status-block-btn" title="Ngừng hoạt động" onclick="triggerDeactivationCheck(@mgr.EmployeeId)">
+                                <i class="bi bi-slash-circle"></i>
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="status-block-btn text-muted" title="Đã ngừng hoạt động" disabled>
+                                <i class="bi bi-x-circle-fill"></i>
+                            </button>
+                        }
+
+                        <button class="btn-mockup-action" onclick="showManagerDetail(@mgr.EmployeeId)">View Detail</button>
+
+                        <button class="btn-mockup-action-primary" onclick="showManagerUpdate(@mgr.EmployeeId)">+ Update</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Detail / Update panel host (loaded via AJAX, same pattern as Employee module) -->
+<div id="managerDetailPanel"></div>
+<div id="managerUpdatePanel"></div>
+
+@section Scripts {
+    <script>
+        function filterManagersList() {
+            const query = document.getElementById('managerSearchInput').value.trim().toLowerCase();
+            document.querySelectorAll('#managersList .manager-card-item').forEach(function (card) {
+                const fullName = (card.dataset.fullname || '').toLowerCase();
+                const username = (card.dataset.username || '').toLowerCase();
+                const managerId = (card.dataset.managerid || '').toLowerCase();
+                const match = fullName.includes(query) || username.includes(query) || managerId.includes(query);
+                card.style.display = match ? 'flex' : 'none';
+            });
+        }
+
+        function showManagerDetail(employeeId) {
+            fetch(`/DAT_BManager/DetailPartial/${employeeId}`)
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('managerDetailPanel').innerHTML = html;
+                })
+                .catch(err => console.error(err));
+        }
+
+        function showManagerUpdate(employeeId) {
+            fetch(`/DAT_BManager/UpdatePartial/${employeeId}`)
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('managerUpdatePanel').innerHTML = html;
+                })
+                .catch(err => console.error(err));
+        }
+
+        async function triggerDeactivationCheck(employeeId) {
+            try {
+                const response = await fetch(`/DAT_BManager/CheckDeactivation/${employeeId}`);
+                if (!response.ok) {
+                    alert('Lỗi tải dữ liệu kiểm tra.');
+                    return;
+                }
+                const result = await response.json();
+                if (!result.success) {
+                    alert(result.errorMessage);
+                    return;
+                }
+                if (!confirm('Bạn có chắc muốn ngừng hoạt động B Manager này?')) return;
+
+                const deactivateResponse = await fetch('/DAT_BManager/Deactivate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: employeeId })
+                });
+                const deactivateResult = await deactivateResponse.json();
+                if (deactivateResponse.ok && deactivateResult.success) {
+                    window.location.reload();
+                } else {
+                    alert(deactivateResult.errorMessage || 'Lỗi vô hiệu hóa tài khoản.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+            }
+        }
+    </script>
+}
