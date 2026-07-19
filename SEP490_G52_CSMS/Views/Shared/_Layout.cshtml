@@ -3,11 +3,21 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>@ViewData["Title"] - CSMS</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/SEP490_G52_CSMS.styles.css" asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/SEP490_G52_CSMS.styles.css"
+          asp-append-version="true" />
 </head>
+
 <body>
     <div class="csms-wrapper">
         <aside class="csms-sidebar">
@@ -16,13 +26,36 @@
             </div>
 
             <nav class="csms-menu">
-                <a asp-controller="Home" asp-action="Index">Trang chủ</a>
-                <a href="#">Quản lý nhân viên</a>
-                <a href="#">Quản lý lịch làm việc</a>
-                <a href="#">Quản lý đổi ca</a>
-                <a asp-controller="ProductCategories" asp-action="Index">Quản lý danh mục</a>
-                <a href="#">Quản lý sản phẩm</a>
-                <a href="#">Báo cáo doanh thu</a>
+                <a asp-controller="Home"
+                   asp-action="Index">
+                    Trang chủ
+                </a>
+
+                <a href="#">
+                    Quản lý nhân viên
+                </a>
+
+                <a href="#">
+                    Quản lý lịch làm việc
+                </a>
+
+                <a href="#">
+                    Quản lý đổi ca
+                </a>
+
+                <a asp-controller="ProductCategories"
+                   asp-action="Index">
+                    Quản lý danh mục
+                </a>
+
+                <a asp-controller="Product"
+                   asp-action="Index">
+                    Quản lý sản phẩm
+                </a>
+
+                <a href="#">
+                    Báo cáo doanh thu
+                </a>
             </nav>
         </aside>
 
@@ -33,8 +66,13 @@
                 </div>
 
                 <div class="csms-header-actions">
-                    <span class="csms-icon">🔔</span>
-                    <span class="csms-avatar">A</span>
+                    <span class="csms-icon">
+                        🔔
+                    </span>
+
+                    <span class="csms-avatar">
+                        A
+                    </span>
                 </div>
             </header>
 
@@ -45,8 +83,13 @@
     </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,31 +1,49 @@
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
-using SEP490_G52_CSMS.Repositories.Interfaces;
 using SEP490_G52_CSMS.Repositories;
-using SEP490_G52_CSMS.Services.Interfaces;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 using SEP490_G52_CSMS.Services;
-using System;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// =========================
+// Database
+// =========================
 builder.Services.AddDbContext<CSMSAppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-// Add services to the container.
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// =========================
+// MVC
+// =========================
 builder.Services.AddControllersWithViews();
+
+// =========================
+// Dependency Injection
+// =========================
+
+// Category
 builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 
+// Product
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductService, ProductService>();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// =========================
+// Configure HTTP Pipeline
+// =========================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
 app.UseRouting();

@@ -1,0 +1,231 @@
+﻿@model SEP490_G52_CSMS.Models.ViewModels.Sales.Product.UpdateProductViewModel
+
+@{
+    ViewData["Title"] = "Sửa sản phẩm";
+}
+
+<div class="product-page">
+
+    <div class="mb-4">
+        <div class="text-muted">
+            CSMS / Sản phẩm / Sửa sản phẩm
+        </div>
+
+        <h2 class="fw-bold mb-0">
+            Quản lí sản phẩm
+        </h2>
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+
+            <h4 class="fw-bold mb-0">
+                Sửa sản phẩm
+            </h4>
+
+            <a asp-controller="Product"
+               asp-action="Index"
+               class="btn-close"
+               aria-label="Đóng">
+            </a>
+
+        </div>
+
+        <form asp-controller="Product"
+              asp-action="Edit"
+              method="post"
+              enctype="multipart/form-data">
+
+            <input type="hidden"
+                   asp-for="ProductId" />
+
+            <input type="hidden"
+                   asp-for="ExistingImageUrl" />
+
+            <input type="hidden"
+                   asp-for="Status" />
+
+            <div class="card-body p-4">
+
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger"
+                     role="alert">
+                </div>
+
+                <!-- Tên sản phẩm -->
+                <div class="mb-4">
+
+                    <label asp-for="ProductName"
+                           class="form-label fw-semibold">
+                        Tên sản phẩm
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input asp-for="ProductName"
+                           class="form-control"
+                           placeholder="Nhập tên sản phẩm"
+                           maxlength="255" />
+
+                    <span asp-validation-for="ProductName"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <!-- Hình ảnh -->
+                <div class="mb-4">
+
+                    <label asp-for="ImageFile"
+                           class="form-label fw-semibold">
+                        Hình ảnh
+                    </label>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ExistingImageUrl))
+                    {
+                        <div class="mb-3">
+
+                            <img id="currentProductImage"
+                                 src="@Model.ExistingImageUrl"
+                                 alt="@Model.ProductName"
+                                 class="img-thumbnail"
+                                 style="width: 140px;
+                                        height: 140px;
+                                        object-fit: cover;" />
+
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+
+                            <img id="currentProductImage"
+                                 src=""
+                                 alt="Ảnh sản phẩm"
+                                 class="img-thumbnail d-none"
+                                 style="width: 140px;
+                                        height: 140px;
+                                        object-fit: cover;" />
+
+                        </div>
+                    }
+
+                    <input asp-for="ImageFile"
+                           type="file"
+                           class="form-control"
+                           accept=".jpg,.jpeg,.png,.webp"
+                           onchange="previewProductImage(event)" />
+
+                    <div class="form-text">
+                        Chấp nhận định dạng JPG, JPEG, PNG hoặc WEBP.
+                    </div>
+
+                    <span asp-validation-for="ImageFile"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <!-- Danh mục -->
+                <div class="mb-4">
+
+                    <label asp-for="CategoryId"
+                           class="form-label fw-semibold">
+                        Danh mục
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <select asp-for="CategoryId"
+                            asp-items="Model.Categories"
+                            class="form-select">
+
+                        <option value="">
+                            -- Chọn danh mục --
+                        </option>
+
+                    </select>
+
+                    <span asp-validation-for="CategoryId"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+               
+
+                <!-- Mô tả -->
+                <div class="mb-4">
+
+                    <label asp-for="Description"
+                           class="form-label fw-semibold">
+                        Mô tả
+                    </label>
+
+                    <textarea asp-for="Description"
+                              class="form-control"
+                              rows="5"
+                              maxlength="500"
+                              placeholder="Nhập mô tả sản phẩm">
+                    </textarea>
+
+                    <span asp-validation-for="Description"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="card-footer bg-white d-flex justify-content-end gap-2 py-3">
+
+                <a asp-controller="Product"
+                   asp-action="Index"
+                   class="btn btn-outline-secondary px-4">
+                    Hủy
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary px-4">
+                    Lưu sản phẩm
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        function previewProductImage(event) {
+            const input = event.target;
+            const image = document.getElementById("currentProductImage");
+
+            if (!input.files || input.files.length === 0) {
+                return;
+            }
+
+            const file = input.files[0];
+            const allowedTypes = [
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                alert("Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.");
+                input.value = "";
+                return;
+            }
+
+            image.src = URL.createObjectURL(file);
+            image.classList.remove("d-none");
+        }
+    </script>
+
+}
