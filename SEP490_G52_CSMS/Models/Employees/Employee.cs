@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -79,6 +79,11 @@ namespace SEP490_G52_CSMS.Models.Employees
         [Column("contract_file_path")]
         [StringLength(255)]
         public string? ContractFilePath { get; set; }
+
+        /// <summary> Đường dẫn lưu file ảnh CCCD (PDF/JPG) </summary>
+        [Column("cccd_file_path")]
+        [StringLength(255)]
+        public string? CccdFilePath { get; set; }
 
         /// <summary> Trạng thái tài khoản (Active, Inactive) </summary>
         [Column("status")]

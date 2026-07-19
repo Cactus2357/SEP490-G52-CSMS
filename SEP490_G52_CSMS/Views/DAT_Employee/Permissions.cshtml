@@ -1,0 +1,739 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
+@{
+    ViewData["Title"] = "Phân quyền Nhân viên";
+}
+
+@section Styles {
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Collapsible Sidebar styles */
+        .sidebar {
+            width: 260px;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .sidebar-logo {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #111827;
+            border-bottom: 1px solid #f3f4f6;
+            letter-spacing: 0.5px;
+            overflow: hidden;
+        }
+
+        .logo-text {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .toggle-sidebar-btn {
+            background: none;
+            border: none;
+            color: #4b5563;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .toggle-sidebar-btn:hover {
+            background-color: #f3f4f6;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .menu-item {
+            padding: 0 16px;
+            margin-bottom: 6px;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .menu-link span {
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .menu-link:hover {
+            background-color: #f3f4f6;
+            color: #111827;
+        }
+
+        .menu-link.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .menu-link i {
+            font-size: 1.15rem;
+            margin-right: 14px;
+            width: 20px;
+            text-align: center;
+            transition: margin-right 0.2s ease, font-size 0.2s ease;
+        }
+
+        /* Collapsed overrides */
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            visibility: hidden;
+            width: 0;
+        }
+
+        .sidebar.collapsed .toggle-sidebar-btn {
+            margin: 0 auto;
+        }
+
+        .sidebar.collapsed .menu-link span {
+            opacity: 0;
+            visibility: hidden;
+            width: 0;
+            height: 0;
+            padding: 0;
+            margin: 0;
+            display: inline-block;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed .menu-link {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar.collapsed .menu-link i {
+            margin-right: 0;
+            font-size: 1.30rem;
+        }
+
+        /* Main Wrapper */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f9fafb;
+            min-width: 0;
+        }
+
+        /* Header Bar */
+        .top-header {
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            width: 320px;
+        }
+
+        .header-search {
+            width: 100%;
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 6px 12px 6px 36px;
+            font-size: 0.85rem;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 12px center;
+            background-size: 14px;
+            outline: none;
+        }
+
+        .header-branch {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #111827;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .header-icon-btn {
+            background: none;
+            border: none;
+            color: #4b5563;
+            font-size: 1.3rem;
+            cursor: pointer;
+            position: relative;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-icon-btn::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            top: 6px;
+            right: 6px;
+        }
+
+        .user-avatar-btn {
+            background: none;
+            border: none;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .user-avatar-img {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Content Area */
+        .content-area {
+            padding: 32px;
+            flex-grow: 1;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+
+        .search-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+            max-width: 600px;
+        }
+
+        .input-search-container {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .input-search {
+            width: 100%;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            padding: 8px 12px 8px 38px;
+            font-size: 0.9rem;
+            background-color: #ffffff;
+            outline: none;
+        }
+
+        .input-search-container i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888888;
+        }
+
+        .filter-select {
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            outline: none;
+            background-color: #ffffff;
+            min-width: 180px;
+        }
+
+        .btn-group-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-mockup-secondary {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1px solid #111827;
+            padding: 8px 18px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-mockup-secondary:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* Permissions Table */
+        .permissions-table-container {
+            background-color: #ffffff;
+            border: 1.5px solid #d1d5db;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+
+        .perm-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .perm-table th {
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid #111827;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #374151;
+        }
+
+        .perm-table td {
+            padding: 16px 18px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.92rem;
+            color: #1f2937;
+        }
+
+        .perm-table tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .btn-action-link {
+            background: none;
+            border: none;
+            color: #2563eb;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline;
+            font-size: 0.88rem;
+            margin-right: 12px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .btn-action-link:hover {
+            color: #1d4ed8;
+        }
+
+        .btn-action-link.danger {
+            color: #dc2626;
+        }
+
+        .btn-action-link.danger:hover {
+            color: #b91c1c;
+        }
+
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 12px;
+            border: 1.5px solid #111827;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 20px 24px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #e5e7eb;
+            padding: 16px 24px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-select {
+            border-radius: 6px;
+            border: 1px solid #cccccc;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            font-size: 0.88rem;
+            color: #6b7280;
+        }
+
+        .pagination-links {
+            display: flex;
+            gap: 12px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .pagination-link {
+            color: #111827;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .pagination-link.disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
+}
+
+<div class="page-header">
+    <h2 class="page-title">Phân quyền nhân viên</h2>
+    <div class="btn-group-right">
+        <a href="/DAT_Employee" class="btn-mockup-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+<!-- Action Bar -->
+<div class="action-bar">
+    <div class="search-filter-group">
+        <div class="input-search-container">
+            <input type="text" id="permSearchInput" class="input-search" placeholder="Search: Nhập tên, email, ..." onkeyup="filterPermList()">
+            <i class="bi bi-search"></i>
+        </div>
+        <select id="roleFilterSelect" class="filter-select" onchange="filterPermList()">
+            <option value="">Filter: Chọn vai trò</option>
+            <option value="Cashier">Thu ngân</option>
+            <option value="Bartender">Pha chế</option>
+            <option value="Busser">Phục vụ / Vệ sinh</option>
+            <option value="Unassigned">Chưa phân quyền</option>
+        </select>
+    </div>
+</div>
+
+<!-- Custom Mockup Grid -->
+<div class="permissions-table-container">
+    <table class="perm-table">
+        <thead>
+            <tr>
+                <th style="width: 15%">STT</th>
+                <th style="width: 45%">Nhân viên</th>
+                <th style="width: 25%">Vai trò hiện tại</th>
+                <th style="width: 15%">Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="permTableBody">
+            @{
+                int index = 1;
+            }
+            @foreach (var emp in Model)
+            {
+                string roleText = emp.Role switch
+                {
+                    "Cashier" => "Thu ngân",
+                    "Bartender" => "Pha chế",
+                    "Busser" => "Phục vụ / Vệ sinh",
+                    _ => "Chưa phân quyền"
+                };
+
+                string typeText = string.IsNullOrEmpty(emp.EmploymentType) ? "" : $" ({emp.EmploymentType})";
+
+                <tr class="perm-row-item" 
+                    data-fullname="@emp.FullName" 
+                    data-email="@emp.Email" 
+                    data-role="@(emp.Role ?? "")"
+                    id="row-@emp.EmployeeId">
+                    <td style="font-family: monospace; font-weight: 600;">EMP@(emp.EmployeeId.ToString("D3"))</td>
+                    <td>
+                        <div class="fw-bold">@emp.FullName</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">@emp.Email</div>
+                    </td>
+                    <td>
+                        <span class="badge @(emp.Role == "Cashier" ? "bg-dark" : emp.Role == "Bartender" ? "bg-primary" : emp.Role == "Busser" ? "bg-secondary" : "bg-warning text-dark")">
+                            @roleText@typeText
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-action-link" onclick="openEditPermissionModal(@emp.EmployeeId, '@emp.FullName', '@emp.Role', '@emp.EmploymentType')">Sửa</button>
+                        <button class="btn-action-link danger" onclick="revokePermission(@emp.EmployeeId, '@emp.FullName')">Thu hồi</button>
+                    </td>
+                </tr>
+                index++;
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination-container">
+        <span id="paginationSummary">Đang hiển thị @Model.Count() của @Model.Count() nhân viên</span>
+        <ul class="pagination-links">
+            <li><span class="pagination-link disabled">&lt; Trước</span></li>
+            <li><span class="pagination-link active">1</span></li>
+            <li><span class="pagination-link disabled">Sau &gt;</span></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Modal Sửa phân quyền -->
+<div class="modal fade" id="editPermissionModal" tabindex="-1" aria-labelledby="editPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="editPermissionModalLabel"><i class="bi bi-shield-lock-fill me-2"></i>Thay đổi vai trò nhân viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalErrorAlert" class="alert alert-danger d-none" role="alert"></div>
+                
+                <input type="hidden" id="editEmpId">
+                <div class="mb-3">
+                    <label class="form-label">Tên nhân viên</label>
+                    <input type="text" class="form-control bg-light fw-bold" id="editEmpName" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="editRoleSelect" class="form-label">Vai trò *</label>
+                    <select class="form-select" id="editRoleSelect" required>
+                        <option value="" disabled>Chọn vai trò...</option>
+                        <option value="Cashier">Thu ngân (Cashier)</option>
+                        <option value="Bartender">Pha chế (Bartender)</option>
+                        <option value="Busser">Phục vụ / Vệ sinh (Busser)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editTypeSelect" class="form-label">Loại nhân viên *</label>
+                    <select class="form-select" id="editTypeSelect" required>
+                        <option value="" disabled>Chọn loại hình...</option>
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-dark px-4" onclick="savePermissions()" id="btnSavePermissions">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Filtering clientside
+    function filterPermList() {
+        const query = document.getElementById('permSearchInput').value.trim().toLowerCase();
+        const roleFilter = document.getElementById('roleFilterSelect').value;
+        const rows = document.querySelectorAll('.perm-row-item');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const fullName = (row.getAttribute('data-fullname') || '').toLowerCase();
+            const email = (row.getAttribute('data-email') || '').toLowerCase();
+            const role = row.getAttribute('data-role') || '';
+
+            let matchesQuery = fullName.includes(query) || email.includes(query);
+            let matchesRole = true;
+
+            if (roleFilter !== '') {
+                if (roleFilter === 'Unassigned') {
+                    matchesRole = (role === '');
+                } else {
+                    matchesRole = (role === roleFilter);
+                }
+            }
+
+            if (matchesQuery && matchesRole) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('paginationSummary').textContent = `Đang hiển thị ${visibleCount} của ${rows.length} nhân viên`;
+    }
+
+    let editModal = null;
+
+    function openEditPermissionModal(empId, fullName, role, type) {
+        document.getElementById('editEmpId').value = empId;
+        document.getElementById('editEmpName').value = fullName;
+        document.getElementById('editRoleSelect').value = role || 'Cashier';
+        document.getElementById('editTypeSelect').value = type || 'Full-time';
+        
+        document.getElementById('modalErrorAlert').classList.add('d-none');
+        
+        if(!editModal) {
+            editModal = new bootstrap.Modal(document.getElementById('editPermissionModal'));
+        }
+        editModal.show();
+    }
+
+    async function savePermissions() {
+        const empId = document.getElementById('editEmpId').value;
+        const role = document.getElementById('editRoleSelect').value;
+        const type = document.getElementById('editTypeSelect').value;
+        
+        const btnSave = document.getElementById('btnSavePermissions');
+        const alertEl = document.getElementById('modalErrorAlert');
+        
+        alertEl.classList.add('d-none');
+        btnSave.disabled = true;
+        
+        try {
+            const response = await fetch('/DAT_Employee/UpdatePermissions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: parseInt(empId), role: role, employmentType: type })
+            });
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                editModal.hide();
+                showSuccessToast('Cập nhật phân quyền thành công!');
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                alertEl.textContent = result.errorMessage || 'Lỗi khi cập nhật phân quyền.';
+                alertEl.classList.remove('d-none');
+            }
+        } catch(err) {
+            console.error(err);
+            alertEl.textContent = 'Không thể kết nối máy chủ.';
+            alertEl.classList.remove('d-none');
+        } finally {
+            btnSave.disabled = false;
+        }
+    }
+
+    async function revokePermission(empId, fullName) {
+        if (!confirm(`Bạn có chắc chắn muốn thu hồi vai trò của nhân viên "${fullName}" không? Vai trò sẽ được chuyển về "Chưa phân quyền".`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/DAT_Employee/UpdatePermissions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: parseInt(empId), role: 'Unassigned', employmentType: '' })
+            });
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showSuccessToast('Đã thu hồi vai trò của nhân viên!');
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                alert('❌ Lỗi: ' + (result.errorMessage || 'Không thể thu hồi vai trò.'));
+            }
+        } catch(err) {
+            console.error(err);
+            alert('❌ Không thể kết nối máy chủ.');
+        }
+    }
+
+    function showSuccessToast(msg) {
+        let toast = document.getElementById('csms-success-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'csms-success-toast';
+            toast.style.cssText = `
+                position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+                background: #111827; color: #fff; padding: 12px 28px;
+                border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+                font-family: 'Outfit', sans-serif; z-index: 99999;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+                animation: fadeInUp 0.25s ease;
+            `;
+            const style = document.createElement('style');
+            style.textContent = '@@keyframes fadeInUp { from { opacity:0; transform: translateX(-50%) translateY(12px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }';
+            document.head.appendChild(style);
+            document.body.appendChild(toast);
+        }
+        toast.textContent = '✓  ' + msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
+</script>
+}

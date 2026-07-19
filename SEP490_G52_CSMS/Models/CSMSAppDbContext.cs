@@ -109,7 +109,7 @@ namespace SEP490_G52_CSMS.Models
             modelBuilder.Entity<AttendanceLog>()
                 .HasIndex(a => new { a.RosterId, a.EmployeeId }).IsUnique();
 
-            base.OnModelCreating(modelBuilder);
+            //base.OnModelCreating(modelBuilder);
         }
     }
 }

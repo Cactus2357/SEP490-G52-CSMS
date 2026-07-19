@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SEP490_G52_CSMS.Models;
 
@@ -11,9 +12,11 @@ using SEP490_G52_CSMS.Models;
 namespace SEP490_G52_CSMS.Migrations
 {
     [DbContext(typeof(CSMSAppDbContext))]
-    partial class CSMSAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624130743_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -410,11 +413,6 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("branch_id");
 
-                    b.Property<string>("CccdFilePath")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("cccd_file_path");
-
                     b.Property<string>("CitizenId")
                         .IsRequired()
                         .HasMaxLength(12)
@@ -676,11 +674,6 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)")
                         .HasColumnName("category_name");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("description");
 
                     b.Property<string>("Status")
                         .IsRequired()
