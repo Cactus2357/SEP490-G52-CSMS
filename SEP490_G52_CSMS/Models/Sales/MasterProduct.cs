@@ -19,6 +19,14 @@ namespace SEP490_G52_CSMS.Models.Sales
         [StringLength(255)]
         public string? ProductName { get; set; }
 
+        [Column("image_url")]
+        [StringLength(255)]
+        public string? ImageUrl { get; set; }
+
+        [Column("description")]
+        [StringLength(500)]
+        public string? Description { get; set; }
+
         [Column("category_id")]
         public int CategoryId { get; set; }
 

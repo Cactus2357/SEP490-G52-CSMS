@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
 
-namespace SEP490_G52_CSMS.Reponsitories
+namespace SEP490_G52_CSMS.Repositories
 {
     public interface IDAT_EmployeeRepository
     {

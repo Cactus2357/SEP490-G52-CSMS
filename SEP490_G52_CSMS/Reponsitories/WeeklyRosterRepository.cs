@@ -3,7 +3,7 @@ using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
 
-namespace SEP490_G52_CSMS.Reponsitories
+namespace SEP490_G52_CSMS.Repositories
 {
     public class WeeklyRosterRepository : IWeeklyRosterRepository
     {

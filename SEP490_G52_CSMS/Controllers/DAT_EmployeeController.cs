@@ -8,9 +8,9 @@ namespace SEP490_G52_CSMS.Controllers
     public class DAT_EmployeeController : Controller
     {
         private readonly IDAT_EmployeeService _employeeService;
-        private readonly Reponsitories.IDAT_EmployeeRepository _employeeRepository;
+        private readonly Repositories.IDAT_EmployeeRepository _employeeRepository;
 
-        public DAT_EmployeeController(IDAT_EmployeeService employeeService, Reponsitories.IDAT_EmployeeRepository employeeRepository)
+        public DAT_EmployeeController(IDAT_EmployeeService employeeService, Repositories.IDAT_EmployeeRepository employeeRepository)
         {
             _employeeService = employeeService;
             _employeeRepository = employeeRepository;
