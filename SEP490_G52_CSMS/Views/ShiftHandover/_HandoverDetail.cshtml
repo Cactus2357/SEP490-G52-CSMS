@@ -2,6 +2,7 @@
 @{
     var h = Model.Handover;
     var variance = h.ActualCash - h.TheoreticalCash;
+    var hasVariance = variance != 0;
 }
 
 <div class="modal-header">
@@ -9,37 +10,26 @@
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
-    <p class="mb-1"><strong>Ca:</strong> @(h.FixedShift?.ShiftName ?? "Ca ?") -&gt; @(Model.NextShift?.ShiftName ?? "?")</p>
-    <p class="mb-3"><strong>Nhân viên:</strong> @(h.OutgoingCashier?.FullName ?? "?") -&gt; @(h.IncomingCashier?.FullName ?? "?")</p>
+    <p class="mb-1">Ca: @(h.FixedShift?.ShiftName ?? "Ca ?") -&gt; @(Model.NextShift?.ShiftName ?? "?")</p>
+    <p class="mb-1">Nhân viên: @(h.OutgoingCashier?.FullName ?? "?") -&gt; @(h.IncomingCashier?.FullName ?? "?")</p>
+    <p class="mb-3"><i class="bi bi-clock"></i> Thời gian bàn giao: @(h.HandoverDate.ToString("HH:mm - dd/MM/yyyy"))</p>
 
-    <div class="mb-3">
-        <label class="form-label"><i class="bi bi-clock-history"></i> Thời gian bàn giao</label>
-        <input type="text" class="form-control" value="@(h.HandoverDate.ToString("HH:mm - dd/MM/yyyy"))" readonly>
+    <div class="d-flex justify-content-between mb-1">
+        <span>Tiền mặt thực nhận:</span>
+        <span>@(h.ActualCash.ToString("N0")) đ</span>
+    </div>
+    <div class="d-flex justify-content-between mb-1">
+        <span>Tiền mặt hệ thống:</span>
+        <span>@(h.TheoreticalCash.ToString("N0")) đ</span>
+    </div>
+    <div class="d-flex justify-content-between mb-3 @(hasVariance ? "text-danger fw-semibold" : "")">
+        <span>Chênh lệch:</span>
+        <span>@(Math.Abs(variance).ToString("N0")) đ</span>
     </div>
 
-    <div class="row mb-3">
-        <div class="col-6">
-            <label class="form-label">Tiền mặt thực nhận</label>
-            <input type="text" class="form-control" value="@(h.ActualCash.ToString("N0") + " đ")" readonly>
-        </div>
-        <div class="col-6">
-            <label class="form-label">Tiền mặt hệ thống</label>
-            <input type="text" class="form-control" value="@(h.TheoreticalCash.ToString("N0") + " đ")" readonly>
-        </div>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Chênh lệch</label>
-        <input type="text" class="form-control @(variance != 0 ? "text-danger fw-semibold" : "")"
-               value="@(Math.Abs(variance).ToString("N0") + " đ")" readonly>
-    </div>
-
-    <div>
-        <label class="form-label">Ghi chú nhân viên</label>
-        @* NOTE: CashHandover has no persisted "notes/reason" column today, so there is
-           nothing in the DB to show here yet (AT1 default applies unconditionally).
-           A notes column would need to be added to cash_handovers to make this real. *@
-        <textarea class="form-control" rows="3" readonly>Không có ghi chú.</textarea>
+    <div class="border rounded p-2">
+        <div class="text-muted small mb-1">Ghi chú nhân viên:</div>
+        <div>@(string.IsNullOrWhiteSpace(h.Notes) ? "Không có ghi chú." : h.Notes)</div>
     </div>
 </div>
 <div class="modal-footer">
