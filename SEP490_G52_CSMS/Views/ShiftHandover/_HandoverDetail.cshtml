@@ -1,0 +1,47 @@
+﻿@model SEP490_G52_CSMS.Controllers.HandoverRowVM
+@{
+    var h = Model.Handover;
+    var variance = h.ActualCash - h.TheoreticalCash;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">CHI TIẾT BÀN GIAO CA</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <p class="mb-1"><strong>Ca:</strong> @(h.FixedShift?.ShiftName ?? "Ca ?") -&gt; @(Model.NextShift?.ShiftName ?? "?")</p>
+    <p class="mb-3"><strong>Nhân viên:</strong> @(h.OutgoingCashier?.FullName ?? "?") -&gt; @(h.IncomingCashier?.FullName ?? "?")</p>
+
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-clock-history"></i> Thời gian bàn giao</label>
+        <input type="text" class="form-control" value="@(h.HandoverDate.ToString("HH:mm - dd/MM/yyyy"))" readonly>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-6">
+            <label class="form-label">Tiền mặt thực nhận</label>
+            <input type="text" class="form-control" value="@(h.ActualCash.ToString("N0") + " đ")" readonly>
+        </div>
+        <div class="col-6">
+            <label class="form-label">Tiền mặt hệ thống</label>
+            <input type="text" class="form-control" value="@(h.TheoreticalCash.ToString("N0") + " đ")" readonly>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Chênh lệch</label>
+        <input type="text" class="form-control @(variance != 0 ? "text-danger fw-semibold" : "")"
+               value="@(Math.Abs(variance).ToString("N0") + " đ")" readonly>
+    </div>
+
+    <div>
+        <label class="form-label">Ghi chú nhân viên</label>
+        @* NOTE: CashHandover has no persisted "notes/reason" column today, so there is
+           nothing in the DB to show here yet (AT1 default applies unconditionally).
+           A notes column would need to be added to cash_handovers to make this real. *@
+        <textarea class="form-control" rows="3" readonly>Không có ghi chú.</textarea>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng chi tiết</button>
+</div>

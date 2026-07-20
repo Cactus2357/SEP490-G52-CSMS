@@ -1,0 +1,285 @@
+﻿@model SEP490_G52_CSMS.Controllers.ShiftHandoverListViewModel
+@{
+    ViewData["Title"] = "Lịch sử đóng mở / bàn giao ca";
+
+    string FormatMoney(decimal v) => v.ToString("N0") + " đ";
+
+    bool IsToday = Model.SelectedDate.Date == DateTime.Today;
+}
+
+<style>
+    .kpi-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .kpi-icon {
+        font-size: 1.6rem;
+        color: #495057;
+    }
+
+    .kpi-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .kpi-value {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+        .kpi-value.variance-nonzero {
+            color: #dc3545;
+        }
+
+    .handover-box {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 16px 18px;
+        height: 100%;
+    }
+
+        .handover-box h6 {
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+</style>
+
+<h2 class="mb-4">LỊCH SỬ ĐÓNG MỞ /BÀN GIAO CA</h2>
+
+<!-- Date pager + filters -->
+<form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <div class="input-group" style="width:auto;">
+        <a class="btn btn-outline-secondary"
+           href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(-1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus })">
+            &lsaquo;
+        </a>
+        <span class="input-group-text fw-semibold">
+            @(IsToday ? "Hôm nay" : "Ngày") @Model.SelectedDate.ToString("dd/MM/yyyy")
+        </span>
+        <a class="btn btn-outline-secondary"
+           href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus })">
+            &rsaquo;
+        </a>
+    </div>
+
+    <input type="hidden" name="date" value="@(Model.SelectedDate.ToString("yyyy-MM-dd"))" />
+
+    <select name="shiftId" class="form-select" style="max-width:200px;" onchange="this.form.submit()">
+        <option value="">Tất cả các ca</option>
+        @foreach (var s in Model.AllShifts)
+        {
+            <option value="@s.ShiftId" selected="@(Model.SelectedShiftId == s.ShiftId)">@s.ShiftName</option>
+        }
+    </select>
+
+    <select name="status" class="form-select" style="max-width:200px;" onchange="this.form.submit()">
+        <option value="">Trạng thái: Tất cả</option>
+        <option value="Lệch tiền" selected="@(Model.SelectedStatus == "Lệch tiền")">Lệch tiền</option>
+        <option value="Khớp tiền" selected="@(Model.SelectedStatus == "Khớp tiền")">Khớp tiền</option>
+    </select>
+</form>
+
+<!-- KPI cards -->
+<div class="d-flex flex-wrap gap-3 mb-4">
+    <div class="kpi-card">
+        <i class="bi bi-cash-stack kpi-icon"></i>
+        <div>
+            <div class="kpi-label">Tổng Doanh Thu Hôm Nay</div>
+            <div class="kpi-value">@FormatMoney(Model.TotalRevenueToday)</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <i class="bi bi-clipboard-check kpi-icon"></i>
+        <div>
+            <div class="kpi-label">Số ca đã bàn giao</div>
+            <div class="kpi-value">@Model.HandedOverCount / @Model.TotalShiftsConfigured ca</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <i class="bi bi-exclamation-triangle-fill kpi-icon @(Model.TotalVarianceToday != 0 ? "text-danger" : "")"></i>
+        <div>
+            <div class="kpi-label">Tổng chênh lệch ngày</div>
+            <div class="kpi-value @(Model.TotalVarianceToday != 0 ? "variance-nonzero" : "")">
+                @FormatMoney(Math.Abs(Model.TotalVarianceToday))
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Handover history grid -->
+<div class="table-responsive mb-4">
+    <table class="table table-bordered align-middle text-center">
+        <thead class="table-light">
+            <tr>
+                <th>Ca bàn giao</th>
+                <th>Thời gian (Thực tế)</th>
+                <th>Nhân viên (Giao -&gt; Nhận)</th>
+                <th>Tiền Hệ Thống (Chuyển khoản)</th>
+                <th>Tiền Hệ Thống (Tiền mặt)</th>
+                <th>Tiền Thực Tế (Tiền mặt)</th>
+                <th>Chênh Lệch (Tiền mặt)</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Rows.Count == 0)
+            {
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        Không có dữ liệu bàn giao ca nào cho ngày đã chọn.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var row in Model.Rows)
+                {
+                    var h = row.Handover;
+                    var variance = h.ActualCash - h.TheoreticalCash;
+                    var isMatched = variance == 0;
+
+                    <tr>
+                        <td>@(h.FixedShift?.ShiftName ?? "Ca ?") -&gt; @(row.NextShift?.ShiftName ?? "?")</td>
+                        <td>@h.HandoverDate.ToString("HH:mm")</td>
+                        <td>@(h.OutgoingCashier?.FullName ?? "?") -&gt; @(h.IncomingCashier?.FullName ?? "?")</td>
+                        <td>@FormatMoney(h.MachineCashRevenue)</td>
+                        <td>@FormatMoney(h.TheoreticalCash)</td>
+                        <td>@FormatMoney(h.ActualCash)</td>
+                        <td class="@(isMatched ? "" : "text-danger fw-semibold")">@(variance == 0 ? "0" : variance.ToString("N0"))</td>
+                        <td>
+                            @if (isMatched)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Khớp tiền</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> Lệch tiền</span>
+                            }
+                        </td>
+                        <td>
+                            <a href="#" class="link-primary" onclick="showHandoverDetail(@h.HandoverId); return false;">
+                                Chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Opening / Closing detail panel -->
+<h5 class="mb-3">CHI TIẾT ĐÓNG MỞ CA:</h5>
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="handover-box">
+            <h6>Mở ca (@(Model.OpeningInfo?.Handover.FixedShift?.ShiftName ?? "Ca 1")):</h6>
+            @if (Model.OpeningInfo == null)
+            {
+                <p class="text-muted mb-0">Chưa có dữ liệu mở ca cho ngày này.</p>
+            }
+            else
+            {
+                var opening = Model.OpeningInfo.Handover;
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Nhân viên</label>
+                        <input type="text" class="form-control form-control-sm" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Thời gian</label>
+                        <input type="text" class="form-control form-control-sm"
+                               value="@((opening.FixedShift != null ? opening.FixedShift.StartTime.ToString(@"hh\:mm") : "?") + " - " + opening.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small mb-1">Số tiền mặt thực tế</label>
+                    <input type="text" class="form-control form-control-sm" value="@FormatMoney(opening.InitialCash)" readonly>
+                </div>
+                <div>
+                    <label class="form-label small mb-1">Từ nhân viên</label>
+                    <input type="text" class="form-control form-control-sm" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="handover-box">
+            <h6>Đóng ca (@(Model.ClosingInfo?.Handover.FixedShift?.ShiftName ?? "Ca cuối")):</h6>
+            @if (Model.ClosingInfo == null)
+            {
+                <p class="text-muted mb-0">Chưa có dữ liệu đóng ca cho ngày này.</p>
+            }
+            else
+            {
+                var closing = Model.ClosingInfo.Handover;
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Nhân viên</label>
+                        <input type="text" class="form-control form-control-sm" value="@(closing.OutgoingCashier?.FullName ?? "?")" readonly>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Thời gian</label>
+                        <input type="text" class="form-control form-control-sm"
+                               value="@((closing.FixedShift != null ? closing.FixedShift.EndTime.ToString(@"hh\:mm") : "?") + " - " + closing.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small mb-1">Tổng tiền mặt thực tế</label>
+                    <input type="text" class="form-control form-control-sm" value="@FormatMoney(closing.ActualCash)" readonly>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small mb-1">Tổng tiền mặt hệ thống</label>
+                    <input type="text" class="form-control form-control-sm" value="@FormatMoney(closing.TheoreticalCash)" readonly>
+                </div>
+                <div>
+                    <label class="form-label small mb-1">Bàn giao cho</label>
+                    <input type="text" class="form-control form-control-sm" value="@(closing.IncomingCashier?.FullName ?? "?")" readonly>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Handover Detail Modal (content injected via AJAX) -->
+<div class="modal fade" id="handoverDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" id="handoverDetailModalContent">
+            <!-- populated by /ShiftHandover/DetailPartial/{id} -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const handoverDetailModalEl = document.getElementById('handoverDetailModal');
+        const handoverDetailModal = handoverDetailModalEl ? new bootstrap.Modal(handoverDetailModalEl) : null;
+
+        function showHandoverDetail(handoverId) {
+            fetch(`/ShiftHandover/DetailPartial/${handoverId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Không thể tải chi tiết bàn giao ca.');
+                    return res.text();
+                })
+                .then(html => {
+                    document.getElementById('handoverDetailModalContent').innerHTML = html;
+                    if (handoverDetailModal) handoverDetailModal.show();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Mất kết nối với hệ thống. Vui lòng tải lại trang hoặc thử lại sau!');
+                });
+        }
+    </script>
+}
