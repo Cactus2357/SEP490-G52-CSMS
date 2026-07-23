@@ -1,4 +1,4 @@
-﻿@model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
+@model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
 @{
     ViewData["Title"] = "Quản lý B Manager";
 }
@@ -548,6 +548,86 @@
 <div id="managerDetailPanel"></div>
 <div id="managerUpdatePanel"></div>
 
+<!-- MODAL: Ngừng hoạt động (Vô hiệu hóa quản lý) -->
+<div class="modal fade" id="deactivateManagerModal" tabindex="-1" aria-labelledby="deactivateManagerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: 'Outfit', sans-serif;">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="deactivateManagerModalLabel">
+                    Ngừng hoạt động Quản lý
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Profile summary -->
+                <div class="d-flex align-items-center gap-3 p-3 mb-3 border border-dark rounded-3">
+                    <div class="rounded-circle border border-dark d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; background: #f3f4f6; font-size: 1.1rem;" id="deactAvatar">BM</div>
+                    <div>
+                        <h6 class="fw-bold m-0" id="deactFullName">Name</h6>
+                        <p class="text-muted m-0" style="font-size: 0.82rem;"><span id="deactUsername">@@username</span> &nbsp;·&nbsp; <span id="deactRole">Quản lý chi nhánh</span></p>
+                    </div>
+                </div>
+
+                <!-- Managed branch warning (if any) -->
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactBranchesWarning" style="background-color: #fffbeb;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-dark">Đang phụ trách chi nhánh</div>
+                        <div class="text-muted" style="font-size: 0.8rem;" id="deactBranchesText">Quản lý này đang phụ trách chi nhánh: ...</div>
+                    </div>
+                </div>
+
+                <!-- Warning Banner (Conditional) -->
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactWarningBanner" style="background-color: #fffbeb;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-dark">Còn ca làm việc chưa hoàn thành</div>
+                        <div class="text-muted" style="font-size: 0.8rem;" id="deactWarningText">Còn ca làm việc chưa hoàn thành. Cần hoàn tất trước khi ngừng hoạt động.</div>
+                    </div>
+                </div>
+
+                <!-- Remaining Shifts Grid (Conditional) -->
+                <div class="mb-3 d-none" id="deactShiftsSection">
+                    <label class="form-label text-muted text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Ca còn lại</label>
+                    <div class="border rounded-3 p-2 bg-light" id="deactShiftsContainer" style="font-size: 0.88rem;">
+                        <!-- Dynamically filled shifts -->
+                    </div>
+                </div>
+
+                <!-- Danger Zone Block -->
+                <div class="alert alert-danger border-danger d-flex align-items-start gap-2" style="background-color: #fef2f2;">
+                    <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-danger">vùng nguy hiểm</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">Tài khoản sẽ bị khoá. Quản lý chi nhánh không thể đăng nhập hệ thống sau khi ngừng hoạt động.</div>
+                    </div>
+                </div>
+
+                <!-- Form fields -->
+                <div class="mb-3">
+                    <label for="deactReason" class="form-label fw-bold" style="font-size:0.85rem; color:#374151;">Lý do ngừng hoạt động *</label>
+                    <select class="form-select" id="deactReason" required style="border-radius: 6px; border: 1px solid #cccccc; padding: 8px 12px; font-size: 0.9rem;">
+                        <option value="" disabled selected>Chọn lý do...</option>
+                        <option value="Thôi việc / Nghỉ việc">Thôi việc / Nghỉ việc</option>
+                        <option value="Nghỉ chế độ / Thai sản">Nghỉ chế độ / Thai sản</option>
+                        <option value="Đình chỉ / Kỷ luật">Đình chỉ / Kỷ luật</option>
+                        <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="deactNotes" class="form-label fw-bold" style="font-size:0.85rem; color:#374151;">Ghi chú</label>
+                    <textarea class="form-control" id="deactNotes" rows="2" placeholder="Ghi chú thêm nếu có..." style="border-radius: 6px; border: 1px solid #cccccc; padding: 8px 12px; font-size: 0.9rem;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between p-3 bg-light" style="border-top: 1px solid #e5e7eb;">
+                <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                <button type="button" class="btn btn-dark px-4" id="deactConfirmBtn" onclick="confirmDeactivation()" style="border-radius: 8px;">Ngừng hoạt động</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         function filterManagersList() {
@@ -561,54 +641,394 @@
             });
         }
 
-        function showManagerDetail(employeeId) {
-            fetch(`/BranchManager/DetailPartial/${employeeId}`)
-                .then(res => res.text())
-                .then(html => {
-                    document.getElementById('managerDetailPanel').innerHTML = html;
-                })
-                .catch(err => console.error(err));
+        let detailModalInstance = null;
+        let updateModalInstance = null;
+
+        async function showManagerDetail(employeeId) {
+            try {
+                const response = await fetch(`/BranchManager/DetailPartial/${employeeId}`);
+                if (!response.ok) {
+                    alert('Lỗi tải thông tin chi tiết.');
+                    return;
+                }
+                const html = await response.text();
+                document.getElementById('managerDetailPanel').innerHTML = html;
+
+                detailModalInstance = new bootstrap.Modal(document.getElementById('managerDetailModal'));
+                detailModalInstance.show();
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+            }
         }
 
-        function showManagerUpdate(employeeId) {
-            fetch(`/BranchManager/UpdatePartial/${employeeId}`)
-                .then(res => res.text())
-                .then(html => {
-                    document.getElementById('managerUpdatePanel').innerHTML = html;
-                })
-                .catch(err => console.error(err));
+        function closeManagerDetail() {
+            if (detailModalInstance) {
+                detailModalInstance.hide();
+            }
         }
+
+        async function showManagerUpdate(employeeId) {
+            try {
+                const response = await fetch(`/BranchManager/UpdatePartial/${employeeId}`);
+                if (!response.ok) {
+                    alert('Lỗi tải form cập nhật.');
+                    return;
+                }
+                const html = await response.text();
+                document.getElementById('managerUpdatePanel').innerHTML = html;
+
+                updateModalInstance = new bootstrap.Modal(document.getElementById('managerUpdateModal'));
+                updateModalInstance.show();
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+            }
+        }
+
+        function closeManagerUpdate() {
+            if (updateModalInstance) {
+                updateModalInstance.hide();
+            }
+        }
+
+        /* ---------- Detail / Update helper functions ---------- */
+        function dtlSwitchTab(panelName, btn) {
+            document.querySelectorAll('.dtl-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.dtl-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('dtl-panel-' + panelName).classList.add('active');
+        }
+
+        function updSwitchTab(panelName, btn) {
+            document.querySelectorAll('.upd-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.upd-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('upd-panel-' + panelName).classList.add('active');
+        }
+
+        const UPD_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+        const UPD_IMG_EXTS = ['jpg', 'jpeg', 'png'];
+        const UPD_ALLOWED  = ['jpg', 'jpeg', 'pdf'];
+
+        function updHandleFile(input, key) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const ext  = file.name.split('.').pop().toLowerCase();
+
+            if (!UPD_ALLOWED.includes(ext)) {
+                alert('❌ File phải có định dạng .pdf hoặc .jpg');
+                input.value = '';
+                return;
+            }
+            if (file.size > UPD_MAX_SIZE) {
+                alert('❌ Dung lượng file không được vượt quá 5 MB');
+                input.value = '';
+                return;
+            }
+
+            const isImage = UPD_IMG_EXTS.includes(ext);
+
+            const oldBox     = document.getElementById(key + '-old-box');
+            const newBox     = document.getElementById(key + '-new-box');
+            const newContent = document.getElementById(key + '-new-content');
+            const zoneWrap   = document.getElementById(key + '-zone');
+            const previewRow = document.getElementById(key + '-preview-row');
+
+            if (oldBox) {
+                newBox.style.display = 'block';
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        newContent.innerHTML =
+                            `<img src="${e.target.result}" alt="Ảnh mới"
+                                  class="upd-preview-img"
+                                  onclick="document.getElementById('update${cap(key)}File').click()"
+                                  title="Nhấn để đổi lại" />`;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    newContent.innerHTML =
+                        `<div class="upd-preview-pdf" onclick="document.getElementById('update${cap(key)}File').click()">
+                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                            <span>${file.name}</span>
+                         </div>`;
+                }
+            } else {
+                if (zoneWrap) zoneWrap.style.display = 'none';
+                previewRow.style.display = 'flex';
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        previewRow.innerHTML =
+                            `<div class="upd-preview-box">
+                                <div class="upd-preview-label">Đã tải lên</div>
+                                <img src="${e.target.result}" alt="Ảnh mới"
+                                     class="upd-preview-img"
+                                     onclick="document.getElementById('update${cap(key)}File').click()"
+                                     title="Nhấn để thay ảnh" />
+                                <div class="upd-preview-change-hint">Nhấn vào ảnh để thay mới</div>
+                             </div>`;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewRow.innerHTML =
+                        `<div class="upd-preview-box">
+                            <div class="upd-preview-label">Đã tải lên</div>
+                            <div class="upd-preview-pdf" style="cursor:pointer;"
+                                 onclick="document.getElementById('update${cap(key)}File').click()"
+                                 title="Nhấn để thay file">
+                                <i class="bi bi-file-earmark-pdf-fill"></i>
+                                <span>${file.name}</span>
+                            </div>
+                            <div class="upd-preview-change-hint">Nhấn để thay file mới</div>
+                         </div>`;
+                }
+            }
+        }
+
+        function cap(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        async function submitManagerUpdate(employeeId) {
+            const form = document.getElementById('updateManagerForm');
+            const errorAlert = document.getElementById('updateErrorAlert');
+            if (errorAlert) errorAlert.style.display = 'none';
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Validations
+            const fullName = document.getElementById('updateFullName').value.trim();
+            if (!fullName) {
+                showUpdateError(errorAlert, 'Họ và tên là bắt buộc.');
+                return;
+            }
+
+            const email = document.getElementById('updateEmail').value.trim();
+            if (!/\S+@@\S+\.\S+/.test(email)) {
+                showUpdateError(errorAlert, 'Email không đúng định dạng.');
+                return;
+            }
+
+            const phone = document.getElementById('updatePhoneNumber').value.trim();
+            if (!phone) {
+                showUpdateError(errorAlert, 'Số điện thoại là bắt buộc.');
+                return;
+            }
+
+            const dob = document.getElementById('updateDateOfBirth').value;
+            if (!dob) {
+                showUpdateError(errorAlert, 'Ngày sinh là bắt buộc.');
+                return;
+            }
+
+            const address = document.getElementById('updateAddress').value.trim();
+            if (!address) {
+                showUpdateError(errorAlert, 'Địa chỉ là bắt buộc.');
+                return;
+            }
+
+            const citizenId = document.getElementById('updateCitizenId').value.trim();
+            if (citizenId.length !== 12 || !/^\d+$/.test(citizenId)) {
+                showUpdateError(errorAlert, 'Số CCCD phải chứa chính xác 12 chữ số.');
+                return;
+            }
+
+            const branchId = document.getElementById('updateBranchId').value;
+            if (!branchId) {
+                showUpdateError(errorAlert, 'Chi nhánh là bắt buộc.');
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btnSubmitManagerUpdate');
+            const spinner   = document.getElementById('updateManagerSpinner');
+            btnSubmit.disabled = true;
+            spinner.classList.remove('d-none');
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(`/BranchManager/Update/${employeeId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    closeManagerUpdate();
+                    showSuccessToast('Cập nhật thông tin quản lý thành công!');
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showUpdateError(errorAlert, result.errorMessage || 'Có lỗi xảy ra khi cập nhật thông tin.');
+                }
+            } catch (err) {
+                console.error(err);
+                showUpdateError(errorAlert, 'Không thể kết nối đến máy chủ. Vui lòng thử lại.');
+            } finally {
+                btnSubmit.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        function showUpdateError(alertEl, msg) {
+            if (!alertEl) return;
+            alertEl.textContent = msg;
+            alertEl.style.display = 'block';
+            alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function showSuccessToast(msg) {
+            let toast = document.getElementById('csms-success-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'csms-success-toast';
+                toast.style.cssText = `
+                    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+                    background: #111827; color: #fff; padding: 12px 28px;
+                    border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+                    font-family: 'Outfit', sans-serif; z-index: 99999;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+                    animation: fadeInUp 0.25s ease;
+                `;
+                const style = document.createElement('style');
+                style.textContent = '@@keyframes fadeInUp { from { opacity:0; transform: translateX(-50%) translateY(12px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }';
+                document.head.appendChild(style);
+                document.body.appendChild(toast);
+            }
+            toast.textContent = '✓  ' + msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        /* ---------- Deactivation handling ---------- */
+        let deactModalInstance = null;
+        let currentDeactEmployeeId = null;
 
         async function triggerDeactivationCheck(employeeId) {
+            currentDeactEmployeeId = employeeId;
+            
+            // Reset modal fields
+            document.getElementById('deactBranchesWarning').classList.add('d-none');
+            document.getElementById('deactWarningBanner').classList.add('d-none');
+            document.getElementById('deactShiftsSection').classList.add('d-none');
+            document.getElementById('deactReason').value = "";
+            document.getElementById('deactNotes').value = "";
+            document.getElementById('deactConfirmBtn').disabled = false;
+            
             try {
                 const response = await fetch(`/BranchManager/CheckDeactivation/${employeeId}`);
                 if (!response.ok) {
                     alert('Lỗi tải dữ liệu kiểm tra.');
                     return;
                 }
+                
                 const result = await response.json();
                 if (!result.success) {
                     alert(result.errorMessage);
                     return;
                 }
-                if (!confirm('Bạn có chắc muốn ngừng hoạt động B Manager này?')) return;
-
-                const deactivateResponse = await fetch('/BranchManager/Deactivate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ employeeId: employeeId })
-                });
-                const deactivateResult = await deactivateResponse.json();
-                if (deactivateResponse.ok && deactivateResult.success) {
-                    window.location.reload();
-                } else {
-                    alert(deactivateResult.errorMessage || 'Lỗi vô hiệu hóa tài khoản.');
+                
+                // Set employee info
+                document.getElementById('deactFullName').textContent = result.fullName;
+                document.getElementById('deactUsername').textContent = '@@' + result.username;
+                
+                // Set avatar initials
+                let initials = "BM";
+                if (result.fullName) {
+                    const parts = result.fullName.split(' ');
+                    if (parts.length >= 2) initials = (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+                    else if (parts.length === 1) initials = parts[0].substring(0, 2).toUpperCase();
                 }
-            } catch (err) {
+                document.getElementById('deactAvatar').textContent = initials;
+                
+                // Managed branches warning
+                if (result.managedBranches && result.managedBranches.length > 0) {
+                    document.getElementById('deactBranchesWarning').classList.remove('d-none');
+                    document.getElementById('deactBranchesText').textContent = `Quản lý này đang phụ trách chi nhánh: ${result.managedBranches.join(', ')}`;
+                }
+
+                // Render warning & shifts if there are uncompleted shifts
+                if (!result.canDeactivate && result.uncompletedShifts && result.uncompletedShifts.length > 0) {
+                    document.getElementById('deactWarningBanner').classList.remove('d-none');
+                    document.getElementById('deactWarningText').textContent = `Có ${result.uncompletedShifts.length} ca làm việc chưa hoàn thành. Cần hoàn tất trước khi ngừng hoạt động.`;
+                    
+                    const container = document.getElementById('deactShiftsContainer');
+                    container.innerHTML = "";
+                    result.uncompletedShifts.forEach(shift => {
+                        const row = document.createElement('div');
+                        row.className = "d-flex justify-content-between py-2 border-bottom";
+                        row.style.borderBottomStyle = "dashed";
+                        row.style.borderBottomWidth = "1px";
+                        row.innerHTML = `
+                            <div class="fw-bold">${shift.date} - ${shift.shiftName}</div>
+                            <div class="text-danger fw-bold">${shift.status}</div>
+                        `;
+                        container.appendChild(row);
+                    });
+                    
+                    // Remove last border bottom
+                    if (container.lastChild) {
+                        container.lastChild.style.borderBottom = "none";
+                    }
+                    
+                    document.getElementById('deactShiftsSection').classList.remove('d-none');
+                    // Lock / disable confirm button
+                    document.getElementById('deactConfirmBtn').disabled = true;
+                }
+                
+                // Show modal
+                if (!deactModalInstance) {
+                    deactModalInstance = new bootstrap.Modal(document.getElementById('deactivateManagerModal'));
+                }
+                deactModalInstance.show();
+                
+            } catch(err) {
                 console.error(err);
                 alert('Không thể kết nối máy chủ.');
             }
         }
+
+        async function confirmDeactivation() {
+            if (!currentDeactEmployeeId) return;
+            
+            const reason = document.getElementById('deactReason').value;
+            const notes = document.getElementById('deactNotes').value.trim();
+            
+            if (!reason) {
+                alert('Vui lòng chọn lý do ngừng hoạt động.');
+                return;
+            }
+            
+            const btn = document.getElementById('deactConfirmBtn');
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/BranchManager/Deactivate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: currentDeactEmployeeId, reason: reason, notes: notes })
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    deactModalInstance.hide();
+                    showSuccessToast('Đã chuyển tài khoản sang trạng thái ngừng hoạt động.');
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    alert(result.errorMessage || 'Lỗi vô hiệu hóa tài khoản.');
+                    btn.disabled = false;
+                }
+            } catch(err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+                btn.disabled = false;
+            }
+        }
+
 
         /* ================= Create Manager Modal (2-step wizard) ================= */
         let mgrCurrentStep = 1;
