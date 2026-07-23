@@ -26,51 +26,64 @@
 
 <div class="modal fade" id="managerDetailModal" tabindex="-1" aria-labelledby="managerDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: 'Outfit', sans-serif;">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: var(--bs-body-font-family);">
             <div class="modal-header bg-light">
                 <h5 class="modal-title fw-bold" id="managerDetailModalLabel">Chi tiết Quản lý chi nhánh</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0">
                 <style>
-                    .dtl-wrap                { font-family: 'Outfit', sans-serif; background: #fff; }
-                    .dtl-card                { margin: 14px 24px; padding: 14px 18px; border: 2px solid #111827; border-radius: 12px; display: flex; align-items: center; gap: 14px; }
-                    .dtl-avatar              { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #111827; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; color: #111827; flex-shrink: 0; }
-                    .dtl-card-name           { font-size: 1.05rem; font-weight: 700; color: #111827; margin: 0 0 2px; }
-                    .dtl-card-sub            { font-size: .82rem; color: #6b7280; margin: 0; }
+                    .dtl-wrap                { font-family: var(--bs-body-font-family); background: #fff; padding: 24px; }
+                    
+                    /* Header layout style */
+                    .dtl-header              { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+                    .dtl-back-btn            { background: none; border: none; padding: 4px; cursor: pointer; color: #111827; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background .15s; }
+                    .dtl-back-btn:hover      { background: #f3f4f6; }
+                    .dtl-title               { font-size: 1.3rem; font-weight: 700; color: #111827; margin: 0; }
 
-                    /* Tab nav */
-                    .dtl-tabs                { display: flex; gap: 4px; margin: 0 24px 14px; background: #f3f4f6; border: 1.5px solid #111827; border-radius: 8px; padding: 4px; }
-                    .dtl-tab                 { flex: 1; padding: 8px 4px; border: none; background: transparent; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9ca3af; border-radius: 5px; cursor: pointer; transition: background .15s, color .15s; font-family: 'Outfit', sans-serif; }
-                    .dtl-tab.active          { background: #111827; color: #fff; }
+                    /* Capsule profile card */
+                    .dtl-capsule-card        { border: 1.5px solid #111827; border-radius: 50px; padding: 14px 28px; display: flex; align-items: center; gap: 18px; margin-bottom: 24px; background: #ffffff; }
+                    .dtl-avatar              { width: 48px; height: 48px; border-radius: 50%; border: 1.5px solid #111827; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.05rem; color: #111827; flex-shrink: 0; }
+                    .dtl-card-name           { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 2px; }
+                    .dtl-card-sub            { font-size: .85rem; color: #6b7280; margin: 0; }
+
+                    /* Tabs layout */
+                    .dtl-tabs                { display: flex; border: 1.5px solid #111827; border-radius: 4px; overflow: hidden; margin-bottom: 24px; background: #ffffff; }
+                    .dtl-tab                 { flex: 1; padding: 10px 0; border: none; border-right: 1.5px solid #111827; background: transparent; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #111827; cursor: pointer; transition: all .15s; font-family: var(--bs-body-font-family); text-align: center; }
+                    .dtl-tab:last-child      { border-right: none; }
+                    .dtl-tab.active          { background: #3b82f6; color: #ffffff; }
 
                     /* Content panels */
-                    .dtl-panel               { display: none; margin: 0 24px; }
+                    .dtl-panel               { display: none; }
                     .dtl-panel.active        { display: block; }
 
-                    .dtl-section             { border: 2px dashed #d1d5db; border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
-                    .dtl-sec-title           { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px dashed #e5e7eb; }
-                    .dtl-grid                { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-                    .dtl-grid.full           { grid-template-columns: 1fr; }
-                    .dtl-lbl                 { font-size: .72rem; color: #9ca3af; margin-bottom: 2px; }
-                    .dtl-val                 { font-size: .88rem; font-weight: 600; color: #111827; word-break: break-word; }
-                    .dtl-badge               { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: .78rem; font-weight: 600; border: 1px solid; }
+                    /* Section boxes with dashed borders */
+                    .dtl-section             { border: 2.5px dashed #111827; border-radius: 16px; padding: 20px; margin-bottom: 20px; background: #ffffff; }
+                    .dtl-sec-title           { font-size: .88rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #111827; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1.5px dashed #e5e7eb; }
+                    
+                    /* Dotted rows for layout */
+                    .dtl-row                 { display: flex; justify-content: space-between; align-items: baseline; position: relative; margin-bottom: 14px; }
+                    .dtl-row::after          { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; border-bottom: 2px dotted #cccccc; z-index: 1; }
+                    .dtl-row-lbl             { background: #ffffff; padding-right: 10px; position: relative; z-index: 2; font-size: .9rem; color: #4b5563; font-weight: 500; }
+                    .dtl-row-val             { background: #ffffff; padding-left: 10px; position: relative; z-index: 2; font-weight: 600; color: #111827; font-size: .9rem; text-align: right; }
+                    
+                    .dtl-badge               { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600; border: 1px solid; }
 
-                    /* File rows */
-                    .dtl-file-row            { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e5e7eb; gap: 8px; }
+                    /* File rows style */
+                    .dtl-file-row            { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1.5px dashed #e5e7eb; gap: 8px; }
                     .dtl-file-row:last-child { border-bottom: none; }
-                    .dtl-file-name           { font-size: .85rem; font-weight: 600; color: #111827; }
-                    .dtl-file-sub            { font-size: .75rem; color: #6b7280; }
-                    .dtl-file-btn            { font-size: .78rem; font-weight: 600; padding: 5px 14px; border: 1.5px solid #111827; border-radius: 6px; color: #111827; text-decoration: none; white-space: nowrap; transition: background .15s; display: inline-flex; align-items: center; gap: 4px; }
+                    .dtl-file-name           { font-size: .88rem; font-weight: 600; color: #111827; }
+                    .dtl-file-sub            { font-size: .78rem; color: #6b7280; }
+                    .dtl-file-btn            { font-size: .78rem; font-weight: 600; padding: 6px 14px; border: 1.5px solid #111827; border-radius: 6px; color: #111827; text-decoration: none; white-space: nowrap; transition: background .15s; display: inline-flex; align-items: center; gap: 4px; }
                     .dtl-file-btn:hover      { background: #f3f4f6; color: #111827; }
-                    .dtl-file-none           { font-size: .78rem; color: #9ca3af; font-style: italic; }
-
+                    .dtl-file-none           { font-size: .8rem; color: #9ca3af; font-style: italic; }
+                    
                     .dtl-footer              { height: 20px; }
                 </style>
 
                 <div class="dtl-wrap">
-                    <!-- Summary card -->
-                    <div class="dtl-card">
+                    <!-- Capsule Summary Card -->
+                    <div class="dtl-capsule-card">
                         <div class="dtl-avatar">@initials</div>
                         <div>
                             <p class="dtl-card-name">@Model.FullName</p>
@@ -78,39 +91,40 @@
                         </div>
                     </div>
 
-                    <!-- Tab buttons -->
+                    <!-- Tab buttons in a single rectangular box -->
                     <div class="dtl-tabs">
-                        <button class="dtl-tab active" onclick="dtlSwitchTab('account', this)">Tài khoản</button>
-                        <button class="dtl-tab"       onclick="dtlSwitchTab('personal', this)">Cá nhân</button>
-                        <button class="dtl-tab"       onclick="dtlSwitchTab('docs', this)">Hồ sơ</button>
+                        <button type="button" class="dtl-tab active" onclick="dtlSwitchTab('account', this)">Tài khoản</button>
+                        <button type="button" class="dtl-tab"       onclick="dtlSwitchTab('personal', this)">Cá nhân</button>
+                        <button type="button" class="dtl-tab"       onclick="dtlSwitchTab('docs', this)">Hồ sơ</button>
                     </div>
 
                     <!-- ===== PANEL: TÀI KHOẢN ===== -->
                     <div id="dtl-panel-account" class="dtl-panel active">
                         <div class="dtl-section">
                             <p class="dtl-sec-title">Thông tin tài khoản</p>
-                            <div class="dtl-grid">
-                                <div>
-                                    <div class="dtl-lbl">Tên tài khoản</div>
-                                    <div class="dtl-val" style="font-family:monospace;">@@@Model.Username</div>
-                                </div>
-                                <div>
-                                    <div class="dtl-lbl">Vai trò</div>
-                                    <div class="dtl-val">Quản lý chi nhánh</div>
-                                </div>
-                                <div>
-                                    <div class="dtl-lbl">Chi nhánh</div>
-                                    <div class="dtl-val">@(Model.Branch?.BranchName ?? "Chưa phân công")</div>
-                                </div>
-                                <div>
-                                    <div class="dtl-lbl">Trạng thái</div>
-                                    <div class="mt-1">
-                                        <span class="dtl-badge"
-                                              style="color:@statusColor; background:@statusBgColor; border-color:@statusBorder;">
-                                            @statusText
-                                        </span>
-                                    </div>
-                                </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Tên tài khoản</span>
+                                <span class="dtl-row-val" style="font-family:monospace;">@@@Model.Username</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Vai trò</span>
+                                <span class="dtl-row-val">Quản lý chi nhánh</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Chi nhánh</span>
+                                <span class="dtl-row-val">@(Model.Branch?.BranchName ?? "Chưa phân công")</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Trạng thái</span>
+                                <span class="dtl-row-val">
+                                    <span class="dtl-badge" style="color:@statusColor; background:@statusBgColor; border-color:@statusBorder;">
+                                        @statusText
+                                    </span>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -119,31 +133,35 @@
                     <div id="dtl-panel-personal" class="dtl-panel">
                         <div class="dtl-section">
                             <p class="dtl-sec-title">Thông tin cá nhân</p>
-                            <div class="dtl-grid">
-                                <div>
-                                    <div class="dtl-lbl">Họ và tên</div>
-                                    <div class="dtl-val">@Model.FullName</div>
-                                </div>
-                                <div>
-                                    <div class="dtl-lbl">Số điện thoại</div>
-                                    <div class="dtl-val">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "—" : Model.PhoneNumber)</div>
-                                </div>
-                                <div>
-                                    <div class="dtl-lbl">Email</div>
-                                    <div class="dtl-val">@(Model.Email ?? "—")</div>
-                                </div>
-                                <div>
-                                    <div class="dtl-lbl">Ngày sinh</div>
-                                    <div class="dtl-val">@(Model.DateOfBirth == default ? "—" : Model.DateOfBirth.ToString("dd/MM/yyyy"))</div>
-                                </div>
-                                <div style="grid-column: 1/-1;">
-                                    <div class="dtl-lbl">Số CCCD</div>
-                                    <div class="dtl-val" style="font-family:monospace;">@(string.IsNullOrEmpty(maskedCitizenId) ? "—" : maskedCitizenId)</div>
-                                </div>
-                                <div style="grid-column: 1/-1;">
-                                    <div class="dtl-lbl">Địa chỉ thường trú</div>
-                                    <div class="dtl-val">@(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</div>
-                                </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Họ và tên</span>
+                                <span class="dtl-row-val">@Model.FullName</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Số điện thoại</span>
+                                <span class="dtl-row-val">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "—" : Model.PhoneNumber)</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Email</span>
+                                <span class="dtl-row-val">@(Model.Email ?? "—")</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Ngày sinh</span>
+                                <span class="dtl-row-val">@(Model.DateOfBirth == default ? "—" : Model.DateOfBirth.ToString("dd/MM/yyyy"))</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Số CCCD</span>
+                                <span class="dtl-row-val" style="font-family:monospace;">@(string.IsNullOrEmpty(maskedCitizenId) ? "—" : maskedCitizenId)</span>
+                            </div>
+                            
+                            <div class="dtl-row">
+                                <span class="dtl-row-lbl">Địa chỉ thường trú</span>
+                                <span class="dtl-row-val">@(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</span>
                             </div>
                         </div>
                     </div>

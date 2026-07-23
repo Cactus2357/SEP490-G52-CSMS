@@ -6,7 +6,7 @@
 @section Styles {
     <style>
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--bs-body-font-family);
             background-color: #f3f4f6;
             color: #1f2937;
             margin: 0;
@@ -392,7 +392,7 @@
             text-decoration: underline;
             font-size: 0.88rem;
             margin-right: 12px;
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--bs-body-font-family);
         }
 
         .btn-action-link:hover {
@@ -471,7 +471,7 @@
 <div class="page-header">
     <h2 class="page-title">Phân quyền nhân viên</h2>
     <div class="btn-group-right">
-        <a href="/DAT_Employee" class="btn-mockup-secondary">
+        <a href="/Employee" class="btn-mockup-secondary">
             <i class="bi bi-arrow-left me-1"></i> Quay lại
         </a>
     </div>
@@ -664,7 +664,7 @@
         btnSave.disabled = true;
         
         try {
-            const response = await fetch('/DAT_Employee/UpdatePermissions', {
+            const response = await fetch('/Employee/UpdatePermissions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ employeeId: parseInt(empId), role: role, employmentType: type })
@@ -694,7 +694,7 @@
         }
         
         try {
-            const response = await fetch('/DAT_Employee/UpdatePermissions', {
+            const response = await fetch('/Employee/UpdatePermissions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ employeeId: parseInt(empId), role: 'Unassigned', employmentType: '' })
@@ -722,7 +722,7 @@
                 position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
                 background: #111827; color: #fff; padding: 12px 28px;
                 border-radius: 10px; font-size: 0.9rem; font-weight: 600;
-                font-family: 'Outfit', sans-serif; z-index: 99999;
+                font-family: var(--bs-body-font-family); z-index: 99999;
                 box-shadow: 0 8px 24px rgba(0,0,0,0.22);
                 animation: fadeInUp 0.25s ease;
             `;

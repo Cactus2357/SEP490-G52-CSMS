@@ -22,8 +22,8 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Add services to the container.
 builder.Services.AddScoped<SEP490_G52_CSMS.Commons.IDAT_EmailHelper, SEP490_G52_CSMS.Commons.DAT_EmailHelper>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IDAT_EmployeeRepository, SEP490_G52_CSMS.Repositories.DAT_EmployeeRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IDAT_EmployeeService, SEP490_G52_CSMS.Services.DAT_EmployeeService>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IEmployeeRepository, SEP490_G52_CSMS.Repositories.EmployeeRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IEmployeeService, SEP490_G52_CSMS.Services.EmployeeService>();
 builder.Services.AddControllersWithViews();
 
 // =========================
@@ -75,6 +75,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=DAT_Employee}/{action=Index}/{id?}");
+    pattern: "{controller=Employee}/{action=Index}/{id?}");
 
 app.Run();

@@ -394,7 +394,7 @@
             <input type="text" id="managerSearchInput" class="input-search" placeholder="Tìm tên, tài khoản..." onkeyup="filterManagersList()">
             <i class="bi bi-search"></i>
         </div>
-        <button class="filter-btn" title="Lọc">
+        <button class="filter-btn" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel" title="Lọc">
             <i class="bi bi-filter"></i>
         </button>
     </div>
@@ -402,6 +402,24 @@
         <button class="btn-mockup-primary" data-bs-toggle="modal" data-bs-target="#createManagerModal">
             + Tạo quản lí
         </button>
+    </div>
+</div>
+
+<!-- Collapsible Filter Panel -->
+<div id="filterPanel" class="collapse mb-3">
+    <div class="card card-body" style="border: 2px dashed #111827; border-radius: 12px; background-color: #ffffff;">
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label for="filterBranch" class="form-label fw-bold" style="font-size: 0.85rem;">Chi nhánh quản lý</label>
+                <select id="filterBranch" class="form-select" onchange="filterManagersList()" style="border: 1px solid #111827; border-radius: 4px;">
+                    <option value="">Tất cả chi nhánh</option>
+                    @foreach (var branchName in Model.Where(e => e.Branch != null).Select(e => e.Branch.BranchName).Distinct().OrderBy(b => b))
+                    {
+                        <option value="@branchName">@branchName</option>
+                    }
+                </select>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -433,7 +451,7 @@
                     }
                 }
 
-                <div class="manager-card-item" data-fullname="@mgr.FullName" data-username="@mgr.Username" data-managerid="BM@(mgr.EmployeeId.ToString("D3"))">
+                <div class="manager-card-item" data-fullname="@mgr.FullName" data-username="@mgr.Username" data-managerid="BM@(mgr.EmployeeId.ToString("D3"))" data-branch="@(mgr.Branch?.BranchName ?? "CN Q1")">
                     <div class="card-left-info">
                         <div class="card-initial-circle">
                             @initials
@@ -551,7 +569,7 @@
 <!-- MODAL: Ngừng hoạt động (Vô hiệu hóa quản lý) -->
 <div class="modal fade" id="deactivateManagerModal" tabindex="-1" aria-labelledby="deactivateManagerModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: 'Outfit', sans-serif;">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: var(--bs-body-font-family);">
             <div class="modal-header bg-light">
                 <h5 class="modal-title fw-bold" id="deactivateManagerModalLabel">
                     Ngừng hoạt động Quản lý
@@ -632,12 +650,18 @@
     <script>
         function filterManagersList() {
             const query = document.getElementById('managerSearchInput').value.trim().toLowerCase();
+            const selectedBranch = document.getElementById('filterBranch').value;
+            
             document.querySelectorAll('#managersList .manager-card-item').forEach(function (card) {
                 const fullName = (card.dataset.fullname || '').toLowerCase();
                 const username = (card.dataset.username || '').toLowerCase();
                 const managerId = (card.dataset.managerid || '').toLowerCase();
-                const match = fullName.includes(query) || username.includes(query) || managerId.includes(query);
-                card.style.display = match ? 'flex' : 'none';
+                const branch = card.dataset.branch || '';
+
+                const matchesQuery = fullName.includes(query) || username.includes(query) || managerId.includes(query);
+                const matchesBranch = !selectedBranch || branch === selectedBranch;
+
+                card.style.display = (matchesQuery && matchesBranch) ? 'flex' : 'none';
             });
         }
 
@@ -890,7 +914,7 @@
                     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
                     background: #111827; color: #fff; padding: 12px 28px;
                     border-radius: 10px; font-size: 0.9rem; font-weight: 600;
-                    font-family: 'Outfit', sans-serif; z-index: 99999;
+                    font-family: var(--bs-body-font-family); z-index: 99999;
                     box-shadow: 0 8px 24px rgba(0,0,0,0.22);
                     animation: fadeInUp 0.25s ease;
                 `;

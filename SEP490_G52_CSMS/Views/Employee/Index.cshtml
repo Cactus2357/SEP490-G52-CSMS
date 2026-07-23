@@ -7,7 +7,7 @@
     <style>
         /* General styling */
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--bs-body-font-family);
             background-color: #f3f4f6;
             color: #1f2937;
             margin: 0;
@@ -574,15 +574,42 @@
             <input type="text" id="employeeSearchInput" class="input-search" placeholder="Tìm tên, tài khoản..." onkeyup="filterEmployeesList()">
             <i class="bi bi-search"></i>
         </div>
-        <button class="filter-btn">
+        <button class="filter-btn" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel" title="Bộ lọc nâng cao">
             <i class="bi bi-filter"></i>
         </button>
     </div>
     <div class="btn-group-right">
-        <a href="/DAT_Employee/Permissions" class="btn-mockup-secondary text-decoration-none">Phân quyền NV</a>
+        <a href="/Employee/Permissions" class="btn-mockup-secondary text-decoration-none">Phân quyền NV</a>
         <button class="btn-mockup-primary" data-bs-toggle="modal" data-bs-target="#createEmployeeModal" onclick="loadBranches()">
             + Tạo NV
         </button>
+    </div>
+</div>
+
+<!-- Collapsible Filter Panel -->
+<div id="filterPanel" class="collapse mb-3">
+    <div class="card card-body" style="border: 2px dashed #111827; border-radius: 12px; background-color: #ffffff;">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="filterRole" class="form-label fw-bold" style="font-size: 0.85rem;">Vai trò</label>
+                <select id="filterRole" class="form-select" onchange="filterEmployeesList()" style="border: 1px solid #111827; border-radius: 4px;">
+                    <option value="">Tất cả vai trò</option>
+                    <option value="Cashier">Thu ngân (Cashier)</option>
+                    <option value="Bartender">Pha chế (Bartender)</option>
+                    <option value="Busser">Phục vụ (Busser)</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="filterBranch" class="form-label fw-bold" style="font-size: 0.85rem;">Chi nhánh</label>
+                <select id="filterBranch" class="form-select" onchange="filterEmployeesList()" style="border: 1px solid #111827; border-radius: 4px;">
+                    <option value="">Tất cả chi nhánh</option>
+                    @foreach (var branchName in Model.Where(e => e.Branch != null).Select(e => e.Branch.BranchName).Distinct().OrderBy(b => b))
+                    {
+                        <option value="@branchName">@branchName</option>
+                    }
+                </select>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -627,7 +654,7 @@
                     _ => emp.Role ?? ""
                 };
 
-                <div class="employee-card-item" data-fullname="@emp.FullName" data-username="@emp.Username" data-role="@emp.Role">
+                <div class="employee-card-item" data-fullname="@emp.FullName" data-username="@emp.Username" data-role="@emp.Role" data-branch="@(emp.Branch?.BranchName ?? "Chi nhánh 1")">
                     <div class="card-left-info">
                         <div class="card-initial-circle">
                             @initials
@@ -670,7 +697,7 @@
                         
                         @if (string.IsNullOrEmpty(emp.FaceData))
                         {
-                            <a href="/DAT_Employee/RegisterFace/@emp.EmployeeId" class="btn-mockup-action-primary">
+                            <a href="/Employee/RegisterFace/@emp.EmployeeId" class="btn-mockup-action-primary">
                                 + Quét Face
                             </a>
                         }
@@ -824,7 +851,7 @@
 <!-- MODAL 5: Ngừng hoạt động (Vô hiệu hóa nhân viên) -->
 <div class="modal fade" id="deactivateEmployeeModal" tabindex="-1" aria-labelledby="deactivateEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: 'Outfit', sans-serif;">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: var(--bs-body-font-family);">
             <div class="modal-header bg-light">
                 <h5 class="modal-title fw-bold" id="deactivateEmployeeModalLabel">
                     Ngừng hoạt động
@@ -902,7 +929,7 @@
             const selectElement = document.getElementById('branchId');
             selectElement.innerHTML = '<option value="" disabled selected>Đang tải chi nhánh...</option>';
             
-            const response = await fetch('/DAT_Employee/GetBranches');
+            const response = await fetch('/Employee/GetBranches');
             if (response.ok) {
                 const branches = await response.json();
                 selectElement.innerHTML = '<option value="" disabled selected>Chọn chi nhánh...</option>';
@@ -936,13 +963,21 @@
     // Filter employee list in real time
     function filterEmployeesList() {
         const query = document.getElementById('employeeSearchInput').value.trim().toLowerCase();
+        const selectedRole = document.getElementById('filterRole').value;
+        const selectedBranch = document.getElementById('filterBranch').value;
         const cards = document.querySelectorAll('.employee-card-item');
 
         cards.forEach(card => {
             const fullName = (card.getAttribute('data-fullname') || '').toLowerCase();
             const userName = (card.getAttribute('data-username') || '').toLowerCase();
+            const role = card.getAttribute('data-role') || '';
+            const branch = card.getAttribute('data-branch') || '';
 
-            if (fullName.includes(query) || userName.includes(query)) {
+            const matchesQuery = fullName.includes(query) || userName.includes(query);
+            const matchesRole = !selectedRole || role === selectedRole;
+            const matchesBranch = !selectedBranch || branch === selectedBranch;
+
+            if (matchesQuery && matchesRole && matchesBranch) {
                 card.style.display = 'flex';
             } else {
                 card.style.display = 'none';
@@ -982,7 +1017,7 @@
         };
 
         try {
-            const response = await fetch('/DAT_Employee/CreateAccount', {
+            const response = await fetch('/Employee/CreateAccount', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1043,7 +1078,7 @@
 
     function redirectToFaceRegister() {
         if (currentCreatedEmployeeId) {
-            window.location.href = `/DAT_Employee/RegisterFace/${currentCreatedEmployeeId}`;
+            window.location.href = `/Employee/RegisterFace/${currentCreatedEmployeeId}`;
         } else {
             window.location.reload();
         }
@@ -1066,7 +1101,7 @@
         detailModalInstance.show();
 
         try {
-            const url = `/DAT_Employee/Detail/${employeeId}`;
+            const url = `/Employee/Detail/${employeeId}`;
             
             const response = await fetch(url);
             if (response.ok) {
@@ -1101,7 +1136,7 @@
         updateModalInstance.show();
 
         try {
-            const url = `/DAT_Employee/UpdateForm/${employeeId}`;
+            const url = `/Employee/UpdateForm/${employeeId}`;
             
             const response = await fetch(url);
             if (response.ok) {
@@ -1161,7 +1196,7 @@
         const formData = new FormData(form);
 
         try {
-            const response = await fetch(`/DAT_Employee/Update/${employeeId}`, {
+            const response = await fetch(`/Employee/Update/${employeeId}`, {
                 method: 'POST',
                 body: formData
             });
@@ -1201,7 +1236,7 @@
                 position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
                 background: #111827; color: #fff; padding: 12px 28px;
                 border-radius: 10px; font-size: 0.9rem; font-weight: 600;
-                font-family: 'Outfit', sans-serif; z-index: 99999;
+                font-family: var(--bs-body-font-family); z-index: 99999;
                 box-shadow: 0 8px 24px rgba(0,0,0,0.22);
                 animation: fadeInUp 0.25s ease;
             `;
@@ -1337,7 +1372,7 @@
         document.getElementById('deactConfirmBtn').disabled = false;
         
         try {
-            const response = await fetch(`/DAT_Employee/CheckDeactivation/${employeeId}`);
+            const response = await fetch(`/Employee/CheckDeactivation/${employeeId}`);
             if (!response.ok) {
                 alert('Lỗi tải dữ liệu kiểm tra.');
                 return;
@@ -1425,7 +1460,7 @@
         btn.disabled = true;
         
         try {
-            const response = await fetch('/DAT_Employee/Deactivate', {
+            const response = await fetch('/Employee/Deactivate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ employeeId: currentDeactEmployeeId, reason: reason, notes: notes })

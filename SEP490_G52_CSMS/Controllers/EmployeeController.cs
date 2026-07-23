@@ -2,30 +2,31 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Repositories;
 
 namespace SEP490_G52_CSMS.Controllers
 {
-    public class DAT_EmployeeController : Controller
+    public class EmployeeController : Controller
     {
-        private readonly IDAT_EmployeeService _employeeService;
-        private readonly Repositories.IDAT_EmployeeRepository _employeeRepository;
+        private readonly IEmployeeService _employeeService;
+        private readonly IEmployeeRepository _employeeRepository;
 
-        public DAT_EmployeeController(IDAT_EmployeeService employeeService, Repositories.IDAT_EmployeeRepository employeeRepository)
+        public EmployeeController(IEmployeeService employeeService, IEmployeeRepository employeeRepository)
         {
             _employeeService = employeeService;
             _employeeRepository = employeeRepository;
         }
 
-        // GET: /DAT_Employee
+        // GET: /Employee
         public async Task<IActionResult> Index()
         {
             var employees = await _employeeService.GetEmployeesListAsync();
-            // Chỉ hiển thị nhân viên thuộc chi nhánh Quận 1 (CB001) và loại bỏ những người là Quản lý chi nhánh
+            // CB001 branch only, exclude BranchManager
             var filteredEmployees = System.Linq.Enumerable.Where(employees, e => e.BranchId == "CB001" && e.Role != "BranchManager");
             return View(filteredEmployees);
         }
 
-        // GET: /DAT_Employee/GetBranches
+        // GET: /Employee/GetBranches
         [HttpGet]
         public async Task<IActionResult> GetBranches()
         {
@@ -33,9 +34,9 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(branches);
         }
 
-        // POST: /DAT_Employee/CreateAccount
+        // POST: /Employee/CreateAccount
         [HttpPost]
-        public async Task<IActionResult> CreateAccount([FromBody] DAT_EmployeeCreationDto dto)
+        public async Task<IActionResult> CreateAccount([FromBody] EmployeeCreationDto dto)
         {
             if (dto == null)
             {
@@ -62,7 +63,7 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new { success = false, errorMessage = result.ErrorMessage });
         }
 
-        // GET: /DAT_Employee/RegisterFace/{id}
+        // GET: /Employee/RegisterFace/{id}
         [HttpGet]
         public async Task<IActionResult> RegisterFace(int id)
         {
@@ -75,9 +76,9 @@ namespace SEP490_G52_CSMS.Controllers
             return View(employee);
         }
 
-        // POST: /DAT_Employee/SaveFaceData
+        // POST: /Employee/SaveFaceData
         [HttpPost]
-        public async Task<IActionResult> SaveFaceData([FromBody] DAT_SaveFaceDataModel model)
+        public async Task<IActionResult> SaveFaceData([FromBody] SaveFaceDataModel model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.FaceData))
             {
@@ -93,7 +94,7 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
         }
 
-        // GET: /DAT_Employee/Detail/{id}
+        // GET: /Employee/Detail/{id}
         [HttpGet]
         public async Task<IActionResult> Detail(int id)
         {
@@ -103,7 +104,6 @@ namespace SEP490_G52_CSMS.Controllers
                 return NotFound("Không tìm thấy nhân viên.");
             }
 
-            // BR01 (Data Visibility Scope): Chỉ quản lý thuộc chi nhánh của nhân viên mới được xem chi tiết (mặc định CB001)
             if (employee.BranchId != "CB001")
             {
                 return Content("<div class='alert alert-danger m-3'>Bạn không có quyền xem chi tiết nhân viên thuộc chi nhánh khác.</div>", "text/html");
@@ -112,7 +112,7 @@ namespace SEP490_G52_CSMS.Controllers
             return PartialView("_EmployeeDetail", employee);
         }
 
-        // GET: /DAT_Employee/UpdateForm/{id}
+        // GET: /Employee/UpdateForm/{id}
         [HttpGet]
         public async Task<IActionResult> UpdateForm(int id)
         {
@@ -122,7 +122,6 @@ namespace SEP490_G52_CSMS.Controllers
                 return NotFound("Không tìm thấy nhân viên.");
             }
 
-            // BR07: Chỉ quản lý thuộc chi nhánh của nhân viên mới được cập nhật (mặc định CB001)
             if (employee.BranchId != "CB001")
             {
                 return Content("<div class='alert alert-danger m-3'>Bạn không có quyền cập nhật nhân viên thuộc chi nhánh khác.</div>", "text/html");
@@ -131,9 +130,9 @@ namespace SEP490_G52_CSMS.Controllers
             return PartialView("_EmployeeUpdateForm", employee);
         }
 
-        // POST: /DAT_Employee/Update/{id}
+        // POST: /Employee/Update/{id}
         [HttpPost]
-        public async Task<IActionResult> Update(int id, [FromForm] DAT_UpdateEmployeeDto dto)
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateEmployeeDto dto)
         {
             if (dto == null)
             {
@@ -151,7 +150,6 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
             }
 
-            // BR07: Chỉ quản lý thuộc chi nhánh của nhân viên mới được cập nhật (mặc định CB001)
             if (employee.BranchId != "CB001")
             {
                 return Json(new { success = false, errorMessage = "Bạn không có quyền cập nhật nhân viên thuộc chi nhánh khác." });
@@ -166,16 +164,15 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new { success = false, errorMessage = result.ErrorMessage });
         }
 
-        // GET: /DAT_Employee/Permissions
+        // GET: /Employee/Permissions
         public async Task<IActionResult> Permissions()
         {
             var employees = await _employeeService.GetEmployeesListAsync();
-            // Show only branch CB001, exclude BranchManager, and exclude Inactive employees
             var filteredEmployees = System.Linq.Enumerable.Where(employees, e => e.BranchId == "CB001" && e.Role != "BranchManager" && e.Status == "Active");
             return View(filteredEmployees);
         }
 
-        // POST: /DAT_Employee/UpdatePermissions
+        // POST: /Employee/UpdatePermissions
         [HttpPost]
         public async Task<IActionResult> UpdatePermissions([FromBody] UpdatePermissionsModel model)
         {
@@ -193,7 +190,7 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new { success = false, errorMessage = result.ErrorMessage });
         }
 
-        // GET: /DAT_Employee/CheckDeactivation/{id}
+        // GET: /Employee/CheckDeactivation/{id}
         [HttpGet]
         public async Task<IActionResult> CheckDeactivation(int id)
         {
@@ -203,7 +200,6 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
             }
 
-            // BR03: Branch Managers can only deactivate employee records belonging to their managed branch.
             if (employee.BranchId != "CB001")
             {
                 return Json(new { success = false, errorMessage = "Bạn không có quyền vô hiệu hóa nhân viên thuộc chi nhánh khác." });
@@ -222,9 +218,9 @@ namespace SEP490_G52_CSMS.Controllers
             });
         }
 
-        // POST: /DAT_Employee/Deactivate
+        // POST: /Employee/Deactivate
         [HttpPost]
-        public async Task<IActionResult> Deactivate([FromBody] DAT_DeactivateRequestDto request)
+        public async Task<IActionResult> Deactivate([FromBody] DeactivateRequestDto request)
         {
             if (request == null)
             {
@@ -237,13 +233,11 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
             }
 
-            // BR03: Check branch
             if (employee.BranchId != "CB001")
             {
                 return Json(new { success = false, errorMessage = "Bạn không có quyền vô hiệu hóa nhân viên thuộc chi nhánh khác." });
             }
 
-            // BR02: Verify constraints
             var (canDeactivate, _) = await _employeeService.CheckDeactivationConstraintsAsync(request.EmployeeId);
             if (!canDeactivate)
             {
@@ -267,7 +261,7 @@ namespace SEP490_G52_CSMS.Controllers
         public string EmploymentType { get; set; } = null!;
     }
 
-    public class DAT_SaveFaceDataModel
+    public class SaveFaceDataModel
     {
         public int EmployeeId { get; set; }
         public string FaceData { get; set; } = null!;

@@ -1,4 +1,4 @@
-﻿@model SEP490_G52_CSMS.Models.Attendance.ShiftChangeRequest
+@model SEP490_G52_CSMS.Models.Attendance.ShiftChangeRequest
 @{
     var employeeName = Model.RequestingEmployee?.FullName ?? $"NV#{Model.RequestingEmployeeId}";
     var isPending = Model.Status == "Submitted";

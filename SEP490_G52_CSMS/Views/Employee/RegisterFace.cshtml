@@ -6,7 +6,7 @@
 @section Styles {
     <style>
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--bs-body-font-family);
             background-color: #f3f4f6;
             color: #1f2937;
             margin: 0;
@@ -439,7 +439,7 @@
 }
 
 <div class="mb-4">
-    <a href="/DAT_Employee" class="text-decoration-none text-secondary" style="font-size: 0.95rem;">
+    <a href="/Employee" class="text-decoration-none text-secondary" style="font-size: 0.95rem;">
         <i class="bi bi-arrow-left-circle me-1"></i> Quay lại Danh sách nhân viên
     </a>
 </div>
@@ -492,7 +492,7 @@
                             <button id="btnStartScan" class="btn-mockup-action-primary" onclick="startBiometricScan()" disabled>
                                 Bắt đầu quét
                             </button>
-                            <a href="/DAT_Employee" class="btn-mockup-action-secondary">
+                            <a href="/Employee" class="btn-mockup-action-secondary">
                                 Hủy bỏ
                             </a>
                         </div>
@@ -929,7 +929,7 @@
     async function saveFaceDataToServer(facialId) {
         const statusMsg = document.getElementById('statusMessage');
         try {
-            const response = await fetch('/DAT_Employee/SaveFaceData', {
+            const response = await fetch('/Employee/SaveFaceData', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -946,7 +946,7 @@
                 statusMsg.className = "w-100 text-center status-bar status-success";
                 
                 setTimeout(() => {
-                    window.location.href = '/DAT_Employee';
+                    window.location.href = '/Employee';
                 }, 1500);
             } else {
                 statusMsg.textContent = "Lỗi lưu dữ liệu: " + (result.errorMessage || "Không thể cập nhật database.");

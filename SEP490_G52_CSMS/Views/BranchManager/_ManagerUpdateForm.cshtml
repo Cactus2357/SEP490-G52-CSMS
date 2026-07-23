@@ -23,14 +23,14 @@
 
 <div class="modal fade" id="managerUpdateModal" tabindex="-1" aria-labelledby="managerUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: 'Outfit', sans-serif;">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: var(--bs-body-font-family);">
             <div class="modal-header bg-light">
                 <h5 class="modal-title fw-bold" id="managerUpdateModalLabel">Cập nhật Quản lý chi nhánh</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0">
                 <style>
-                    .upd-wrap                { font-family: 'Outfit', sans-serif; background: #fff; }
+                    .upd-wrap                { font-family: var(--bs-body-font-family); background: #fff; }
                     .upd-card                { margin: 14px 24px; padding: 14px 18px; border: 2px solid #111827; border-radius: 12px; display: flex; align-items: center; gap: 14px; }
                     .upd-avatar              { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #111827; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; color: #111827; flex-shrink: 0; }
                     .upd-card-name           { font-size: 1.05rem; font-weight: 700; color: #111827; margin: 0 0 2px; }
@@ -38,7 +38,7 @@
 
                     /* Tabs */
                     .upd-tabs                { display: flex; gap: 4px; margin: 0 24px 14px; background: #f3f4f6; border: 1.5px solid #111827; border-radius: 8px; padding: 4px; }
-                    .upd-tab                 { flex: 1; padding: 8px 4px; border: none; background: transparent; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9ca3af; border-radius: 5px; cursor: pointer; transition: background .15s, color .15s; font-family: 'Outfit', sans-serif; }
+                    .upd-tab                 { flex: 1; padding: 8px 4px; border: none; background: transparent; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9ca3af; border-radius: 5px; cursor: pointer; transition: background .15s, color .15s; font-family: var(--bs-body-font-family); }
                     .upd-tab.active          { background: #111827; color: #fff; }
 
                     /* Panels */
@@ -49,7 +49,7 @@
                     .upd-sec                 { margin: 0 24px 14px; }
                     .upd-sec-title           { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; margin: 0 0 12px; }
                     .upd-lbl                 { display: block; font-size: .82rem; font-weight: 600; color: #374151; margin-bottom: 5px; }
-                    .upd-input               { width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: .9rem; font-family: 'Outfit', sans-serif; outline: none; transition: border-color .15s; box-sizing: border-box; }
+                    .upd-input               { width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: .9rem; font-family: var(--bs-body-font-family); outline: none; transition: border-color .15s; box-sizing: border-box; }
                     .upd-input:focus         { border-color: #111827; }
                     .upd-hint                { font-size: .72rem; color: #9ca3af; margin-top: 3px; }
                     .upd-mb                  { margin-bottom: 14px; }
