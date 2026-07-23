@@ -1,0 +1,122 @@
+@{
+    ViewData["Title"] = "Thêm thực đơn mới";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Index" class="text-dark mr-3" style="font-size: 1.5rem; text-decoration: none;">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h3 class="mb-0 fw-bold ms-2">Thêm thực đơn mới</h3>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+        </div>
+    }
+
+    <form asp-action="Create" method="post" id="createForm">
+        <div class="form-group mb-4" style="margin-left: 5px;">
+            <label for="MenuName" class="fw-bold mb-2">Tên thực đơn *</label>
+            <input type="text" id="MenuName" name="MenuName" class="form-control w-50 border-dark rounded-0" placeholder="Nhập tên thực đơn (VD: Thực đơn mùa hè)..." required>
+        </div>
+
+        <div class="row" style="border: 1px solid #000; padding: 15px; margin: 0 5px;">
+            <!-- Cột trái: Thông tin sản phẩm -->
+            <div class="col-md-6 border-end border-dark">
+                <h4 class="fw-bold mb-4">Thông tin sản phẩm</h4>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <label class="me-3 mb-0">Thể loại</label>
+                    <select id="categoryFilter" class="form-select w-auto border-dark rounded-0" onchange="loadProducts()">
+                        <option value="">chọn thể loại sản phẩm</option>
+                        @if (ViewBag.Categories != null)
+                        {
+                            foreach (var cat in ViewBag.Categories)
+                            {
+                                <option value="@cat.CategoryId">@cat.CategoryName</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-2">Sản phẩm</div>
+                <div id="productsContainer" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Sẽ load từ AJAX -->
+                </div>
+            </div>
+
+            <!-- Cột phải: Sản phẩm đã chọn -->
+            <div class="col-md-6 position-relative">
+                <h4 class="fw-bold mb-4">Sản phẩm đã chọn</h4>
+                
+                <div id="stagingContainer" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Sẽ tự động sinh các div khi chọn sản phẩm bên trái -->
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4 position-absolute bottom-0 end-0 me-3 mb-3">
+                    <a asp-action="Index" class="btn btn-outline-dark rounded-0 me-3 px-4">Hủy</a>
+                    <button type="submit" class="btn btn-outline-dark rounded-0 px-4 fw-bold">Lưu sản phẩm</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        var selectedProductIds = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProducts();
+        });
+
+        function loadProducts() {
+            var catId = document.getElementById("categoryFilter").value;
+            var url = '@Url.Action("GetProductsPartial", "MenuManagement")';
+            if (catId) url += "?categoryId=" + catId;
+
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('productsContainer').innerHTML = html;
+                });
+        }
+
+        // Được gọi từ nút "Thêm sản phẩm" trong partial view
+        function addProductToStaging(btn) {
+            var tr = btn.closest('tr');
+            var pId = tr.getAttribute('data-product-id');
+            var pName = tr.getAttribute('data-product-name');
+            var cName = tr.getAttribute('data-category-name');
+
+            if (selectedProductIds.includes(pId.toString())) {
+                alert('Sản phẩm này đã được chọn!');
+                return;
+            }
+
+            selectedProductIds.push(pId.toString());
+
+            var container = document.getElementById('stagingContainer');
+            var div = document.createElement('div');
+            div.className = "border border-dark p-2 mb-2 d-flex justify-content-between align-items-center";
+            div.id = "staged_" + pId;
+            div.innerHTML = `
+                <span>${pName} - ${cName}</span>
+                <button type="button" class="btn btn-sm btn-outline-dark rounded-0" onclick="removeStaging(${pId})">Loại bỏ</button>
+                <input type="hidden" name="SelectedProductIds" value="${pId}" />
+            `;
+            container.appendChild(div);
+        }
+
+        function removeStaging(pId) {
+            var el = document.getElementById("staged_" + pId);
+            if (el) {
+                el.remove();
+                selectedProductIds = selectedProductIds.filter(id => id !== pId.toString());
+            }
+        }
+    </script>
+}

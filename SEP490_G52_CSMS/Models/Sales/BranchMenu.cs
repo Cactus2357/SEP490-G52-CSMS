@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Sales
@@ -24,6 +24,10 @@ namespace SEP490_G52_CSMS.Models.Sales
 
         [Column("is_active")]
         public bool IsActive { get; set; } = false;
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; }
+
 
         [ForeignKey("BranchId")]
         public virtual Core.Branch? Branch { get; set; }

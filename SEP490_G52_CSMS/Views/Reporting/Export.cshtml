@@ -1,0 +1,256 @@
+@model SEP490_G52_CSMS.Models.ViewModels.ExportReportViewModel
+
+@{
+    ViewData["Title"] = "TRUNG TÂM XUẤT FILE DỮ LIỆU ĐỊNH KỲ";
+}
+
+<div class="export-container">
+    <h2 class="export-title">@ViewData["Title"]</h2>
+
+    <!-- Alert Container for errors -->
+    <div id="alertContainer"></div>
+
+    <div class="export-toolbar mb-4">
+        <i class="bi bi-building fs-4 me-2"></i>
+        <label for="globalBranchId" class="fw-bold me-2">Chọn chi nhánh cần xuất file:</label>
+        <select id="globalBranchId" class="form-select w-auto d-inline-block"
+                asp-for="SelectedBranchId" asp-items="Model.BranchList">
+        </select>
+    </div>
+
+    <div class="row g-4">
+        <!-- BÁO CÁO DOANH THU CHI TIẾT -->
+        <div class="col-md-6">
+            <div class="export-card">
+                <div class="export-card-header">
+                    <i class="bi bi-graph-up"></i> BÁO CÁO DOANH THU CHI TIẾT
+                </div>
+                <div class="export-card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="date-picker-group">
+                            <label>Từ:</label>
+                            <div class="input-group">
+                                <input type="date" id="revFromDate" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                            </div>
+                        </div>
+                        <div class="date-picker-group">
+                            <label>Đến:</label>
+                            <div class="input-group">
+                                <input type="date" id="revToDate" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-export" onclick="exportRevenue()">
+                            <i class="bi bi-download"></i> Xuất file
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BẢNG CÔNG & LỊCH LÀM VIỆC -->
+        <div class="col-md-6">
+            <div class="export-card">
+                <div class="export-card-header">
+                    <i class="bi bi-person-lines-fill"></i> BẢNG CÔNG & LỊCH LÀM VIỆC
+                </div>
+                <div class="export-card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="date-picker-group">
+                            <label>Từ:</label>
+                            <div class="input-group">
+                                <input type="date" id="tsFromDate" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                            </div>
+                        </div>
+                        <div class="date-picker-group">
+                            <label>Đến:</label>
+                            <div class="input-group">
+                                <input type="date" id="tsToDate" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-export" onclick="exportTimesheet()">
+                            <i class="bi bi-download"></i> Xuất file
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MENU CHI TIẾT -->
+        <div class="col-md-6">
+            <div class="export-card">
+                <div class="export-card-header">
+                    <i class="bi bi-list-columns-reverse"></i> MENU CHI TIẾT
+                </div>
+                <div class="export-card-body">
+                    <p class="mb-4 text-muted">Menu chi tiết từng chi nhánh</p>
+                    <div class="text-center mt-4 pt-3">
+                        <button type="button" class="btn btn-export" onclick="exportMenu()">
+                            <i class="bi bi-download"></i> Xuất file
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .export-container {
+        padding: 20px;
+        background-color: #fff;
+    }
+    .export-title {
+        text-transform: uppercase;
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 25px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+        display: inline-block;
+    }
+    .export-toolbar {
+        display: flex;
+        align-items: center;
+    }
+    .export-card {
+        border: 2px solid #000;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .export-card-header {
+        border-bottom: 2px solid #000;
+        padding: 10px 15px;
+        font-weight: bold;
+        font-size: 16px;
+        text-transform: uppercase;
+    }
+    .export-card-body {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .date-picker-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .date-picker-group label {
+        font-weight: bold;
+        white-space: nowrap;
+    }
+    .date-picker-group .input-group {
+        width: auto;
+    }
+    .btn-export {
+        background-color: #fff;
+        border: 2px solid #000;
+        font-weight: bold;
+        padding: 8px 30px;
+        border-radius: 0;
+        box-shadow: 2px 2px 0px #000;
+        transition: all 0.1s;
+    }
+    .btn-export:hover {
+        background-color: #f0f0f0;
+        transform: translate(2px, 2px);
+        box-shadow: none;
+    }
+</style>
+
+<script>
+    function showAlert(message) {
+        const container = document.getElementById('alertContainer');
+        container.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong><i class="bi bi-exclamation-triangle-fill"></i> Lỗi:</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        // Scroll to top to see alert
+        window.scrollTo(0, 0);
+    }
+
+    async function downloadFile(url) {
+        try {
+            const response = await fetch(url, { method: 'GET' });
+            
+            if (!response.ok) {
+                const errorMsg = await response.text();
+                showAlert(errorMsg || "Đã xảy ra lỗi khi tải file!");
+                return;
+            }
+
+            // Extract filename from Content-Disposition if available, or generate one
+            let filename = "export.csv";
+            const disposition = response.headers.get('Content-Disposition');
+            if (disposition && disposition.indexOf('attachment') !== -1) {
+                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (error) {
+            showAlert("Không thể kết nối đến máy chủ.");
+        }
+    }
+
+    function getBranchId() {
+        return document.getElementById('globalBranchId').value;
+    }
+
+    function exportRevenue() {
+        const branchId = getBranchId();
+        const fromDate = document.getElementById('revFromDate').value;
+        const toDate = document.getElementById('revToDate').value;
+        
+        if (new Date(toDate) < new Date(fromDate)) {
+            showAlert("Khoảng thời gian không hợp lệ. Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+            return;
+        }
+
+        const url = `/Reporting/ExportRevenue?branchId=${branchId}&fromDate=${fromDate}&toDate=${toDate}`;
+        downloadFile(url);
+    }
+
+    function exportTimesheet() {
+        const branchId = getBranchId();
+        const fromDate = document.getElementById('tsFromDate').value;
+        const toDate = document.getElementById('tsToDate').value;
+        
+        if (new Date(toDate) < new Date(fromDate)) {
+            showAlert("Khoảng thời gian không hợp lệ. Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+            return;
+        }
+
+        const url = `/Reporting/ExportTimesheet?branchId=${branchId}&fromDate=${fromDate}&toDate=${toDate}`;
+        downloadFile(url);
+    }
+
+    function exportMenu() {
+        const branchId = getBranchId();
+        const url = `/Reporting/ExportMenu?branchId=${branchId}`;
+        downloadFile(url);
+    }
+</script>

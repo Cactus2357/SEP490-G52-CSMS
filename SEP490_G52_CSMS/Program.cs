@@ -46,6 +46,12 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
 // Product
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IOrderRepository, SEP490_G52_CSMS.Reponsitories.OrderRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IOrderService, SEP490_G52_CSMS.Services.OrderService>();
+
+// Menu Management
+builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IMenuRepository, SEP490_G52_CSMS.Reponsitories.MenuRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IMenuService, SEP490_G52_CSMS.Services.MenuService>();
 
 var app = builder.Build();
 

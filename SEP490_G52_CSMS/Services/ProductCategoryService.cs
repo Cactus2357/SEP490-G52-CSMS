@@ -18,10 +18,13 @@ namespace SEP490_G52_CSMS.Services
         {
             var productCategories = await _productCategoryRepository.GetAllAsync();
 
-            if (!string.IsNullOrEmpty(searchString))
+            if (!string.IsNullOrWhiteSpace(searchString))
             {
+                var keyword = searchString.Trim();
+
                 productCategories = productCategories
-                    .Where(c => c.CategoryName.Contains(searchString))
+                    .Where(c => !string.IsNullOrEmpty(c.CategoryName)
+                        && c.CategoryName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
 

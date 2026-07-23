@@ -290,3 +290,39 @@ body {
     padding: 32px;
     flex-grow: 1;
 }
+
+<form asp-action="Index"
+method="get"
+class="mb-3" >
+
+<div class="category-main-toolbar" >
+<div class="category-search-wrapper" >
+<span class="category-search-icon" > ⌕</span >
+
+<input type="text"
+name="searchString"
+value="@ViewData["CurrentFilter"]"
+class="form-control category-search"
+placeholder="Search" / >
+</div >
+
+<button type="button"
+class="btn btn-primary category-add-btn"
+data-bs-toggle="modal"
+data-bs-target="#createCategoryModal" >
+Thêm Danh Mục
+</button >
+</div >
+
+<div class="category-filter-actions" >
+<button type="submit"
+class="btn btn-dark" >
+Tìm kiếm
+</button >
+
+<a asp-action="Index"
+class="btn btn-outline-secondary" >
+Làm mới
+</a >
+</div >
+</form >

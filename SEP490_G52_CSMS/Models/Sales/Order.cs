@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -38,6 +38,10 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Column("brewing_status")]
         [StringLength(50)]
         public string BrewingStatus { get; set; } = "Waiting";
+
+        [Column("recipient_name")]
+        [StringLength(100)]
+        public string? RecipientName { get; set; }
 
         [ForeignKey("BranchId")]
         public virtual Core.Branch? Branch { get; set; }

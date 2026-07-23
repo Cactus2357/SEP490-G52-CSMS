@@ -1,0 +1,23 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.ProductSelectionViewModel>
+
+<table class="table table-bordered table-sm" id="modalProductTable">
+    <thead class="thead-light">
+        <tr>
+            <th>Tên sản phẩm</th>
+            <th>Thể loại</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr data-category-id="@item.CategoryId" data-product-id="@item.ProductId" data-product-name="@item.ProductName" data-category-name="@item.CategoryName" data-size-price="@item.SizeAndPrice">
+                <td>@item.ProductName</td>
+                <td>@item.CategoryName</td>
+                <td>
+                    <button type="button" class="btn btn-link p-0 text-primary" onclick="addProductToStaging(this)">Thêm sản phẩm</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

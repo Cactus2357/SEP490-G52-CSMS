@@ -1,0 +1,109 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.MenuListViewModel>
+
+@{
+    ViewData["Title"] = "Quản Lý Thực Đơn";
+    // Using a default Layout if none specified, it should inherit from _ViewStart
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>QUẢN LÝ THỰC ĐƠN</h2>
+        <div>
+            <span class="mr-3 font-weight-bold">Chi nhánh 1</span>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <div class="w-50">
+            <input type="text" id="searchInput" class="form-control" placeholder="Search..." onkeyup="filterTable()">
+        </div>
+        <div>
+            <!-- We need a selected row logic for Edit if we follow the mockup strictly, or just pass ID from row. The mockup has buttons on top. We will disable edit if no row selected or just use row actions. For simplicity, we'll put edit in row actions, or have a JS selected state. -->
+            <button class="btn btn-outline-secondary mr-2" id="btnEdit" onclick="editSelected()" disabled>+ Sửa thực đơn</button>
+            <a asp-action="Create" class="btn btn-outline-dark">+ Thêm thực đơn mới</a>
+        </div>
+    </div>
+
+    <table class="table table-bordered table-hover" id="menuTable">
+        <thead class="thead-light">
+            <tr>
+                <th>Danh sách các thực đơn</th>
+                <th>Ngày sửa đổi</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr onclick="selectRow(this, @item.MenuId)" style="cursor: pointer;">
+                    <td>@item.MenuName</td>
+                    <td>@(item.UpdatedAt.HasValue ? item.UpdatedAt.Value.ToString("dd/MM/yyyy") : "")</td>
+                    <td>
+                        @if (item.IsActive)
+                        {
+                            <span class="text-success">Đang hoạt động</span>
+                        }
+                        else
+                        {
+                            <span class="text-secondary">Ngừng hoạt động</span>
+                        }
+                    </td>
+                    <td>
+                        <form asp-action="ToggleStatus" asp-route-id="@item.MenuId" method="post" class="d-inline">
+                            @if (item.IsActive)
+                            {
+                                <button type="submit" class="btn btn-link p-0 text-primary">Ngừng hoạt động</button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-link p-0 text-primary">Kích hoạt</button>
+                            }
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        let selectedMenuId = null;
+
+        function selectRow(row, menuId) {
+            // Remove active class from all rows
+            document.querySelectorAll('#menuTable tbody tr').forEach(r => r.classList.remove('table-active'));
+            // Add active class to clicked row
+            row.classList.add('table-active');
+            
+            selectedMenuId = menuId;
+            document.getElementById('btnEdit').disabled = false;
+        }
+
+        function editSelected() {
+            if (selectedMenuId) {
+                window.location.href = '@Url.Action("Edit", "MenuManagement")/' + selectedMenuId;
+            }
+        }
+
+        function filterTable() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("menuTable");
+            tr = table.getElementsByTagName("tr");
+            for (i = 1; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    txtValue = td.textContent || td.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+}
