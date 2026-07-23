@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SEP490_G52_CSMS.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class MergeMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -49,6 +49,7 @@ namespace SEP490_G52_CSMS.Migrations
                     category_id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     category_name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
@@ -93,6 +94,7 @@ namespace SEP490_G52_CSMS.Migrations
                     employment_type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     citizen_id = table.Column<string>(type: "nvarchar(12)", maxLength: 12, nullable: false),
                     contract_file_path = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    cccd_file_path = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     face_data = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     failed_login_attempts = table.Column<int>(type: "int", nullable: false),
@@ -116,6 +118,8 @@ namespace SEP490_G52_CSMS.Migrations
                     product_id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     product_name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    image_url = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     category_id = table.Column<int>(type: "int", nullable: false),
                     status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
                 },

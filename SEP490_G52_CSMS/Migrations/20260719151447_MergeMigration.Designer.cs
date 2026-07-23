@@ -12,8 +12,8 @@ using SEP490_G52_CSMS.Models;
 namespace SEP490_G52_CSMS.Migrations
 {
     [DbContext(typeof(CSMSAppDbContext))]
-    [Migration("20260624130743_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260719151447_MergeMigration")]
+    partial class MergeMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -413,6 +413,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("branch_id");
 
+                    b.Property<string>("CccdFilePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("cccd_file_path");
+
                     b.Property<string>("CitizenId")
                         .IsRequired()
                         .HasMaxLength(12)
@@ -547,6 +552,16 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("int")
                         .HasColumnName("category_id");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("image_url");
+
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -674,6 +689,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)")
                         .HasColumnName("category_name");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
 
                     b.Property<string>("Status")
                         .IsRequired()

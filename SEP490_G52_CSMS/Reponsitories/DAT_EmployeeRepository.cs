@@ -7,7 +7,7 @@ using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Models.Attendance;
 
-namespace SEP490_G52_CSMS.Reponsitories
+namespace SEP490_G52_CSMS.Repositories
 {
     public class DAT_EmployeeRepository : IDAT_EmployeeRepository
     {
