@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - SEP490_G52_CSMS</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/SEP490_G52_CSMS.styles.css" asp-append-version="true" />
 </head>
@@ -23,7 +24,7 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Trang chủ</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="WorkSchedule" asp-action="SelectEmployee">Lịch làm việc</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="WorkSchedule" asp-action="Index">Lịch làm việc</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Branch" asp-action="Index">Quản lý chi nhánh</a>
@@ -32,7 +33,13 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="CashHandover" asp-action="Index">Kết tiền &amp; Giao ca</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="LeaveRequest" asp-action="Index">Xin nghỉ phép</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="ShiftChange" asp-action="Index">Xin chuyển ca</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark fw-bold text-primary" asp-area="" asp-controller="OrderManagement" asp-action="Index">Quản lý Order</a>
                         </li>
                     </ul>
                 </div>

@@ -1,0 +1,170 @@
+@model SEP490_G52_CSMS.Models.ViewModels.ShiftChangeListViewModel
+@{
+    ViewData["Title"] = "Danh Sách Đơn Xin Đổi Ca";
+}
+
+<div class="container-fluid px-4 pt-3">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-dark pb-2">
+        <h3 class="fw-bold mb-0 text-uppercase">DANH SÁCH ĐƠN XIN ĐỔI CA</h3>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="fs-5">
+            Họ &amp; Tên: <span class="fw-semibold">@Model.EmployeeName</span>
+        </div>
+        
+        <form method="get" asp-action="Index" class="d-flex align-items-center gap-3 m-0" id="filterForm">
+            <div class="border border-dark rounded bg-white" style="border-width: 2px !important; height: 38px;">
+                <select name="status" class="form-select border-0 shadow-none h-100" style="min-width: 150px; background-color: transparent;" onchange="document.getElementById('filterForm').submit()">
+                    <option value="Tất cả" selected="@(Model.Status == "Tất cả")">Trạng thái: Tất cả</option>
+                    <option value="Đã gửi" selected="@(Model.Status == "Đã gửi")">Đã gửi</option>
+                    <option value="Đã duyệt" selected="@(Model.Status == "Đã duyệt")">Đã duyệt</option>
+                    <option value="Từ chối" selected="@(Model.Status == "Từ chối")">Từ chối</option>
+                    <option value="Đã hủy" selected="@(Model.Status == "Đã hủy")">Đã hủy</option>
+                </select>
+            </div>
+            
+            <div class="d-flex align-items-center border border-dark rounded px-2 bg-white" style="border-width: 2px !important; height: 38px;">
+                <input type="date" id="filterFromDate" name="fromDate" class="form-control border-0 shadow-none p-0 mx-2"
+                       value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" style="width: 125px;" onchange="validateFilterDates()" />
+                <span>-</span>
+                <input type="date" id="filterToDate" name="toDate" class="form-control border-0 shadow-none p-0 mx-2"
+                       value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" style="width: 125px;" onchange="validateFilterDates()" />
+                <i class="bi bi-calendar-check ms-1 fs-5"></i>
+            </div>
+        </form>
+    </div>
+
+    <div class="mb-3">
+        <div class="table-responsive border border-dark rounded" style="border-width: 2px !important; max-height: 400px; overflow-y: auto;">
+            <table class="table align-middle mb-0" style="table-layout: fixed;">
+                <thead style="background-color: #e9ecef; position: sticky; top: 0; z-index: 1;">
+                    <tr class="border-bottom border-dark">
+                        <th class="ps-3 border-end border-dark" style="width: 25%;">Ngày gửi đơn</th>
+                        <th class="border-end border-dark" style="width: 35%;">Trạng thái</th>
+                        <th style="width: 40%;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items.Any())
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr class="border-bottom border-dark bg-white">
+                                <td class="ps-3 border-end border-dark">@item.SubmittedAt</td>
+                                <td class="border-end border-dark">@item.Status</td>
+                                <td>
+                                    @if (item.CanCancel)
+                                    {
+                                        <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn này?');">
+                                            <input type="hidden" name="requestId" value="@item.RequestId" />
+                                            <button type="submit" class="btn btn-link text-primary p-0 text-decoration-underline fw-semibold">Hủy đơn</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="text-decoration: line-through;">Hủy đơn</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted border-0 bg-white">Không có đơn xin đổi ca nào.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-start justify-content-between">
+        <div class="border border-dark p-3 bg-white" style="border-width: 2px !important; max-width: 500px;">
+            <div class="fw-bold mb-1">- Lưu ý:</div>
+            <div>Chỉ hủy đơn khi trạng thái: "Đã gửi" (trước khi quản lý duyệt đơn)</div>
+        </div>
+        <button type="button" class="btn btn-outline-dark fw-bold px-4 rounded" style="border-width: 2px;" data-bs-toggle="modal" data-bs-target="#createShiftChangeModal">Đơn đổi ca</button>
+    </div>
+</div>
+
+<!-- Modal Đơn Xin Đổi Ca -->
+<div class="modal fade" id="createShiftChangeModal" tabindex="-1" aria-labelledby="createShiftChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border border-dark rounded-0" style="border-width: 3px !important;">
+            <div class="modal-header border-bottom border-dark rounded-0 px-4 py-3">
+                <h4 class="modal-title fw-bold text-uppercase" id="createShiftChangeModalLabel">ĐƠN XIN ĐỔI CA</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form asp-action="Create" method="post" id="createShiftChangeForm">
+                <div class="modal-body px-4 py-4">
+                    <!-- Row 1: Họ tên -->
+                    <div class="d-flex mb-4 align-items-center">
+                        <div style="width: 150px;" class="fs-5 text-nowrap fw-semibold">Họ &amp; Tên:</div>
+                        <div class="border border-dark px-3 py-1 flex-grow-1" style="background-color: #f8f9fa; border-width: 2px !important;">
+                            @Model.EmployeeName
+                        </div>
+                        <input type="hidden" name="EmployeeName" value="@Model.EmployeeName" />
+                    </div>
+
+                    <!-- Row 2: Nguyện vọng -->
+                    <div class="d-flex mb-4">
+                        <div style="width: 150px;" class="fs-5 text-nowrap mt-1 fw-semibold">Nguyện vọng:</div>
+                        <textarea name="Aspiration" class="form-control border border-dark rounded-0 shadow-none flex-grow-1" style="border-width: 2px !important;" rows="4" placeholder="Mong muốn đổi từ ca 1 sang ca 3 ở thứ 3 từ tuần..." required></textarea>
+                    </div>
+
+                    <!-- Row 3: Lý do -->
+                    <div class="d-flex mb-4">
+                        <div style="width: 150px;" class="fs-5 text-nowrap mt-1 fw-semibold">Lý do:</div>
+                        <textarea name="Reason" class="form-control border border-dark rounded-0 shadow-none flex-grow-1" style="border-width: 2px !important;" rows="3" placeholder="Nhập lý do" required></textarea>
+                    </div>
+                    
+                    <!-- Footer: Notes & Buttons -->
+                    <div class="d-flex align-items-end justify-content-between mt-5">
+                        <div style="font-size: 0.95rem; line-height: 1.4;">
+                            <div class="fw-medium">*Lưu ý: Ghi rõ ca hiện xếp, ca mong muốn đổi, ở thứ nào trong tuần,<br/>khoảng tuần muốn đổi</div>
+                            <div class="fw-medium">*Có thể ghi thời gian rảnh có thể làm để quản lý dễ xếp ca.</div>
+                        </div>
+                        
+                        <div class="d-flex gap-3">
+                            <button type="button" class="btn btn-white fw-bold px-4 rounded-0 border-dark" style="border-width: 2px;" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-white fw-bold px-4 rounded-0 border-dark" style="border-width: 2px; box-shadow: 3px 3px 0px 0px #000;">Xác nhận</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function validateFilterDates() {
+            const fromDate = document.getElementById('filterFromDate').value;
+            const toDate = document.getElementById('filterToDate').value;
+
+            if (fromDate && toDate && fromDate > toDate) {
+                alert('Từ ngày không được lớn hơn Đến ngày!');
+                return; // Ngăn chặn submit
+            }
+            document.getElementById('filterForm').submit();
+        }
+    </script>
+}

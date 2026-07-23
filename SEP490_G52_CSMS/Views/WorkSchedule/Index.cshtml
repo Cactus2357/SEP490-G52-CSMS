@@ -17,15 +17,12 @@
             <form method="get" asp-action="Index" class="d-flex align-items-center gap-2">
                 <input type="hidden" name="employeeId" value="@Model.EmployeeId" />
                 <div class="input-group input-group-sm" style="width: 250px;">
-                    <input type="date" name="weekDate" class="form-control" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+                    <input type="week" name="weekDate" class="form-control" value="@($"{System.Globalization.ISOWeek.GetYear(Model.WeekStartDate)}-W{System.Globalization.ISOWeek.GetWeekOfYear(Model.WeekStartDate):D2}")" onchange="this.form.submit()" />
                     <span class="input-group-text bg-white" title="Ngày đang hiển thị: @Model.DateRangeText">
                         <i class="bi bi-calendar3"></i>
                     </span>
                 </div>
             </form>
-            <a asp-action="SelectEmployee" class="btn btn-outline-secondary btn-sm ms-2" title="Đổi nhân viên">
-                <i class="bi bi-arrow-repeat"></i>
-            </a>
         </div>
     </div>
 
@@ -69,7 +66,7 @@
                                         }
                                         else
                                         {
-                                            <span class="text-dark">( <i class="bi bi-exclamation-circle text-dark"></i> Chưa điểm danh )</span>
+                                            <span class="text-dark">( <i class="bi bi-exclamation-circle text-dark"></i> Chưa tới giờ làm việc )</span>
                                         }
                                     </div>
                                 </td>

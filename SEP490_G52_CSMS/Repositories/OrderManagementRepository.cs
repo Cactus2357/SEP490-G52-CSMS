@@ -1,0 +1,63 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Models;
+using SEP490_G52_CSMS.Models.Sales;
+
+namespace SEP490_G52_CSMS.Repositories
+{
+    public class OrderManagementRepository : IOrderManagementRepository
+    {
+        private readonly CSMSAppDbContext _context;
+
+        public OrderManagementRepository(CSMSAppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<List<Order>> GetOrdersAsync(string branchId, string searchCashier, string status)
+        {
+            var query = _context.Orders
+                .Include(o => o.Cashier)
+                .Include(o => o.OrderItems)
+                .AsNoTracking()
+                .Where(o => o.BranchId == branchId);
+
+            // Default business rule BR03: display current day
+            var today = DateTime.Today;
+            query = query.Where(o => o.CreatedAt.Date == today);
+
+            if (!string.IsNullOrEmpty(searchCashier))
+            {
+                // Find cashiers matching name
+                query = query.Where(o => o.Cashier != null && (o.Cashier.FullName.Contains(searchCashier) || o.Cashier.Username.Contains(searchCashier)));
+            }
+
+            if (!string.IsNullOrEmpty(status) && status != "Tất cả")
+            {
+                // Status mapping (fake mapping based on PaymentStatus/BrewingStatus)
+                if (status == "Hoàn thành")
+                    query = query.Where(o => o.PaymentStatus == "Paid" && o.BrewingStatus == "Done");
+                else if (status == "Đang xử lý")
+                    query = query.Where(o => o.PaymentStatus == "Unpaid" || o.BrewingStatus == "Waiting" || o.BrewingStatus == "Brewing");
+                else if (status == "Đã hủy")
+                    query = query.Where(o => o.PaymentStatus == "Canceled" || o.BrewingStatus == "Canceled");
+            }
+
+            return await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+        }
+
+        public async Task<Order?> GetOrderDetailsAsync(string orderId, string branchId)
+        {
+            return await _context.Orders
+                .Include(o => o.Cashier)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductVariant)
+                        .ThenInclude(pv => pv.MasterProduct)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.BranchId == branchId);
+        }
+    }
+}

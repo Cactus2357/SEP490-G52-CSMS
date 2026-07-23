@@ -11,8 +11,18 @@ builder.Services.AddDbContext<CSMSAppDbContext>(options =>
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IBranchRepository, BranchRepository>();
-builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<ICashHandoverRepository, CashHandoverRepository>();
+builder.Services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
+builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
+
+// Đăng ký cho Xin đổi ca
+builder.Services.AddScoped<IShiftChangeRepository, ShiftChangeRepository>();
+builder.Services.AddScoped<IShiftChangeService, ShiftChangeService>();
+
+// Đăng ký cho Quản lý Order
+builder.Services.AddScoped<IOrderManagementRepository, OrderManagementRepository>();
+builder.Services.AddScoped<IOrderManagementService, OrderManagementService>();
+builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<ICashHandoverService, CashHandoverService>();
 builder.Services.AddScoped<IWorkScheduleRepository, WorkScheduleRepository>();
 builder.Services.AddScoped<IWorkScheduleService, WorkScheduleService>();

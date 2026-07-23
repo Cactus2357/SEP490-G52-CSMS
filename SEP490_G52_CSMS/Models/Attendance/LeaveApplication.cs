@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -27,6 +27,10 @@ namespace SEP490_G52_CSMS.Models.Attendance
         [Required]
         [Column("reason")]
         public string? Reason { get; set; }
+
+        [Column("leave_shifts")]
+        [StringLength(255)]
+        public string? LeaveShifts { get; set; }
 
         [Required]
         [Column("submitted_at")]

@@ -19,46 +19,30 @@
     </div>
 
     @* Header biểu mẫu *@
-    <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
-        <span class="fw-semibold text-uppercase text-secondary small">
-            <i class="bi bi-clock-history me-2"></i>Lịch sử đóng/ mở/ bàn giao ca
-        </span>
-        <a asp-action="Index" class="btn btn-outline-danger btn-sm">Hủy</a>
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-dark pb-2">
+        <h4 class="fw-bold mb-0 text-uppercase">LỊCH SỬ ĐÓNG/ MỞ/ BÀN GIAO CA</h4>
+        <a asp-action="Index" class="btn btn-outline-dark fw-bold px-4" style="border-width: 2px;">Hủy</a>
     </div>
 
     @* Bộ lọc ngày và loại phiên *@
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body py-2">
-            <div class="row g-2 align-items-center">
-                <div class="col-auto">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light">
-                            <i class="bi bi-calendar3"></i>
-                        </span>
-                        <input type="date" id="filterDateFrom" class="form-control form-control-sm"
-                               value="@weekAgo.ToString("yyyy-MM-dd")" />
-                        <span class="input-group-text bg-light">–</span>
-                        <input type="date" id="filterDateTo" class="form-control form-control-sm"
-                               value="@today.ToString("yyyy-MM-dd")" />
-                    </div>
-                </div>
-                <div class="col-auto">
-                    <select id="filterSessionType" class="form-select form-select-sm">
-                        <option value="">Loại phiên: Tất cả</option>
-                        <option value="mở ca">Mở ca</option>
-                        <option value="giao ca">Giao ca</option>
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="applyFilter()">
-                        <i class="bi bi-funnel me-1"></i>Lọc
-                    </button>
-                </div>
-                <div class="col-auto ms-auto">
-                    <span class="text-muted small">Tổng: <strong>@Model.TotalCount</strong> bản ghi</span>
-                </div>
-            </div>
+    <div class="mb-3 d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center border border-dark rounded px-2 bg-white" style="border-width: 2px !important; height: 38px;">
+            <input type="date" id="filterDateFrom" class="form-control border-0 shadow-none p-0 mx-2"
+                   value="@weekAgo.ToString("yyyy-MM-dd")" style="width: 110px;" />
+            <span>-</span>
+            <input type="date" id="filterDateTo" class="form-control border-0 shadow-none p-0 mx-2"
+                   value="@today.ToString("yyyy-MM-dd")" style="width: 110px;" />
+            <i class="bi bi-calendar-check ms-1 fs-5"></i>
         </div>
+        <div class="border border-dark rounded bg-white" style="border-width: 2px !important; height: 38px;">
+            <select id="filterSessionType" class="form-select border-0 shadow-none h-100" style="min-width: 150px; background-color: transparent;">
+                <option value="">Loại phiên: Tất cả</option>
+                <option value="mở ca">Mở ca</option>
+                <option value="giao ca">Giao ca</option>
+            </select>
+        </div>
+        <button class="btn btn-dark fw-bold px-3" onclick="applyFilter()" style="height: 38px;">Lọc</button>
+        <span class="text-muted small ms-auto">Tổng: <strong>@Model.TotalCount</strong> bản ghi</span>
     </div>
 
     @if (!Model.Items.Any())
@@ -71,95 +55,87 @@
     else
     {
         @* Bảng lịch sử dạng gọn theo wireframe *@
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="historyTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-3">Ngày</th>
-                                <th>Loại phiên</th>
-                                <th>Ca làm</th>
-                                <th>Hành động</th>
+        <div class="mb-3">
+            <div class="table-responsive border border-dark rounded" style="border-width: 2px !important; max-height: 400px; overflow-y: auto;">
+                <table class="table align-middle mb-0" id="historyTable" style="table-layout: fixed;">
+                    <thead style="background-color: #e9ecef; position: sticky; top: 0; z-index: 1;">
+                        <tr class="border-bottom border-dark">
+                            <th class="ps-3 border-end border-dark" style="width: 15%;">Ngày</th>
+                            <th class="border-end border-dark" style="width: 25%;">Loại phiên</th>
+                            <th class="border-end border-dark" style="width: 25%;">Ca làm</th>
+                            <th style="width: 35%;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr class="history-row border-bottom border-dark"
+                                data-id="@item.HandoverId"
+                                data-date="@item.HandoverDate"
+                                data-shift="@item.ShiftName"
+                                data-session-type="@item.SessionType.ToLower()"
+                                data-outgoing="@item.OutgoingCashierName"
+                                data-incoming="@item.IncomingCashierName"
+                                data-theoretical="@item.TheoreticalCash"
+                                data-actual="@item.ActualCash"
+                                data-discrepancy="@item.Discrepancy"
+                                data-notes="@(item.Notes ?? "")">
+                                <td class="ps-3 border-end border-dark">
+                                    @{
+                                        DateTime.TryParse(item.HandoverDate, out DateTime parsedDate);
+                                        var displayDate = parsedDate != DateTime.MinValue ? parsedDate.ToString("dd-MM") : item.HandoverDate;
+                                    }
+                                    @displayDate
+                                </td>
+                                <td class="border-end border-dark">
+                                    @item.SessionType
+                                </td>
+                                <td class="border-end border-dark">
+                                    @item.ShiftName
+                                </td>
+                                <td>
+                                    <a href="#detailPanel"
+                                       class="text-primary fw-semibold text-decoration-underline view-btn"
+                                       onclick="showDetail(this); return false;">
+                                        Xem
+                                    </a>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model.Items)
-                            {
-                                <tr class="history-row"
-                                    data-id="@item.HandoverId"
-                                    data-date="@item.HandoverDate"
-                                    data-shift="@item.ShiftName"
-                                    data-session-type="@item.SessionType.ToLower()"
-                                    data-outgoing="@item.OutgoingCashierName"
-                                    data-incoming="@item.IncomingCashierName"
-                                    data-theoretical="@item.TheoreticalCash"
-                                    data-actual="@item.ActualCash"
-                                    data-discrepancy="@item.Discrepancy"
-                                    data-notes="@(item.Notes ?? "")">
-                                    <td class="ps-3">@item.HandoverDate</td>
-                                    <td>
-                                        @if (item.SessionType == "Mở ca")
-                                        {
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
-                                                <i class="bi bi-door-open me-1"></i>Mở ca
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                                <i class="bi bi-arrow-left-right me-1"></i>Giao ca
-                                            </span>
-                                        }
-                                    </td>
-                                    <td><span class="badge bg-secondary">@item.ShiftName</span></td>
-                                    <td>
-                                        <a href="#detailPanel"
-                                           class="text-primary fw-semibold text-decoration-none view-btn"
-                                           onclick="showDetail(this); return false;">
-                                            Xem <i class="bi bi-chevron-down small"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
 
         @* Panel chi tiết phiên (ẩn mặc định, hiện khi click "Xem") *@
-        <div id="detailPanel" class="card border-0 shadow-sm d-none mb-3">
-            <div class="card-header bg-light border-bottom d-flex align-items-center justify-content-between">
-                <span class="fw-semibold text-uppercase small" id="detailTitle">CHI TIẾT PHIÊN</span>
-                <button type="button" class="btn-close btn-sm" onclick="hideDetail()"></button>
+        <div id="detailPanel" class="d-none mb-4 border border-dark rounded" style="border-width: 2px !important;">
+            <div class="border-bottom border-dark p-2">
+                <span class="fw-bold fs-5 text-uppercase" id="detailTitle">CHI TIẾT PHIÊN</span>
+                <button type="button" class="btn-close float-end" onclick="hideDetail()"></button>
             </div>
-            <div class="card-body">
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <span class="text-muted small">- Người ký nhận:</span>
-                            <span class="fw-semibold ms-2" id="detailIncoming">–</span>
+            <div class="p-3">
+                <div class="mb-3">
+                    <span>- Người ký nhận:</span>
+                    <span class="ms-1" id="detailIncoming">–</span>
+                </div>
+                <div class="row m-0 border border-dark" style="border-width: 2px !important;">
+                    <div class="col-md-5 p-3 border-end border-dark" style="border-width: 2px !important;">
+                        <div class="mb-2">
+                            <span>- Tiền mặt hệ thống:</span>
+                            <span id="detailTheoretical">–</span>
                         </div>
-                        <div class="row mb-2">
-                            <div class="col-6">
-                                <div class="text-muted small mb-1">- Tiền mặt hệ thống:</div>
-                                <div class="fw-semibold text-primary" id="detailTheoretical">–</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="text-muted small mb-1">- Tiền mặt thực tế:</div>
-                                <div class="fw-semibold" id="detailActual">–</div>
-                            </div>
+                        <div class="mb-2">
+                            <span>- Tiền mặt thực tế:</span>
+                            <span id="detailActual">–</span>
                         </div>
                         <div>
-                            <span class="text-muted small">- Chênh lệch:</span>
-                            <span class="fw-bold ms-2 fs-6" id="detailDiscrepancy">–</span>
+                            <span>- Chênh lệch:</span>
+                            <span id="detailDiscrepancy">–</span>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="text-muted small form-label">- Lý do nếu có:</label>
-                        <div class="form-control bg-light" id="detailNotes"
-                             style="min-height: 70px; font-size: 0.875rem; white-space: pre-wrap;"></div>
+                    <div class="col-md-7 p-3">
+                        <label class="form-label">- Lý do nếu có:</label>
+                        <div class="border border-dark p-2 h-75" id="detailNotes" style="min-height: 80px;"></div>
                     </div>
                 </div>
             </div>
@@ -224,9 +200,7 @@
             // Màu chênh lệch
             const discEl = document.getElementById('detailDiscrepancy');
             discEl.textContent = discrepancy;
-            discEl.className = 'fw-bold ms-2 fs-6 ' +
-                (discrepancy.startsWith('+') || discrepancy === '0 đ'
-                    ? 'text-success' : 'text-danger');
+            discEl.className = discrepancy.startsWith('-') ? 'text-danger' : '';
 
             document.getElementById('detailNotes').textContent = notes || '(không có lý do)';
 
