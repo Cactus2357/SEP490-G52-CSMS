@@ -1,8 +1,4 @@
-using System;
-using System.IO;
 using System.Net.Mail;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 
 namespace SEP490_G52_CSMS.Commons
 {

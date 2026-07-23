@@ -1,9 +1,6 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
 using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Services
 {

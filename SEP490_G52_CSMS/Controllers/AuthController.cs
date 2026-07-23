@@ -7,14 +7,11 @@ using Microsoft.Extensions.Caching.Memory;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Services;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Controllers
 {

@@ -1,8 +1,6 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using SEP490_G52_CSMS.Services;
 using SEP490_G52_CSMS.Repositories;
+using SEP490_G52_CSMS.Services;
 
 namespace SEP490_G52_CSMS.Controllers
 {

@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Employees
 {
     /// <summary>

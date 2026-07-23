@@ -1,13 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Sales;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace SEP490_G52_CSMS.Models
 {
