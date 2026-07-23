@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Repositories;
 using SEP490_G52_CSMS.Services;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(Roles = "BranchManager")]
     public class EmployeeController : Controller
     {
         private readonly IEmployeeService _employeeService;
@@ -18,9 +21,10 @@ namespace SEP490_G52_CSMS.Controllers
         // GET: /Employee
         public async Task<IActionResult> Index()
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
             var employees = await _employeeService.GetEmployeesListAsync();
-            // CB001 branch only, exclude BranchManager
-            var filteredEmployees = System.Linq.Enumerable.Where(employees, e => e.BranchId == "CB001" && e.Role != "BranchManager");
+            // User's branch only, exclude BranchManager
+            var filteredEmployees = System.Linq.Enumerable.Where(employees, e => e.BranchId == loggedInBranchId && e.Role != "BranchManager");
             return View(filteredEmployees);
         }
 
@@ -45,6 +49,10 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 return Json(new { success = false, errorMessage = "Dữ liệu nhập vào chưa đúng định dạng." });
             }
+
+            // Force scope to manager's branch
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            dto.BranchId = loggedInBranchId;
 
             var result = await _employeeService.CreateEmployeeAccountAsync(dto);
             if (result.Success)
@@ -71,6 +79,12 @@ namespace SEP490_G52_CSMS.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
+            {
+                return Forbid();
+            }
+
             return View(employee);
         }
 
@@ -81,6 +95,18 @@ namespace SEP490_G52_CSMS.Controllers
             if (model == null || string.IsNullOrWhiteSpace(model.FaceData))
             {
                 return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt không hợp lệ." });
+            }
+
+            var employee = await _employeeService.GetEmployeeByIdAsync(model.EmployeeId);
+            if (employee == null)
+            {
+                return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
+            }
+
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
+            {
+                return Json(new { success = false, errorMessage = "Bạn không có quyền lưu dữ liệu khuôn mặt của nhân viên thuộc chi nhánh khác." });
             }
 
             var success = await _employeeService.RegisterFaceDataAsync(model.EmployeeId, model.FaceData);
@@ -102,7 +128,8 @@ namespace SEP490_G52_CSMS.Controllers
                 return NotFound("Không tìm thấy nhân viên.");
             }
 
-            if (employee.BranchId != "CB001")
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
             {
                 return Content("<div class='alert alert-danger m-3'>Bạn không có quyền xem chi tiết nhân viên thuộc chi nhánh khác.</div>", "text/html");
             }
@@ -120,7 +147,8 @@ namespace SEP490_G52_CSMS.Controllers
                 return NotFound("Không tìm thấy nhân viên.");
             }
 
-            if (employee.BranchId != "CB001")
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
             {
                 return Content("<div class='alert alert-danger m-3'>Bạn không có quyền cập nhật nhân viên thuộc chi nhánh khác.</div>", "text/html");
             }
@@ -148,7 +176,8 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
             }
 
-            if (employee.BranchId != "CB001")
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
             {
                 return Json(new { success = false, errorMessage = "Bạn không có quyền cập nhật nhân viên thuộc chi nhánh khác." });
             }
@@ -165,8 +194,9 @@ namespace SEP490_G52_CSMS.Controllers
         // GET: /Employee/Permissions
         public async Task<IActionResult> Permissions()
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
             var employees = await _employeeService.GetEmployeesListAsync();
-            var filteredEmployees = System.Linq.Enumerable.Where(employees, e => e.BranchId == "CB001" && e.Role != "BranchManager" && e.Status == "Active");
+            var filteredEmployees = System.Linq.Enumerable.Where(employees, e => e.BranchId == loggedInBranchId && e.Role != "BranchManager" && e.Status == "Active");
             return View(filteredEmployees);
         }
 
@@ -177,6 +207,18 @@ namespace SEP490_G52_CSMS.Controllers
             if (model == null)
             {
                 return Json(new { success = false, errorMessage = "Dữ liệu không hợp lệ." });
+            }
+
+            var employee = await _employeeService.GetEmployeeByIdAsync(model.EmployeeId);
+            if (employee == null)
+            {
+                return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
+            }
+
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
+            {
+                return Json(new { success = false, errorMessage = "Bạn không có quyền thay đổi quyền hạn của nhân viên thuộc chi nhánh khác." });
             }
 
             var result = await _employeeService.UpdatePermissionsAsync(model.EmployeeId, model.Role, model.EmploymentType);
@@ -198,7 +240,8 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
             }
 
-            if (employee.BranchId != "CB001")
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
             {
                 return Json(new { success = false, errorMessage = "Bạn không có quyền vô hiệu hóa nhân viên thuộc chi nhánh khác." });
             }
@@ -231,7 +274,8 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
             }
 
-            if (employee.BranchId != "CB001")
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (employee.BranchId != loggedInBranchId)
             {
                 return Json(new { success = false, errorMessage = "Bạn không có quyền vô hiệu hóa nhân viên thuộc chi nhánh khác." });
             }

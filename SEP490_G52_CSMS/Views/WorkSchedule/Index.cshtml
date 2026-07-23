@@ -1,4 +1,4 @@
-﻿@model SEP490_G52_CSMS.Controllers.WeeklyScheduleViewModel
+@model SEP490_G52_CSMS.Controllers.WeeklyScheduleViewModel
 @{
     ViewData["Title"] = "Quản lý lịch làm việc";
     var dayNames = new[] { "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy", "Chủ nhật" };
@@ -31,14 +31,17 @@
         </a>
     </div>
 
-    <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-primary" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
-            Thêm lịch mới
-        </a>
-        <a class="btn btn-outline-primary" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
-            Cập nhật lịch làm
-        </a>
-    </div>
+    @if (User.IsInRole("BranchManager"))
+    {
+        <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-primary" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
+                Thêm lịch mới
+            </a>
+            <a class="btn btn-outline-primary" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
+                Cập nhật lịch làm
+            </a>
+        </div>
+    }
 
 </div>
 

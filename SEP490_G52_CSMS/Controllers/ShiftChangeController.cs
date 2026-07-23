@@ -1,18 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(Roles = "BranchManager")]
     public class ShiftChangeController : Controller
     {
-        // TODO: replace with the branch of the currently authenticated B Manager
-        // once auth/session context is wired up (same placeholder pattern as WorkScheduleController).
-        private const string DefaultBranchId = "CB001";
         private const int PageSize = 8;
-
         private readonly CSMSAppDbContext _context;
 
         public ShiftChangeController(CSMSAppDbContext context)
@@ -23,9 +23,11 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(int? employeeId, string? status, int page = 1)
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
+
             IQueryable<ShiftChangeRequest> query = _context.ShiftChangeRequests
                 .Include(r => r.RequestingEmployee)
-                .Where(r => r.RequestingEmployee != null && r.RequestingEmployee.BranchId == DefaultBranchId);
+                .Where(r => r.RequestingEmployee != null && r.RequestingEmployee.BranchId == loggedInBranchId);
 
             if (employeeId.HasValue)
             {
@@ -49,7 +51,7 @@ namespace SEP490_G52_CSMS.Controllers
                 .ToListAsync();
 
             var employeeOptions = await _context.Employees
-                .Where(e => e.BranchId == DefaultBranchId && e.Role != "BranchManager")
+                .Where(e => e.BranchId == loggedInBranchId && e.Role != "BranchManager")
                 .OrderBy(e => e.FullName)
                 .ToListAsync();
 
@@ -69,6 +71,8 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> DetailPartial(int id)
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
+
             var request = await _context.ShiftChangeRequests
                 .Include(r => r.RequestingEmployee)
                 .FirstOrDefaultAsync(r => r.RequestId == id);
@@ -76,6 +80,11 @@ namespace SEP490_G52_CSMS.Controllers
             if (request == null)
             {
                 return NotFound();
+            }
+
+            if (request.RequestingEmployee == null || request.RequestingEmployee.BranchId != loggedInBranchId)
+            {
+                return Forbid();
             }
 
             return PartialView("_ShiftChangeDetail", request);
@@ -90,11 +99,18 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             var request = await _context.ShiftChangeRequests
+                .Include(r => r.RequestingEmployee)
                 .FirstOrDefaultAsync(r => r.RequestId == req.RequestId);
 
             if (request == null)
             {
                 return Json(new { success = false, errorMessage = "Không tìm thấy đơn yêu cầu." });
+            }
+
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (request.RequestingEmployee == null || request.RequestingEmployee.BranchId != loggedInBranchId)
+            {
+                return Forbid();
             }
 
             if (request.Status != "Submitted")
@@ -103,16 +119,13 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             request.Status = "Approved";
-            request.ApprovedBranchId = DefaultBranchId;
-            // TODO: set request.ApprovedManagerId from the authenticated B Manager's EmployeeId.
+            request.ApprovedBranchId = loggedInBranchId;
 
-            // TODO (BR03): "Programmatically recalculates and updates the corresponding branch
-            // weekly shift configuration grid with the new employee assignment information."
-            // ShiftChangeRequest currently only stores a free-text "Aspiration" field (no
-            // structured OldShiftId/NewShiftId/AssignmentDate columns), so there isn't enough
-            // structured data here to safely locate and rewrite a WeeklyRosterGrid row.
-            // Once the schema exposes those columns, look up the matching WeeklyRosterGrid
-            // row (EmployeeId + old shift/date) and move it to the new shift/date here.
+            var managerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(managerIdClaim, out int managerId))
+            {
+                request.ApprovedManagerId = managerId;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -128,11 +141,18 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             var request = await _context.ShiftChangeRequests
+                .Include(r => r.RequestingEmployee)
                 .FirstOrDefaultAsync(r => r.RequestId == req.RequestId);
 
             if (request == null)
             {
                 return Json(new { success = false, errorMessage = "Không tìm thấy đơn yêu cầu." });
+            }
+
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (request.RequestingEmployee == null || request.RequestingEmployee.BranchId != loggedInBranchId)
+            {
+                return Forbid();
             }
 
             if (request.Status != "Submitted")
@@ -141,8 +161,13 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             request.Status = "Rejected";
-            request.ApprovedBranchId = DefaultBranchId;
-            // TODO: set request.ApprovedManagerId from the authenticated B Manager's EmployeeId.
+            request.ApprovedBranchId = loggedInBranchId;
+
+            var managerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(managerIdClaim, out int managerId))
+            {
+                request.ApprovedManagerId = managerId;
+            }
 
             await _context.SaveChangesAsync();
 

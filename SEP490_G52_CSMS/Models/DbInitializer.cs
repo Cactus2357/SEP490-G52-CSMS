@@ -26,6 +26,27 @@ namespace SEP490_G52_CSMS.Models
                 // Skip if already seeded beyond the base 3 branches
                 if (context.Branches.Count() > 3) return;
 
+                // Seed Admin if it doesn't exist
+                if (!context.Employees.Any(e => e.Role == "Admin"))
+                {
+                    context.Employees.Add(new Employee
+                    {
+                        FullName = "System Administrator",
+                        Username = "admin",
+                        Password = Commons.DAT_PasswordHasher.HashPassword("12345678"),
+                        Email = "admin@gmail.com",
+                        PhoneNumber = "0900000000",
+                        CitizenId = "000000000000",
+                        DateOfBirth = new DateTime(1990, 1, 1),
+                        Address = "Headquarters",
+                        Role = "Admin",
+                        EmploymentType = "Full-time",
+                        BranchId = null,
+                        Status = "Active"
+                    });
+                    context.SaveChanges();
+                }
+
                 // ---------- 1. BRANCHES (2 more, total 5) ----------
                 var newBranches = new List<Branch>
                 {
@@ -49,7 +70,7 @@ namespace SEP490_G52_CSMS.Models
                 context.SaveChanges();
 
                 // ---------- 3. EMPLOYEES ----------
-                string[] roles = { "Cashier", "Barista", "Bartender", "Busser" };
+                string[] roles = { "Cashier", "Bartender", "Busser" };
                 string[] empTypes = { "Full-time", "Part-time" };
                 var employeesByBranch = new Dictionary<string, List<Employee>>();
                 int globalEmpCounter = 3; // manager1/manager2 already exist

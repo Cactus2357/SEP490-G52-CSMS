@@ -1,3 +1,4 @@
+@inject SEP490_G52_CSMS.Models.CSMSAppDbContext DbContext
 @{
     string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -9,6 +10,17 @@
         bool actionMatch = string.IsNullOrEmpty(action) ||
                                string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
         return (controllerMatch && actionMatch) ? "active" : "";
+    }
+
+    var branchId = User.FindFirst("BranchId")?.Value;
+    var branchName = "Tổng công ty";
+    if (!string.IsNullOrEmpty(branchId))
+    {
+        var branch = DbContext.Branches.FirstOrDefault(b => b.BranchId == branchId);
+        if (branch != null)
+        {
+            branchName = branch.BranchName;
+        }
     }
 }
 <!DOCTYPE html>
@@ -58,66 +70,82 @@
                 </button>
             </div>
             <ul class="sidebar-menu">
-                @* ✅ Linked: Employee → Index *@
-                <li class="menu-item">
-                    <a asp-controller="Employee" asp-action="Index"
-                       class="menu-link @ActiveIf("Employee", "Index")">
-                        <i class="bi bi-people-fill"></i>
-                        <span>Quản lý nhân viên</span>
-                    </a>
-                </li>
+                @if (User.IsInRole("BranchManager"))
+                {
+                    @* ✅ Linked: Employee → Index *@
+                    <li class="menu-item">
+                        <a asp-controller="Employee" asp-action="Index"
+                           class="menu-link @ActiveIf("Employee", "Index")">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Quản lý nhân viên</span>
+                        </a>
+                    </li>
+                }
 
-                @* ✅ Linked: BranchManager → Index *@
-                <li class="menu-item">
-                    <a asp-controller="BranchManager" asp-action="Index"
-                       class="menu-link @ActiveIf("BranchManager", "Index")">
-                        <i class="bi bi-person-badge-fill"></i>
-                        <span>Quản lý Branch Manager</span>
-                    </a>
-                </li>
+                @if (User.IsInRole("Admin"))
+                {
+                    @* ✅ Linked: BranchManager → Index *@
+                    <li class="menu-item">
+                        <a asp-controller="BranchManager" asp-action="Index"
+                           class="menu-link @ActiveIf("BranchManager", "Index")">
+                            <i class="bi bi-person-badge-fill"></i>
+                            <span>Quản lý Branch Manager</span>
+                        </a>
+                    </li>
+                }
 
-                @* ✅ Linked: WorkSchedule → Index *@
-                <li class="menu-item">
-                    <a asp-controller="WorkSchedule" asp-action="Index"
-                       class="menu-link @ActiveIf("WorkSchedule", "Index")">
-                        <i class="bi bi-calendar3"></i>
-                        <span>Quản lý lịch làm việc</span>
-                    </a>
-                </li>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @* ✅ Linked: WorkSchedule → Index *@
+                    <li class="menu-item">
+                        <a asp-controller="WorkSchedule" asp-action="Index"
+                           class="menu-link @ActiveIf("WorkSchedule", "Index")">
+                            <i class="bi bi-calendar3"></i>
+                            <span>Quản lý lịch làm việc</span>
+                        </a>
+                    </li>
+                }
 
-                @* ⏳ Not yet implemented — kept for visual completeness *@
-                <li class="menu-item">
-                    <a asp-controller="ShiftChange" asp-action="Index"
-                       class="menu-link @ActiveIf("ShiftChange", "Index")">
-                        <i class="bi bi-arrow-left-right"></i>
-                        <span>Quản lý đổi ca</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a asp-controller="ShiftHandover" asp-action="Index"
-                       class="menu-link @ActiveIf("ShiftHandover", "Index")">
-                        <i class="bi bi-clock-history"></i>
-                        <span>Lịch sử giao ca</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
-                        <i class="bi bi-journal-text"></i>
-                        <span>Quản lý thực đơn</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
-                        <i class="bi bi-calendar-x"></i>
-                        <span>Quản lý nghỉ phép</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
-                        <i class="bi bi-cart3"></i>
-                        <span>Quản lý đơn đặt hàng</span>
-                    </a>
-                </li>
+                @if (User.IsInRole("BranchManager"))
+                {
+                    @* ⏳ Not yet implemented — kept for visual completeness *@
+                    <li class="menu-item">
+                        <a asp-controller="ShiftChange" asp-action="Index"
+                           class="menu-link @ActiveIf("ShiftChange", "Index")">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <span>Quản lý đổi ca</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a asp-controller="ShiftHandover" asp-action="Index"
+                           class="menu-link @ActiveIf("ShiftHandover", "Index")">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Lịch sử giao ca</span>
+                        </a>
+                    </li>
+                }
+                
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <li class="menu-item">
+                        <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+                            <i class="bi bi-journal-text"></i>
+                            <span>Quản lý thực đơn</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+                            <i class="bi bi-calendar-x"></i>
+                            <span>Quản lý nghỉ phép</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+                            <i class="bi bi-cart3"></i>
+                            <span>Quản lý đơn đặt hàng</span>
+                        </a>
+                    </li>
+                }
             </ul>
             <script>
                 (function () {
@@ -137,7 +165,7 @@
                     <input type="text" class="header-search" placeholder="search">
                 </div>
                 <div class="header-branch">
-                    <span>Chi nhánh Quận 1</span>
+                    <span>@branchName</span>
                 </div>
                 <div class="header-right">
                     <button class="header-icon-btn">
@@ -152,6 +180,11 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             @if (User.Identity != null && User.Identity.IsAuthenticated)
                             {
+                                <li class="dropdown-header text-dark">
+                                    <div class="fw-bold">@User.Identity.Name</div>
+                                    <small class="text-muted">Vai trò: @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" asp-controller="Auth" asp-action="Profile">
                                         <i class="bi bi-person-circle me-2"></i> Hồ sơ cá nhân

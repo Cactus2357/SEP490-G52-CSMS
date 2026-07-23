@@ -40,8 +40,12 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
     {
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
     });
+
+builder.Services.AddAuthorization();
 
 // Product
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -59,9 +63,15 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/Error/500");
     app.UseHsts();
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 app.UseHttpsRedirection();
 

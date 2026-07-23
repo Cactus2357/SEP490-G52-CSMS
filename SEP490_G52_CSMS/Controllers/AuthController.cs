@@ -4,13 +4,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -33,6 +32,12 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Home");
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
             return View();
         }
 
@@ -98,6 +103,17 @@ namespace SEP490_G52_CSMS.Controllers
             var employees = await _context.Employees
                 .Where(e => e.FaceData != null && e.FaceData.Trim() == facialId)
                 .ToListAsync();
+
+            if (employees.Count == 0 && facialId.StartsWith("fio_sim_"))
+            {
+                var simUsername = facialId.Substring("fio_sim_".Length);
+                var simEmployee = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.Username == simUsername);
+                if (simEmployee != null)
+                {
+                    employees = new List<Employee> { simEmployee };
+                }
+            }
 
             if (employees.Count == 0)
                 return Json(new { success = false, errorMessage = "Face not recognized" });
@@ -211,7 +227,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return View(model);
             }
 
-            employee.Password = model.NewPassword;
+            employee.Password = DAT_PasswordHasher.HashPassword(model.NewPassword);
             await _context.SaveChangesAsync();
 
             TempData["ChangePasswordSuccess"] = "Đổi mật khẩu thành công!";
@@ -357,7 +373,7 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             // Securely reset password
-            employee.Password = model.NewPassword;
+            employee.Password = DAT_PasswordHasher.HashPassword(model.NewPassword);
             await _context.SaveChangesAsync();
 
             // Clear cache OTP
@@ -374,7 +390,8 @@ namespace SEP490_G52_CSMS.Controllers
                 new Claim(ClaimTypes.NameIdentifier, employee.EmployeeId.ToString()),
                 new Claim(ClaimTypes.Name, employee.FullName ?? ""),
                 new Claim(ClaimTypes.Role, employee.Role ?? "Cashier"),
-                new Claim("Username", employee.Username ?? "")
+                new Claim("Username", employee.Username ?? ""),
+                new Claim("BranchId", employee.BranchId ?? "")
             };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
@@ -397,15 +414,7 @@ namespace SEP490_G52_CSMS.Controllers
         private bool VerifyPassword(string inputPassword, string storedPassword)
         {
             if (string.IsNullOrEmpty(inputPassword) || string.IsNullOrEmpty(storedPassword)) return false;
-            //if (HashPassword(inputPassword) == storedPassword) return true;
-            return inputPassword == storedPassword;
-        }
-
-        private string HashPassword(string password)
-        {
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+            return DAT_PasswordHasher.VerifyPassword(inputPassword, storedPassword);
         }
 
         private static string GenerateOtp()

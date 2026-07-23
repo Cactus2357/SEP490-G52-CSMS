@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
 using System.Globalization;
@@ -8,13 +10,16 @@ using System.Text;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(Roles = "Admin")]
     public class BranchManagerController : Controller
     {
         private readonly CSMSAppDbContext _context;
+        private readonly IDAT_EmailHelper _emailHelper;
 
-        public BranchManagerController(CSMSAppDbContext context)
+        public BranchManagerController(CSMSAppDbContext context, IDAT_EmailHelper emailHelper)
         {
             _context = context;
+            _emailHelper = emailHelper;
         }
 
         public IActionResult Index()
@@ -91,7 +96,7 @@ namespace SEP490_G52_CSMS.Controllers
                 FullName = request.FullName,
                 Email = request.Email,
                 Username = request.Username,
-                Password = request.Password, // TODO: hash before persisting in production
+                Password = DAT_PasswordHasher.HashPassword(request.Password),
                 Role = "BranchManager",
                 BranchId = request.BranchId,
                 Status = "Active",
@@ -113,7 +118,7 @@ namespace SEP490_G52_CSMS.Controllers
             });
             _context.SaveChanges();
 
-            // TODO: dispatch generated credentials to employee.Email (POS-02)
+            _emailHelper.SendAccountCredentials(employee.Email, employee.FullName, employee.Username, request.Password);
 
             return Json(new { success = true });
         }
