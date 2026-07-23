@@ -12,6 +12,10 @@ builder.Services.AddDbContext<CSMSAppDbContext>(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IBranchRepository, BranchRepository>();
 builder.Services.AddScoped<IBranchService, BranchService>();
+builder.Services.AddScoped<ICashHandoverRepository, CashHandoverRepository>();
+builder.Services.AddScoped<ICashHandoverService, CashHandoverService>();
+builder.Services.AddScoped<IWorkScheduleRepository, WorkScheduleRepository>();
+builder.Services.AddScoped<IWorkScheduleService, WorkScheduleService>();
 
 var app = builder.Build();
 

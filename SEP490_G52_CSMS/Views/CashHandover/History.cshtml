@@ -1,0 +1,276 @@
+@model SEP490_G52_CSMS.Models.ViewModels.HandoverHistoryViewModel
+@{
+    ViewData["Title"] = "Lịch Sử Giao Ca - Quản Lý Kết Tiền";
+    var today = DateTime.Today;
+    var weekAgo = today.AddDays(-6);
+}
+
+<div class="container-fluid px-4">
+
+    @* Tiêu đề module *@
+    <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
+        <h1 class="h3 fw-bold text-dark mb-0">QUẢN LÝ KẾT TIỀN &amp; GIAO CA</h1>
+        <div class="d-flex gap-2">
+            <a asp-action="OpenShift" class="btn btn-outline-secondary btn-sm">Mở ca</a>
+            <a asp-action="Handover" class="btn btn-outline-secondary btn-sm">Giao &amp; Đóng ca</a>
+            <a asp-action="History" asp-route-branchId="@Model.BranchId"
+               class="btn btn-primary btn-sm">Lịch sử</a>
+        </div>
+    </div>
+
+    @* Header biểu mẫu *@
+    <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
+        <span class="fw-semibold text-uppercase text-secondary small">
+            <i class="bi bi-clock-history me-2"></i>Lịch sử đóng/ mở/ bàn giao ca
+        </span>
+        <a asp-action="Index" class="btn btn-outline-danger btn-sm">Hủy</a>
+    </div>
+
+    @* Bộ lọc ngày và loại phiên *@
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light">
+                            <i class="bi bi-calendar3"></i>
+                        </span>
+                        <input type="date" id="filterDateFrom" class="form-control form-control-sm"
+                               value="@weekAgo.ToString("yyyy-MM-dd")" />
+                        <span class="input-group-text bg-light">–</span>
+                        <input type="date" id="filterDateTo" class="form-control form-control-sm"
+                               value="@today.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <select id="filterSessionType" class="form-select form-select-sm">
+                        <option value="">Loại phiên: Tất cả</option>
+                        <option value="mở ca">Mở ca</option>
+                        <option value="giao ca">Giao ca</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="applyFilter()">
+                        <i class="bi bi-funnel me-1"></i>Lọc
+                    </button>
+                </div>
+                <div class="col-auto ms-auto">
+                    <span class="text-muted small">Tổng: <strong>@Model.TotalCount</strong> bản ghi</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.Items.Any())
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted opacity-50"></i>
+            <p class="text-muted mt-3">Chưa có dữ liệu lịch sử giao ca.</p>
+        </div>
+    }
+    else
+    {
+        @* Bảng lịch sử dạng gọn theo wireframe *@
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="historyTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Ngày</th>
+                                <th>Loại phiên</th>
+                                <th>Ca làm</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr class="history-row"
+                                    data-id="@item.HandoverId"
+                                    data-date="@item.HandoverDate"
+                                    data-shift="@item.ShiftName"
+                                    data-session-type="@item.SessionType.ToLower()"
+                                    data-outgoing="@item.OutgoingCashierName"
+                                    data-incoming="@item.IncomingCashierName"
+                                    data-theoretical="@item.TheoreticalCash"
+                                    data-actual="@item.ActualCash"
+                                    data-discrepancy="@item.Discrepancy"
+                                    data-notes="@(item.Notes ?? "")">
+                                    <td class="ps-3">@item.HandoverDate</td>
+                                    <td>
+                                        @if (item.SessionType == "Mở ca")
+                                        {
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                                <i class="bi bi-door-open me-1"></i>Mở ca
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                                <i class="bi bi-arrow-left-right me-1"></i>Giao ca
+                                            </span>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@item.ShiftName</span></td>
+                                    <td>
+                                        <a href="#detailPanel"
+                                           class="text-primary fw-semibold text-decoration-none view-btn"
+                                           onclick="showDetail(this); return false;">
+                                            Xem <i class="bi bi-chevron-down small"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @* Panel chi tiết phiên (ẩn mặc định, hiện khi click "Xem") *@
+        <div id="detailPanel" class="card border-0 shadow-sm d-none mb-3">
+            <div class="card-header bg-light border-bottom d-flex align-items-center justify-content-between">
+                <span class="fw-semibold text-uppercase small" id="detailTitle">CHI TIẾT PHIÊN</span>
+                <button type="button" class="btn-close btn-sm" onclick="hideDetail()"></button>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <span class="text-muted small">- Người ký nhận:</span>
+                            <span class="fw-semibold ms-2" id="detailIncoming">–</span>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <div class="text-muted small mb-1">- Tiền mặt hệ thống:</div>
+                                <div class="fw-semibold text-primary" id="detailTheoretical">–</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small mb-1">- Tiền mặt thực tế:</div>
+                                <div class="fw-semibold" id="detailActual">–</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-muted small">- Chênh lệch:</span>
+                            <span class="fw-bold ms-2 fs-6" id="detailDiscrepancy">–</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small form-label">- Lý do nếu có:</label>
+                        <div class="form-control bg-light" id="detailNotes"
+                             style="min-height: 70px; font-size: 0.875rem; white-space: pre-wrap;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Phân trang *@
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Phân trang lịch sử giao ca">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="History"
+                           asp-route-branchId="@Model.BranchId"
+                           asp-route-page="@(Model.PageIndex - 1)">&laquo; Trước</a>
+                    </li>
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="History"
+                               asp-route-branchId="@Model.BranchId"
+                               asp-route-page="@i">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="History"
+                           asp-route-branchId="@Model.BranchId"
+                           asp-route-page="@(Model.PageIndex + 1)">Sau &raquo;</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // ── Hiển thị panel chi tiết khi click "Xem" ──
+        function showDetail(btn) {
+            const row = btn.closest('tr');
+            const panel = document.getElementById('detailPanel');
+
+            const sessionType = row.dataset.sessionType;  // vd: "mở ca"
+            const date        = row.dataset.date;
+            const shift       = row.dataset.shift;
+            const incoming    = row.dataset.incoming;
+            const theoretical = row.dataset.theoretical;
+            const actual      = row.dataset.actual;
+            const discrepancy = row.dataset.discrepancy;
+            const notes       = row.dataset.notes;
+
+            // Tiêu đề panel: "CHI TIẾT PHIÊN: GIAO CA - CA 2 - 15/06"
+            document.getElementById('detailTitle').textContent =
+                `CHI TIẾT PHIÊN: ${sessionType.toUpperCase()} - ${shift} - ${date}`;
+
+            document.getElementById('detailIncoming').textContent    = incoming;
+            document.getElementById('detailTheoretical').textContent = theoretical;
+            document.getElementById('detailActual').textContent      = actual;
+
+            // Màu chênh lệch
+            const discEl = document.getElementById('detailDiscrepancy');
+            discEl.textContent = discrepancy;
+            discEl.className = 'fw-bold ms-2 fs-6 ' +
+                (discrepancy.startsWith('+') || discrepancy === '0 đ'
+                    ? 'text-success' : 'text-danger');
+
+            document.getElementById('detailNotes').textContent = notes || '(không có lý do)';
+
+            // Highlight dòng đang chọn
+            document.querySelectorAll('.history-row').forEach(r => r.classList.remove('table-active'));
+            row.classList.add('table-active');
+
+            // Hiện panel và scroll đến
+            panel.classList.remove('d-none');
+            setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+        }
+
+        function hideDetail() {
+            document.getElementById('detailPanel').classList.add('d-none');
+            document.querySelectorAll('.history-row').forEach(r => r.classList.remove('table-active'));
+        }
+
+        // ── Lọc client-side theo loại phiên và khoảng ngày ──
+        function applyFilter() {
+            const sessionFilter = document.getElementById('filterSessionType').value.toLowerCase();
+            const dateFrom = document.getElementById('filterDateFrom').value;   // yyyy-MM-dd
+            const dateTo   = document.getElementById('filterDateTo').value;
+
+            document.querySelectorAll('.history-row').forEach(row => {
+                const rowType    = (row.dataset.sessionType || '').toLowerCase();
+                const rawDate    = row.dataset.date;  // dd/MM/yyyy
+
+                // Chuyển dd/MM/yyyy → Date
+                let rowDate = null;
+                if (rawDate) {
+                    const parts = rawDate.split('/');
+                    if (parts.length === 3)
+                        rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+
+                const typeOk = !sessionFilter || rowType === sessionFilter;
+                const fromOk = !dateFrom || !rowDate || rowDate >= new Date(dateFrom);
+                const toOk   = !dateTo   || !rowDate || rowDate <= new Date(dateTo);
+
+                row.style.display = (typeOk && fromOk && toOk) ? '' : 'none';
+            });
+
+            // Ẩn detail panel khi lọc lại
+            hideDetail();
+        }
+    </script>
+}

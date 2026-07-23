@@ -1,0 +1,180 @@
+@model SEP490_G52_CSMS.Models.ViewModels.OpenShiftViewModel
+@{
+    ViewData["Title"] = "Mở Ca - Quản Lý Kết Tiền & Giao Ca";
+}
+
+<div class="container-fluid px-4">
+    <!-- Tiêu đề module -->
+    <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
+        <h1 class="h3 fw-bold text-dark mb-0">QUẢN LÝ KẾT TIỀN &amp; GIAO CA</h1>
+        <div class="d-flex gap-2">
+            <a asp-action="OpenShift" asp-route-cashierId="@Model.CashierId"
+               class="btn btn-primary btn-sm">Mở ca</a>
+            <a asp-action="Handover" asp-route-cashierId="@Model.CashierId"
+               class="btn btn-outline-secondary btn-sm">Giao &amp; Đóng ca</a>
+            <a asp-action="History" asp-route-branchId="@Model.BranchId"
+               class="btn btn-outline-secondary btn-sm">Lịch sử</a>
+        </div>
+    </div>
+
+    <!-- Thông báo lỗi / thành công -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>@TempData["InfoMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Header biểu mẫu -->
+    <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
+        <span class="fw-semibold text-uppercase text-secondary small">Biểu mẫu kích hoạt / Mở ca</span>
+        <a asp-action="Index" class="btn btn-outline-danger btn-sm">Hủy</a>
+    </div>
+
+    <form asp-action="OpenShift" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="CashierId" />
+        <input type="hidden" asp-for="BranchId" />
+        <input type="hidden" asp-for="ShiftId" />
+
+        <div class="row g-4">
+            <!-- CỘT TRÁI: Thông tin mở phiên + Khai báo tiền đầu ca -->
+            <div class="col-md-6">
+                <!-- Thông tin mở phiên làm việc -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-bottom fw-semibold">
+                        <i class="bi bi-person-badge me-2 text-primary"></i>* THÔNG TIN MỞ PHIÊN LÀM VIỆC
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-5 text-muted small">- Thu ngân thực hiện:</div>
+                            <div class="col-7 fw-semibold">@Model.CashierName</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-5 text-muted small">- Ca làm việc:</div>
+                            <div class="col-7">
+                                <span class="badge bg-primary">@Model.ShiftName</span>
+                                <span class="text-muted small ms-1">(@Model.ShiftTimeRange)</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-5 text-muted small">- Ngày thực hiện:</div>
+                            <div class="col-7">@Model.HandoverDate.ToString("dd/MM/yyyy")</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Khai báo dòng tiền đầu ca -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom fw-semibold">
+                        <i class="bi bi-cash-coin me-2 text-success"></i>* KHAI BÁO DÒNG TIỀN ĐẦU CA
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">- Nhập số tiền đang có trong két:</p>
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" id="initialCashDisplay"
+                                       class="form-control form-control-lg fw-semibold"
+                                       placeholder="VD: 3.000.000"
+                                       inputmode="numeric" autocomplete="off" />
+                                <span class="input-group-text bg-light fw-semibold">đ</span>
+                            </div>
+                            @* Hidden number field thực sự submit *@
+                            <input asp-for="InitialCash" type="hidden" id="initialCashHidden" />
+                            <span asp-validation-for="InitialCash" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="confirmBtn">
+                                <i class="bi bi-check2-circle me-2"></i>Xác nhận mở ca
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: Thông tin ca trước -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom fw-semibold">
+                        <i class="bi bi-clock-history me-2 text-secondary"></i>* THÔNG TIN CA TRƯỚC
+                    </div>
+                    <div class="card-body">
+                        @if (Model.PreviousCashierName == "Chưa có dữ liệu")
+                        {
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-inbox display-4 d-block mb-3 opacity-50"></i>
+                                <p>Chưa có dữ liệu ca trước</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row mb-3">
+                                <div class="col-6 text-muted small">- Thu ngân thực hiện:</div>
+                                <div class="col-6 fw-semibold">@Model.PreviousCashierName</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6 text-muted small">- Ca làm việc:</div>
+                                <div class="col-6">
+                                    <span class="badge bg-secondary">@Model.PreviousShiftName</span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6 text-muted small">- Ngày thực hiện:</div>
+                                <div class="col-6">@Model.PreviousHandoverDate</div>
+                            </div>
+                            <hr />
+                            <div class="row mb-3">
+                                <div class="col-6 text-muted small">- Số tiền đã nhập:</div>
+                                <div class="col-6 fw-bold text-success">@Model.PreviousInitialCash</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6 text-muted small">- Người xác nhận:</div>
+                                <div class="col-6">@Model.PreviousApproverName</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // ── Auto-format số tiền dạng 3.000.000 khi gõ ──
+        const displayInput = document.getElementById('initialCashDisplay');
+        const hiddenInput  = document.getElementById('initialCashHidden');
+
+        displayInput.addEventListener('input', function () {
+            // Chỉ giữ chữ số
+            const raw = this.value.replace(/\D/g, '');
+            const num = parseInt(raw, 10) || 0;
+
+            // Format có dấu chấm ngăn cách hàng nghìn
+            this.value = num > 0
+                ? new Intl.NumberFormat('vi-VN').format(num)
+                : '';
+
+            // Đưa giá trị số thực vào hidden input để form submit đúng
+            hiddenInput.value = num > 0 ? num : '';
+        });
+
+        // Khôi phục giá trị hiện tại nếu form submit lỗi
+        (function () {
+            const v = hiddenInput.value;
+            if (v && parseInt(v) > 0) {
+                displayInput.value = new Intl.NumberFormat('vi-VN').format(parseInt(v));
+            }
+        })();
+    </script>
+}

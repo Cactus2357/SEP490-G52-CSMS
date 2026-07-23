@@ -1,0 +1,46 @@
+@model List<SEP490_G52_CSMS.Models.ViewModels.SelectEmployeeScheduleViewModel>
+@{
+    ViewData["Title"] = "Chọn nhân viên xem lịch";
+}
+
+<div class="container-fluid px-4">
+    <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
+        <h1 class="h3 fw-bold text-dark mb-0">THU NGÂN</h1>
+        <div class="d-flex gap-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-sm">Trang chủ</a>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center bg-light border rounded px-3 py-2 mb-4">
+        <i class="bi bi-calendar-week me-2 text-secondary"></i>
+        <span class="fw-semibold text-uppercase text-secondary small">Chọn nhân viên để xem lịch làm việc</span>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-3">
+        @foreach (var emp in Model)
+        {
+            <div class="col-md-3 col-sm-6">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-secondary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                            <i class="bi bi-person-fill text-secondary fs-2"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1">@emp.EmployeeName</h5>
+                        <p class="text-muted small mb-3">@@@emp.Username - @emp.Role</p>
+                        <a asp-action="Index" asp-route-employeeId="@emp.EmployeeId" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-calendar3 me-1"></i>Xem lịch làm việc
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

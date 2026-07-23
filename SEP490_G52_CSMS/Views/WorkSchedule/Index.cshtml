@@ -1,0 +1,104 @@
+@model SEP490_G52_CSMS.Models.ViewModels.WorkScheduleViewModel
+@{
+    ViewData["Title"] = "Lịch Làm Việc Nhân Viên";
+}
+
+<div class="container-fluid px-4">
+    <!-- Tiêu đề và Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
+        <h1 class="h3 fw-bold text-dark mb-0 text-uppercase">Lịch Làm Việc Nhân Viên</h1>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="mb-0 text-dark">Họ &amp; Tên: <span class="fw-bold">@Model.EmployeeName</span></h4>
+        
+        <div class="d-flex align-items-center">
+            <!-- Form chọn tuần khác (sẽ truyền date qua querystring) -->
+            <form method="get" asp-action="Index" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="employeeId" value="@Model.EmployeeId" />
+                <div class="input-group input-group-sm" style="width: 250px;">
+                    <input type="date" name="weekDate" class="form-control" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+                    <span class="input-group-text bg-white" title="Ngày đang hiển thị: @Model.DateRangeText">
+                        <i class="bi bi-calendar3"></i>
+                    </span>
+                </div>
+            </form>
+            <a asp-action="SelectEmployee" class="btn btn-outline-secondary btn-sm ms-2" title="Đổi nhân viên">
+                <i class="bi bi-arrow-repeat"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Bảng Lịch Làm Việc (Ma trận) -->
+    <div class="table-responsive bg-white">
+        <table class="table table-bordered border-dark mb-0 text-center align-middle" style="border-width: 2px;">
+            <thead class="table-light border-dark">
+                <tr>
+                    <th class="text-start border-dark" style="width: 15%; min-width: 150px;">Ca làm việc</th>
+                    @foreach (var day in Model.DayHeaders)
+                    {
+                        <th class="border-dark" style="width: 12%;">@day</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td class="text-start bg-light border-dark">
+                            <div class="fw-bold">@row.ShiftName</div>
+                            <div class="small text-muted">(@row.ShiftTimeRange)</div>
+                        </td>
+                        
+                        @foreach (var cell in row.Cells)
+                        {
+                            if (cell.HasShift)
+                            {
+                                <td class="bg-white border-dark text-start align-top pt-3 ps-3">
+                                    <div class="mb-1 text-dark fw-semibold">
+                                        <i class="bi bi-check2-all text-dark me-1"></i>Có ca làm
+                                    </div>
+                                    <div class="small text-muted">
+                                        @if (cell.AttendanceStatus == "Vắng mặt")
+                                        {
+                                            <span class="text-dark">( <i class="bi bi-x-circle-fill text-dark"></i> Vắng mặt )</span>
+                                        }
+                                        else if (cell.AttendanceStatus == "Đã điểm danh")
+                                        {
+                                            <span class="text-dark">( <i class="bi bi-check-circle-fill text-dark"></i> Đã điểm danh )</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-dark">( <i class="bi bi-exclamation-circle text-dark"></i> Chưa điểm danh )</span>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="text-dark text-start align-top pt-3 ps-3 border-dark">--</td>
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Chú thích (Legend) -->
+    <div class="mt-4 border border-dark p-3 bg-white d-inline-block text-dark" style="border-width: 2px !important; min-width: 450px;">
+        <div class="fw-semibold mb-2">・ Chú thích:</div>
+        <div class="row gx-4 gy-1 small">
+            <div class="col-6">
+                <div>-- Chưa có dữ liệu.</div>
+                <div><i class="bi bi-check-circle-fill"></i> Đã tham gia ca làm việc.</div>
+                <div><i class="bi bi-exclamation-circle"></i> Chưa tới giờ làm việc.</div>
+            </div>
+            <div class="col-6">
+                <div><i class="bi bi-check2-all"></i> Có ca làm trong tuần.</div>
+                <div><i class="bi bi-x-circle-fill"></i> Vắng mặt.</div>
+            </div>
+        </div>
+    </div>
+
+</div>
