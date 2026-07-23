@@ -1,4 +1,4 @@
-﻿@model SEP490_G52_CSMS.Controllers.ShiftHandoverListViewModel
+@model SEP490_G52_CSMS.Controllers.ShiftHandoverListViewModel
 @{
     ViewData["Title"] = "Lịch sử đóng mở / bàn giao ca";
 
@@ -39,16 +39,26 @@
         }
 
     .handover-box {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 16px 18px;
+        border: 2px solid #000;
+        border-radius: 4px;
+        padding: 20px;
+        background-color: #fff;
         height: 100%;
     }
 
-        .handover-box h6 {
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
+    .handover-box h5 {
+        font-weight: 700;
+        margin-bottom: 16px;
+        font-size: 1.25rem;
+    }
+
+    .handover-box input[readonly] {
+        border: 1px solid #000 !important;
+        border-radius: 4px;
+        background-color: #fff !important;
+        color: #000;
+        font-weight: 500;
+    }
 </style>
 
 <h2 class="mb-4">LỊCH SỬ ĐÓNG MỞ /BÀN GIAO CA</h2>
@@ -179,11 +189,11 @@
 </div>
 
 <!-- Opening / Closing detail panel -->
-<h5 class="mb-3">CHI TIẾT ĐÓNG MỞ CA:</h5>
+<h2 class="mb-3 fw-bold" style="font-size: 1.5rem;">CHI TIẾT ĐÓNG MỞ CA:</h2>
 <div class="row g-3 mb-4">
     <div class="col-md-6">
         <div class="handover-box">
-            <h6>Mở ca (@(Model.OpeningInfo?.Handover.FixedShift?.ShiftName ?? "Ca 1")):</h6>
+            <h5>Mở ca (@(Model.OpeningInfo?.Handover.FixedShift?.ShiftName ?? "Ca 1")):</h5>
             @if (Model.OpeningInfo == null)
             {
                 <p class="text-muted mb-0">Chưa có dữ liệu mở ca cho ngày này.</p>
@@ -191,24 +201,22 @@
             else
             {
                 var opening = Model.OpeningInfo.Handover;
-                <div class="row mb-2">
-                    <div class="col-6">
-                        <label class="form-label small mb-1">Nhân viên</label>
-                        <input type="text" class="form-control form-control-sm" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly>
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label small mb-1">Thời gian</label>
-                        <input type="text" class="form-control form-control-sm"
-                               value="@((opening.FixedShift != null ? opening.FixedShift.StartTime.ToString(@"hh\:mm") : "?") + " - " + opening.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
+                <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-nowrap fw-semibold">Nhân viên:</span>
+                    <input type="text" class="form-control form-control-sm text-center" style="width: 130px;" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly>
+                    
+                    <span class="text-nowrap ms-md-3 fw-semibold">Thời gian:</span>
+                    <input type="text" class="form-control form-control-sm text-center" style="width: 180px;" value="@((opening.FixedShift != null ? opening.FixedShift.StartTime.ToString(@"hh\:mm") : "?") + " - " + opening.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
+                </div>
+                <div class="mb-3 d-flex align-items-center gap-2">
+                    <span class="text-nowrap fw-semibold" style="width: 160px;">Số tiền mặt thực tế:</span>
+                    <div class="flex-grow-1">
+                        <input type="text" class="form-control form-control-sm" value="@FormatMoney(opening.InitialCash)" readonly>
                     </div>
                 </div>
-                <div class="mb-2">
-                    <label class="form-label small mb-1">Số tiền mặt thực tế</label>
-                    <input type="text" class="form-control form-control-sm" value="@FormatMoney(opening.InitialCash)" readonly>
-                </div>
-                <div>
-                    <label class="form-label small mb-1">Từ nhân viên</label>
-                    <input type="text" class="form-control form-control-sm" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-nowrap fw-semibold" style="width: 160px;">Từ nhân viên:</span>
+                    <input type="text" class="form-control form-control-sm text-center" style="width: 130px;" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly>
                 </div>
             }
         </div>
@@ -216,7 +224,7 @@
 
     <div class="col-md-6">
         <div class="handover-box">
-            <h6>Đóng ca (@(Model.ClosingInfo?.Handover.FixedShift?.ShiftName ?? "Ca cuối")):</h6>
+            <h5>Đóng ca (@(Model.ClosingInfo?.Handover.FixedShift?.ShiftName ?? "Ca cuối")):</h5>
             @if (Model.ClosingInfo == null)
             {
                 <p class="text-muted mb-0">Chưa có dữ liệu đóng ca cho ngày này.</p>
@@ -224,28 +232,28 @@
             else
             {
                 var closing = Model.ClosingInfo.Handover;
-                <div class="row mb-2">
-                    <div class="col-6">
-                        <label class="form-label small mb-1">Nhân viên</label>
-                        <input type="text" class="form-control form-control-sm" value="@(closing.OutgoingCashier?.FullName ?? "?")" readonly>
+                <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-nowrap fw-semibold">Nhân viên:</span>
+                    <input type="text" class="form-control form-control-sm text-center" style="width: 130px;" value="@(closing.OutgoingCashier?.FullName ?? "?")" readonly>
+                    
+                    <span class="text-nowrap ms-md-3 fw-semibold">Thời gian:</span>
+                    <input type="text" class="form-control form-control-sm text-center" style="width: 180px;" value="@((closing.FixedShift != null ? closing.FixedShift.EndTime.ToString(@"hh\:mm") : "?") + " - " + closing.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
+                </div>
+                <div class="mb-3 d-flex align-items-center gap-2">
+                    <span class="text-nowrap fw-semibold" style="width: 180px;">Tổng tiền mặt thực tế:</span>
+                    <div class="flex-grow-1">
+                        <input type="text" class="form-control form-control-sm" value="@FormatMoney(closing.ActualCash)" readonly>
                     </div>
-                    <div class="col-6">
-                        <label class="form-label small mb-1">Thời gian</label>
-                        <input type="text" class="form-control form-control-sm"
-                               value="@((closing.FixedShift != null ? closing.FixedShift.EndTime.ToString(@"hh\:mm") : "?") + " - " + closing.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
+                </div>
+                <div class="mb-3 d-flex align-items-center gap-2">
+                    <span class="text-nowrap fw-semibold" style="width: 180px;">Tổng tiền mặt hệ thống:</span>
+                    <div class="flex-grow-1">
+                        <input type="text" class="form-control form-control-sm" value="@FormatMoney(closing.TheoreticalCash)" readonly>
                     </div>
                 </div>
-                <div class="mb-2">
-                    <label class="form-label small mb-1">Tổng tiền mặt thực tế</label>
-                    <input type="text" class="form-control form-control-sm" value="@FormatMoney(closing.ActualCash)" readonly>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label small mb-1">Tổng tiền mặt hệ thống</label>
-                    <input type="text" class="form-control form-control-sm" value="@FormatMoney(closing.TheoreticalCash)" readonly>
-                </div>
-                <div>
-                    <label class="form-label small mb-1">Bàn giao cho</label>
-                    <input type="text" class="form-control form-control-sm" value="@(closing.IncomingCashier?.FullName ?? "?")" readonly>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-nowrap fw-semibold" style="width: 180px;">Bàn giao cho:</span>
+                    <input type="text" class="form-control form-control-sm text-center" style="width: 130px;" value="@(closing.IncomingCashier?.FullName ?? "?")" readonly>
                 </div>
             }
         </div>

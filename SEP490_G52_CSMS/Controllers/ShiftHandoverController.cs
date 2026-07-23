@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
@@ -36,7 +36,18 @@ namespace SEP490_G52_CSMS.Controllers
             HandoverRowVM? openingInfo = null;
             HandoverRowVM? closingInfo = null;
 
-            foreach (var h in dayHandovers.OrderBy(h => h.FixedShift?.StartTime ?? TimeSpan.Zero))
+            var orderedHandovers = dayHandovers.OrderBy(h => h.FixedShift?.StartTime ?? TimeSpan.Zero).ToList();
+            if (orderedHandovers.Any())
+            {
+                var firstHandover = orderedHandovers.First();
+                var firstShiftIndex = allShifts.FindIndex(s => s.ShiftId == firstHandover.ShiftId);
+                FixedShift? nextForFirst = (firstShiftIndex >= 0 && firstShiftIndex < allShifts.Count - 1)
+                    ? allShifts[firstShiftIndex + 1]
+                    : null;
+                openingInfo = new HandoverRowVM { Handover = firstHandover, NextShift = nextForFirst };
+            }
+
+            foreach (var h in orderedHandovers)
             {
                 var shiftIndex = allShifts.FindIndex(s => s.ShiftId == h.ShiftId);
                 FixedShift? next = (shiftIndex >= 0 && shiftIndex < allShifts.Count - 1)
@@ -51,6 +62,7 @@ namespace SEP490_G52_CSMS.Controllers
                 }
                 else
                 {
+                    closingInfo = row;
                 }
             }
 
