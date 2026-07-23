@@ -39,26 +39,26 @@
         }
 
     .handover-box {
-        border: 2px solid #000;
+        border: 1px solid #ced4da;
         border-radius: 4px;
         padding: 20px;
         background-color: #fff;
         height: 100%;
     }
 
-    .handover-box h5 {
-        font-weight: 700;
-        margin-bottom: 16px;
-        font-size: 1.25rem;
-    }
+        .handover-box h5 {
+            font-weight: 700;
+            margin-bottom: 16px;
+            font-size: 1.25rem;
+        }
 
-    .handover-box input[readonly] {
-        border: 1px solid #000 !important;
-        border-radius: 4px;
-        background-color: #fff !important;
-        color: #000;
-        font-weight: 500;
-    }
+        .handover-box input[readonly] {
+            border: 1px solid #ced4da !important;
+            border-radius: 4px;
+            background-color: #fff !important;
+            color: #000;
+            font-weight: 500;
+        }
 </style>
 
 <h2 class="mb-4">LỊCH SỬ ĐÓNG MỞ /BÀN GIAO CA</h2>
@@ -204,7 +204,7 @@
                 <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
                     <span class="text-nowrap fw-semibold">Nhân viên:</span>
                     <input type="text" class="form-control form-control-sm text-center" style="width: 130px;" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly>
-                    
+
                     <span class="text-nowrap ms-md-3 fw-semibold">Thời gian:</span>
                     <input type="text" class="form-control form-control-sm text-center" style="width: 180px;" value="@((opening.FixedShift != null ? opening.FixedShift.StartTime.ToString(@"hh\:mm") : "?") + " - " + opening.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
                 </div>
@@ -235,7 +235,7 @@
                 <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
                     <span class="text-nowrap fw-semibold">Nhân viên:</span>
                     <input type="text" class="form-control form-control-sm text-center" style="width: 130px;" value="@(closing.OutgoingCashier?.FullName ?? "?")" readonly>
-                    
+
                     <span class="text-nowrap ms-md-3 fw-semibold">Thời gian:</span>
                     <input type="text" class="form-control form-control-sm text-center" style="width: 180px;" value="@((closing.FixedShift != null ? closing.FixedShift.EndTime.ToString(@"hh\:mm") : "?") + " - " + closing.HandoverDate.ToString("dd/MM/yyyy"))" readonly>
                 </div>
