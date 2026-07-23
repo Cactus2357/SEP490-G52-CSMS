@@ -1,12 +1,12 @@
 @{
     string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
-    string currentAction     = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 
     // Returns "active" when the current request matches the given controller (and optionally action).
     string ActiveIf(string controller, string action = "")
     {
         bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
-        bool actionMatch     = string.IsNullOrEmpty(action) ||
+        bool actionMatch = string.IsNullOrEmpty(action) ||
                                string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
         return (controllerMatch && actionMatch) ? "active" : "";
     }
@@ -76,10 +76,10 @@
                     </a>
                 </li>
 
-                @* ✅ Linked: WorkSchedule → AddWorkSchedule *@
+                @* ✅ Linked: WorkSchedule → Index *@
                 <li class="menu-item">
-                    <a asp-controller="WorkSchedule" asp-action="AddWorkSchedule"
-                       class="menu-link @ActiveIf("WorkSchedule", "AddWorkSchedule")">
+                    <a asp-controller="WorkSchedule" asp-action="Index"
+                       class="menu-link @ActiveIf("WorkSchedule", "Index")">
                         <i class="bi bi-calendar3"></i>
                         <span>Quản lý lịch làm việc</span>
                     </a>
@@ -87,13 +87,15 @@
 
                 @* ⏳ Not yet implemented — kept for visual completeness *@
                 <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+                    <a asp-controller="ShiftChange" asp-action="Index"
+                       class="menu-link @ActiveIf("ShiftChange", "Index")">
                         <i class="bi bi-arrow-left-right"></i>
                         <span>Quản lý đổi ca</span>
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+                    <a asp-controller="ShiftHandover" asp-action="Index"
+                       class="menu-link @ActiveIf("ShiftHandover", "Index")">
                         <i class="bi bi-clock-history"></i>
                         <span>Lịch sử giao ca</span>
                     </a>
