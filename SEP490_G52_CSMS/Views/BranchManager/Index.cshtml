@@ -1,0 +1,1188 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
+@{
+    ViewData["Title"] = "Quản lý B Manager";
+}
+
+@section Styles {
+    <style>
+        /* ============ Page Header ============ */
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        /* ============ Action Bar ============ */
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+
+        .search-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+            max-width: 450px;
+        }
+
+        .input-search-container {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .input-search {
+            width: 100%;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            padding: 8px 12px 8px 38px;
+            font-size: 0.9rem;
+            background-color: #ffffff;
+            outline: none;
+        }
+
+        .input-search-container i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888888;
+        }
+
+        .filter-btn {
+            background: none;
+            border: none;
+            color: #333333;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .btn-group-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-mockup-primary {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1.5px solid #111827;
+            padding: 8px 18px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 2px 2px 0px #000000;
+            transition: all 0.1s ease;
+        }
+
+            .btn-mockup-primary:hover {
+                background-color: #f3f4f6;
+                transform: translate(1px, 1px);
+                box-shadow: 1px 1px 0px #000000;
+            }
+
+            .btn-mockup-primary:active {
+                transform: translate(2px, 2px);
+                box-shadow: none;
+            }
+
+        /* ============ Card List Container ============ */
+        .managers-list-container {
+            background-color: #ffffff;
+            border: 1.5px solid #d1d5db;
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .manager-card-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #e5e7eb;
+            border-radius: 50px;
+            padding: 12px 28px;
+            margin-bottom: 16px;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+            .manager-card-item:last-child {
+                margin-bottom: 0;
+            }
+
+            .manager-card-item:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+                border-color: #cbd5e1;
+            }
+
+        .card-left-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .card-initial-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1.5px solid #4b5563;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #1f2937;
+            background-color: #ffffff;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        .card-text-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .mgr-name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #111827;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mgr-meta-subtext {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-right-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .status-block-btn {
+            background: none;
+            border: none;
+            color: #1f2937;
+            font-size: 1.35rem;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+            .status-block-btn:hover {
+                color: #dc2626;
+            }
+
+        .btn-mockup-action {
+            background-color: #ffffff;
+            color: #333333;
+            border: 1px solid #111827;
+            padding: 6px 18px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+            .btn-mockup-action:hover {
+                background-color: #f3f4f6;
+            }
+
+        .btn-mockup-action-primary {
+            background-color: #ffffff;
+            color: #2563eb;
+            border: 1px solid #2563eb;
+            padding: 6px 18px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+            .btn-mockup-action-primary:hover {
+                background-color: #eff6ff;
+            }
+
+        /* ============ Create Manager Modal (2-step wizard) ============ */
+        #createManagerModal .modal-content {
+            border-radius: 12px;
+            border: 1.5px solid #111827;
+        }
+
+        #createManagerModal .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 22px;
+        }
+
+        .mgr-modal-back-btn {
+            background: none;
+            border: none;
+            color: #111827;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+
+            .mgr-modal-back-btn:hover {
+                background-color: #f3f4f6;
+            }
+
+        .mgr-modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        #createManagerModal .modal-body {
+            padding: 22px;
+        }
+
+        .mgr-section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .mgr-form-group {
+            margin-bottom: 16px;
+        }
+
+            .mgr-form-group:last-child {
+                margin-bottom: 0;
+            }
+
+        .mgr-form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+            .mgr-form-label .required-mark {
+                color: #dc2626;
+            }
+
+        .mgr-form-control {
+            width: 100%;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            padding: 9px 12px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+            .mgr-form-control:focus {
+                border-color: #111827;
+            }
+
+            .mgr-form-control[readonly] {
+                background-color: #f9fafb;
+                color: #111827;
+                font-weight: 600;
+            }
+
+        .mgr-note-box {
+            border: 1.5px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.78rem;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-top: 18px;
+            display: flex;
+            gap: 8px;
+        }
+
+            .mgr-note-box i {
+                color: #9ca3af;
+                font-size: 0.9rem;
+                margin-top: 1px;
+                flex-shrink: 0;
+            }
+
+        .mgr-step-panel {
+            display: none;
+        }
+
+            .mgr-step-panel.active {
+                display: block;
+            }
+
+        #createManagerModal .modal-footer {
+            border-top: 1px solid #e5e7eb;
+            padding: 16px 22px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-mockup-cancel {
+            background-color: #ffffff;
+            color: #374151;
+            border: 1px solid #cccccc;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+            .btn-mockup-cancel:hover {
+                background-color: #f3f4f6;
+            }
+
+        .mgr-field-error {
+            color: #dc2626;
+            font-size: 0.78rem;
+            margin-top: 4px;
+            display: none;
+        }
+    </style>
+}
+
+<div class="page-header">
+    <h2 class="page-title">Quản lý - Quản lý chi nhánh</h2>
+</div>
+
+<!-- Action Bar -->
+<div class="action-bar">
+    <div class="search-filter-group">
+        <div class="input-search-container">
+            <input type="text" id="managerSearchInput" class="input-search" placeholder="Tìm tên, tài khoản..." onkeyup="filterManagersList()">
+            <i class="bi bi-search"></i>
+        </div>
+        <button class="filter-btn" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel" title="Lọc">
+            <i class="bi bi-filter"></i>
+        </button>
+    </div>
+    <div class="btn-group-right">
+        <button class="btn-mockup-primary" data-bs-toggle="modal" data-bs-target="#createManagerModal">
+            + Tạo quản lí
+        </button>
+    </div>
+</div>
+
+<!-- Collapsible Filter Panel -->
+<div id="filterPanel" class="collapse mb-3">
+    <div class="card card-body" style="border: 2px dashed #111827; border-radius: 12px; background-color: #ffffff;">
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label for="filterBranch" class="form-label fw-bold" style="font-size: 0.85rem;">Chi nhánh quản lý</label>
+                <select id="filterBranch" class="form-select" onchange="filterManagersList()" style="border: 1px solid #111827; border-radius: 4px;">
+                    <option value="">Tất cả chi nhánh</option>
+                    @foreach (var branchName in Model.Where(e => e.Branch != null).Select(e => e.Branch.BranchName).Distinct().OrderBy(b => b))
+                    {
+                        <option value="@branchName">@branchName</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manager Card List -->
+<div class="managers-list-container">
+    <div id="managersList">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox d-block fs-2 mb-2"></i>
+                Chưa có B Manager nào được tạo.
+            </div>
+        }
+        else
+        {
+            @foreach (var mgr in Model)
+            {
+                string initials = "NA";
+                if (!string.IsNullOrWhiteSpace(mgr.FullName))
+                {
+                    var parts = mgr.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2)
+                    {
+                        initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+                    }
+                    else if (parts.Length == 1)
+                    {
+                        initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+                    }
+                }
+
+                <div class="manager-card-item" data-fullname="@mgr.FullName" data-username="@mgr.Username" data-managerid="BM@(mgr.EmployeeId.ToString("D3"))" data-branch="@(mgr.Branch?.BranchName ?? "CN Q1")">
+                    <div class="card-left-info">
+                        <div class="card-initial-circle">
+                            @initials
+                        </div>
+                        <div class="card-text-details">
+                            <span class="mgr-name">@mgr.FullName</span>
+                            <div class="mgr-meta-subtext">
+                                <span>@@@mgr.Username</span> &bull;
+                                <span>B Manager</span> &bull;
+                                <span>@(mgr.Branch?.BranchName ?? "CN Q1")</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-right-actions">
+                        @if (mgr.Status == "Active")
+                        {
+                            <button class="status-block-btn" title="Ngừng hoạt động" onclick="triggerDeactivationCheck(@mgr.EmployeeId)">
+                                <i class="bi bi-slash-circle"></i>
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="status-block-btn text-muted" title="Đã ngừng hoạt động" disabled>
+                                <i class="bi bi-x-circle-fill"></i>
+                            </button>
+                        }
+
+                        <button class="btn-mockup-action" onclick="showManagerDetail(@mgr.EmployeeId)">View Detail</button>
+
+                        <button class="btn-mockup-action-primary" onclick="showManagerUpdate(@mgr.EmployeeId)">+ Update</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- MODAL: Tạo tài khoản quản lý chi nhánh (2-step wizard) -->
+<div class="modal fade" id="createManagerModal" tabindex="-1" aria-labelledby="createManagerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="mgr-modal-back-btn" id="mgrModalBackBtn" onclick="mgrGoBack()" title="Quay lại">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <h5 class="mgr-modal-title" id="createManagerModalLabel">Thông tin quản lý</h5>
+            </div>
+            <div class="modal-body">
+                <div id="mgrFormAlert" class="alert alert-danger d-none py-2 px-3" style="font-size:0.85rem;" role="alert"></div>
+
+                <!-- STEP 1: Thông tin quản lý -->
+                <div id="mgrStep1" class="mgr-step-panel active">
+                    <div class="mgr-section-label">Thông tin đăng nhập</div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrFullName">Họ và tên <span class="required-mark">*</span></label>
+                        <input type="text" id="mgrFullName" class="mgr-form-control" placeholder="Nguyễn Văn An">
+                        <div class="mgr-field-error" id="mgrFullNameError">Vui lòng nhập họ và tên.</div>
+                    </div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrEmail">Email <span class="required-mark">*</span></label>
+                        <input type="email" id="mgrEmail" class="mgr-form-control" placeholder="abc@gmail.com">
+                        <div class="mgr-field-error" id="mgrEmailError">Vui lòng nhập email hợp lệ.</div>
+                    </div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrBranch">Chi nhánh <span class="required-mark">*</span></label>
+                        <select id="mgrBranch" class="mgr-form-control">
+                            <option value="">-- Chọn chi nhánh --</option>
+                            @if (ViewBag.Branches != null)
+                            {
+                                @foreach (var branch in (IEnumerable<SEP490_G52_CSMS.Models.Core.Branch>)ViewBag.Branches)
+                                {
+                                    <option value="@branch.BranchId">@branch.BranchName</option>
+                                }
+                            }
+                        </select>
+                        <div class="mgr-field-error" id="mgrBranchError">Vui lòng chọn chi nhánh.</div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Tạo tài khoản quản lý -->
+                <div id="mgrStep2" class="mgr-step-panel">
+                    <div class="mgr-section-label">Thông tin đăng nhập</div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrUsername">Tên tài khoản <span class="required-mark">*</span></label>
+                        <input type="text" id="mgrUsername" class="mgr-form-control" readonly>
+                    </div>
+
+                    <div class="mgr-form-group">
+                        <label class="mgr-form-label" for="mgrPassword">Mật khẩu <span class="required-mark">*</span></label>
+                        <input type="password" id="mgrPassword" class="mgr-form-control" readonly>
+                    </div>
+
+                    <div class="mgr-note-box">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>*Lưu ý: Tên tài khoản được đặt là tên nhân viên không cách không dấu. Mật khẩu sẽ được random và gửi qua email nhân viên đã đăng kí.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-mockup-cancel" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-mockup-primary" id="mgrPrimaryBtn" onclick="mgrPrimaryAction()">Tạo tài khoản</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail / Update panel host (loaded via AJAX, same pattern as Employee module) -->
+<div id="managerDetailPanel"></div>
+<div id="managerUpdatePanel"></div>
+
+<!-- MODAL: Ngừng hoạt động (Vô hiệu hóa quản lý) -->
+<div class="modal fade" id="deactivateManagerModal" tabindex="-1" aria-labelledby="deactivateManagerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: var(--bs-body-font-family);">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="deactivateManagerModalLabel">
+                    Ngừng hoạt động Quản lý
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Profile summary -->
+                <div class="d-flex align-items-center gap-3 p-3 mb-3 border border-dark rounded-3">
+                    <div class="rounded-circle border border-dark d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; background: #f3f4f6; font-size: 1.1rem;" id="deactAvatar">BM</div>
+                    <div>
+                        <h6 class="fw-bold m-0" id="deactFullName">Name</h6>
+                        <p class="text-muted m-0" style="font-size: 0.82rem;"><span id="deactUsername">@@username</span> &nbsp;·&nbsp; <span id="deactRole">Quản lý chi nhánh</span></p>
+                    </div>
+                </div>
+
+                <!-- Managed branch warning (if any) -->
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactBranchesWarning" style="background-color: #fffbeb;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-dark">Đang phụ trách chi nhánh</div>
+                        <div class="text-muted" style="font-size: 0.8rem;" id="deactBranchesText">Quản lý này đang phụ trách chi nhánh: ...</div>
+                    </div>
+                </div>
+
+                <!-- Warning Banner (Conditional) -->
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactWarningBanner" style="background-color: #fffbeb;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-dark">Còn ca làm việc chưa hoàn thành</div>
+                        <div class="text-muted" style="font-size: 0.8rem;" id="deactWarningText">Còn ca làm việc chưa hoàn thành. Cần hoàn tất trước khi ngừng hoạt động.</div>
+                    </div>
+                </div>
+
+                <!-- Remaining Shifts Grid (Conditional) -->
+                <div class="mb-3 d-none" id="deactShiftsSection">
+                    <label class="form-label text-muted text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Ca còn lại</label>
+                    <div class="border rounded-3 p-2 bg-light" id="deactShiftsContainer" style="font-size: 0.88rem;">
+                        <!-- Dynamically filled shifts -->
+                    </div>
+                </div>
+
+                <!-- Danger Zone Block -->
+                <div class="alert alert-danger border-danger d-flex align-items-start gap-2" style="background-color: #fef2f2;">
+                    <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-danger">vùng nguy hiểm</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">Tài khoản sẽ bị khoá. Quản lý chi nhánh không thể đăng nhập hệ thống sau khi ngừng hoạt động.</div>
+                    </div>
+                </div>
+
+                <!-- Form fields -->
+                <div class="mb-3">
+                    <label for="deactReason" class="form-label fw-bold" style="font-size:0.85rem; color:#374151;">Lý do ngừng hoạt động *</label>
+                    <select class="form-select" id="deactReason" required style="border-radius: 6px; border: 1px solid #cccccc; padding: 8px 12px; font-size: 0.9rem;">
+                        <option value="" disabled selected>Chọn lý do...</option>
+                        <option value="Thôi việc / Nghỉ việc">Thôi việc / Nghỉ việc</option>
+                        <option value="Nghỉ chế độ / Thai sản">Nghỉ chế độ / Thai sản</option>
+                        <option value="Đình chỉ / Kỷ luật">Đình chỉ / Kỷ luật</option>
+                        <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="deactNotes" class="form-label fw-bold" style="font-size:0.85rem; color:#374151;">Ghi chú</label>
+                    <textarea class="form-control" id="deactNotes" rows="2" placeholder="Ghi chú thêm nếu có..." style="border-radius: 6px; border: 1px solid #cccccc; padding: 8px 12px; font-size: 0.9rem;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between p-3 bg-light" style="border-top: 1px solid #e5e7eb;">
+                <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
+                <button type="button" class="btn btn-dark px-4" id="deactConfirmBtn" onclick="confirmDeactivation()" style="border-radius: 8px;">Ngừng hoạt động</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterManagersList() {
+            const query = document.getElementById('managerSearchInput').value.trim().toLowerCase();
+            const selectedBranch = document.getElementById('filterBranch').value;
+            
+            document.querySelectorAll('#managersList .manager-card-item').forEach(function (card) {
+                const fullName = (card.dataset.fullname || '').toLowerCase();
+                const username = (card.dataset.username || '').toLowerCase();
+                const managerId = (card.dataset.managerid || '').toLowerCase();
+                const branch = card.dataset.branch || '';
+
+                const matchesQuery = fullName.includes(query) || username.includes(query) || managerId.includes(query);
+                const matchesBranch = !selectedBranch || branch === selectedBranch;
+
+                card.style.display = (matchesQuery && matchesBranch) ? 'flex' : 'none';
+            });
+        }
+
+        let detailModalInstance = null;
+        let updateModalInstance = null;
+
+        async function showManagerDetail(employeeId) {
+            try {
+                const response = await fetch(`/BranchManager/DetailPartial/${employeeId}`);
+                if (!response.ok) {
+                    alert('Lỗi tải thông tin chi tiết.');
+                    return;
+                }
+                const html = await response.text();
+                document.getElementById('managerDetailPanel').innerHTML = html;
+
+                detailModalInstance = new bootstrap.Modal(document.getElementById('managerDetailModal'));
+                detailModalInstance.show();
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+            }
+        }
+
+        function closeManagerDetail() {
+            if (detailModalInstance) {
+                detailModalInstance.hide();
+            }
+        }
+
+        async function showManagerUpdate(employeeId) {
+            try {
+                const response = await fetch(`/BranchManager/UpdatePartial/${employeeId}`);
+                if (!response.ok) {
+                    alert('Lỗi tải form cập nhật.');
+                    return;
+                }
+                const html = await response.text();
+                document.getElementById('managerUpdatePanel').innerHTML = html;
+
+                updateModalInstance = new bootstrap.Modal(document.getElementById('managerUpdateModal'));
+                updateModalInstance.show();
+            } catch (err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+            }
+        }
+
+        function closeManagerUpdate() {
+            if (updateModalInstance) {
+                updateModalInstance.hide();
+            }
+        }
+
+        /* ---------- Detail / Update helper functions ---------- */
+        function dtlSwitchTab(panelName, btn) {
+            document.querySelectorAll('.dtl-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.dtl-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('dtl-panel-' + panelName).classList.add('active');
+        }
+
+        function updSwitchTab(panelName, btn) {
+            document.querySelectorAll('.upd-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.upd-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('upd-panel-' + panelName).classList.add('active');
+        }
+
+        const UPD_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+        const UPD_IMG_EXTS = ['jpg', 'jpeg', 'png'];
+        const UPD_ALLOWED  = ['jpg', 'jpeg', 'pdf'];
+
+        function updHandleFile(input, key) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const ext  = file.name.split('.').pop().toLowerCase();
+
+            if (!UPD_ALLOWED.includes(ext)) {
+                alert('❌ File phải có định dạng .pdf hoặc .jpg');
+                input.value = '';
+                return;
+            }
+            if (file.size > UPD_MAX_SIZE) {
+                alert('❌ Dung lượng file không được vượt quá 5 MB');
+                input.value = '';
+                return;
+            }
+
+            const isImage = UPD_IMG_EXTS.includes(ext);
+
+            const oldBox     = document.getElementById(key + '-old-box');
+            const newBox     = document.getElementById(key + '-new-box');
+            const newContent = document.getElementById(key + '-new-content');
+            const zoneWrap   = document.getElementById(key + '-zone');
+            const previewRow = document.getElementById(key + '-preview-row');
+
+            if (oldBox) {
+                newBox.style.display = 'block';
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        newContent.innerHTML =
+                            `<img src="${e.target.result}" alt="Ảnh mới"
+                                  class="upd-preview-img"
+                                  onclick="document.getElementById('update${cap(key)}File').click()"
+                                  title="Nhấn để đổi lại" />`;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    newContent.innerHTML =
+                        `<div class="upd-preview-pdf" onclick="document.getElementById('update${cap(key)}File').click()">
+                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                            <span>${file.name}</span>
+                         </div>`;
+                }
+            } else {
+                if (zoneWrap) zoneWrap.style.display = 'none';
+                previewRow.style.display = 'flex';
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        previewRow.innerHTML =
+                            `<div class="upd-preview-box">
+                                <div class="upd-preview-label">Đã tải lên</div>
+                                <img src="${e.target.result}" alt="Ảnh mới"
+                                     class="upd-preview-img"
+                                     onclick="document.getElementById('update${cap(key)}File').click()"
+                                     title="Nhấn để thay ảnh" />
+                                <div class="upd-preview-change-hint">Nhấn vào ảnh để thay mới</div>
+                             </div>`;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewRow.innerHTML =
+                        `<div class="upd-preview-box">
+                            <div class="upd-preview-label">Đã tải lên</div>
+                            <div class="upd-preview-pdf" style="cursor:pointer;"
+                                 onclick="document.getElementById('update${cap(key)}File').click()"
+                                 title="Nhấn để thay file">
+                                <i class="bi bi-file-earmark-pdf-fill"></i>
+                                <span>${file.name}</span>
+                            </div>
+                            <div class="upd-preview-change-hint">Nhấn để thay file mới</div>
+                         </div>`;
+                }
+            }
+        }
+
+        function cap(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        async function submitManagerUpdate(employeeId) {
+            const form = document.getElementById('updateManagerForm');
+            const errorAlert = document.getElementById('updateErrorAlert');
+            if (errorAlert) errorAlert.style.display = 'none';
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Validations
+            const fullName = document.getElementById('updateFullName').value.trim();
+            if (!fullName) {
+                showUpdateError(errorAlert, 'Họ và tên là bắt buộc.');
+                return;
+            }
+
+            const email = document.getElementById('updateEmail').value.trim();
+            if (!/\S+@@\S+\.\S+/.test(email)) {
+                showUpdateError(errorAlert, 'Email không đúng định dạng.');
+                return;
+            }
+
+            const phone = document.getElementById('updatePhoneNumber').value.trim();
+            if (!phone) {
+                showUpdateError(errorAlert, 'Số điện thoại là bắt buộc.');
+                return;
+            }
+
+            const dob = document.getElementById('updateDateOfBirth').value;
+            if (!dob) {
+                showUpdateError(errorAlert, 'Ngày sinh là bắt buộc.');
+                return;
+            }
+
+            const address = document.getElementById('updateAddress').value.trim();
+            if (!address) {
+                showUpdateError(errorAlert, 'Địa chỉ là bắt buộc.');
+                return;
+            }
+
+            const citizenId = document.getElementById('updateCitizenId').value.trim();
+            if (citizenId.length !== 12 || !/^\d+$/.test(citizenId)) {
+                showUpdateError(errorAlert, 'Số CCCD phải chứa chính xác 12 chữ số.');
+                return;
+            }
+
+            const branchId = document.getElementById('updateBranchId').value;
+            if (!branchId) {
+                showUpdateError(errorAlert, 'Chi nhánh là bắt buộc.');
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btnSubmitManagerUpdate');
+            const spinner   = document.getElementById('updateManagerSpinner');
+            btnSubmit.disabled = true;
+            spinner.classList.remove('d-none');
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(`/BranchManager/Update/${employeeId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    closeManagerUpdate();
+                    showSuccessToast('Cập nhật thông tin quản lý thành công!');
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showUpdateError(errorAlert, result.errorMessage || 'Có lỗi xảy ra khi cập nhật thông tin.');
+                }
+            } catch (err) {
+                console.error(err);
+                showUpdateError(errorAlert, 'Không thể kết nối đến máy chủ. Vui lòng thử lại.');
+            } finally {
+                btnSubmit.disabled = false;
+                spinner.classList.add('d-none');
+            }
+        }
+
+        function showUpdateError(alertEl, msg) {
+            if (!alertEl) return;
+            alertEl.textContent = msg;
+            alertEl.style.display = 'block';
+            alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function showSuccessToast(msg) {
+            let toast = document.getElementById('csms-success-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'csms-success-toast';
+                toast.style.cssText = `
+                    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+                    background: #111827; color: #fff; padding: 12px 28px;
+                    border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+                    font-family: var(--bs-body-font-family); z-index: 99999;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+                    animation: fadeInUp 0.25s ease;
+                `;
+                const style = document.createElement('style');
+                style.textContent = '@@keyframes fadeInUp { from { opacity:0; transform: translateX(-50%) translateY(12px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }';
+                document.head.appendChild(style);
+                document.body.appendChild(toast);
+            }
+            toast.textContent = '✓  ' + msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        /* ---------- Deactivation handling ---------- */
+        let deactModalInstance = null;
+        let currentDeactEmployeeId = null;
+
+        async function triggerDeactivationCheck(employeeId) {
+            currentDeactEmployeeId = employeeId;
+            
+            // Reset modal fields
+            document.getElementById('deactBranchesWarning').classList.add('d-none');
+            document.getElementById('deactWarningBanner').classList.add('d-none');
+            document.getElementById('deactShiftsSection').classList.add('d-none');
+            document.getElementById('deactReason').value = "";
+            document.getElementById('deactNotes').value = "";
+            document.getElementById('deactConfirmBtn').disabled = false;
+            
+            try {
+                const response = await fetch(`/BranchManager/CheckDeactivation/${employeeId}`);
+                if (!response.ok) {
+                    alert('Lỗi tải dữ liệu kiểm tra.');
+                    return;
+                }
+                
+                const result = await response.json();
+                if (!result.success) {
+                    alert(result.errorMessage);
+                    return;
+                }
+                
+                // Set employee info
+                document.getElementById('deactFullName').textContent = result.fullName;
+                document.getElementById('deactUsername').textContent = '@@' + result.username;
+                
+                // Set avatar initials
+                let initials = "BM";
+                if (result.fullName) {
+                    const parts = result.fullName.split(' ');
+                    if (parts.length >= 2) initials = (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+                    else if (parts.length === 1) initials = parts[0].substring(0, 2).toUpperCase();
+                }
+                document.getElementById('deactAvatar').textContent = initials;
+                
+                // Managed branches warning
+                if (result.managedBranches && result.managedBranches.length > 0) {
+                    document.getElementById('deactBranchesWarning').classList.remove('d-none');
+                    document.getElementById('deactBranchesText').textContent = `Quản lý này đang phụ trách chi nhánh: ${result.managedBranches.join(', ')}`;
+                }
+
+                // Render warning & shifts if there are uncompleted shifts
+                if (!result.canDeactivate && result.uncompletedShifts && result.uncompletedShifts.length > 0) {
+                    document.getElementById('deactWarningBanner').classList.remove('d-none');
+                    document.getElementById('deactWarningText').textContent = `Có ${result.uncompletedShifts.length} ca làm việc chưa hoàn thành. Cần hoàn tất trước khi ngừng hoạt động.`;
+                    
+                    const container = document.getElementById('deactShiftsContainer');
+                    container.innerHTML = "";
+                    result.uncompletedShifts.forEach(shift => {
+                        const row = document.createElement('div');
+                        row.className = "d-flex justify-content-between py-2 border-bottom";
+                        row.style.borderBottomStyle = "dashed";
+                        row.style.borderBottomWidth = "1px";
+                        row.innerHTML = `
+                            <div class="fw-bold">${shift.date} - ${shift.shiftName}</div>
+                            <div class="text-danger fw-bold">${shift.status}</div>
+                        `;
+                        container.appendChild(row);
+                    });
+                    
+                    // Remove last border bottom
+                    if (container.lastChild) {
+                        container.lastChild.style.borderBottom = "none";
+                    }
+                    
+                    document.getElementById('deactShiftsSection').classList.remove('d-none');
+                    // Lock / disable confirm button
+                    document.getElementById('deactConfirmBtn').disabled = true;
+                }
+                
+                // Show modal
+                if (!deactModalInstance) {
+                    deactModalInstance = new bootstrap.Modal(document.getElementById('deactivateManagerModal'));
+                }
+                deactModalInstance.show();
+                
+            } catch(err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+            }
+        }
+
+        async function confirmDeactivation() {
+            if (!currentDeactEmployeeId) return;
+            
+            const reason = document.getElementById('deactReason').value;
+            const notes = document.getElementById('deactNotes').value.trim();
+            
+            if (!reason) {
+                alert('Vui lòng chọn lý do ngừng hoạt động.');
+                return;
+            }
+            
+            const btn = document.getElementById('deactConfirmBtn');
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/BranchManager/Deactivate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: currentDeactEmployeeId, reason: reason, notes: notes })
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    deactModalInstance.hide();
+                    showSuccessToast('Đã chuyển tài khoản sang trạng thái ngừng hoạt động.');
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    alert(result.errorMessage || 'Lỗi vô hiệu hóa tài khoản.');
+                    btn.disabled = false;
+                }
+            } catch(err) {
+                console.error(err);
+                alert('Không thể kết nối máy chủ.');
+                btn.disabled = false;
+            }
+        }
+
+
+        /* ================= Create Manager Modal (2-step wizard) ================= */
+        let mgrCurrentStep = 1;
+
+        function mgrResetModal() {
+            mgrCurrentStep = 1;
+            document.getElementById('mgrStep1').classList.add('active');
+            document.getElementById('mgrStep2').classList.remove('active');
+            document.getElementById('createManagerModalLabel').textContent = 'Thông tin quản lý';
+            document.getElementById('mgrPrimaryBtn').textContent = 'Tạo tài khoản';
+            document.getElementById('mgrFormAlert').classList.add('d-none');
+            document.getElementById('mgrFullName').value = '';
+            document.getElementById('mgrEmail').value = '';
+            document.getElementById('mgrBranch').value = '';
+            document.getElementById('mgrUsername').value = '';
+            document.getElementById('mgrPassword').value = '';
+            ['mgrFullNameError', 'mgrEmailError', 'mgrBranchError'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+        }
+
+        document.getElementById('createManagerModal').addEventListener('show.bs.modal', mgrResetModal);
+
+        function mgrShowAlert(message) {
+            const alertBox = document.getElementById('mgrFormAlert');
+            alertBox.textContent = message;
+            alertBox.classList.remove('d-none');
+        }
+
+        function mgrGoBack() {
+            if (mgrCurrentStep === 2) {
+                document.getElementById('mgrStep2').classList.remove('active');
+                document.getElementById('mgrStep1').classList.add('active');
+                document.getElementById('createManagerModalLabel').textContent = 'Thông tin quản lý';
+                document.getElementById('mgrFormAlert').classList.add('d-none');
+                mgrCurrentStep = 1;
+            } else {
+                bootstrap.Modal.getInstance(document.getElementById('createManagerModal')).hide();
+            }
+        }
+
+        function mgrValidateStep1() {
+            const fullName = document.getElementById('mgrFullName').value.trim();
+            const email = document.getElementById('mgrEmail').value.trim();
+            const branchId = document.getElementById('mgrBranch').value;
+            let valid = true;
+
+            document.getElementById('mgrFullNameError').style.display = fullName ? 'none' : 'block';
+            document.getElementById('mgrEmailError').style.display = /\S+@@\S+\.\S+/.test(email) ? 'none' : 'block';
+            document.getElementById('mgrBranchError').style.display = branchId ? 'none' : 'block';
+
+            if (!fullName) valid = false;
+            if (!/\S+@@\S+\.\S+/.test(email)) valid = false;
+            if (!branchId) valid = false;
+
+            return valid;
+        }
+
+        async function mgrPrimaryAction() {
+            document.getElementById('mgrFormAlert').classList.add('d-none');
+
+            if (mgrCurrentStep === 1) {
+                if (!mgrValidateStep1()) return;
+
+                const fullName = document.getElementById('mgrFullName').value.trim();
+                const email = document.getElementById('mgrEmail').value.trim();
+                const btn = document.getElementById('mgrPrimaryBtn');
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch('/BranchManager/GenerateAccount', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fullName: fullName, email: email })
+                    });
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        mgrShowAlert(result.errorMessage || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    document.getElementById('mgrUsername').value = result.username;
+                    document.getElementById('mgrPassword').value = result.password;
+
+                    document.getElementById('mgrStep1').classList.remove('active');
+                    document.getElementById('mgrStep2').classList.add('active');
+                    document.getElementById('createManagerModalLabel').textContent = 'Tạo tài khoản quản lý';
+                    mgrCurrentStep = 2;
+                } catch (err) {
+                    console.error(err);
+                    mgrShowAlert('Không thể kết nối máy chủ.');
+                } finally {
+                    btn.disabled = false;
+                }
+            } else {
+                const btn = document.getElementById('mgrPrimaryBtn');
+                btn.disabled = true;
+
+                const payload = {
+                    fullName: document.getElementById('mgrFullName').value.trim(),
+                    email: document.getElementById('mgrEmail').value.trim(),
+                    branchId: document.getElementById('mgrBranch').value,
+                    username: document.getElementById('mgrUsername').value,
+                    password: document.getElementById('mgrPassword').value
+                };
+
+                try {
+                    const response = await fetch('/BranchManager/CreateAccount', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        mgrShowAlert(result.errorMessage || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    bootstrap.Modal.getInstance(document.getElementById('createManagerModal')).hide();
+                    window.location.reload();
+                } catch (err) {
+                    console.error(err);
+                    mgrShowAlert('Không thể kết nối máy chủ.');
+                    btn.disabled = false;
+                }
+            }
+        }
+    </script>
+}

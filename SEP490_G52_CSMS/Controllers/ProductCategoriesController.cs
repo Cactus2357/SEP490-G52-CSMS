@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Models.ViewModels.Sales.Category;
 using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(Roles = "Admin")]
     public class ProductCategoriesController : Controller
     {
         private readonly IProductCategoryService _productCategoryService;

@@ -1,19 +1,16 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
+using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Models.Attendance;
 
 namespace SEP490_G52_CSMS.Repositories
 {
-    public class DAT_EmployeeRepository : IDAT_EmployeeRepository
+    public class EmployeeRepository : IEmployeeRepository
     {
         private readonly CSMSAppDbContext _context;
 
-        public DAT_EmployeeRepository(CSMSAppDbContext context)
+        public EmployeeRepository(CSMSAppDbContext context)
         {
             _context = context;
         }

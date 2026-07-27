@@ -1,0 +1,46 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+}
+
+<li class="menu-item">
+    <a asp-controller="BranchManager" asp-action="Index" class="menu-link @ActiveIf("BranchManager", "Index")">
+        <i class="bi bi-person-badge-fill"></i>
+        <span>Quản lý chi nhánh</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ProductCategories" asp-action="Index" class="menu-link @ActiveIf("ProductCategories", "Index")">
+        <i class="bi bi-tags-fill"></i>
+        <span>Quản lý danh mục</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Product" asp-action="Index" class="menu-link @ActiveIf("Product", "Index")">
+        <i class="bi bi-cup-hot-fill"></i>
+        <span>Quản lý sản phẩm</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>Báo cáo doanh thu</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+        <i class="bi bi-file-earmark-arrow-down-fill"></i>
+        <span>Xuất file</span>
+    </a>
+</li>

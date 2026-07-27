@@ -136,11 +136,12 @@
 
     <!-- FaceIO Library: loaded in body (after Bootstrap) so document.body exists when fio.js initializes -->
     <script src="https://cdn.faceio.net/fio.js"></script>
+    <script>
+        window.FACEIO_APP_ID = "@Configuration["FaceIO:AppId"]";
+    </script>
     <script src="/js/faceid.js" asp-append-version="true"></script>
 
     <script>
-        // Assign to window so CSMSFaceIO.getAppId() can read it without TDZ issues.
-        window.FACEIO_APP_ID = CSMSFaceIO.getAppId();
         const FACEIO_APP_ID = window.FACEIO_APP_ID;
         const CREDS_LOGIN_ERROR = @Html.Raw(hasCredsError ? "true" : "false");
 

@@ -22,8 +22,8 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Add services to the container.
 builder.Services.AddScoped<SEP490_G52_CSMS.Commons.IDAT_EmailHelper, SEP490_G52_CSMS.Commons.DAT_EmailHelper>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IDAT_EmployeeRepository, SEP490_G52_CSMS.Repositories.DAT_EmployeeRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IDAT_EmployeeService, SEP490_G52_CSMS.Services.DAT_EmployeeService>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IEmployeeRepository, SEP490_G52_CSMS.Repositories.EmployeeRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IEmployeeService, SEP490_G52_CSMS.Services.EmployeeService>();
 builder.Services.AddControllersWithViews();
 
 // =========================
@@ -40,8 +40,12 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
     {
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
     });
+
+builder.Services.AddAuthorization();
 
 // Product
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -67,9 +71,15 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/Error/500");
     app.UseHsts();
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 app.UseHttpsRedirection();
 
@@ -83,6 +93,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=DAT_Employee}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

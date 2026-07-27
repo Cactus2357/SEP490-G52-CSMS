@@ -1,4 +1,4 @@
-﻿@model SEP490_G52_CSMS.Models.Attendance.ShiftChangeRequest
+@model SEP490_G52_CSMS.Models.Attendance.ShiftChangeRequest
 @{
     var employeeName = Model.RequestingEmployee?.FullName ?? $"NV#{Model.RequestingEmployeeId}";
     var isPending = Model.Status == "Submitted";
@@ -26,7 +26,7 @@
 
     @if (!isPending)
     {
-        <div class="alert alert-secondary mt-3 mb-0 py-2">
+        <div class="alert @(Model.Status == "Approved" ? "alert-success" : "alert-danger") mt-3 mb-0 py-2">
             Yêu cầu này đã được xử lý (trạng thái hiện tại: <strong>@Model.Status</strong>).
         </div>
     }

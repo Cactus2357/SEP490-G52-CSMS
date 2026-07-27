@@ -5,6 +5,9 @@
 
 <!-- FaceIO Library (page-specific, not needed on other pages) -->
 <script src="https://cdn.faceio.net/fio.js"></script>
+<script>
+    window.FACEIO_APP_ID = "@Configuration["FaceIO:AppId"]";
+</script>
 <script src="~/js/faceid.js" asp-append-version="true"></script>
 
 <style>
@@ -201,7 +204,7 @@
 </style>
 
 <div class="mb-4">
-    <a href="/DAT_Employee" class="text-decoration-none text-secondary" style="font-size: 0.95rem;">
+    <a href="/Employee" class="text-decoration-none text-secondary" style="font-size: 0.95rem;">
         <i class="bi bi-arrow-left-circle me-1"></i> Quay lại Danh sách nhân viên
     </a>
 </div>
@@ -240,7 +243,7 @@
                             <button id="btnStartScan" class="btn-mockup-action-primary" onclick="startBiometricScan()" disabled>
                                 Bắt đầu quét
                             </button>
-                            <a href="/DAT_Employee" class="btn-mockup-action-secondary">
+                            <a href="/Employee" class="btn-mockup-action-secondary">
                                 Hủy bỏ
                             </a>
                         </div>
@@ -633,7 +636,7 @@
     async function saveFaceDataToServer(facialId) {
         const statusMsg = document.getElementById('statusMessage');
         try {
-            const response = await fetch('/DAT_Employee/SaveFaceData', {
+            const response = await fetch('/Employee/SaveFaceData', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -650,7 +653,7 @@
                 statusMsg.className = "w-100 text-center status-bar status-success";
 
                 setTimeout(() => {
-                    window.location.href = '/DAT_Employee';
+                    window.location.href = '/Employee';
                 }, 1500);
             } else {
                 statusMsg.textContent = "Lỗi lưu dữ liệu: " + (result.errorMessage || "Không thể cập nhật database.");

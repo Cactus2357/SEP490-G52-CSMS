@@ -1,0 +1,60 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+}
+
+<li class="menu-item">
+    <a asp-controller="Home" asp-action="Index" class="menu-link @ActiveIf("Home", "Index")">
+        <i class="bi bi-house-door-fill"></i>
+        <span>Trang chủ</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="WorkSchedule" asp-action="Index" class="menu-link @ActiveIf("WorkSchedule", "Index")">
+        <i class="bi bi-calendar3"></i>
+        <span>Lịch làm việc</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+        <i class="bi bi-cash-coin"></i>
+        <span>Bán hàng</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ShiftHandover" asp-action="Index" class="menu-link @ActiveIf("ShiftHandover", "Index")">
+        <i class="bi bi-clock-history"></i>
+        <span>Bàn giao ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+        <i class="bi bi-calendar-x"></i>
+        <span>Xin nghỉ phép</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ShiftChange" asp-action="Index" class="menu-link @ActiveIf("ShiftChange", "Index")">
+        <i class="bi bi-arrow-left-right"></i>
+        <span>Xin chuyển ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+        <i class="bi bi-receipt-cutoff"></i>
+        <span>Lịch sử đơn hàng</span>
+    </a>
+</li>

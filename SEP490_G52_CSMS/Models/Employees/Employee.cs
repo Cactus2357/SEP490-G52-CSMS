@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Employees
@@ -57,7 +55,7 @@ namespace SEP490_G52_CSMS.Models.Employees
         [EmailAddress]
         public string? Email { get; set; }
 
-        /// <summary> Vai trò (Cashier, Barista, Bartender, Busser, BranchManager) </summary>
+        /// <summary> Vai trò (Cashier, Bartender, Busser, BranchManager, Admin) </summary>
         [Required]
         [Column("role")]
         [StringLength(50)]

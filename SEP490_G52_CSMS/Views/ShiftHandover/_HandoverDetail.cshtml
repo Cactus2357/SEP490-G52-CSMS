@@ -1,0 +1,37 @@
+﻿@model SEP490_G52_CSMS.Controllers.HandoverRowVM
+@{
+    var h = Model.Handover;
+    var variance = h.ActualCash - h.TheoreticalCash;
+    var hasVariance = variance != 0;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">CHI TIẾT BÀN GIAO CA</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <p class="mb-1">Ca: @(h.FixedShift?.ShiftName ?? "Ca ?") -&gt; @(Model.NextShift?.ShiftName ?? "?")</p>
+    <p class="mb-1">Nhân viên: @(h.OutgoingCashier?.FullName ?? "?") -&gt; @(h.IncomingCashier?.FullName ?? "?")</p>
+    <p class="mb-3"><i class="bi bi-clock"></i> Thời gian bàn giao: @(h.HandoverDate.ToString("HH:mm - dd/MM/yyyy"))</p>
+
+    <div class="d-flex justify-content-between mb-1">
+        <span>Tiền mặt thực nhận:</span>
+        <span>@(h.ActualCash.ToString("N0")) đ</span>
+    </div>
+    <div class="d-flex justify-content-between mb-1">
+        <span>Tiền mặt hệ thống:</span>
+        <span>@(h.TheoreticalCash.ToString("N0")) đ</span>
+    </div>
+    <div class="d-flex justify-content-between mb-3 @(hasVariance ? "text-danger fw-semibold" : "")">
+        <span>Chênh lệch:</span>
+        <span>@(Math.Abs(variance).ToString("N0")) đ</span>
+    </div>
+
+    <div class="border rounded p-2">
+        <div class="text-muted small mb-1">Ghi chú nhân viên:</div>
+        <div>@(string.IsNullOrWhiteSpace(h.Notes) ? "Không có ghi chú." : h.Notes)</div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng chi tiết</button>
+</div>

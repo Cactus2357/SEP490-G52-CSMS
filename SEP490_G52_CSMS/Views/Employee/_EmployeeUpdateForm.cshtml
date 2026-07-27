@@ -32,7 +32,7 @@
 }
 
 <style>
-    .upd-wrap                { font-family: 'Outfit', sans-serif; background: #fff; }
+    .upd-wrap                { font-family: var(--bs-body-font-family); background: #fff; }
     .upd-back-bar            { display: flex; align-items: center; gap: 12px; padding: 20px 24px 16px; border-bottom: 1px solid #e5e7eb; }
     .upd-back-btn            { background: none; border: none; padding: 4px; cursor: pointer; color: #111827; display: flex; align-items: center; border-radius: 6px; transition: background .15s; }
     .upd-back-btn:hover      { background: #f3f4f6; }
@@ -45,7 +45,7 @@
 
     /* Tabs */
     .upd-tabs                { display: flex; gap: 4px; margin: 0 24px 14px; background: #f3f4f6; border: 1.5px solid #111827; border-radius: 8px; padding: 4px; }
-    .upd-tab                 { flex: 1; padding: 8px 4px; border: none; background: transparent; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9ca3af; border-radius: 5px; cursor: pointer; transition: background .15s, color .15s; font-family: 'Outfit', sans-serif; }
+    .upd-tab                 { flex: 1; padding: 8px 4px; border: none; background: transparent; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9ca3af; border-radius: 5px; cursor: pointer; transition: background .15s, color .15s; font-family: var(--bs-body-font-family); }
     .upd-tab.active          { background: #111827; color: #fff; }
 
     /* Panels */
@@ -56,7 +56,7 @@
     .upd-sec                 { margin: 0 24px 14px; }
     .upd-sec-title           { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; margin: 0 0 12px; }
     .upd-lbl                 { display: block; font-size: .82rem; font-weight: 600; color: #374151; margin-bottom: 5px; }
-    .upd-input               { width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: .9rem; font-family: 'Outfit', sans-serif; outline: none; transition: border-color .15s; box-sizing: border-box; }
+    .upd-input               { width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: .9rem; font-family: var(--bs-body-font-family); outline: none; transition: border-color .15s; box-sizing: border-box; }
     .upd-input:focus         { border-color: #111827; }
     .upd-hint                { font-size: .72rem; color: #9ca3af; margin-top: 3px; }
     .upd-mb                  { margin-bottom: 14px; }
@@ -86,9 +86,9 @@
 
     /* Footer */
     .upd-footer              { display: flex; gap: 12px; padding: 16px 24px 20px; border-top: 1px solid #e5e7eb; }
-    .upd-btn-cancel          { flex: 1; padding: 10px; border: 1.5px solid #111827; border-radius: 8px; background: #fff; color: #111827; font-size: .88rem; font-weight: 600; cursor: pointer; transition: background .15s; font-family: 'Outfit', sans-serif; }
+    .upd-btn-cancel          { flex: 1; padding: 10px; border: 1.5px solid #111827; border-radius: 8px; background: #fff; color: #111827; font-size: .88rem; font-weight: 600; cursor: pointer; transition: background .15s; font-family: var(--bs-body-font-family); }
     .upd-btn-cancel:hover    { background: #f3f4f6; }
-    .upd-btn-save            { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #111827; color: #fff; font-size: .88rem; font-weight: 600; cursor: pointer; transition: background .15s; font-family: 'Outfit', sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .upd-btn-save            { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #111827; color: #fff; font-size: .88rem; font-weight: 600; cursor: pointer; transition: background .15s; font-family: var(--bs-body-font-family); display: flex; align-items: center; justify-content: center; gap: 6px; }
     .upd-btn-save:hover      { background: #1f2937; }
     .upd-btn-save:disabled   { background: #6b7280; cursor: not-allowed; }
 </style>

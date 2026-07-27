@@ -1,0 +1,122 @@
+@model SEP490_G52_CSMS.Controllers.WeeklyScheduleViewModel
+@{
+    ViewData["Title"] = "Quản lý lịch làm việc";
+    var dayNames = new[] { "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy", "Chủ nhật" };
+}
+
+<style>
+    .employee-entry {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">QUẢN LÝ LỊCH LÀM VIỆC</h1>
+</div>
+
+<div class="card-container">
+    <!-- Week navigation + shortcuts -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+
+        <div class="input-group" style="width:auto;">
+            <a class="btn btn-outline-secondary"
+               href="@Url.Action("Index", new { weekStart = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd") })">
+                &lsaquo;
+            </a>
+
+            <span class="input-group-text fw-semibold">
+                Tuần này: @Model.WeekStart.ToString("dd/MM") - @Model.WeekEnd.ToString("dd/MM/yyyy")
+            </span>
+
+            <a class="btn btn-outline-secondary"
+               href="@Url.Action("Index", new { weekStart = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd") })">
+                &rsaquo;
+            </a>
+        </div>
+
+        @if (User.IsInRole("BranchManager"))
+        {
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-primary" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
+                    Thêm lịch mới
+                </a>
+                <a class="btn btn-outline-primary" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
+                    Cập nhật lịch làm
+                </a>
+            </div>
+        }
+
+    </div>
+
+    @if (Model.Shifts.Count == 0)
+    {
+        <div class="alert alert-warning">
+            Chưa có ca làm việc (Fixed Shift) nào được cấu hình trong hệ thống. Vui lòng thêm ca làm việc trước khi xem lịch.
+        </div>
+    }
+    else
+    {
+        <!-- Weekly schedule matrix grid (read-only) -->
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:140px;">Ca làm việc</th>
+                        @for (var d = 0; d < 7; d++)
+                        {
+                            <th>
+                                @dayNames[d]<br />
+                                <small class="text-muted">@Model.WeekStart.AddDays(d).ToString("dd/MM")</small>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var shift in Model.Shifts)
+                    {
+                        <tr>
+                            <td class="table-light text-start">
+                                <strong>@(shift.ShiftName ?? "Ca ?")</strong><br />
+                                <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</small>
+                            </td>
+                            @for (var d = 0; d < 7; d++)
+                            {
+                                var date = Model.WeekStart.AddDays(d);
+                                var key = (shift.ShiftId, date.Date);
+                                var hasAssignments = Model.Assignments.TryGetValue(key, out var employees) && employees.Count > 0;
+
+                                <td class="text-start">
+                                    @if (hasAssignments)
+                                    {
+                                        @foreach (var emp in employees!)
+                                        {
+                                            <div class="employee-entry"><i class="bi bi-person-fill"></i> @(emp.FullName ?? $"NV#{emp.EmployeeId}")</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">&mdash;</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legend -->
+        <p class="text-muted small">
+            Chú thích: <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên thu ngân</span>
+            <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên pha chế</span>
+            <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên vệ sinh</span>
+        </p>
+
+        <!-- Export -->
+        <div class="d-flex justify-content-end mb-4">
+            <a class="btn btn-success" href="@Url.Action("ExportExcel", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
+                <i class="bi bi-file-earmark-excel"></i> Xuất excel
+            </a>
+        </div>
+    }
+</div>

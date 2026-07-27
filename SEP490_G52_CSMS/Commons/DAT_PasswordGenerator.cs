@@ -1,4 +1,3 @@
-using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -16,7 +15,7 @@ namespace SEP490_G52_CSMS.Commons
             if (length < 4) throw new ArgumentException("Length must be at least 4.", nameof(length));
 
             var chars = new StringBuilder();
-            
+
             // Ensure at least one of each required group
             chars.Append(GetRandomChar(Upper));
             chars.Append(GetRandomChar(Lower));

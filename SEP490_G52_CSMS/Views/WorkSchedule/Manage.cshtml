@@ -1,0 +1,580 @@
+@model SEP490_G52_CSMS.Services.AddWorkScheduleVM
+@{
+    ViewData["Title"] = "Thêm lịch làm việc theo tuần";
+    var dayNames = new[] { "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy", "Chủ nhật" };
+    var weekEnd = Model.WeekStartDate.AddDays(6);
+
+    // Defensive defaults: never let a null collection reach the markup/JS below.
+    var shifts = Model.Shifts ?? new List<SEP490_G52_CSMS.Models.Attendance.FixedShift>();
+    var cashiers = Model.Cashiers ?? new List<SEP490_G52_CSMS.Models.Employees.Employee>();
+    var bartenders = Model.Bartenders ?? new List<SEP490_G52_CSMS.Models.Employees.Employee>();
+    var bussers = Model.Bussers ?? new List<SEP490_G52_CSMS.Models.Employees.Employee>();
+    var branchId = Model.BranchId ?? string.Empty;
+    var existingAssignments = Model.ExistingAssignments ?? new List<SEP490_G52_CSMS.Services.ExistingAssignmentVM>();
+}
+
+<style>
+    .schedule-cell {
+        height: 1px;
+        vertical-align: stretch !important;
+        padding: 0 !important;
+    }
+
+    .cell-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        align-items: flex-start;
+        text-align: left;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+
+        .cell-container.no-data {
+            justify-content: center;
+        }
+
+        .cell-container.has-data {
+            justify-content: space-between;
+        }
+
+    .employee-entry {
+        white-space: nowrap;
+    }
+
+    .add-employee-link {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">THÊM LỊCH LÀM VIỆC THEO TUẦN</h1>
+</div>
+
+<div class="card-container">
+    @if (string.IsNullOrWhiteSpace(branchId))
+    {
+        <div class="alert alert-danger">Không xác định được chi nhánh. Vui lòng chọn chi nhánh trước khi tạo lịch.</div>
+    }
+
+    <!-- Week navigation + scope selection -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+
+        <div class="input-group" style="width:auto;">
+            <a class="btn btn-outline-secondary"
+               href="@Url.Action("Manage", new { weekStart = Model.WeekStartDate.AddDays(-7).ToString("yyyy-MM-dd") })">
+                &lsaquo;
+            </a>
+
+            <span class="input-group-text fw-semibold">
+                @Model.WeekStartDate.ToString("dd/MM")
+                -
+                @weekEnd.ToString("dd/MM/yyyy")
+            </span>
+
+            <a class="btn btn-outline-secondary"
+               href="@Url.Action("Manage", new { weekStart = Model.WeekStartDate.AddDays(7).ToString("yyyy-MM-dd") })">
+                &rsaquo;
+            </a>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                       name="scope"
+                       id="scopeSelected"
+                       value="selected"
+                       checked>
+                <label class="form-check-label" for="scopeSelected">
+                    Chỉ áp dụng cho tuần đã chọn
+                </label>
+            </div>
+
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                       name="scope"
+                       id="scopeUpcoming"
+                       value="upcoming">
+                <label class="form-check-label" for="scopeUpcoming">
+                    Áp dụng cho các tuần tiếp theo
+                </label>
+            </div>
+        </div>
+
+    </div>
+    @if (shifts.Count == 0)
+    {
+        <div class="alert alert-warning">
+            Chưa có ca làm việc (Fixed Shift) nào được cấu hình trong hệ thống. Vui lòng thêm ca làm việc trước khi tạo lịch.
+        </div>
+    }
+    else
+    {
+        <!-- Weekly schedule matrix grid -->
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center" id="scheduleTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:140px;">Ca làm việc</th>
+                        @for (var d = 0; d < 7; d++)
+                        {
+                            <th>
+                                @dayNames[d]<br />
+                                <small class="text-muted">@Model.WeekStartDate.AddDays(d).ToString("dd/MM")</small>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var shift in shifts)
+                    {
+                        <tr>
+                            <td class="table-light text-start">
+                                <strong>@(shift.ShiftName ?? "Ca ?")</strong><br />
+                                <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</small>
+                            </td>
+                            @for (var d = 0; d < 7; d++)
+                            {
+                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break"></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legend -->
+        <p class="text-muted small mt-3">
+            Chú thích: <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên thu ngân</span>
+            <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên pha chế</span>
+            <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên vệ sinh</span>
+        </p>
+
+        @if (cashiers.Count == 0)
+        {
+            <div class="alert alert-warning">
+                Chi nhánh chưa có Nhân viên thu ngân đang hoạt động. Không thể tạo ca làm việc cho đến khi có ít nhất một Cashier (bắt buộc theo BR01).
+            </div>
+        }
+
+        <!-- Main footer actions -->
+        <div class="d-flex justify-content-end gap-2 mb-0">
+            <button type="button" class="btn btn-outline-secondary" id="btnCancelAll">Hủy</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmAll" @(cashiers.Count == 0 ? "disabled" : "")>Xác nhận</button>
+        </div>
+    }
+</div>
+
+    <!-- Staff Assignment Modal -->
+    <div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Thứ 7 - Ca 1</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Cashier: mandatory single select (BR01) -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên thu ngân</label>
+                        <select class="form-select" id="cashierSelect" @(cashiers.Count == 0 ? "disabled" : "")>
+                            <option value="">-- Chọn nhân viên --</option>
+                            @foreach (var e in cashiers)
+                            {
+                                <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
+                            }
+                        </select>
+                        @if (cashiers.Count == 0)
+                        {
+                            <div class="form-text text-danger">Không có nhân viên thu ngân khả dụng.</div>
+                        }
+                    </div>
+
+                    <!-- Bartender: multi-add list (BR02) -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên pha chế</label>
+                        <div class="d-flex gap-2">
+                            <select class="form-select" id="bartenderSelect" @(bartenders.Count == 0 ? "disabled" : "")>
+                                <option value="">-- Chọn nhân viên --</option>
+                                @foreach (var e in bartenders)
+                                {
+                                    <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
+                                }
+                            </select>
+                            <button type="button" class="btn btn-outline-primary text-nowrap" id="btnAddBartender" @(bartenders.Count == 0 ? "disabled" : "")>Thêm Vào DS</button>
+                        </div>
+                        @if (bartenders.Count == 0)
+                        {
+                            <div class="form-text text-muted">Không có nhân viên pha chế khả dụng.</div>
+                        }
+                        <ul class="list-group mt-2" id="bartenderList"></ul>
+                    </div>
+
+                    <!-- Busser: multi-add list (BR02) -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên vệ sinh</label>
+                        <div class="d-flex gap-2">
+                            <select class="form-select" id="busserSelect" @(bussers.Count == 0 ? "disabled" : "")>
+                                <option value="">-- Chọn nhân viên --</option>
+                                @foreach (var e in bussers)
+                                {
+                                    <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
+                                }
+                            </select>
+                            <button type="button" class="btn btn-outline-primary text-nowrap" id="btnAddBusser" @(bussers.Count == 0 ? "disabled" : "")>Thêm Vào DS</button>
+                        </div>
+                        @if (bussers.Count == 0)
+                        {
+                            <div class="form-text text-muted">Không có nhân viên vệ sinh khả dụng.</div>
+                        }
+                        <ul class="list-group mt-2" id="busserList"></ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmCell">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+            const branchId = '@branchId';
+            const weekStartDate = '@Model.WeekStartDate.ToString("yyyy-MM-dd")';
+            const dayNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(dayNames));
+
+            // Map of shiftId -> display name (e.g. 1 -> "Ca 1").
+            const shiftNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                            shifts.ToDictionary(s => s.ShiftId.ToString(), s => s.ShiftName ?? ("Ca " + s.ShiftId))));
+
+    // Raw existing rows from the DB for this branch/week, sent down as-is;
+    // grouped into scheduleData below. camelCase so property names line up
+    // with the JS below (row.dayOffset, row.employeeId, ...).
+    const existingAssignments = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                existingAssignments,
+                                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
+    // In-memory state for the whole week grid.
+    // key = "{dayOffset}_{shiftId}" -> { cashier: {id,name}|null, bartenders: [{id,name}], bussers: [{id,name}] }
+    const scheduleData = {};
+
+            // Track which cells already existed when the page loaded.
+            const initiallyExistingCells = new Set();
+            // Track which cells have been modified or added during this session.
+            const modifiedCells = new Set();
+
+            function cellKey(day, shiftId) {
+                return day + '_' + shiftId;
+            }
+
+            // Build scheduleData + initiallyExistingCells from what the server already has.
+            (function seedExistingAssignments() {
+                (existingAssignments || []).forEach(row => {
+                    if (!row) return;
+
+                    const key = cellKey(row.dayOffset, row.shiftId);
+                    initiallyExistingCells.add(key);
+
+                    if (!scheduleData[key]) {
+                        scheduleData[key] = { cashier: null, bartenders: [], bussers: [] };
+                    }
+
+                    const entry = { id: row.employeeId, name: row.employeeName || ('NV#' + row.employeeId) };
+
+                    if (row.role === 'Cashier') {
+                        scheduleData[key].cashier = entry;
+                    } else if (row.role === 'Bartender') {
+                        scheduleData[key].bartenders.push(entry);
+                    } else if (row.role === 'Busser') {
+                        scheduleData[key].bussers.push(entry);
+                    }
+                });
+            })();
+
+            let currentDay = null;
+            let currentShiftId = null;
+            let tempBartenders = [];
+            let tempBussers = [];
+
+            const assignModalEl = document.getElementById('assignModal');
+            const assignModal = assignModalEl ? new bootstrap.Modal(assignModalEl) : null;
+
+            function formatDateOnly(date) {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return y + '-' + m + '-' + d;
+            }
+
+            // Renders one grid cell: assigned staff (if any) + the "+ Thêm nhân viên" button.
+            function renderCell(day, shiftId) {
+                const cell = document.getElementById('cell_' + day + '_' + shiftId);
+                if (!cell) return;
+
+                const key = cellKey(day, shiftId);
+                const data = scheduleData[key];
+                const hasData = !!(data && (data.cashier || (data.bartenders && data.bartenders.length > 0) || (data.bussers && data.bussers.length > 0)));
+
+                let html = '<div class="cell-container ' + (hasData ? 'has-data' : 'no-data') + '">';
+                html += '<div class="small">';
+
+                if (data) {
+                    if (data.cashier) {
+                        html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + data.cashier.name + '</div>';
+                    }
+                    (data.bartenders || []).forEach(b => {
+                        if (b) html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + b.name + '</div>';
+                    });
+                    (data.bussers || []).forEach(b => {
+                        if (b) html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + b.name + '</div>';
+                    });
+                }
+
+                html += '</div>';
+                html += '<button type="button" class="btn btn-link btn-sm text-decoration-none p-0 add-employee-link" ' +
+                        'data-day="' + day + '" data-shift="' + shiftId + '">+ Thêm nhân viên</button>';
+                html += '</div>';
+
+                cell.innerHTML = html;
+            }
+
+            function renderSubList(listElId, items, onRemove) {
+                const ul = document.getElementById(listElId);
+                if (!ul) return;
+
+                ul.innerHTML = '';
+                (items || []).forEach((item, index) => {
+                    if (!item) return;
+
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center py-1';
+                    li.textContent = item.name || ('NV#' + item.id);
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-sm btn-outline-danger';
+                    btn.textContent = 'Xóa';
+                    btn.addEventListener('click', () => onRemove(index));
+
+                    li.appendChild(btn);
+                    ul.appendChild(li);
+                });
+            }
+
+            function renderTempLists() {
+                renderSubList('bartenderList', tempBartenders, (i) => {
+                    tempBartenders.splice(i, 1);
+                    renderTempLists();
+                });
+                renderSubList('busserList', tempBussers, (i) => {
+                    tempBussers.splice(i, 1);
+                    renderTempLists();
+                });
+            }
+
+            // Opens the modal for a given (day, shift) cell.
+            function openAssignModal(day, shiftId) {
+                if (!assignModal) return;
+
+                currentDay = day;
+                currentShiftId = shiftId;
+
+                const shiftName = shiftNames[shiftId] || ('Ca ' + shiftId);
+                const titleEl = document.getElementById('modalTitle');
+                if (titleEl) titleEl.textContent = (dayNames[day] || ('Ngày ' + day)) + ' - ' + shiftName;
+
+                const existing = scheduleData[cellKey(day, shiftId)];
+                const cashierSelect = document.getElementById('cashierSelect');
+                if (cashierSelect) {
+                    cashierSelect.value = existing && existing.cashier ? existing.cashier.id : '';
+                }
+
+                tempBartenders = existing && Array.isArray(existing.bartenders) ? existing.bartenders.slice() : [];
+                tempBussers = existing && Array.isArray(existing.bussers) ? existing.bussers.slice() : [];
+                renderTempLists();
+
+                assignModal.show();
+            }
+
+            // Clicking any "+ Thêm nhân viên" link opens the modal for that cell.
+            const scheduleTableEl = document.getElementById('scheduleTable');
+            if (scheduleTableEl) {
+                scheduleTableEl.addEventListener('click', (e) => {
+                    const link = e.target.closest('.add-employee-link');
+                    if (!link) return;
+                    const day = parseInt(link.dataset.day, 10);
+                    const shiftId = parseInt(link.dataset.shift, 10);
+                    if (Number.isNaN(day) || Number.isNaN(shiftId)) return;
+                    openAssignModal(day, shiftId);
+                });
+            }
+
+            const btnAddBartender = document.getElementById('btnAddBartender');
+            if (btnAddBartender) {
+                btnAddBartender.addEventListener('click', () => {
+                    addToTempList(document.getElementById('bartenderSelect'), tempBartenders);
+                });
+            }
+
+            const btnAddBusser = document.getElementById('btnAddBusser');
+            if (btnAddBusser) {
+                btnAddBusser.addEventListener('click', () => {
+                    addToTempList(document.getElementById('busserSelect'), tempBussers);
+                });
+            }
+
+            function addToTempList(selectEl, list) {
+                if (!selectEl || !selectEl.value) return;
+
+                const id = parseInt(selectEl.value, 10);
+                if (!id || Number.isNaN(id)) return;
+
+                if (list.some(x => x.id === id)) {
+                    alert('Nhân viên này đã có trong danh sách.');
+                    return;
+                }
+
+                const selectedOption = selectEl.options[selectEl.selectedIndex];
+                const name = selectedOption ? selectedOption.text : ('NV#' + id);
+                list.push({ id, name });
+                selectEl.value = '';
+                renderTempLists();
+            }
+
+            // Modal "Xác nhận": BR01 requires a Cashier before saving the cell.
+            const btnConfirmCell = document.getElementById('btnConfirmCell');
+            if (btnConfirmCell) {
+                btnConfirmCell.addEventListener('click', () => {
+                    const cashierSelect = document.getElementById('cashierSelect');
+                    const cashierId = cashierSelect ? parseInt(cashierSelect.value, 10) : NaN;
+
+                    if (!cashierId || Number.isNaN(cashierId)) {
+                        alert('Vui lòng chọn Nhân viên thu ngân cho ca này.');
+                        return;
+                    }
+
+                    const cashierName = cashierSelect.options[cashierSelect.selectedIndex].text;
+
+                    const key = cellKey(currentDay, currentShiftId);
+                    scheduleData[key] = {
+                        cashier: { id: cashierId, name: cashierName },
+                        bartenders: tempBartenders.slice(),
+                        bussers: tempBussers.slice()
+                    };
+
+                    modifiedCells.add(key);
+
+                    renderCell(currentDay, currentShiftId);
+                    if (assignModal) assignModal.hide();
+                });
+            }
+
+            // Main "Hủy": discard the whole in-progress week assembly (AT3).
+            const btnCancelAll = document.getElementById('btnCancelAll');
+            if (btnCancelAll) {
+                btnCancelAll.addEventListener('click', () => {
+                    if (confirm('Bạn có chắc muốn hủy? Toàn bộ dữ liệu chưa lưu sẽ bị mất.')) {
+                        window.location.href = '/WorkSchedule/Index?weekStart=' + weekStartDate;
+                    }
+                });
+            }
+
+            // Main "Xác nhận": submit every populated, modified/added cell.
+            const btnConfirmAll = document.getElementById('btnConfirmAll');
+            if (btnConfirmAll) {
+                btnConfirmAll.addEventListener('click', async () => {
+                    if (!branchId) {
+                        alert('Không xác định được chi nhánh. Không thể lưu lịch làm việc.');
+                        return;
+                    }
+
+                    const cellKeys = Array.from(modifiedCells);
+                    if (cellKeys.length === 0) {
+                        alert('Không có thay đổi nào để lưu.');
+                        return;
+                    }
+
+                    const scopeUpcomingEl = document.getElementById('scopeUpcoming');
+                    const applyUpcoming = !!(scopeUpcomingEl && scopeUpcomingEl.checked);
+                    const weeksToApply = [new Date(weekStartDate)];
+
+                    if (applyUpcoming) {
+                        for (let i = 1; i <= 4; i++) {
+                            const d = new Date(weekStartDate);
+                            d.setDate(d.getDate() + 7 * i);
+                            weeksToApply.push(d);
+                        }
+                    }
+
+                    const errors = [];
+
+                    for (const week of weeksToApply) {
+                        for (const key of cellKeys) {
+                            const [dayStr, shiftIdStr] = key.split('_');
+                            const day = parseInt(dayStr, 10);
+                            const shiftId = parseInt(shiftIdStr, 10);
+                            const cell = scheduleData[key];
+
+                            if (!cell || !cell.cashier || !cell.cashier.id) {
+                                errors.push('Ca (' + (shiftNames[shiftId] || shiftId) + ') thiếu Nhân viên thu ngân, đã bỏ qua.');
+                                continue;
+                            }
+
+                            const assignmentDate = new Date(week);
+                            assignmentDate.setDate(assignmentDate.getDate() + day);
+
+                            const employeeIds = [
+                                cell.cashier.id,
+                                ...(cell.bartenders || []).map(b => b && b.id).filter(id => !!id),
+                                ...(cell.bussers || []).map(b => b && b.id).filter(id => !!id)
+                            ];
+
+                            const payload = {
+                                branchId: branchId,
+                                assignmentDate: formatDateOnly(assignmentDate),
+                                shiftId: shiftId,
+                                employeeIds: employeeIds
+                            };
+
+                            // Route to AddWorkSchedule for brand new rosters, or UpdateWorkSchedule for existing ones
+                            const isUpdate = initiallyExistingCells.has(key);
+                            const url = isUpdate ? '/WorkSchedule/UpdateWorkSchedule' : '/WorkSchedule/AddWorkSchedule';
+
+                            try {
+                                const res = await fetch(url, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+
+                                if (!res.ok) {
+                                    const msg = await res.text();
+                                    errors.push(assignmentDate.toLocaleDateString('vi-VN') + ' - ' + (shiftNames[shiftId] || shiftId) + ': ' + (msg || 'Lỗi không xác định'));
+                                }
+                            } catch (err) {
+                                errors.push(assignmentDate.toLocaleDateString('vi-VN') + ' - ' + (shiftNames[shiftId] || shiftId) + ': ' + err);
+                            }
+                        }
+                    }
+
+                    if (errors.length > 0) {
+                        alert('Một số ca không thể lưu:\n' + errors.join('\n'));
+                    } else {
+                        alert('Lưu lịch làm việc theo tuần thành công!');
+                        window.location.reload();
+                    }
+                });
+            }
+
+            // Initial render: draws every cell, including those seeded from existingAssignments above.
+    @foreach (var shift in shifts)
+            {
+                        for (var d = 0; d < 7; d++)
+                        {
+                                    @: renderCell(@d, @shift.ShiftId);
+                        }
+            }
+    </script>
+}

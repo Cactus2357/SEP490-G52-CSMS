@@ -1,4 +1,4 @@
-﻿@model SEP490_G52_CSMS.Controllers.ShiftChangeListViewModel
+@model SEP490_G52_CSMS.Controllers.ShiftChangeListViewModel
 @{
     ViewData["Title"] = "Yêu cầu đổi ca";
 
@@ -19,96 +19,100 @@
     };
 }
 
-<h2 class="mb-4">YÊU CẦU ĐỔI CA</h2>
+<div class="page-header">
+    <h1 class="page-title">YÊU CẦU ĐỔI CA</h1>
+</div>
 
-<!-- Filter bar -->
-<form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <select name="employeeId" class="form-select" style="max-width:220px;">
-        <option value="">Chọn nhân viên</option>
-        @foreach (var emp in Model.EmployeeOptions)
-        {
-            <option value="@emp.EmployeeId" selected="@(Model.SelectedEmployeeId == emp.EmployeeId)">
-                @(emp.FullName ?? $"NV#{emp.EmployeeId}")
-            </option>
-        }
-    </select>
-
-    <select name="status" class="form-select" style="max-width:220px;">
-        <option value="">Chọn trạng thái đơn</option>
-        <option value="Submitted" selected="@(Model.SelectedStatus == "Submitted")">Chờ duyệt</option>
-        <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Đã duyệt</option>
-        <option value="Rejected" selected="@(Model.SelectedStatus == "Rejected")">Từ chối</option>
-    </select>
-
-    <button type="submit" class="btn btn-pri    mary">Xác nhận</button>
-</form>
-
-<!-- Shift change requests table -->
-<div class="table-responsive">
-    <table class="table table-bordered align-middle">
-        <thead class="table-light">
-            <tr>
-                <th>Tên nhân viên</th>
-                <th>Tiêu đề yêu cầu</th>
-                <th>Ngày gửi</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model.Requests.Count == 0)
+<div class="card-container">
+    <!-- Filter bar -->
+    <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <select name="employeeId" class="form-select" style="max-width:220px;">
+            <option value="">Chọn nhân viên</option>
+            @foreach (var emp in Model.EmployeeOptions)
             {
-                <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
-                        Không tìm thấy yêu cầu đổi ca nào phù hợp.
-                    </td>
-                </tr>
+                <option value="@emp.EmployeeId" selected="@(Model.SelectedEmployeeId == emp.EmployeeId)">
+                    @(emp.FullName ?? $"NV#{emp.EmployeeId}")
+                </option>
             }
-            else
-            {
-                @foreach (var req in Model.Requests)
+        </select>
+
+        <select name="status" class="form-select" style="max-width:220px;">
+            <option value="">Chọn trạng thái đơn</option>
+            <option value="Submitted" selected="@(Model.SelectedStatus == "Submitted")">Chờ duyệt</option>
+            <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Đã duyệt</option>
+            <option value="Rejected" selected="@(Model.SelectedStatus == "Rejected")">Từ chối</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary">Xác nhận</button>
+    </form>
+
+    <!-- Shift change requests table -->
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Tên nhân viên</th>
+                    <th>Tiêu đề yêu cầu</th>
+                    <th>Ngày gửi</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Requests.Count == 0)
                 {
                     <tr>
-                        <td>@(req.RequestingEmployee?.FullName ?? $"NV#{req.RequestingEmployeeId}")</td>
-                        <td>Đơn xin đổi ca làm</td>
-                        <td>@req.SubmittedAt.ToString("dd/MM/yyyy")</td>
-                        <td><span class="badge @GetStatusBadgeClass(req.Status)">@GetStatusLabel(req.Status)</span></td>
-                        <td>
-                            <a href="#" class="link-primary" onclick="showShiftChangeDetail(@req.RequestId); return false;">
-                                Xem chi tiết
-                            </a>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            Không tìm thấy yêu cầu đổi ca nào phù hợp.
                         </td>
                     </tr>
                 }
-            }
-        </tbody>
-    </table>
-</div>
+                else
+                {
+                    @foreach (var req in Model.Requests)
+                    {
+                        <tr>
+                            <td>@(req.RequestingEmployee?.FullName ?? $"NV#{req.RequestingEmployeeId}")</td>
+                            <td>Đơn xin đổi ca làm</td>
+                            <td>@req.SubmittedAt.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge @GetStatusBadgeClass(req.Status)">@GetStatusLabel(req.Status)</span></td>
+                            <td>
+                                <a href="#" class="link-primary" onclick="showShiftChangeDetail(@req.RequestId); return false;">
+                                    Xem chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
 
-<!-- Pagination -->
-@if (Model.TotalPages > 1)
-{
-    <nav class="d-flex justify-content-end">
-        <ul class="pagination">
-            @for (var p = 1; p <= Model.TotalPages; p++)
-            {
-                @if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.CurrentPage) <= 1)
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="d-flex justify-content-end">
+            <ul class="pagination">
+                @for (var p = 1; p <= Model.TotalPages; p++)
                 {
-                    <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
-                        <a class="page-link"
-                           href="@Url.Action("Index", new { employeeId = Model.SelectedEmployeeId, status = Model.SelectedStatus, page = p })">
-                            @p
-                        </a>
-                    </li>
+                    @if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.CurrentPage) <= 1)
+                    {
+                        <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link"
+                               href="@Url.Action("Index", new { employeeId = Model.SelectedEmployeeId, status = Model.SelectedStatus, page = p })">
+                                @p
+                            </a>
+                        </li>
+                    }
+                    else if (p == 2 || p == Model.TotalPages - 1)
+                    {
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    }
                 }
-                else if (p == 2 || p == Model.TotalPages - 1)
-                {
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                }
-            }
-        </ul>
-    </nav>
-}
+            </ul>
+        </nav>
+    }
+</div>
 
 <!-- Shift Change Detail Modal (content injected via AJAX) -->
 <div class="modal fade" id="shiftDetailModal" tabindex="-1" aria-hidden="true">

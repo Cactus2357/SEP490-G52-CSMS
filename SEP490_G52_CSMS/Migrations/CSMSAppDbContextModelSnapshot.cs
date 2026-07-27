@@ -136,6 +136,10 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("machine_cash_revenue");
 
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("notes");
+
                     b.Property<int>("OutgoingCashierId")
                         .HasColumnType("int")
                         .HasColumnName("outgoing_cashier_id");

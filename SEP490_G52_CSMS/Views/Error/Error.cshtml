@@ -1,0 +1,21 @@
+@{
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+    ViewData["Title"] = "Đã xảy ra lỗi";
+}
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="card shadow-lg p-5 border-0 text-center" style="max-width: 480px; border-radius: 8px;">
+        <div class="mb-4 text-danger">
+            <i class="bi bi-x-circle" style="font-size: 4rem;"></i>
+        </div>
+        <h2 class="fw-bold text-dark mb-3">500 - ĐÃ CÓ LỖI XẢY RA</h2>
+        <p class="text-secondary mb-4" style="line-height: 1.6;">
+            Hệ thống đã gặp sự cố đột xuất. Vui lòng thử lại sau hoặc liên hệ với bộ phận hỗ trợ.
+        </p>
+        <div class="d-grid gap-2">
+            <a href="/" class="btn btn-outline-dark py-2" style="border-radius: 4px; font-weight: 600;">
+                Quay lại trang chủ
+            </a>
+        </div>
+    </div>
+</div>
