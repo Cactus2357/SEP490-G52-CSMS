@@ -1,0 +1,84 @@
+@model SEP490_G52_CSMS.Models.Employees.Employee
+@{
+    ViewData["Title"] = "Hồ sơ cá nhân";
+}
+
+<h4 class="fw-bold text-uppercase mb-4">Hồ sơ cá nhân</h4>
+
+<div class="row g-4">
+    <!-- Avatar -->
+    <div class="col-lg-4">
+        <fieldset class="border rounded p-3 h-100">
+            <legend class="float-none w-auto px-2 fs-6 text-muted">Avatar</legend>
+
+            <div class="d-flex flex-column align-items-center">
+                <div class="border d-flex flex-column align-items-center justify-content-center mb-3 text-muted"
+                     style="width: 100%; aspect-ratio: 1/1; max-width: 260px; background-color: #f8f9fa;">
+                    <i class="bi bi-person-circle" style="font-size: 5rem;"></i>
+                    <span class="small mt-2">Ảnh đại diện</span>
+                </div>
+
+                <!-- TODO: chưa xử lý upload ảnh -->
+                <button type="button" class="btn btn-outline-dark btn-sm" disabled title="Chức năng đang phát triển">
+                    Đổi ảnh
+                </button>
+            </div>
+        </fieldset>
+    </div>
+
+    <!-- Personal Info -->
+    <div class="col-lg-8">
+        <fieldset class="border rounded p-3 h-100">
+            <legend class="float-none w-auto px-2 fs-6 text-muted">Thông tin cá nhân</legend>
+
+            <!-- TODO: chưa xử lý update, các field đang readonly -->
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-3 col-form-label fw-semibold">Họ và tên:</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" value="@Model.FullName" readonly maxlength="100" />
+                </div>
+            </div>
+
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-3 col-form-label fw-semibold">Email:</label>
+                <div class="col-sm-9">
+                    <input type="email" class="form-control" value="@Model.Email" readonly maxlength="100" />
+                </div>
+            </div>
+
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-3 col-form-label fw-semibold">Số điện thoại:</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" value="@Model.PhoneNumber" readonly maxlength="15" />
+                </div>
+            </div>
+
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-3 col-form-label fw-semibold">Ngày sinh:</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" value="@(Model.DateOfBirth.ToString("dd/MM/yyyy"))" readonly />
+                </div>
+            </div>
+
+            <div class="mb-4 row align-items-center">
+                <label class="col-sm-3 col-form-label fw-semibold">Vai trò:</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" value="@Model.Role" readonly />
+                </div>
+            </div>
+
+            <!-- TODO: chưa nối chức năng lưu thay đổi -->
+            <div class="d-grid">
+                <button type="button" class="btn btn-dark" disabled title="Chức năng đang phát triển">
+                    Lưu thay đổi
+                </button>
+            </div>
+        </fieldset>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a asp-controller="Auth" asp-action="ChangePassword" class="text-decoration-none">
+        Đổi mật khẩu tài khoản
+    </a>
+</div>

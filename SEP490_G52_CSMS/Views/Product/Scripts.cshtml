@@ -1,0 +1,14 @@
+<script>
+    const editProductModal = document.getElementById('editProductModal');
+
+    editProductModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+
+        document.getElementById('editProductId').value = button.getAttribute('data-id');
+        document.getElementById('editProductName').value = button.getAttribute('data-name');
+        document.getElementById('editCategoryId').value = button.getAttribute('data-category');
+        document.getElementById('editImageUrl').value = button.getAttribute('data-image');
+        document.getElementById('editDescription').value = button.getAttribute('data-description');
+        document.getElementById('editStatus').value = button.getAttribute('data-status');
+    });
+</script>

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Models.Attendance;
@@ -108,6 +108,8 @@ namespace SEP490_G52_CSMS.Models
 
             modelBuilder.Entity<AttendanceLog>()
                 .HasIndex(a => new { a.RosterId, a.EmployeeId }).IsUnique();
+
+            //base.OnModelCreating(modelBuilder);
         }
     }
 }

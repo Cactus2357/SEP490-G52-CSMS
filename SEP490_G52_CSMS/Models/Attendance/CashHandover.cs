@@ -45,6 +45,9 @@ namespace SEP490_G52_CSMS.Models.Attendance
         [Column("actual_cash")]
         public decimal ActualCash { get; set; }
 
+        [Column("notes")]
+        public string? Notes { get; set; } = null;
+
         [Column("is_password_confirmed")]
         public bool IsPasswordConfirmed { get; set; } = false;
 

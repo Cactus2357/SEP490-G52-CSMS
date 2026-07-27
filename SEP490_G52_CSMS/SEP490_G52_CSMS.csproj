@@ -21,8 +21,7 @@
   <ItemGroup>
     <Folder Include="Commons\" />
     <Folder Include="DbContext\" />
-    <Folder Include="Reponsitories\" />
-    <Folder Include="Services\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

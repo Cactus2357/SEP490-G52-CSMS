@@ -1,0 +1,192 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.Sales.Category.CategoryListViewModel>
+
+@{
+    ViewData["Title"] = "Quản lí danh mục";
+}
+
+<div class="category-page">
+    <div class="category-header">
+        <div>
+            <div class="category-breadcrumb">CSMS / Danh mục</div>
+            <h2>Quản lí danh mục</h2>
+        </div>
+
+        <button type="button"
+                class="btn btn-primary category-add-btn"
+                data-bs-toggle="modal"
+                data-bs-target="#createCategoryModal">
+            + Thêm Danh Mục
+        </button>
+    </div>
+
+    <div class="category-card">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                @TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <form asp-action="Index" method="get" class="category-toolbar">
+            <input type="text"
+                   name="searchString"
+                   value="@ViewData["CurrentFilter"]"
+                   class="form-control category-search"
+                   placeholder="Search" />
+
+            <button type="submit" class="btn btn-dark">Tìm kiếm</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Làm mới</a>
+        </form>
+
+        <table class="table category-table">
+            <thead>
+                <tr>
+                    <th>Tên danh mục</th>
+                    <th>Biến thể</th>
+                    <th>Mô tả</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.CategoryName</td>
+                        <td>@item.Variants</td>
+                        <td>@item.Description</td>
+                        <td class="text-center">
+                            <button type="button"
+                                    class="category-action-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editCategoryModal"
+                                    data-category-id="@item.CategoryId"
+                                    data-category-name="@item.CategoryName"
+                                    data-category-description="@item.Description">
+                                ✏️
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content category-modal">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createCategoryModalLabel">Thêm danh mục</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tên danh mục</label>
+                        <input type="text"
+                               name="CategoryName"
+                               class="form-control"
+                               required
+                               maxlength="150" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea name="Description"
+                                  class="form-control"
+                                  rows="4"
+                                  maxlength="500"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">
+                        Hủy
+                    </button>
+
+                    <button type="submit" class="btn btn-primary">
+                        Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content category-modal">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" id="editCategoryId" name="CategoryId" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editCategoryModalLabel">Sửa danh mục</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tên danh mục</label>
+                        <input type="text"
+                               id="editCategoryName"
+                               name="CategoryName"
+                               class="form-control"
+                               required
+                               maxlength="150" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea id="editCategoryDescription"
+                                  name="Description"
+                                  class="form-control"
+                                  rows="4"
+                                  maxlength="500"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">
+                        Hủy
+                    </button>
+
+                    <button type="submit" class="btn btn-primary">
+                        Lưu danh mục
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const editCategoryModal = document.getElementById('editCategoryModal');
+
+        editCategoryModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+
+            document.getElementById('editCategoryId').value = button.getAttribute('data-category-id');
+            document.getElementById('editCategoryName').value = button.getAttribute('data-category-name');
+            document.getElementById('editCategoryDescription').value = button.getAttribute('data-category-description');
+        });
+    </script>
+}

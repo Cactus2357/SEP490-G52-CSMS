@@ -1,0 +1,85 @@
+@model SEP490_G52_CSMS.Models.ViewModels.Sales.Product.ProductIndexViewModel
+
+<table class="table align-middle product-table">
+    <thead class="table-light">
+        <tr>
+            <th style="width: 30%;">
+                Tên sản phẩm
+            </th>
+
+            <th style="width: 25%;">
+                Danh mục
+            </th>
+
+            <th style="width: 20%;"
+                class="text-center">
+                Trạng thái
+            </th>
+
+            <th style="width: 25%;"
+                class="text-center">
+                Sửa
+            </th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @if (Model.Products != null && Model.Products.Any())
+        {
+            @foreach (var item in Model.Products)
+            {
+                <tr>
+                    <td>
+                        @item.ProductName
+                    </td>
+
+                    <td>
+                        @item.CategoryName
+                    </td>
+
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-flex m-0">
+                            <input class="form-check-input product-status-switch"
+                                   type="checkbox"
+                                   role="switch"
+                                   checked="@(item.Status == "Active")"
+                                   disabled />
+                        </div>
+                    </td>
+
+                    <td class="text-center">
+                        <button type="button"
+                                class="product-action-button"
+                                title="Quản lý biến thể">
+                            ⚙️
+                        </button>
+
+                        <button type="button"
+                                class="product-action-button"
+                                title="Xóa sản phẩm"
+                                disabled>
+                            🗑️
+                        </button>
+
+                        <a asp-controller="Product"
+                           asp-action="Edit"
+                           asp-route-id="@item.ProductId"
+                           class="product-action-button text-decoration-none"
+                           title="Sửa sản phẩm">
+                            ✏️
+                        </a>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="4"
+                    class="text-center text-muted py-4">
+                    Không có dữ liệu.
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

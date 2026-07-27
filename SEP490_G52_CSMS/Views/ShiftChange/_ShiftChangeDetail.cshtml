@@ -1,0 +1,45 @@
+@model SEP490_G52_CSMS.Models.Attendance.ShiftChangeRequest
+@{
+    var employeeName = Model.RequestingEmployee?.FullName ?? $"NV#{Model.RequestingEmployeeId}";
+    var isPending = Model.Status == "Submitted";
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">ĐƠN XIN ĐỔI CA - @employeeName.ToUpper()</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <div class="mb-3">
+        <label class="form-label">Ngày gửi</label>
+        <input type="text" class="form-control" value="@Model.SubmittedAt.ToString("dd/MM/yyyy")" readonly>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Nguyện vọng đổi ca</label>
+        <textarea class="form-control" rows="2" readonly>@Model.Aspiration</textarea>
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">Lý do</label>
+        <textarea class="form-control" rows="4" readonly>@Model.Reason</textarea>
+    </div>
+
+    @if (!isPending)
+    {
+        <div class="alert @(Model.Status == "Approved" ? "alert-success" : "alert-danger") mt-3 mb-0 py-2">
+            Yêu cầu này đã được xử lý (trạng thái hiện tại: <strong>@Model.Status</strong>).
+        </div>
+    }
+</div>
+<div class="modal-footer">
+    @if (isPending)
+    {
+        <button type="button" class="btn btn-success btn-shift-approve" data-request-id="@Model.RequestId">
+            Chấp nhận
+        </button>
+        <button type="button" class="btn btn-danger btn-shift-reject" data-request-id="@Model.RequestId">
+            Không chấp nhận
+        </button>
+    }
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+</div>
