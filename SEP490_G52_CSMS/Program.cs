@@ -46,6 +46,8 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
 // Product
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
 builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IOrderRepository, SEP490_G52_CSMS.Reponsitories.OrderRepository>();
 builder.Services.AddScoped<SEP490_G52_CSMS.Services.IOrderService, SEP490_G52_CSMS.Services.OrderService>();
 

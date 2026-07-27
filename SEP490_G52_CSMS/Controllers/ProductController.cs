@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SEP490_G52_CSMS.Models.ViewModels.Sales.Product;
 using SEP490_G52_CSMS.Services.Interfaces;
@@ -9,13 +9,16 @@ namespace SEP490_G52_CSMS.Controllers
     {
         private readonly IProductService _productService;
         private readonly IProductCategoryService _productCategoryService;
+        private readonly IProductVariantService _variantService;
 
         public ProductController(
             IProductService productService,
-            IProductCategoryService productCategoryService)
+            IProductCategoryService productCategoryService,
+            IProductVariantService variantService)
         {
             _productService = productService;
             _productCategoryService = productCategoryService;
+            _variantService = variantService;
         }
 
         [HttpGet]
@@ -130,6 +133,84 @@ namespace SEP490_G52_CSMS.Controllers
                     Text = c.CategoryName,
                     Selected = c.CategoryId == model.CategoryId
                 }).ToList();
+        }
+
+        // ==========================
+        // VARIANT MANAGEMENT
+        // ==========================
+
+        [HttpGet]
+        public async Task<IActionResult> Variants(int id, string? searchString)
+        {
+            var model = await _variantService.GetVariantIndexAsync(id, searchString);
+            if (model == null)
+            {
+                return NotFound();
+            }
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateVariant(CreateVariantViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Dữ liệu biến thể không hợp lệ.";
+                return RedirectToAction(nameof(Variants), new { id = model.ProductId });
+            }
+
+            var result = await _variantService.CreateVariantAsync(model);
+            if (!result.Success)
+            {
+                TempData["Error"] = result.Message;
+            }
+            else
+            {
+                TempData["Success"] = result.Message;
+            }
+
+            return RedirectToAction(nameof(Variants), new { id = model.ProductId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditVariant(UpdateVariantViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Dữ liệu biến thể không hợp lệ.";
+                return RedirectToAction(nameof(Variants), new { id = model.ProductId });
+            }
+
+            var result = await _variantService.UpdateVariantAsync(model);
+            if (!result.Success)
+            {
+                TempData["Error"] = result.Message;
+            }
+            else
+            {
+                TempData["Success"] = result.Message;
+            }
+
+            return RedirectToAction(nameof(Variants), new { id = model.ProductId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteVariant(int variantId, int productId)
+        {
+            var result = await _variantService.DeleteVariantAsync(variantId);
+            if (!result.Success)
+            {
+                TempData["Error"] = result.Message;
+            }
+            else
+            {
+                TempData["Success"] = result.Message;
+            }
+
+            return RedirectToAction(nameof(Variants), new { id = productId });
         }
     }
 }

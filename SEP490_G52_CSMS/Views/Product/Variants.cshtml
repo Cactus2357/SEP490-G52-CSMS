@@ -1,0 +1,194 @@
+@model SEP490_G52_CSMS.Models.ViewModels.Sales.Product.VariantIndexViewModel
+
+@{
+    ViewData["Title"] = $"Quản lí biến thể: {Model.ProductName}";
+}
+
+<div class="variant-page">
+    <div class="variant-header position-relative mb-4">
+        <h2 class="mb-4">
+            Quản lí biến thể: @Model.ProductName
+        </h2>
+        
+        <!-- Close Button (X) at top right -->
+        <a asp-controller="Product" asp-action="Index" class="btn-close position-absolute top-0 end-0 fs-4" aria-label="Close" title="Đóng"></a>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <form method="get" class="d-flex w-50">
+                <input type="hidden" name="id" value="@Model.ProductId" />
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="searchString" value="@Model.SearchString" class="form-control" placeholder="Tìm kiếm biến thể..." />
+                    <button type="submit" class="btn btn-dark">Tìm kiếm</button>
+                </div>
+            </form>
+
+            <button type="button" class="btn btn-outline-dark fw-bold" data-bs-toggle="modal" data-bs-target="#createVariantModal">
+                Thêm biến thể
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table align-middle variant-table m-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40%;">Tên biến thể <i class="bi bi-caret-down-fill"></i></th>
+                        <th style="width: 40%;">Giá bán <i class="bi bi-caret-down-fill"></i></th>
+                        <th style="width: 20%;" class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Variants != null && Model.Variants.Any())
+                    {
+                        foreach (var item in Model.Variants)
+                        {
+                            <tr>
+                                <td>@item.SizeVariant</td>
+                                <td>@item.SellingPrice.ToString("N0")</td>
+                                <td class="text-center">
+                                    <form asp-action="DeleteVariant" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa biến thể này?');">
+                                        <input type="hidden" name="variantId" value="@item.VariantId" />
+                                        <input type="hidden" name="productId" value="@Model.ProductId" />
+                                        <button type="submit" class="action-btn text-danger" title="Xóa">
+                                            <i class="bi bi-trash-fill fs-5"></i>
+                                        </button>
+                                    </form>
+                                    <button type="button" class="action-btn text-dark ms-2" title="Sửa" 
+                                            onclick="openEditModal(@item.VariantId, '@item.SizeVariant', @item.SellingPrice)">
+                                        <i class="bi bi-pencil-square fs-5"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">Không có dữ liệu biến thể.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create Variant Modal -->
+<div class="modal fade" id="createVariantModal" tabindex="-1" aria-labelledby="createVariantLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="CreateVariant" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="createVariantLabel">Thêm biến thể</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="ProductId" value="@Model.ProductId" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên biến thể</label>
+                        <input type="text" name="SizeVariant" class="form-control" required maxlength="20" placeholder="VD: Size L" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Giá bán</label>
+                        <input type="number" name="SellingPrice" class="form-control" required min="0" step="1000" placeholder="VD: 35000" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Variant Modal -->
+<div class="modal fade" id="editVariantModal" tabindex="-1" aria-labelledby="editVariantLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="EditVariant" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="editVariantLabel">Cập nhật biến thể</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="ProductId" value="@Model.ProductId" />
+                    <input type="hidden" id="editVariantId" name="VariantId" value="" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên biến thể</label>
+                        <input type="text" id="editSizeVariant" name="SizeVariant" class="form-control" required maxlength="20" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Giá bán</label>
+                        <input type="number" id="editSellingPrice" name="SellingPrice" class="form-control" required min="0" step="1000" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .variant-page {
+        padding: 20px;
+        background-color: #fff;
+    }
+    .variant-table th {
+        font-weight: bold;
+        background-color: #e9ecef;
+        border-bottom: 2px solid #ccc;
+    }
+    .variant-table td {
+        border-bottom: 1px solid #ccc;
+        padding: 12px;
+    }
+    .action-btn {
+        background: none;
+        border: 2px solid #000;
+        padding: 5px 10px;
+        transition: all 0.1s;
+    }
+    .action-btn:hover {
+        background: #f0f0f0;
+        transform: translateY(-2px);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function openEditModal(id, size, price) {
+            document.getElementById('editVariantId').value = id;
+            document.getElementById('editSizeVariant').value = size;
+            document.getElementById('editSellingPrice').value = price;
+            
+            var modal = new bootstrap.Modal(document.getElementById('editVariantModal'));
+            modal.show();
+        }
+    </script>
+}
