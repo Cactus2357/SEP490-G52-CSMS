@@ -20,5 +20,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
     {
         public int ManagerId { get; set; }
         public string ManagerName { get; set; } = string.Empty;
+        public string EmployeeCode { get; set; } = string.Empty;
+        /// <summary>Tên chi nhánh đang quản lý (null nếu chưa quản lý chi nhánh nào)</summary>
+        public string? CurrentBranchName { get; set; }
     }
 }

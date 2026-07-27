@@ -93,9 +93,21 @@
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg" id="confirmBtn">
-                                <i class="bi bi-check2-circle me-2"></i>Xác nhận mở ca
-                            </button>
+                            @if (Model.IsTimeToOpen)
+                            {
+                                <button type="submit" class="btn btn-primary btn-lg" id="confirmBtn">
+                                    <i class="bi bi-check2-circle me-2"></i>Xác nhận mở ca
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                    <i class="bi bi-clock me-2"></i>Chưa đến giờ mở ca
+                                </button>
+                                <div class="text-danger small mt-2 text-center">
+                                    Bạn chỉ có thể mở ca trước 30 phút hoặc trong suốt thời gian diễn ra ca trực.
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>

@@ -56,10 +56,6 @@ namespace SEP490_G52_CSMS.Models.Attendance
         [StringLength(20)]
         public string Status { get; set; } = "Active";
 
-        /// <summary> Lý do chênh lệch tiền (nếu có) </summary>
-        [Column("notes")]
-        public string? Notes { get; set; }
-
         /// <summary> Thời điểm mở ca </summary>
         [Column("opened_at")]
         public DateTime OpenedAt { get; set; } = DateTime.Now;

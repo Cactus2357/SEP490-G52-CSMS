@@ -22,8 +22,12 @@ namespace SEP490_G52_CSMS.Repositories
             var query = _context.Orders
                 .Include(o => o.Cashier)
                 .Include(o => o.OrderItems)
-                .AsNoTracking()
-                .Where(o => o.BranchId == branchId);
+                .AsNoTracking();
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                query = query.Where(o => o.BranchId == branchId);
+            }
 
             // Default business rule BR03: display current day
             var today = DateTime.Today;
@@ -51,13 +55,20 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<Order?> GetOrderDetailsAsync(string orderId, string branchId)
         {
-            return await _context.Orders
+            var query = _context.Orders
                 .Include(o => o.Cashier)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductVariant)
                         .ThenInclude(pv => pv.MasterProduct)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.OrderId == orderId && o.BranchId == branchId);
+                .Where(o => o.OrderId == orderId);
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                query = query.Where(o => o.BranchId == branchId);
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
     }
 }

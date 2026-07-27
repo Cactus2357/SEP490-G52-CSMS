@@ -4,9 +4,16 @@ using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Services;
+using System.Security.Claims;
+using SEP490_G52_CSMS.Models.ViewModels;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize]
     public class WorkScheduleController : Controller
     {
         private const string DefaultBranchId = "CB001";
@@ -23,6 +30,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(DateTime? weekStart)
         {
+            // (Removed redirect to EmployeeIndex so Manager view is always accessible here)
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
             var sunday = monday.AddDays(6);
 
@@ -48,6 +56,56 @@ namespace SEP490_G52_CSMS.Controllers
                     .Where(r => r.Employee != null)
                     .GroupBy(r => (r.ShiftId, r.AssignmentDate.Date))
                     .ToDictionary(g => g.Key, g => g.Select(r => r.Employee!).ToList())
+            };
+
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EmployeeIndex(DateTime? weekStart)
+        {
+            var empIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(empIdStr, out int empId))
+            {
+                return Unauthorized();
+            }
+
+            var employee = await _context.Employees.FindAsync(empId);
+            if (employee == null) return NotFound();
+
+            var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
+            var sunday = monday.AddDays(6);
+
+            var shifts = await _context.FixedShifts
+                .OrderBy(s => s.StartTime)
+                .ToListAsync();
+
+            var rosters = await _context.WeeklyRosterGrids
+                .Include(r => r.AttendanceLogs)
+                .Where(r => r.EmployeeId == empId && r.AssignmentDate >= monday && r.AssignmentDate <= sunday)
+                .ToListAsync();
+
+            var scheduleData = new Dictionary<(int, DateTime), EmployeeShiftDetail>();
+            foreach (var r in rosters)
+            {
+                var log = r.AttendanceLogs.FirstOrDefault();
+                scheduleData.Add((r.ShiftId, r.AssignmentDate.Date), new EmployeeShiftDetail
+                {
+                    IsAssigned = true,
+                    OverallStatus = log?.OverallStatus,
+                    CheckInTime = log?.CheckInTime,
+                    CheckOutTime = log?.CheckOutTime
+                });
+            }
+
+            var vm = new EmployeeScheduleViewModel
+            {
+                FullName = employee.FullName ?? string.Empty,
+                WeekStart = monday,
+                WeekEnd = sunday,
+                Shifts = shifts,
+                Days = Enumerable.Range(0, 7).Select(i => monday.AddDays(i)).ToList(),
+                ScheduleData = scheduleData
             };
 
             return View(vm);

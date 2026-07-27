@@ -40,12 +40,33 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
     {
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/Login"; // Redirect về Login hoặc trang lỗi tự tạo
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
     });
 
 // Product
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+
+// ShiftChange
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IShiftChangeRepository, SEP490_G52_CSMS.Repositories.ShiftChangeRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IShiftChangeService, SEP490_G52_CSMS.Services.ShiftChangeService>();
+
+// Branch
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IBranchRepository, SEP490_G52_CSMS.Repositories.BranchRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IBranchService, SEP490_G52_CSMS.Services.BranchService>();
+
+// CashHandover
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.ICashHandoverRepository, SEP490_G52_CSMS.Repositories.CashHandoverRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.ICashHandoverService, SEP490_G52_CSMS.Services.CashHandoverService>();
+
+// OrderManagement
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IOrderManagementRepository, SEP490_G52_CSMS.Repositories.OrderManagementRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IOrderManagementService, SEP490_G52_CSMS.Services.OrderManagementService>();
+
+// LeaveRequest
+builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.ILeaveRequestRepository, SEP490_G52_CSMS.Repositories.LeaveRequestRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.ILeaveRequestService, SEP490_G52_CSMS.Services.LeaveRequestService>();
 
 var app = builder.Build();
 

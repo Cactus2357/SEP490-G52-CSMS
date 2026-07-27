@@ -20,6 +20,9 @@ namespace SEP490_G52_CSMS.Repositories
         /// <summary> Tìm ID thu ngân đang trực hoặc sắp trực (nếu chưa có ai mở ca) </summary>
         Task<int?> GetCurrentCashierIdAsync(string branchId, DateTime date, TimeSpan time);
 
+        /// <summary> Tìm người nhận ca tiếp theo dựa vào lịch làm việc </summary>
+        Task<int?> GetNextCashierForHandoverAsync(string branchId, DateTime date, TimeSpan currentTime);
+
         /// <summary> Lấy danh sách thu ngân đang hoạt động tại chi nhánh (để chọn người nhận ca) </summary>
         Task<List<Employee>> GetCashiersInBranchAsync(string branchId);
 

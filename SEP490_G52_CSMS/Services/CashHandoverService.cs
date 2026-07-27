@@ -35,8 +35,20 @@ namespace SEP490_G52_CSMS.Services
                 return null;
             }
 
-            // Lấy lịch trực hôm nay của thu ngân
+            // Lấy lịch trực hôm nay của thu ngân (trả về ca hiện tại hoặc ca sắp tới trong ngày)
             var roster = await _cashHandoverRepository.GetCurrentRosterAsync(cashierId, today);
+            
+            // Nếu không có lịch trực hợp lệ (đã hết ca hoặc không có ca)
+            if (roster == null)
+            {
+                throw new InvalidOperationException("Không thể mở ca: Bạn không có lịch trực vào thời gian này hoặc đã quá hạn mở ca.");
+            }
+
+            // Kiểm tra xem đã đến giờ mở ca chưa (cho phép mở sớm 30 phút và không cho mở nếu đã hết ca)
+            var currentTime = DateTime.Now.TimeOfDay;
+            var thirtyMinutes = TimeSpan.FromMinutes(30);
+            bool isTimeToOpen = currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes) && 
+                                currentTime <= roster.FixedShift.EndTime;
 
             // Lấy tên thu ngân thực hiện mở ca
             var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(cashierId);
@@ -58,21 +70,18 @@ namespace SEP490_G52_CSMS.Services
                     : "06:00 – 10:00",
                 HandoverDate = today,
                 CashierName = cashierEmployee?.FullName
-                              ?? cashierEmployee?.Username
                               ?? CashHandoverConstants.UnassignedCashierLabel,
+                PreviousCashierName = lastHandover?.OutgoingCashier?.FullName
+                                      ?? CashHandoverConstants.UnassignedCashierLabel,
+                PreviousShiftName = lastHandover?.FixedShift?.ShiftName ?? "-",
+                PreviousHandoverDate = lastHandover?.HandoverDate.ToString("dd/MM/yyyy") ?? "-",
+                PreviousInitialCash = lastHandover != null
+                    ? lastHandover.InitialCash.ToString("N0") + " ₫"
+                    : "-",
+                PreviousApproverName = lastHandover?.IncomingCashier?.FullName ?? "-",
+                InitialCash = 0,
+                IsTimeToOpen = isTimeToOpen
             };
-
-            // Điền thông tin ca trước
-            if (lastHandover != null)
-            {
-                model.PreviousCashierName = lastHandover.OutgoingCashier?.FullName
-                                            ?? CashHandoverConstants.UnassignedCashierLabel;
-                model.PreviousShiftName = lastHandover.FixedShift?.ShiftName ?? "-";
-                model.PreviousHandoverDate = lastHandover.HandoverDate.ToString("dd/MM/yyyy");
-                model.PreviousInitialCash = lastHandover.InitialCash.ToString("N0") + " đ";
-                model.PreviousApproverName = lastHandover.IncomingCashier?.FullName
-                                             ?? CashHandoverConstants.UnassignedCashierLabel;
-            }
 
             return model;
         }
@@ -86,6 +95,20 @@ namespace SEP490_G52_CSMS.Services
             if (existing != null)
             {
                 return OperationResult.Fail("Ca làm việc hôm nay đã được mở. Vui lòng chuyển sang Giao ca.");
+            }
+
+            // Kiểm tra lại trên server xem đã đúng giờ mở ca chưa
+            var roster = await _cashHandoverRepository.GetCurrentRosterAsync(model.CashierId, today);
+            if (roster == null)
+            {
+                return OperationResult.Fail("Bạn không có lịch trực vào thời gian này.");
+            }
+            
+            var currentTime = DateTime.Now.TimeOfDay;
+            var thirtyMinutes = TimeSpan.FromMinutes(30);
+            if (currentTime < roster.FixedShift.StartTime.Subtract(thirtyMinutes))
+            {
+                return OperationResult.Fail("Chưa đến giờ mở ca. Bạn chỉ có thể mở ca trước 30 phút so với giờ bắt đầu ca trực.");
             }
 
             // Tạo bản ghi CashHandover mới với trạng thái Active
@@ -128,6 +151,10 @@ namespace SEP490_G52_CSMS.Services
             // Lấy danh sách thu ngân cùng chi nhánh để chọn người nhận ca
             var cashiers = await _cashHandoverRepository.GetCashiersInBranchAsync(activeHandover.BranchId);
 
+            // Tìm người nhận ca tiếp theo
+            var currentTime = DateTime.Now.TimeOfDay;
+            var nextCashierId = await _cashHandoverRepository.GetNextCashierForHandoverAsync(activeHandover.BranchId, today, currentTime);
+
             return new HandoverViewModel
             {
                 HandoverId = activeHandover.HandoverId,
@@ -139,6 +166,7 @@ namespace SEP490_G52_CSMS.Services
                 InitialCash = activeHandover.InitialCash,
                 BankTransferRevenue = activeHandover.BankTransferRevenue,  // Doanh thu CK (không vào két)
                 MachineCashRevenue = activeHandover.MachineCashRevenue,
+                IncomingCashierId = nextCashierId, // Tự động chọn người nhận ca tiếp theo
                 IncomingCashiers = cashiers.Select(c => new CashierOption
                 {
                     CashierId = c.EmployeeId,

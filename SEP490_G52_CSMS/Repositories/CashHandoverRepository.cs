@@ -50,9 +50,11 @@ namespace SEP490_G52_CSMS.Repositories
                 .Include(w => w.FixedShift)
                 .Include(w => w.Branch)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(w =>
+                .Where(w =>
                     w.EmployeeId == cashierId &&
-                    w.AssignmentDate.Date == date.Date);
+                    w.AssignmentDate.Date == date.Date)
+                .OrderBy(w => w.FixedShift.StartTime)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<int?> GetCurrentCashierIdAsync(string branchId, DateTime date, TimeSpan time)
@@ -88,6 +90,19 @@ namespace SEP490_G52_CSMS.Repositories
                     .OrderByDescending(w => w.FixedShift.StartTime)
                     .FirstOrDefaultAsync();
             }
+
+            return roster?.EmployeeId;
+        }
+
+        public async Task<int?> GetNextCashierForHandoverAsync(string branchId, DateTime date, TimeSpan currentTime)
+        {
+            // Tìm nhân viên có lịch trực tiếp theo trong ngày, tính từ thời gian hiện tại
+            var roster = await _context.WeeklyRosterGrids
+                .Include(w => w.FixedShift)
+                .AsNoTracking()
+                .Where(w => w.BranchId == branchId && w.AssignmentDate.Date == date.Date && w.FixedShift.StartTime >= currentTime)
+                .OrderBy(w => w.FixedShift.StartTime)
+                .FirstOrDefaultAsync();
 
             return roster?.EmployeeId;
         }

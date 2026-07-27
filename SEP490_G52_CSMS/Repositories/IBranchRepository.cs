@@ -13,6 +13,7 @@ namespace SEP490_G52_CSMS.Repositories
         Task<int> GetBranchCountAsync(string? searchTerm, string? statusFilter, int? managerId);
         Task<Branch?> GetBranchByIdAsync(string branchId);
         Task<List<Employee>> GetEligibleManagersAsync();
+        Task<Dictionary<int, string?>> GetCurrentManagerBranchMapAsync();
         Task AddBranchAsync(Branch branch);
         Task AddBranchManagerAsync(BranchManager assignment);
         Task UpdateBranchAsync(Branch branch);

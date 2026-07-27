@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -22,19 +23,20 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> Index(int cashierId, string branchId = "CN001")
         {
-            // Nếu chưa có cashierId, tìm người đang trực hoặc sắp trực
+            // Nếu chưa truyền cashierId, lấy từ User đăng nhập hiện tại
             if (cashierId <= 0)
             {
-                var autoCashierId = await _cashHandoverService.GetCurrentCashierIdAsync(branchId);
-                if (autoCashierId.HasValue)
+                var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int loggedInUserId))
                 {
-                    cashierId = autoCashierId.Value;
+                    cashierId = loggedInUserId;
                 }
-                else
-                {
-                    // Vẫn không tìm được ai thì chuyển sang trang chọn thu ngân
-                    return RedirectToAction(nameof(SelectCashier), new { branchId });
-                }
+            }
+
+            // Nếu vẫn không có cashierId (ví dụ Quản lý vào xem), chuyển sang trang chọn thu ngân
+            if (cashierId <= 0)
+            {
+                return RedirectToAction(nameof(SelectCashier), new { branchId });
             }
 
             var activeModel = await _cashHandoverService.GetHandoverModelAsync(cashierId);
@@ -65,14 +67,22 @@ namespace SEP490_G52_CSMS.Controllers
             if (cashierId <= 0)
                 return RedirectToAction(nameof(Index));
 
-            var model = await _cashHandoverService.GetOpenShiftModelAsync(cashierId);
-            if (model == null)
+            try 
             {
-                // Ca đã được mở → chuyển sang form Giao ca
-                TempData["InfoMessage"] = "Ca làm việc hôm nay đã được mở. Vui lòng thực hiện Giao ca.";
-                return RedirectToAction(nameof(Handover), new { cashierId });
+                var model = await _cashHandoverService.GetOpenShiftModelAsync(cashierId);
+                if (model == null)
+                {
+                    // Ca đã được mở → chuyển sang form Giao ca
+                    TempData["InfoMessage"] = "Ca làm việc hôm nay đã được mở. Vui lòng thực hiện Giao ca.";
+                    return RedirectToAction(nameof(Handover), new { cashierId });
+                }
+                return View(model);
             }
-            return View(model);
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // =========================================================
@@ -85,6 +95,18 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (!ModelState.IsValid)
             {
+                var reloadModel = await _cashHandoverService.GetOpenShiftModelAsync(model.CashierId);
+                if (reloadModel != null)
+                {
+                    model.CashierName = reloadModel.CashierName;
+                    model.ShiftName = reloadModel.ShiftName;
+                    model.ShiftTimeRange = reloadModel.ShiftTimeRange;
+                    model.PreviousCashierName = reloadModel.PreviousCashierName;
+                    model.PreviousShiftName = reloadModel.PreviousShiftName;
+                    model.PreviousHandoverDate = reloadModel.PreviousHandoverDate;
+                    model.PreviousInitialCash = reloadModel.PreviousInitialCash;
+                    model.PreviousApproverName = reloadModel.PreviousApproverName;
+                }
                 return View(model);
             }
 
@@ -92,6 +114,18 @@ namespace SEP490_G52_CSMS.Controllers
             if (!result.Success)
             {
                 ModelState.AddModelError(string.Empty, result.Message);
+                var reloadModel = await _cashHandoverService.GetOpenShiftModelAsync(model.CashierId);
+                if (reloadModel != null)
+                {
+                    model.CashierName = reloadModel.CashierName;
+                    model.ShiftName = reloadModel.ShiftName;
+                    model.ShiftTimeRange = reloadModel.ShiftTimeRange;
+                    model.PreviousCashierName = reloadModel.PreviousCashierName;
+                    model.PreviousShiftName = reloadModel.PreviousShiftName;
+                    model.PreviousHandoverDate = reloadModel.PreviousHandoverDate;
+                    model.PreviousInitialCash = reloadModel.PreviousInitialCash;
+                    model.PreviousApproverName = reloadModel.PreviousApproverName;
+                }
                 return View(model);
             }
 

@@ -5,36 +5,73 @@
 }
 
 <div class="container-fluid px-4 pt-3">
-
     <section class="branch-main">
-        <div class="branch-header stretch">
-            <div>
-                <h2 class="page-title">GÁN QUẢN LÝ CHI NHÁNH</h2>
-                <p class="text-muted">Chi nhánh: @Model.BranchName (@Model.BranchId)</p>
-            </div>
-            <div class="header-actions">
-                <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.BranchId">Hủy</a>
-            </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="page-title">GÁN QUẢN LÝ CHI NHÁNH</h2>
+            <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.BranchId">✕</a>
         </div>
 
-        <div class="card section-card mb-4">
-            <div class="card-body">
-                <p><strong>Hiện tại:</strong> @Model.CurrentManagerName (@Model.CurrentManagerCode) - @Model.CurrentManagerAssignedDate</p>
-                <form asp-action="AssignManager" method="post">
-                    <input type="hidden" asp-for="BranchId" />
-                    <div class="mb-3">
-                        <label class="form-label">Chọn quản lý mới</label>
-                        <select asp-for="SelectedManagerId" class="form-select form-select-lg">
-                            <option value="">Chọn nhân viên quản lý</option>
-                            @foreach (var manager in Model.Managers)
-                            {
-                                <option value="@manager.ManagerId" selected="@(manager.ManagerId == Model.SelectedManagerId)">@manager.ManagerName</option>
-                            }
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Xác nhận gán</button>
-                </form>
-            </div>
+        <div class="border border-dark p-4 bg-white mb-3" style="border-width: 2px !important; max-width: 520px;">
+            <p class="fw-semibold mb-1">Chi nhánh: @Model.BranchName (@Model.BranchId)</p>
+            <p class="text-muted small mb-0">Quản lý hiện tại: @Model.CurrentManagerName (@Model.CurrentManagerCode) — @Model.CurrentManagerAssignedDate</p>
         </div>
+
+        <div class="border border-dark p-4 bg-white" style="border-width: 2px !important; max-width: 520px;">
+            <label class="fw-semibold mb-2 d-block">Tìm kiếm nhân viên hợp lệ</label>
+            <input type="text" id="managerSearch" class="form-control mb-3"
+                   placeholder="Nhập tên hoặc mã nhân viên..." oninput="filterManagers()" />
+
+            <label class="fw-semibold mb-2 d-block">Chọn từ danh sách đề xuất:</label>
+
+            <form asp-action="AssignManager" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="BranchId" value="@Model.BranchId" />
+
+                <div id="managerList" class="border border-secondary rounded p-2 mb-3"
+                     style="max-height: 220px; overflow-y: auto;">
+                    @foreach (var m in Model.Managers)
+                    {
+                        var statusText = m.CurrentBranchName != null
+                            ? $"Đang quản lý tại {m.CurrentBranchName}"
+                            : "Đang rảnh (Chưa quản lý bên nào)";
+
+                        <div class="manager-item d-flex align-items-center py-1 border-bottom"
+                             data-name="@m.ManagerName.ToLower()" data-code="@m.EmployeeCode.ToLower()">
+                            <input type="radio" name="SelectedManagerId" value="@m.ManagerId"
+                                   id="mgr_@m.ManagerId" class="form-check-input me-2 flex-shrink-0"
+                                   @(m.ManagerId == Model.SelectedManagerId ? "checked" : "") />
+                            <label for="mgr_@m.ManagerId" class="form-check-label mb-0" style="cursor:pointer;">
+                                @m.ManagerName (@m.EmployeeCode) - <span class="text-muted small">@statusText</span>
+                            </label>
+                        </div>
+                    }
+                    @if (!Model.Managers.Any())
+                    {
+                        <p class="text-muted text-center py-2 mb-0">Không có nhân viên quản lý nào.</p>
+                    }
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end mt-2">
+                    <a class="btn btn-outline-secondary px-4 fw-bold"
+                       asp-action="Details" asp-route-id="@Model.BranchId">Hủy</a>
+                    <button type="submit" class="btn btn-dark px-4 fw-bold">Xác nhận gán</button>
+                </div>
+            </form>
+        </div>
+
     </section>
 </div>
+
+@section Scripts {
+    <script>
+        function filterManagers() {
+            const query = document.getElementById('managerSearch').value.toLowerCase();
+            document.querySelectorAll('.manager-item').forEach(item => {
+                const name = item.dataset.name || '';
+                const code = item.dataset.code || '';
+                item.style.display = (name.includes(query) || code.includes(query)) ? '' : 'none';
+            });
+        }
+    </script>
+}

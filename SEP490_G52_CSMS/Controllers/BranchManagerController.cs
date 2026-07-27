@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
@@ -14,6 +16,7 @@ using System.Collections.Generic;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme, Roles = "RManager")]
     public class BranchManagerController : Controller
     {
         private readonly CSMSAppDbContext _context;
@@ -25,7 +28,10 @@ namespace SEP490_G52_CSMS.Controllers
 
         public IActionResult Index()
         {
-            var managers = _context.Employees.Where(e => e.Role == "BranchManager").ToList();
+            var managers = _context.Employees
+                .Where(e => e.Role == "BranchManager")
+                .Include(e => e.Branch)
+                .ToList();
             ViewBag.Branches = _context.Branches
                 .Where(b => b.Status == "Active")
                 .OrderBy(b => b.BranchName)

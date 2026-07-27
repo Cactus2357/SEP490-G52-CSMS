@@ -76,23 +76,72 @@
                     </a>
                 </li>
 
-                @* ✅ Linked: WorkSchedule → Index *@
+                @* ✅ Linked: Branch → Index (Quản lý Chi nhánh) *@
                 <li class="menu-item">
-                    <a asp-controller="WorkSchedule" asp-action="Index"
-                       class="menu-link @ActiveIf("WorkSchedule", "Index")">
-                        <i class="bi bi-calendar3"></i>
-                        <span>Quản lý lịch làm việc</span>
+                    <a asp-controller="Branch" asp-action="Index"
+                       class="menu-link @ActiveIf("Branch")">
+                        <i class="bi bi-shop"></i>
+                        <span>Quản lý Chi nhánh</span>
                     </a>
                 </li>
 
-                @* ⏳ Not yet implemented — kept for visual completeness *@
-                <li class="menu-item">
-                    <a asp-controller="ShiftChange" asp-action="Index"
-                       class="menu-link @ActiveIf("ShiftChange", "Index")">
-                        <i class="bi bi-arrow-left-right"></i>
-                        <span>Quản lý đổi ca</span>
-                    </a>
-                </li>
+                @* ✅ WorkSchedule: Phân quyền hiển thị dựa theo Role *@
+                @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+                {
+                    <li class="menu-item">
+                        <a asp-controller="WorkSchedule" asp-action="Index"
+                           class="menu-link @ActiveIf("WorkSchedule", "Index")">
+                            <i class="bi bi-calendar3"></i>
+                            <span>Quản lý lịch làm việc</span>
+                        </a>
+                    </li>
+                }
+                
+                @if (User.IsInRole("Cashier") || User.IsInRole("Bartender") || User.IsInRole("Busser") || User.IsInRole("Barista"))
+                {
+                    <li class="menu-item">
+                        <a asp-controller="WorkSchedule" asp-action="EmployeeIndex"
+                           class="menu-link @ActiveIf("WorkSchedule", "EmployeeIndex")">
+                            <i class="bi bi-calendar-event"></i>
+                            <span>Lịch làm việc của tôi</span>
+                        </a>
+                    </li>
+                }
+
+                @* Shift Change *@
+                @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+                {
+                    <li class="menu-item">
+                        <a asp-controller="ShiftChange" asp-action="Index"
+                           class="menu-link @ActiveIf("ShiftChange", "Index")">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <span>Quản lý đổi ca</span>
+                        </a>
+                    </li>
+                }
+                else if (User.IsInRole("Cashier") || User.IsInRole("Bartender") || User.IsInRole("Busser") || User.IsInRole("Barista"))
+                {
+                    <li class="menu-item">
+                        <a asp-controller="ShiftChange" asp-action="EmployeeIndex"
+                           class="menu-link @ActiveIf("ShiftChange", "EmployeeIndex")">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <span>Xin chuyển ca</span>
+                        </a>
+                    </li>
+                }
+                
+                @* CashHandover (Quản lý két tiền & giao ca) *@
+                @if (User.IsInRole("Cashier") || User.IsInRole("BranchManager"))
+                {
+                    <li class="menu-item">
+                        <a asp-controller="CashHandover" asp-action="Index"
+                           class="menu-link @ActiveIf("CashHandover")">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Mở, đóng/bàn giao ca</span>
+                        </a>
+                    </li>
+                }
+
                 <li class="menu-item">
                     <a asp-controller="ShiftHandover" asp-action="Index"
                        class="menu-link @ActiveIf("ShiftHandover", "Index")">
@@ -106,18 +155,28 @@
                         <span>Quản lý thực đơn</span>
                     </a>
                 </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
-                        <i class="bi bi-calendar-x"></i>
-                        <span>Quản lý nghỉ phép</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
-                        <i class="bi bi-cart3"></i>
-                        <span>Quản lý đơn đặt hàng</span>
-                    </a>
-                </li>
+                
+                @* Leave Request *@
+                @if (User.IsInRole("Cashier") || User.IsInRole("Bartender") || User.IsInRole("Busser") || User.IsInRole("Barista"))
+                {
+                    <li class="menu-item">
+                        <a asp-controller="LeaveRequest" asp-action="Index"
+                           class="menu-link @ActiveIf("LeaveRequest", "Index")">
+                            <i class="bi bi-calendar-x"></i>
+                            <span>Xin nghỉ phép</span>
+                        </a>
+                    </li>
+                }
+                @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+                {
+                    <li class="menu-item">
+                        <a asp-controller="OrderManagement" asp-action="Index"
+                           class="menu-link @ActiveIf("OrderManagement", "Index")">
+                            <i class="bi bi-cart3"></i>
+                            <span>Quản lý đơn đặt hàng</span>
+                        </a>
+                    </li>
+                }
             </ul>
             <script>
                 (function () {
@@ -178,6 +237,29 @@
             </header>
 
             <main class="content-area">
+                <div class="container-fluid px-4 pt-3">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["InfoMessage"] != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+                            <i class="bi bi-info-circle-fill me-2"></i>@TempData["InfoMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                </div>
                 @RenderBody()
             </main>
         </div>

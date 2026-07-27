@@ -1,10 +1,13 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Services;
 using SEP490_G52_CSMS.Models.ViewModels;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme, Roles = "RManager")]
     public class BranchController : Controller
     {
         private readonly IBranchService _branchService;

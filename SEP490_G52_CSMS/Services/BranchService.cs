@@ -266,10 +266,18 @@ namespace SEP490_G52_CSMS.Services
         private async Task<List<BranchManagerOption>> GetManagerOptionsAsync()
         {
             var managers = await _branchRepository.GetEligibleManagersAsync();
-            return managers.Select(m => new BranchManagerOption
+            var managerBranchMap = await _branchRepository.GetCurrentManagerBranchMapAsync();
+
+            return managers.Select(m =>
             {
-                ManagerId = m.EmployeeId,
-                ManagerName = m.FullName ?? m.Username ?? "Người quản lý"
+                managerBranchMap.TryGetValue(m.EmployeeId, out var branchName);
+                return new BranchManagerOption
+                {
+                    ManagerId = m.EmployeeId,
+                    ManagerName = m.FullName ?? m.Username ?? "Người quản lý",
+                    EmployeeCode = m.Username ?? $"NV{m.EmployeeId:D3}",
+                    CurrentBranchName = branchName
+                };
             }).ToList();
         }
     }

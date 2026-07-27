@@ -40,5 +40,9 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         [Range(0, double.MaxValue, ErrorMessage = "Số tiền không hợp lệ.")]
         [Display(Name = "Số tiền đang có trong két")]
         public decimal InitialCash { get; set; }
+
+        // ===== Cờ điều khiển giao diện =====
+        /// <summary> Cho biết đã đến giờ mở ca hay chưa </summary>
+        public bool IsTimeToOpen { get; set; } = true;
     }
 }

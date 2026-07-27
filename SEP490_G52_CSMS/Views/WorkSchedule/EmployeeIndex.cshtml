@@ -1,0 +1,173 @@
+@model SEP490_G52_CSMS.Models.ViewModels.EmployeeScheduleViewModel
+
+@{
+    ViewData["Title"] = "Lịch làm việc nhân viên";
+}
+
+@section Styles {
+    <style>
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+        
+        .employee-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .schedule-table th, .schedule-table td {
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+        }
+
+        .schedule-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .shift-col {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            width: 15%;
+            text-align: left !important;
+        }
+        
+        .status-present {
+            color: #198754;
+            font-weight: 600;
+        }
+        
+        .status-absent {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            color: #6c757d;
+        }
+
+        .legend-box {
+            border: 1px solid #111827;
+            padding: 16px;
+            margin-top: 24px;
+            display: inline-block;
+            background-color: #fff;
+        }
+        
+        .date-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .empty-cell {
+            color: #ccc;
+        }
+    </style>
+}
+
+<div class="page-header">
+    <h2 class="page-title">LỊCH LÀM VIỆC NHÂN VIÊN</h2>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="employee-name">Họ & Tên: @Model.FullName</div>
+    
+    <div class="date-picker-container">
+        <form id="weekForm" method="get" asp-action="EmployeeIndex" class="d-flex align-items-center gap-2">
+            <input type="date" name="weekStart" class="form-control" 
+                   value="@Model.WeekStart.ToString("yyyy-MM-dd")" 
+                   onchange="document.getElementById('weekForm').submit();" />
+            <span>- @Model.WeekEnd.ToString("dd/MM/yyyy")</span>
+            <i class="bi bi-calendar-week fs-4"></i>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive bg-white">
+    <table class="table schedule-table table-bordered mb-0">
+        <thead>
+            <tr>
+                <th class="shift-col">Ca làm việc</th>
+                @foreach (var day in Model.Days)
+                {
+                    var dayName = day.DayOfWeek == DayOfWeek.Sunday ? "Chủ nhật" : "Thứ " + ((int)day.DayOfWeek + 1);
+                    <th>
+                        <div>@dayName</div>
+                        <div class="small fw-normal text-muted">@day.ToString("dd/MM")</div>
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var shift in Model.Shifts)
+            {
+                <tr>
+                    <td class="shift-col">
+                        <div class="fw-bold">@shift.ShiftName</div>
+                        <div class="small text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</div>
+                    </td>
+                    @foreach (var day in Model.Days)
+                    {
+                        var hasShift = Model.ScheduleData.TryGetValue((shift.ShiftId, day.Date), out var detail);
+                        
+                        <td>
+                            @if (hasShift && detail != null && detail.IsAssigned)
+                            {
+                                <div><i class="bi bi-check2-all text-success"></i> Có ca làm</div>
+                                
+                                @if (detail.OverallStatus == "Present")
+                                {
+                                    <div class="status-present">(<i class="bi bi-check-circle-fill"></i> Đã điểm danh)</div>
+                                }
+                                else if (detail.OverallStatus == "Absent")
+                                {
+                                    <div class="status-absent">(<i class="bi bi-x-circle-fill"></i> Vắng mặt)</div>
+                                }
+                                else
+                                {
+                                    <div class="status-pending">(<i class="bi bi-clock"></i> Chưa điểm danh)</div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-cell">--</div>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="legend-box">
+    <div class="fw-bold mb-2">Chú thích:</div>
+    <div class="row">
+        <div class="col-md-6 mb-2">
+            <span class="empty-cell">--</span> Chưa có dữ liệu.
+        </div>
+        <div class="col-md-6 mb-2">
+            <i class="bi bi-check2-all text-success"></i> Có ca làm trong tuần.
+        </div>
+        <div class="col-md-6 mb-2">
+            <i class="bi bi-check-circle-fill text-success"></i> Đã tham gia ca làm việc.
+        </div>
+        <div class="col-md-6 mb-2">
+            <i class="bi bi-x-circle-fill text-danger"></i> Vắng mặt.
+        </div>
+        <div class="col-md-6 mb-2">
+            <i class="bi bi-clock text-secondary"></i> Chưa tới giờ làm việc / Chưa điểm danh.
+        </div>
+    </div>
+</div>

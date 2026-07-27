@@ -119,6 +119,22 @@ namespace SEP490_G52_CSMS.Repositories
                 .ToListAsync();
         }
 
+        public async Task<Dictionary<int, string?>> GetCurrentManagerBranchMapAsync()
+        {
+            var list = await _context.BranchManagers
+                .AsNoTracking()
+                .Include(bm => bm.Branch)
+                .ToListAsync();
+
+            // Nếu 1 manager quản lý nhiều chi nhánh → chỉ lấy 1 dòng đầu tiên
+            return list
+                .GroupBy(bm => bm.ManagerId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.First().Branch?.BranchName
+                );
+        }
+
         public async Task UpdateBranchAsync(Branch branch)
         {
             _context.Branches.Update(branch);
