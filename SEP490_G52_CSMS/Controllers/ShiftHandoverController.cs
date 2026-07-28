@@ -7,7 +7,7 @@ using SEP490_G52_CSMS.Models.Attendance;
 
 namespace SEP490_G52_CSMS.Controllers
 {
-    [Authorize(Roles = "BranchManager,Cashier")]
+    [Authorize(Roles = "BranchManager")]
     public class ShiftHandoverController : Controller
     {
         private readonly CSMSAppDbContext _context;
