@@ -1,0 +1,243 @@
+@model SEP490_G52_CSMS.Models.ViewModels.RevenueReportViewModel
+
+@{
+    ViewData["Title"] = "HỆ THỐNG BÁO CÁO DOANH THU TOÀN CHUỖI";
+}
+
+<div class="reporting-container">
+    <div class="reporting-header">
+        <h2 class="reporting-title">@ViewData["Title"]</h2>
+        <h3 class="reporting-subtitle">XU HƯỚNG DOANH THU THEO THỜI GIAN</h3>
+    </div>
+
+    <!-- Toolbar Filters -->
+    <form method="get" id="filterForm" class="reporting-toolbar">
+        <div class="toolbar-left">
+            <i class="bi bi-shop fs-4 me-2"></i>
+            <label for="branchId" class="fw-bold me-2">Chi nhánh:</label>
+            <select id="branchId" name="branchId" class="form-select w-auto d-inline-block"
+                    asp-for="SelectedBranchId" asp-items="Model.BranchList" onchange="document.getElementById('filterForm').submit();">
+            </select>
+        </div>
+
+        <div class="toolbar-right">
+            <i class="bi bi-clock-history fs-4 me-2"></i>
+            <label class="fw-bold me-2">Thời gian:</label>
+            
+            <div class="time-pager">
+                <button type="button" class="pager-btn" onclick="changeMonth(-1)"><i class="bi bi-chevron-left"></i></button>
+                <div class="pager-text">Tháng này: @Model.SelectedMonth</div>
+                <button type="button" class="pager-btn" onclick="changeMonth(1)"><i class="bi bi-chevron-right"></i></button>
+                
+                <input type="hidden" id="dateRange" name="dateRange" value="@Model.SelectedMonth" />
+            </div>
+        </div>
+    </form>
+
+    <!-- Line Chart Section -->
+    <div class="chart-container">
+        <span class="chart-y-axis-label">Doanh thu (đ)</span>
+        <canvas id="revenueChart"></canvas>
+        <div class="text-end fw-bold mt-2">Ngày</div>
+    </div>
+
+    <hr class="section-divider" />
+
+    <!-- Data Grid Section -->
+    <h3 class="reporting-subtitle">CHI TIẾT DOANH THU THEO CHI NHÁNH</h3>
+    
+    <div class="table-responsive">
+        <table class="reporting-table">
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Tên chi nhánh</th>
+                    <th>Doanh thu tiền mặt</th>
+                    <th>Doanh thu CK</th>
+                    <th>Tổng doanh thu</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int index = 1;
+                    foreach (var row in Model.TableData)
+                    {
+                        <tr>
+                            <td>@index</td>
+                            <td>@row.BranchName</td>
+                            <td>@row.CashRevenue.ToString("N0") đ</td>
+                            <td>@row.TransferRevenue.ToString("N0") đ</td>
+                            <td>@row.TotalRevenue.ToString("N0") đ</td>
+                        </tr>
+                        index++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .reporting-container {
+        padding: 20px;
+        background-color: #fff;
+    }
+    .reporting-header {
+        margin-bottom: 20px;
+    }
+    .reporting-title {
+        text-transform: uppercase;
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    .reporting-subtitle {
+        text-transform: uppercase;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    .reporting-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .toolbar-left, .toolbar-right {
+        display: flex;
+        align-items: center;
+    }
+    .time-pager {
+        display: flex;
+        align-items: center;
+        border: 2px solid #000;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .pager-btn {
+        background: #ccc;
+        border: none;
+        padding: 5px 15px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .pager-btn:hover {
+        background: #aaa;
+    }
+    .pager-text {
+        padding: 5px 20px;
+        background: #fff;
+        font-weight: bold;
+        min-width: 250px;
+        text-align: center;
+    }
+    .chart-container {
+        border: 2px solid #000;
+        padding: 20px;
+        position: relative;
+        margin-bottom: 20px;
+        height: 400px;
+    }
+    .chart-y-axis-label {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        font-weight: bold;
+        font-size: 14px;
+        z-index: 10;
+    }
+    .section-divider {
+        border-top: 2px solid #ccc;
+        margin: 30px 0;
+    }
+    .reporting-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 2px solid #000;
+    }
+    .reporting-table th, .reporting-table td {
+        border: 1px solid #000;
+        padding: 10px;
+        text-align: left;
+    }
+    .reporting-table th {
+        background-color: #ddd;
+        font-weight: bold;
+    }
+    .reporting-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+</style>
+
+<!-- Nhúng Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Xử lý chuyển tháng
+    function changeMonth(offset) {
+        let currentMonthStr = document.getElementById('dateRange').value;
+        let date = new Date(currentMonthStr + "-01");
+        date.setMonth(date.getMonth() + offset);
+        
+        let newMonth = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0');
+        document.getElementById('dateRange').value = newMonth;
+        document.getElementById('filterForm').submit();
+    }
+
+    // Vẽ biểu đồ Doanh thu
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    
+    // Parse dữ liệu từ C# sang JS
+    const chartLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartLabels));
+    const chartData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartData));
+
+    const revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'Doanh thu (đ)',
+                data: chartData,
+                borderColor: '#000', // Đen theo wireframe
+                backgroundColor: 'rgba(0,0,0,0.1)',
+                borderWidth: 3,
+                tension: 0.1, // Đường cong nhẹ
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false // Ẩn legend theo wireframe
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let value = context.parsed.y;
+                            return value.toLocaleString('vi-VN') + ' đ';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#eee'
+                    },
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return value.toLocaleString('vi-VN');
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>

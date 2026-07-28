@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Repositories;
-using System.Linq;
 
 namespace SEP490_G52_CSMS.Services
 {
@@ -63,10 +59,10 @@ namespace SEP490_G52_CSMS.Services
                 {
                     baseUsername = "employee";
                 }
-                
+
                 string finalUsername = baseUsername;
                 int counter = 1;
-                
+
                 while (await _repository.ExistsUsernameAsync(finalUsername))
                 {
                     finalUsername = $"{baseUsername}{counter}";
@@ -240,11 +236,6 @@ namespace SEP490_G52_CSMS.Services
                 if (employee == null)
                 {
                     return new EmployeeUpdateResult { Success = false, ErrorMessage = "Không tìm thấy nhân viên." };
-                }
-
-                if (employee.BranchId != "CB001")
-                {
-                    return new EmployeeUpdateResult { Success = false, ErrorMessage = "Bạn không có quyền cập nhật nhân viên thuộc chi nhánh khác." };
                 }
 
                 if (string.IsNullOrWhiteSpace(role))

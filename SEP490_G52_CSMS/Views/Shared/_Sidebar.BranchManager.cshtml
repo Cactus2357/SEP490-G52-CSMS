@@ -1,0 +1,60 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+}
+
+<li class="menu-item">
+    <a asp-controller="Employee" asp-action="Index" class="menu-link @ActiveIf("Employee", "Index")">
+        <i class="bi bi-people-fill"></i>
+        <span>Quản lý nhân viên</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="WorkSchedule" asp-action="Index" class="menu-link @ActiveIf("WorkSchedule", "Index")">
+        <i class="bi bi-calendar3"></i>
+        <span>Quản lý lịch làm việc</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="MenuManagement" asp-action="Index" class="menu-link @ActiveIf("MenuManagement", "Index")">
+        <i class="bi bi-journal-text"></i>
+        <span>Quản lý thực đơn</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+        <i class="bi bi-calendar-x"></i>
+        <span>Quản lý đơn xin nghỉ</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ShiftChange" asp-action="Index" class="menu-link @ActiveIf("ShiftChange", "Index")">
+        <i class="bi bi-arrow-left-right"></i>
+        <span>Quản lý đổi ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ShiftHandover" asp-action="Index" class="menu-link @ActiveIf("ShiftHandover", "Index")">
+        <i class="bi bi-clock-history"></i>
+        <span>Bàn giao ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="SaleManagement" asp-action="OrderHistory" class="menu-link @ActiveIf("SaleManagement", "OrderHistory")">
+        <i class="bi bi-cart3"></i>
+        <span>Quản lý đơn đặt hàng</span>
+    </a>
+</li>

@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Models;
+using System.Diagnostics;
 
 namespace SEP490_G52_CSMS.Controllers
 {

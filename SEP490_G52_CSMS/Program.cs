@@ -40,13 +40,24 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
     {
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
-        options.AccessDeniedPath = "/Auth/Login"; // Redirect về Login hoặc trang lỗi tự tạo
+        options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
     });
+
+builder.Services.AddAuthorization();
 
 // Product
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IOrderRepository, SEP490_G52_CSMS.Reponsitories.OrderRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IOrderService, SEP490_G52_CSMS.Services.OrderService>();
+
+// Menu Management
+builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IMenuRepository, SEP490_G52_CSMS.Reponsitories.MenuRepository>();
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.IMenuService, SEP490_G52_CSMS.Services.MenuService>();
 
 // ShiftChange
 builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IShiftChangeRepository, SEP490_G52_CSMS.Repositories.ShiftChangeRepository>();
@@ -80,9 +91,15 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/Error/500");
     app.UseHsts();
 }
+else
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 app.UseHttpsRedirection();
 
@@ -96,6 +113,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Employee}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

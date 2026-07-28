@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using SEP490_G52_CSMS.Models.Sales;
+﻿using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels.Sales.Product;
 using SEP490_G52_CSMS.Repositories.Interfaces;
 using SEP490_G52_CSMS.Services.Interfaces;
@@ -48,7 +46,6 @@ namespace SEP490_G52_CSMS.Services
                 ImageUrl = p.ImageUrl,
                 Description = p.Description,
                 Status = p.Status,
-
                 Variants = string.Join(
                     ", ",
                     p.ProductVariants
@@ -95,11 +92,20 @@ namespace SEP490_G52_CSMS.Services
                 return false;
             }
 
+            string? imageUrl = null;
+
+            if (model.ImageFile != null &&
+                model.ImageFile.Length > 0)
+            {
+                imageUrl = await SaveImageAsync(
+                    model.ImageFile);
+            }
+
             var masterProduct = new MasterProduct
             {
                 ProductName = productName,
                 CategoryId = model.CategoryId,
-                ImageUrl = model.ImageUrl,
+                ImageUrl = imageUrl,
                 Description = model.Description?.Trim(),
                 Status = model.Status
             };
@@ -159,8 +165,38 @@ namespace SEP490_G52_CSMS.Services
         private async Task<string> SaveImageAsync(
             IFormFile imageFile)
         {
+            const long maximumFileSize =
+                5 * 1024 * 1024;
+
+            var allowedExtensions = new[]
+            {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp"
+            };
+
+            if (imageFile.Length > maximumFileSize)
+            {
+                throw new InvalidOperationException(
+                    "Dung lượng hình ảnh không được vượt quá 5 MB.");
+            }
+
+            var extension = Path
+                .GetExtension(imageFile.FileName)
+                .ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(extension))
+            {
+                throw new InvalidOperationException(
+                    "Chỉ chấp nhận hình ảnh JPG, JPEG, PNG hoặc WEBP.");
+            }
+
             var webRootPath =
-                _webHostEnvironment.WebRootPath;
+                _webHostEnvironment.WebRootPath
+                ?? Path.Combine(
+                    _webHostEnvironment.ContentRootPath,
+                    "wwwroot");
 
             var uploadFolder = Path.Combine(
                 webRootPath,
@@ -169,12 +205,8 @@ namespace SEP490_G52_CSMS.Services
 
             Directory.CreateDirectory(uploadFolder);
 
-            var extension = Path
-                .GetExtension(imageFile.FileName)
-                .ToLowerInvariant();
-
             var fileName =
-                $"{Guid.NewGuid()}{extension}";
+                $"{Guid.NewGuid():N}{extension}";
 
             var filePath = Path.Combine(
                 uploadFolder,

@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
@@ -9,15 +11,12 @@ using SEP490_G52_CSMS.Models.ViewModels;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 
 namespace SEP490_G52_CSMS.Controllers
 {
     [Authorize]
     public class WorkScheduleController : Controller
     {
-        private const string DefaultBranchId = "CB001";
-
         private readonly IWeeklyRosterService _service;
         private readonly CSMSAppDbContext _context;
 
@@ -31,6 +30,7 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> Index(DateTime? weekStart)
         {
             // (Removed redirect to EmployeeIndex so Manager view is always accessible here)
+            var loggedInBranchId = User.GetBranchId() ?? "";
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
             var sunday = monday.AddDays(6);
 
@@ -39,7 +39,7 @@ namespace SEP490_G52_CSMS.Controllers
                 .ToListAsync();
 
             var rosterEntries = await _context.WeeklyRosterGrids
-                .Where(r => r.BranchId == DefaultBranchId
+                .Where(r => r.BranchId == loggedInBranchId
                             && r.AssignmentDate >= monday
                             && r.AssignmentDate <= sunday)
                 .Include(r => r.Employee)
@@ -112,22 +112,30 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "BranchManager")]
         public async Task<IActionResult> Manage(DateTime? weekStart)
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
 
-            var vm = await _service.GetFormOptionsAsync(DefaultBranchId, monday);
+            var vm = await _service.GetFormOptionsAsync(loggedInBranchId, monday);
 
             return View(vm);
         }
 
-
         [HttpPost]
+        [Authorize(Roles = "BranchManager")]
         public async Task<IActionResult> AddWorkSchedule([FromBody] CreateRosterVM vm)
         {
             if (vm == null || string.IsNullOrWhiteSpace(vm.BranchId))
             {
                 return BadRequest("Invalid request.");
+            }
+
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (vm.BranchId != loggedInBranchId)
+            {
+                return Forbid();
             }
 
             string result = await _service.CreateAsync(vm);
@@ -141,11 +149,18 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "BranchManager")]
         public async Task<IActionResult> UpdateWorkSchedule([FromBody] CreateRosterVM vm)
         {
             if (vm == null || string.IsNullOrWhiteSpace(vm.BranchId))
             {
                 return BadRequest("Invalid request.");
+            }
+
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (vm.BranchId != loggedInBranchId)
+            {
+                return Forbid();
             }
 
             string result = await _service.UpdateAsync(vm);
@@ -161,11 +176,12 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportExcel(DateTime? weekStart)
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
             var sunday = monday.AddDays(6);
 
             var rosterEntries = await _context.WeeklyRosterGrids
-                .Where(r => r.BranchId == DefaultBranchId
+                .Where(r => r.BranchId == loggedInBranchId
                             && r.AssignmentDate >= monday
                             && r.AssignmentDate <= sunday)
                 .Include(r => r.Employee)
@@ -188,7 +204,6 @@ namespace SEP490_G52_CSMS.Controllers
             int diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
             return date.Date.AddDays(-diff);
         }
-
     }
 
     public class WeeklyScheduleViewModel

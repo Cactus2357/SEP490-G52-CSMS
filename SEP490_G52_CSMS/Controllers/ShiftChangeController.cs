@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
@@ -15,7 +16,6 @@ namespace SEP490_G52_CSMS.Controllers
     public class ShiftChangeController : Controller
     {
         private const int PageSize = 8;
-
         private readonly CSMSAppDbContext _context;
         private readonly IShiftChangeService _shiftChangeService;
 
@@ -58,7 +58,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(int? employeeId, string? status, int page = 1)
         {
-            var branchId = await GetCurrentBranchIdAsync();
+            var branchId = User.GetBranchId() ?? "";
 
             IQueryable<ShiftChangeRequest> query = _context.ShiftChangeRequests
                 .Include(r => r.RequestingEmployee)
@@ -103,7 +103,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> DetailPartial(int id)
         {
-            var branchId = await GetCurrentBranchIdAsync();
+            var branchId = User.GetBranchId() ?? "";
 
             var request = await _context.ShiftChangeRequests
                 .Include(r => r.RequestingEmployee)
@@ -113,6 +113,11 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (request == null)
                 return NotFound();
+
+            if (request.RequestingEmployee == null || request.RequestingEmployee.BranchId != branchId)
+            {
+                return Forbid();
+            }
 
             return PartialView("_ShiftChangeDetail", request);
         }
@@ -124,17 +129,30 @@ namespace SEP490_G52_CSMS.Controllers
             if (req == null)
                 return Json(new { success = false, errorMessage = "Dữ liệu không hợp lệ." });
 
-            var request = await _context.ShiftChangeRequests.FirstOrDefaultAsync(r => r.RequestId == req.RequestId);
+            var request = await _context.ShiftChangeRequests
+                .Include(r => r.RequestingEmployee)
+                .FirstOrDefaultAsync(r => r.RequestId == req.RequestId);
+
             if (request == null)
                 return Json(new { success = false, errorMessage = "Không tìm thấy đơn yêu cầu." });
+
+            var branchId = User.GetBranchId() ?? "";
+            if (request.RequestingEmployee == null || request.RequestingEmployee.BranchId != branchId)
+            {
+                return Forbid();
+            }
 
             if (request.Status != "Submitted")
                 return Json(new { success = false, errorMessage = "Đơn này đã được xử lý trước đó." });
 
-            var branchId = await GetCurrentBranchIdAsync();
             request.Status = "Approved";
             request.ApprovedBranchId = branchId;
-            // TODO: gán request.ApprovedManagerId = GetCurrentEmployeeId() khi schema có cột đó.
+
+            var managerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(managerIdClaim, out int managerId))
+            {
+                request.ApprovedManagerId = managerId;
+            }
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Phê duyệt đơn đổi ca thành công!" });
@@ -147,16 +165,30 @@ namespace SEP490_G52_CSMS.Controllers
             if (req == null)
                 return Json(new { success = false, errorMessage = "Dữ liệu không hợp lệ." });
 
-            var request = await _context.ShiftChangeRequests.FirstOrDefaultAsync(r => r.RequestId == req.RequestId);
+            var request = await _context.ShiftChangeRequests
+                .Include(r => r.RequestingEmployee)
+                .FirstOrDefaultAsync(r => r.RequestId == req.RequestId);
+
             if (request == null)
                 return Json(new { success = false, errorMessage = "Không tìm thấy đơn yêu cầu." });
+
+            var branchId = User.GetBranchId() ?? "";
+            if (request.RequestingEmployee == null || request.RequestingEmployee.BranchId != branchId)
+            {
+                return Forbid();
+            }
 
             if (request.Status != "Submitted")
                 return Json(new { success = false, errorMessage = "Đơn này đã được xử lý trước đó." });
 
-            var branchId = await GetCurrentBranchIdAsync();
             request.Status = "Rejected";
             request.ApprovedBranchId = branchId;
+
+            var managerIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(managerIdClaim, out int managerId))
+            {
+                request.ApprovedManagerId = managerId;
+            }
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Đã từ chối đơn đổi ca." });

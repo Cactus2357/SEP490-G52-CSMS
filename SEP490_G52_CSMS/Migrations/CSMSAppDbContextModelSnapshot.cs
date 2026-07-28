@@ -108,6 +108,10 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("actual_cash");
 
+                    b.Property<decimal>("BankTransferRevenue")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("bank_transfer_revenue");
+
                     b.Property<string>("BranchId")
                         .IsRequired()
                         .HasColumnType("nvarchar(20)")
@@ -115,6 +119,10 @@ namespace SEP490_G52_CSMS.Migrations
 
                     b.Property<string>("BranchId1")
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("closed_at");
 
                     b.Property<DateTime>("HandoverDate")
                         .HasColumnType("datetime2")
@@ -140,6 +148,10 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("notes");
 
+                    b.Property<DateTime>("OpenedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("opened_at");
+
                     b.Property<int>("OutgoingCashierId")
                         .HasColumnType("int")
                         .HasColumnName("outgoing_cashier_id");
@@ -147,6 +159,12 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Property<int>("ShiftId")
                         .HasColumnType("int")
                         .HasColumnName("shift_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("status");
 
                     b.Property<decimal>("TheoreticalCash")
                         .HasColumnType("decimal(18,2)")
@@ -219,6 +237,11 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2")
                         .HasColumnName("end_date");
+
+                    b.Property<string>("LeaveShifts")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("leave_shifts");
 
                     b.Property<string>("Reason")
                         .IsRequired()
@@ -357,9 +380,19 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("time")
                         .HasColumnName("closing_time");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("email");
+
                     b.Property<TimeSpan>("OpeningTime")
                         .HasColumnType("time")
                         .HasColumnName("opening_time");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("phone_number");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -533,6 +566,10 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("menu_name");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
                     b.HasKey("MenuId");
 
                     b.HasIndex("BranchId");
@@ -637,6 +674,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("payment_status");
+
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("recipient_name");
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)")

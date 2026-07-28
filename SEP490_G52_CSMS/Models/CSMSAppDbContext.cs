@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Sales;
 namespace SEP490_G52_CSMS.Models
 {

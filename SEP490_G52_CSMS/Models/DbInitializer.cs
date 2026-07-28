@@ -1,13 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Sales;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace SEP490_G52_CSMS.Models
 {
@@ -29,8 +23,29 @@ namespace SEP490_G52_CSMS.Models
 
             try
             {
-                // Skip if already seeded beyond the base 3 branches
-                if (context.Branches.Count() > 3) return;
+                // Skip if already seeded beyond the base 3 branches or if CB004/CB005 already exist
+                if (context.Branches.Count() > 3 || context.Branches.Any(b => b.BranchId == "CB004" || b.BranchId == "CB005")) return;
+
+                // Seed Admin if it doesn't exist
+                if (!context.Employees.Any(e => e.Role == "Admin"))
+                {
+                    context.Employees.Add(new Employee
+                    {
+                        FullName = "System Administrator",
+                        Username = "admin",
+                        Password = Commons.DAT_PasswordHasher.HashPassword("12345678"),
+                        Email = "admin@gmail.com",
+                        PhoneNumber = "0900000000",
+                        CitizenId = "000000000000",
+                        DateOfBirth = new DateTime(1990, 1, 1),
+                        Address = "Headquarters",
+                        Role = "Admin",
+                        EmploymentType = "Full-time",
+                        BranchId = null,
+                        Status = "Active"
+                    });
+                    context.SaveChanges();
+                }
 
                 // ---------- 1. BRANCHES (2 more, total 5) ----------
                 var newBranches = new List<Branch>
@@ -55,7 +70,7 @@ namespace SEP490_G52_CSMS.Models
                 context.SaveChanges();
 
                 // ---------- 3. EMPLOYEES ----------
-                string[] roles = { "Cashier", "Barista", "Bartender", "Busser" };
+                string[] roles = { "Cashier", "Bartender", "Busser" };
                 string[] empTypes = { "Full-time", "Part-time" };
                 var employeesByBranch = new Dictionary<string, List<Employee>>();
                 int globalEmpCounter = 3; // manager1/manager2 already exist
@@ -195,8 +210,10 @@ namespace SEP490_G52_CSMS.Models
                         var outgoing = staff[_rng.Next(staff.Count)];
                         var incoming = staff.First(e => e.EmployeeId != outgoing.EmployeeId);
                         decimal initial = 500000m;
-                        decimal revenue = _rng.Next(1000000, 5000000);
-                        decimal theoretical = initial + revenue;
+                        decimal totalRevenue = _rng.Next(1000000, 5000000);
+                        decimal cashlessRevenue = Math.Round(totalRevenue * 0.6m);
+                        decimal cashRevenue = totalRevenue - cashlessRevenue;
+                        decimal theoretical = initial + cashRevenue;
                         decimal actual = theoretical + _rng.Next(-20000, 20000);
 
                         handovers.Add(new CashHandover
@@ -207,7 +224,7 @@ namespace SEP490_G52_CSMS.Models
                             OutgoingCashierId = outgoing.EmployeeId,
                             IncomingCashierId = incoming.EmployeeId,
                             InitialCash = initial,
-                            MachineCashRevenue = revenue,
+                            MachineCashRevenue = cashlessRevenue,
                             TheoreticalCash = theoretical,
                             ActualCash = actual,
                             IsPasswordConfirmed = true

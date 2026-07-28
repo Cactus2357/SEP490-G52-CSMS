@@ -12,8 +12,8 @@ using SEP490_G52_CSMS.Models;
 namespace SEP490_G52_CSMS.Migrations
 {
     [DbContext(typeof(CSMSAppDbContext))]
-    [Migration("20260723030257_AddBankTransferRevenueToHandover")]
-    partial class AddBankTransferRevenueToHandover
+    [Migration("20260728170222_UpdateModels")]
+    partial class UpdateModels
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -241,6 +241,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("end_date");
 
+                    b.Property<string>("LeaveShifts")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("leave_shifts");
+
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
@@ -445,6 +450,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("branch_id");
 
+                    b.Property<string>("CccdFilePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("cccd_file_path");
+
                     b.Property<string>("CitizenId")
                         .IsRequired()
                         .HasMaxLength(12)
@@ -559,6 +569,10 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("menu_name");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
                     b.HasKey("MenuId");
 
                     b.HasIndex("BranchId");
@@ -578,6 +592,16 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int")
                         .HasColumnName("category_id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("image_url");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
@@ -654,6 +678,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("payment_status");
 
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("recipient_name");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total_amount");
@@ -706,6 +735,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)")
                         .HasColumnName("category_name");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
 
                     b.Property<string>("Status")
                         .IsRequired()

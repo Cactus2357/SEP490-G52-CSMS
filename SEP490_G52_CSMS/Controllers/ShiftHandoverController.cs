@@ -1,14 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(Roles = "BranchManager")]
     public class ShiftHandoverController : Controller
     {
-        private const string DefaultBranchId = "CB001";
-
         private readonly CSMSAppDbContext _context;
 
         public ShiftHandoverController(CSMSAppDbContext context)
@@ -19,6 +20,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(DateTime? date, int? shiftId, string? status)
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
             var targetDate = (date ?? DateTime.Today).Date;
 
             var allShifts = await _context.FixedShifts
@@ -29,7 +31,7 @@ namespace SEP490_G52_CSMS.Controllers
                 .Include(h => h.OutgoingCashier)
                 .Include(h => h.IncomingCashier)
                 .Include(h => h.FixedShift)
-                .Where(h => h.BranchId == DefaultBranchId && h.HandoverDate.Date == targetDate)
+                .Where(h => h.BranchId == loggedInBranchId && h.HandoverDate.Date == targetDate)
                 .ToListAsync();
 
             var transitionRows = new List<HandoverRowVM>();
@@ -105,6 +107,8 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> DetailPartial(int id)
         {
+            var loggedInBranchId = User.GetBranchId() ?? "";
+
             var handover = await _context.CashHandovers
                 .Include(h => h.OutgoingCashier)
                 .Include(h => h.IncomingCashier)
@@ -114,6 +118,11 @@ namespace SEP490_G52_CSMS.Controllers
             if (handover == null)
             {
                 return NotFound();
+            }
+
+            if (handover.BranchId != loggedInBranchId)
+            {
+                return Forbid();
             }
 
             var allShifts = await _context.FixedShifts.OrderBy(s => s.StartTime).ToListAsync();

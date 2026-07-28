@@ -1,0 +1,407 @@
+@model SEP490_G52_CSMS.Models.ViewModels.CreateOrderViewModel
+
+@{
+    ViewData["Title"] = "Tạo đơn hàng";
+}
+
+<div class="container-fluid mt-3">
+    <!-- Main Two Columns -->
+    <div class="row">
+        <!-- Left Column: Product Catalog -->
+        <div class="col-md-7 border-end border-dark pe-4">
+            <h3 class="fw-normal mb-3 border-bottom border-dark pb-2">Tạo đơn hàng</h3>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="position-relative" style="width: 250px;">
+                    <i class="bi bi-search position-absolute" style="left: 10px; top: 6px;"></i>
+                    <input type="text" id="productSearch" class="form-control border-dark border-2 rounded-0 ps-5 fw-bold" placeholder="search" onkeyup="filterProducts()">
+                </div>
+                <div class="d-flex border border-dark border-2 rounded-0 p-1 bg-white">
+                    <select id="categoryFilter" class="form-select border-0 bg-transparent fw-bold p-1 shadow-none" onchange="filterProducts()" style="width: 100px;">
+                        <option value="">Loại</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <option value="@cat.CategoryId">@cat.CategoryName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="row overflow-auto" style="max-height: 600px;" id="productGrid">
+                @foreach (var product in Model.MenuProducts)
+                {
+                    <div class="col-md-6 mb-4 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
+                        <div class="border border-dark border-2 p-3 d-flex align-items-center bg-white" style="height: 110px;">
+                            <!-- Placeholder for image -->
+                            <div class="border border-dark border-2 me-3 d-flex justify-content-center align-items-center" style="width: 60px; height: 60px; font-size: 2rem;">
+                                <i class="bi bi-x"></i>
+                            </div>
+                            <div class="flex-grow-1 text-center me-2">
+                                <div class="fw-normal text-truncate" style="max-width: 120px;" title="@product.ProductName">@product.ProductName</div>
+                                <div class="fw-normal mt-1">@product.DefaultPrice.ToString("N0") đ</div>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-white border border-dark border-2 rounded-0 fw-bold px-3 py-1 shadow-sm" style="box-shadow: 2px 2px 0px black !important;"
+                                    onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>thêm</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div id="noProductsMsg" class="d-none text-center mt-4">Không tìm thấy sản phẩm.</div>
+        </div>
+
+        <!-- Right Column: Cart & Checkout -->
+        <div class="col-md-5 ps-4 position-relative" style="min-height: 650px;">
+            <table class="table border-0 mt-3" id="cartTable">
+                <thead class="border-bottom border-dark border-2">
+                    <tr>
+                        <th class="border-0 fw-normal">Tên</th>
+                        <th class="border-0 fw-normal">Giá tiền</th>
+                        <th class="border-0 fw-normal text-end">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="cartBody">
+                    <!-- Cart items rendered by JS -->
+                </tbody>
+            </table>
+
+            <div class="position-absolute w-100 pe-4" style="bottom: 20px;">
+                <div class="d-flex justify-content-between align-items-center border-bottom border-dark border-2 pb-3 mb-4">
+                    <h4 class="fw-normal mb-0">Tổng tiền:</h4>
+                    <h4 class="fw-normal mb-0" id="totalAmount">0 đ</h4>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <h4 class="fw-normal mb-0">Người nhận :</h4>
+                    <input type="text" id="recipientName" class="form-control border-dark border-2 rounded-0 shadow-sm" style="width: 250px;">
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 fw-normal shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="cancelOrder()">Hủy</button>
+                    <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 fw-normal shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="showPaymentModal()">Thanh toán</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 1: Payment Method Selection -->
+<div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-dark border-2 rounded-0">
+            <div class="modal-body p-4">
+                <table class="table table-bordered border-dark mb-4" id="reviewCartTable">
+                    <thead class="table-light border-dark">
+                        <tr>
+                            <th>Tên</th>
+                            <th>size</th>
+                            <th>sl</th>
+                            <th>giá</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewCartBody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+                <div class="d-flex align-items-center mb-5 mt-4">
+                    <h5 class="fw-normal me-4 mb-0">Tổng tiền:</h5>
+                    <h5 class="fw-normal mb-0" id="reviewTotalAmount">0 đ</h5>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" data-bs-dismiss="modal">quay lại</button>
+                    <div>
+                        <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 me-3 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="processCashPayment()">Tiền mặt</button>
+                        <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="showBankTransferModal()">Chuyển khoản</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Bank Transfer QR Code -->
+<div class="modal fade" id="bankTransferModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-dark border-2 rounded-0">
+            <div class="modal-body p-0">
+                <h3 class="text-center fw-bold mt-4 mb-4">ĐƠN HÀNG BẠN ĐÃ CHỌN</h3>
+                <div class="row m-0 border-top border-dark border-2">
+                    <div class="col-md-7 border-end border-dark border-2 p-0">
+                        <table class="table table-bordered border-dark border-2 m-0 border-top-0 border-bottom-0 border-start-0" id="qrCartTable">
+                            <thead class="table-light border-dark border-2">
+                                <tr>
+                                    <th>Tên</th>
+                                    <th>size</th>
+                                    <th>sl</th>
+                                    <th>giá</th>
+                                </tr>
+                            </thead>
+                            <tbody id="qrCartBody">
+                                <!-- Filled by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-5 p-5 text-center">
+                        <h5 class="mb-4 fw-normal">TỔNG TIỀN CẦN THANH TOÁN</h5>
+                        <div class="d-flex justify-content-center align-items-center mb-5">
+                            <h4 class="me-4 mb-0 fw-normal">Tổng tiền:</h4>
+                            <h4 class="fw-normal mb-0" id="qrTotalAmount">0 đ</h4>
+                        </div>
+                        <div class="border border-dark border-2 d-inline-block p-4 mb-4 bg-white shadow-sm">
+                            <div style="width: 150px; height: 150px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-qr-code" style="font-size: 5rem;"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-4" onclick="simulateTransferSuccess()">[Giả lập Khách chuyển khoản thành công]</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Transfer Success -->
+<div class="modal fade" id="transferSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-dark border-2 rounded-0 text-center p-5">
+            <h4 class="mb-5 fw-normal">KHÁCH HÀNG ĐÃ CHUYỂN TIỀN THÀNH CÔNG</h4>
+            <div>
+                <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-5 py-2 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="confirmPaymentReceived()">Đã nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var cart = []; 
+        var currentOrderId = null;
+
+        function filterProducts() {
+            var search = document.getElementById("productSearch").value.toLowerCase();
+            var cat = document.getElementById("categoryFilter").value;
+            var cards = document.querySelectorAll('.product-card');
+            var visibleCount = 0;
+
+            cards.forEach(card => {
+                var cName = card.getAttribute('data-name');
+                var cCat = card.getAttribute('data-category');
+                
+                var matchSearch = cName.includes(search);
+                var matchCat = cat === "" || cCat === cat;
+
+                if (matchSearch && matchCat) {
+                    card.classList.remove('d-none');
+                    visibleCount++;
+                } else {
+                    card.classList.add('d-none');
+                }
+            });
+
+            if (visibleCount === 0) {
+                document.getElementById("noProductsMsg").classList.remove("d-none");
+            } else {
+                document.getElementById("noProductsMsg").classList.add("d-none");
+            }
+        }
+
+        function addToCart(pId, pName, variants) {
+            var defVariant = variants.find(v => v.sizeVariant === "S") || variants[0];
+            var cartId = Date.now().toString(); 
+            cart.push({
+                cartId: cartId,
+                productId: pId,
+                name: pName,
+                variants: variants,
+                selectedVariantId: defVariant.variantId,
+                quantity: 1,
+                unitPrice: defVariant.sellingPrice
+            });
+            renderCart();
+        }
+
+        function renderCart() {
+            var tbody = document.getElementById("cartBody");
+            var html = '';
+            var total = 0;
+
+            cart.forEach((item, index) => {
+                var itemTotal = item.quantity * item.unitPrice;
+                total += itemTotal;
+
+                // Wireframe format: S M L
+                var sizeOptions = item.variants.map(v => 
+                    `<span class="mx-1" style="cursor:pointer; font-weight: ${v.variantId == item.selectedVariantId ? 'bold' : 'normal'}; text-decoration: ${v.variantId == item.selectedVariantId ? 'underline' : 'none'};" 
+                        onclick="changeSize('${item.cartId}', ${v.variantId}, ${v.sellingPrice})">${v.sizeVariant}</span>`
+                ).join('');
+
+                html += `
+                    <tr>
+                        <td class="align-middle border-0 py-3">${item.name}</td>
+                        <td class="align-middle border-0 py-3">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td class="align-middle border-0 py-3 text-end">
+                            <div class="d-flex align-items-center justify-content-end">
+                                <div class="me-3 text-nowrap">${sizeOptions}</div>
+                                <div class="me-3">
+                                    <input type="number" class="form-control form-control-sm border-dark border-2 rounded-0 text-center" style="width: 50px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
+                                </div>
+                                <button class="btn btn-sm btn-white border border-dark border-2 rounded-0 px-2 shadow-sm" style="box-shadow: 1px 1px 0px black !important;" onclick="removeFromCart('${item.cartId}')">xóa</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById("totalAmount").innerText = total.toLocaleString('vi-VN') + " đ";
+        }
+
+        function changeSize(cartId, variantId, newPrice) {
+            var item = cart.find(i => i.cartId === cartId);
+            if (item) {
+                item.selectedVariantId = variantId;
+                item.unitPrice = newPrice;
+                renderCart();
+            }
+        }
+
+        function updateQuantity(cartId, newQuantity) {
+            var item = cart.find(i => i.cartId === cartId);
+            if (item) {
+                var q = parseInt(newQuantity);
+                if (isNaN(q) || q < 1) q = 1;
+                item.quantity = q;
+                renderCart();
+            }
+        }
+
+        function removeFromCart(cartId) {
+            cart = cart.filter(i => i.cartId !== cartId);
+            renderCart();
+        }
+
+        function cancelOrder() {
+            if (cart.length > 0) {
+                if (confirm("Bạn có chắc muốn hủy đơn hàng này không?")) {
+                    cart = [];
+                    document.getElementById("recipientName").value = "";
+                    renderCart();
+                }
+            }
+        }
+
+        function showPaymentModal() {
+            if (cart.length === 0) {
+                alert("Vui lòng thêm ít nhất 1 sản phẩm vào đơn hàng.");
+                return;
+            }
+            var recipient = document.getElementById("recipientName").value.trim();
+            if (!recipient) {
+                alert("Vui lòng nhập tên người nhận.");
+                return;
+            }
+
+            var orderData = {
+                recipientName: recipient,
+                items: cart.map(i => ({ variantId: i.selectedVariantId, quantity: i.quantity, unitPrice: i.unitPrice }))
+            };
+
+            fetch('@Url.Action("SubmitOrder", "SaleManagement")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentOrderId = data.orderId;
+                    renderReviewCarts();
+                    var modal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
+                    modal.show();
+                } else {
+                    alert("Lỗi khi tạo đơn hàng: " + data.message);
+                }
+            });
+        }
+
+        function renderReviewCarts() {
+            var html = '';
+            var total = 0;
+            cart.forEach((item) => {
+                var itemTotal = item.quantity * item.unitPrice;
+                total += itemTotal;
+                var selectedSize = item.variants.find(v => v.variantId === item.selectedVariantId).sizeVariant;
+
+                html += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${selectedSize}</td>
+                        <td>${item.quantity}</td>
+                        <td>${itemTotal.toLocaleString('vi-VN')} đ</td>
+                    </tr>
+                `;
+            });
+            document.getElementById("reviewCartBody").innerHTML = html;
+            document.getElementById("qrCartBody").innerHTML = html;
+            
+            var tStr = total.toLocaleString('vi-VN') + " đ";
+            document.getElementById("reviewTotalAmount").innerText = tStr;
+            document.getElementById("qrTotalAmount").innerText = tStr;
+        }
+
+        function processCashPayment() {
+            processPayment('Cash');
+        }
+
+        function showBankTransferModal() {
+            var m1 = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
+            m1.hide();
+            
+            var m2 = new bootstrap.Modal(document.getElementById('bankTransferModal'));
+            m2.show();
+        }
+
+        function simulateTransferSuccess() {
+            var m2 = bootstrap.Modal.getInstance(document.getElementById('bankTransferModal'));
+            m2.hide();
+
+            var m3 = new bootstrap.Modal(document.getElementById('transferSuccessModal'));
+            m3.show();
+        }
+
+        function confirmPaymentReceived() {
+            processPayment('Bank Transfer');
+        }
+
+        function processPayment(method) {
+            var formData = new URLSearchParams();
+            formData.append('orderId', currentOrderId);
+            formData.append('paymentMethod', method);
+
+            fetch('@Url.Action("ProcessPayment", "SaleManagement")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    var m1 = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
+                    if (m1) m1.hide();
+                    var m3 = bootstrap.Modal.getInstance(document.getElementById('transferSuccessModal'));
+                    if (m3) m3.hide();
+                    
+                    alert("Thanh toán thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
+                    
+                    cart = [];
+                    document.getElementById("recipientName").value = "";
+                    currentOrderId = null;
+                    renderCart();
+                } else {
+                    alert("Lỗi thanh toán: " + data.message);
+                }
+            });
+        }
+    </script>
+}

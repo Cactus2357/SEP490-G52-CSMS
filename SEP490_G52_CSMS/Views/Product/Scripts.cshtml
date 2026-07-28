@@ -12,3 +12,22 @@
         document.getElementById('editStatus').value = button.getAttribute('data-status');
     });
 </script>
+<script>
+    const createImageFile = document.getElementById('createImageFile');
+    const createImagePreview = document.getElementById('createImagePreview');
+
+    if (createImageFile) {
+        createImageFile.addEventListener('change', function () {
+            const file = this.files[0];
+
+            if (!file) {
+                createImagePreview.src = '';
+                createImagePreview.style.display = 'none';
+                return;
+            }
+
+            createImagePreview.src = URL.createObjectURL(file);
+            createImagePreview.style.display = 'block';
+        });
+    }
+</script>

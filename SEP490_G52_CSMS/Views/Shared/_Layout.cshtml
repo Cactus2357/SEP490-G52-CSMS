@@ -1,3 +1,4 @@
+@inject SEP490_G52_CSMS.Models.CSMSAppDbContext DbContext
 @{
     string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -9,6 +10,17 @@
         bool actionMatch = string.IsNullOrEmpty(action) ||
                                string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
         return (controllerMatch && actionMatch) ? "active" : "";
+    }
+
+    var branchId = User.FindFirst("BranchId")?.Value;
+    var branchName = "Tổng công ty";
+    if (!string.IsNullOrEmpty(branchId))
+    {
+        var branch = DbContext.Branches.FirstOrDefault(b => b.BranchId == branchId);
+        if (branch != null)
+        {
+            branchName = branch.BranchName;
+        }
     }
 }
 <!DOCTYPE html>
@@ -58,124 +70,25 @@
                 </button>
             </div>
             <ul class="sidebar-menu">
-                @* ✅ Linked: Employee → Index *@
-                <li class="menu-item">
-                    <a asp-controller="Employee" asp-action="Index"
-                       class="menu-link @ActiveIf("Employee", "Index")">
-                        <i class="bi bi-people-fill"></i>
-                        <span>Quản lý nhân viên</span>
-                    </a>
-                </li>
-
-                @* ✅ Linked: BranchManager → Index *@
-                <li class="menu-item">
-                    <a asp-controller="BranchManager" asp-action="Index"
-                       class="menu-link @ActiveIf("BranchManager", "Index")">
-                        <i class="bi bi-person-badge-fill"></i>
-                        <span>Quản lý Branch Manager</span>
-                    </a>
-                </li>
-
-                @* ✅ Linked: Branch → Index (Quản lý Chi nhánh) *@
-                <li class="menu-item">
-                    <a asp-controller="Branch" asp-action="Index"
-                       class="menu-link @ActiveIf("Branch")">
-                        <i class="bi bi-shop"></i>
-                        <span>Quản lý Chi nhánh</span>
-                    </a>
-                </li>
-
-                @* ✅ WorkSchedule: Phân quyền hiển thị dựa theo Role *@
-                @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+                @if (User.IsInRole("Admin") || User.IsInRole("RManager"))
                 {
-                    <li class="menu-item">
-                        <a asp-controller="WorkSchedule" asp-action="Index"
-                           class="menu-link @ActiveIf("WorkSchedule", "Index")">
-                            <i class="bi bi-calendar3"></i>
-                            <span>Quản lý lịch làm việc</span>
-                        </a>
-                    </li>
+                    <partial name="_Sidebar.Admin" />
                 }
-                
-                @if (User.IsInRole("Cashier") || User.IsInRole("Bartender") || User.IsInRole("Busser") || User.IsInRole("Barista"))
+                else if (User.IsInRole("BranchManager"))
                 {
-                    <li class="menu-item">
-                        <a asp-controller="WorkSchedule" asp-action="EmployeeIndex"
-                           class="menu-link @ActiveIf("WorkSchedule", "EmployeeIndex")">
-                            <i class="bi bi-calendar-event"></i>
-                            <span>Lịch làm việc của tôi</span>
-                        </a>
-                    </li>
+                    <partial name="_Sidebar.BranchManager" />
                 }
-
-                @* Shift Change *@
-                @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+                else if (User.IsInRole("Cashier"))
                 {
-                    <li class="menu-item">
-                        <a asp-controller="ShiftChange" asp-action="Index"
-                           class="menu-link @ActiveIf("ShiftChange", "Index")">
-                            <i class="bi bi-arrow-left-right"></i>
-                            <span>Quản lý đổi ca</span>
-                        </a>
-                    </li>
+                    <partial name="_Sidebar.Cashier" />
                 }
-                else if (User.IsInRole("Cashier") || User.IsInRole("Bartender") || User.IsInRole("Busser") || User.IsInRole("Barista"))
+                else if (User.IsInRole("Bartender") || User.IsInRole("Barista"))
                 {
-                    <li class="menu-item">
-                        <a asp-controller="ShiftChange" asp-action="EmployeeIndex"
-                           class="menu-link @ActiveIf("ShiftChange", "EmployeeIndex")">
-                            <i class="bi bi-arrow-left-right"></i>
-                            <span>Xin chuyển ca</span>
-                        </a>
-                    </li>
+                    <partial name="_Sidebar.Bartender" />
                 }
-                
-                @* CashHandover (Quản lý két tiền & giao ca) *@
-                @if (User.IsInRole("Cashier") || User.IsInRole("BranchManager"))
+                else if (User.IsInRole("Busser"))
                 {
-                    <li class="menu-item">
-                        <a asp-controller="CashHandover" asp-action="Index"
-                           class="menu-link @ActiveIf("CashHandover")">
-                            <i class="bi bi-cash-coin"></i>
-                            <span>Mở, đóng/bàn giao ca</span>
-                        </a>
-                    </li>
-                }
-
-                <li class="menu-item">
-                    <a asp-controller="ShiftHandover" asp-action="Index"
-                       class="menu-link @ActiveIf("ShiftHandover", "Index")">
-                        <i class="bi bi-clock-history"></i>
-                        <span>Lịch sử giao ca</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
-                        <i class="bi bi-journal-text"></i>
-                        <span>Quản lý thực đơn</span>
-                    </a>
-                </li>
-                
-                @* Leave Request *@
-                @if (User.IsInRole("Cashier") || User.IsInRole("Bartender") || User.IsInRole("Busser") || User.IsInRole("Barista"))
-                {
-                    <li class="menu-item">
-                        <a asp-controller="LeaveRequest" asp-action="Index"
-                           class="menu-link @ActiveIf("LeaveRequest", "Index")">
-                            <i class="bi bi-calendar-x"></i>
-                            <span>Xin nghỉ phép</span>
-                        </a>
-                    </li>
-                }
-                @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
-                {
-                    <li class="menu-item">
-                        <a asp-controller="OrderManagement" asp-action="Index"
-                           class="menu-link @ActiveIf("OrderManagement", "Index")">
-                            <i class="bi bi-cart3"></i>
-                            <span>Quản lý đơn đặt hàng</span>
-                        </a>
-                    </li>
+                    <partial name="_Sidebar.Busser" />
                 }
             </ul>
             <script>
@@ -196,14 +109,14 @@
                     <input type="text" class="header-search" placeholder="search">
                 </div>
                 <div class="header-branch">
-                    <span>Chi nhánh Quận 1</span>
+                    <span>@branchName</span>
                 </div>
                 <div class="header-right">
                     <button class="header-icon-btn">
                         <i class="bi bi-bell"></i>
                     </button>
                     <div class="dropdown">
-                        <button class="btn user-avatar-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn user-avatar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="user-avatar-img @(User.Identity?.IsAuthenticated == true ? "" : "unauthenticated")">
                                 <i class="bi bi-person-fill"></i>
                             </div>
@@ -211,6 +124,11 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             @if (User.Identity != null && User.Identity.IsAuthenticated)
                             {
+                                <li class="dropdown-header text-dark">
+                                    <div class="fw-bold">@User.Identity.Name</div>
+                                    <small class="text-muted">Vai trò: @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" asp-controller="Auth" asp-action="Profile">
                                         <i class="bi bi-person-circle me-2"></i> Hồ sơ cá nhân
@@ -265,30 +183,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="logoutConfirmModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
-            <div class="modal-content" style="border-radius: 4px;">
-                <div class="modal-header border-0 justify-content-center pt-4 pb-0">
-                    <h5 class="modal-title fw-bold text-uppercase" id="logoutConfirmModalLabel" style="letter-spacing: 0.5px;">
-                        Đăng xuất tài khoản
-                    </h5>
-                </div>
-                <div class="modal-body text-center px-5 py-4">
-                    <p class="mb-0" style="font-size: 0.95rem; line-height: 1.6;">
-                        Bạn có chắc chắn muốn đăng xuất khỏi hệ thống không? Lưu ý: Hãy đảm bảo
-                        bạn đã bàn giao ca và kết ca thành công trước khi rời máy.
-                    </p>
-                </div>
-                <div class="border-top">
-                    <form method="post" asp-controller="Auth" asp-action="Logout" class="d-flex">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn rounded-0 w-50 py-2 border-0 border-end">Xác nhận</button>
-                        <button type="button" class="btn rounded-0 w-50 py-2 border-0" data-bs-dismiss="modal">Huỷ bỏ</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    <partial name="_LogoutModal" />
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

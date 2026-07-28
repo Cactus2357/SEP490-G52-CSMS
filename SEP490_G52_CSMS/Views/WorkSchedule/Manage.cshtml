@@ -47,118 +47,123 @@
     }
 </style>
 
-<h2 class="mb-4">THÊM LỊCH LÀM VIỆC THEO TUẦN</h2>
-
-@if (string.IsNullOrWhiteSpace(branchId))
-{
-    <div class="alert alert-danger">Không xác định được chi nhánh. Vui lòng chọn chi nhánh trước khi tạo lịch.</div>
-}
-
-<!-- Week navigation + scope selection -->
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-
-    <div class="input-group" style="width:auto;">
-        <a class="btn btn-outline-secondary"
-           href="@Url.Action("Manage", new { weekStart = Model.WeekStartDate.AddDays(-7).ToString("yyyy-MM-dd") })">
-            &lsaquo;
-        </a>
-
-        <span class="input-group-text fw-semibold">
-            @Model.WeekStartDate.ToString("dd/MM")
-            -
-            @weekEnd.ToString("dd/MM/yyyy")
-        </span>
-
-        <a class="btn btn-outline-secondary"
-           href="@Url.Action("Manage", new { weekStart = Model.WeekStartDate.AddDays(7).ToString("yyyy-MM-dd") })">
-            &rsaquo;
-        </a>
-    </div>
-
-    <div class="d-flex align-items-center gap-3">
-        <div class="form-check">
-            <input class="form-check-input" type="radio"
-                   name="scope"
-                   id="scopeSelected"
-                   value="selected"
-                   checked>
-            <label class="form-check-label" for="scopeSelected">
-                Chỉ áp dụng cho tuần đã chọn
-            </label>
-        </div>
-
-        <div class="form-check">
-            <input class="form-check-input" type="radio"
-                   name="scope"
-                   id="scopeUpcoming"
-                   value="upcoming">
-            <label class="form-check-label" for="scopeUpcoming">
-                Áp dụng cho các tuần tiếp theo
-            </label>
-        </div>
-    </div>
-
+<div class="page-header">
+    <h1 class="page-title">THÊM LỊCH LÀM VIỆC THEO TUẦN</h1>
 </div>
-@if (shifts.Count == 0)
-{
-    <div class="alert alert-warning">
-        Chưa có ca làm việc (Fixed Shift) nào được cấu hình trong hệ thống. Vui lòng thêm ca làm việc trước khi tạo lịch.
-    </div>
-}
-else
-{
-    <!-- Weekly schedule matrix grid -->
-    <div class="table-responsive">
-        <table class="table table-bordered align-middle text-center" id="scheduleTable">
-            <thead class="table-light">
-                <tr>
-                    <th style="width:140px;">Ca làm việc</th>
-                    @for (var d = 0; d < 7; d++)
-                    {
-                        <th>
-                            @dayNames[d]<br />
-                            <small class="text-muted">@Model.WeekStartDate.AddDays(d).ToString("dd/MM")</small>
-                        </th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var shift in shifts)
-                {
-                    <tr>
-                        <td class="table-light text-start">
-                            <strong>@(shift.ShiftName ?? "Ca ?")</strong><br />
-                            <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</small>
-                        </td>
-                        @for (var d = 0; d < 7; d++)
-                        {
-                            <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break"></td>
-                        }
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
 
-    <!-- Legend -->
-    <p class="text-muted small">
-        Chú thích: <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên thu ngân</span>
-        <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên pha chế</span>
-        <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên vệ sinh</span>
-    </p>
-
-    @if (cashiers.Count == 0)
+<div class="card-container">
+    @if (string.IsNullOrWhiteSpace(branchId))
     {
-        <div class="alert alert-warning">
-            Chi nhánh chưa có Nhân viên thu ngân đang hoạt động. Không thể tạo ca làm việc cho đến khi có ít nhất một Cashier (bắt buộc theo BR01).
-        </div>
+        <div class="alert alert-danger">Không xác định được chi nhánh. Vui lòng chọn chi nhánh trước khi tạo lịch.</div>
     }
 
-    <!-- Main footer actions -->
-    <div class="d-flex justify-content-end gap-2 mb-4">
-        <button type="button" class="btn btn-outline-secondary" id="btnCancelAll">Hủy</button>
-        <button type="button" class="btn btn-primary" id="btnConfirmAll" @(cashiers.Count == 0 ? "disabled" : "")>Xác nhận</button>
+    <!-- Week navigation + scope selection -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+
+        <div class="input-group" style="width:auto;">
+            <a class="btn btn-outline-secondary"
+               href="@Url.Action("Manage", new { weekStart = Model.WeekStartDate.AddDays(-7).ToString("yyyy-MM-dd") })">
+                &lsaquo;
+            </a>
+
+            <span class="input-group-text fw-semibold">
+                @Model.WeekStartDate.ToString("dd/MM")
+                -
+                @weekEnd.ToString("dd/MM/yyyy")
+            </span>
+
+            <a class="btn btn-outline-secondary"
+               href="@Url.Action("Manage", new { weekStart = Model.WeekStartDate.AddDays(7).ToString("yyyy-MM-dd") })">
+                &rsaquo;
+            </a>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                       name="scope"
+                       id="scopeSelected"
+                       value="selected"
+                       checked>
+                <label class="form-check-label" for="scopeSelected">
+                    Chỉ áp dụng cho tuần đã chọn
+                </label>
+            </div>
+
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                       name="scope"
+                       id="scopeUpcoming"
+                       value="upcoming">
+                <label class="form-check-label" for="scopeUpcoming">
+                    Áp dụng cho các tuần tiếp theo
+                </label>
+            </div>
+        </div>
+
     </div>
+    @if (shifts.Count == 0)
+    {
+        <div class="alert alert-warning">
+            Chưa có ca làm việc (Fixed Shift) nào được cấu hình trong hệ thống. Vui lòng thêm ca làm việc trước khi tạo lịch.
+        </div>
+    }
+    else
+    {
+        <!-- Weekly schedule matrix grid -->
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center" id="scheduleTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:140px;">Ca làm việc</th>
+                        @for (var d = 0; d < 7; d++)
+                        {
+                            <th>
+                                @dayNames[d]<br />
+                                <small class="text-muted">@Model.WeekStartDate.AddDays(d).ToString("dd/MM")</small>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var shift in shifts)
+                    {
+                        <tr>
+                            <td class="table-light text-start">
+                                <strong>@(shift.ShiftName ?? "Ca ?")</strong><br />
+                                <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</small>
+                            </td>
+                            @for (var d = 0; d < 7; d++)
+                            {
+                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break"></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Legend -->
+        <p class="text-muted small mt-3">
+            Chú thích: <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên thu ngân</span>
+            <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên pha chế</span>
+            <span class="me-3"><i class="bi bi-person-fill"></i> Nhân viên vệ sinh</span>
+        </p>
+
+        @if (cashiers.Count == 0)
+        {
+            <div class="alert alert-warning">
+                Chi nhánh chưa có Nhân viên thu ngân đang hoạt động. Không thể tạo ca làm việc cho đến khi có ít nhất một Cashier (bắt buộc theo BR01).
+            </div>
+        }
+
+        <!-- Main footer actions -->
+        <div class="d-flex justify-content-end gap-2 mb-0">
+            <button type="button" class="btn btn-outline-secondary" id="btnCancelAll">Hủy</button>
+            <button type="button" class="btn btn-primary" id="btnConfirmAll" @(cashiers.Count == 0 ? "disabled" : "")>Xác nhận</button>
+        </div>
+    }
+</div>
 
     <!-- Staff Assignment Modal -->
     <div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">

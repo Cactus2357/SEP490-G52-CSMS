@@ -1,0 +1,151 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.OrderSummaryViewModel>
+
+@{
+    ViewData["Title"] = "Pha Chế";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">PHA CHẾ</h2>
+        <div class="position-relative w-25">
+            <i class="bi bi-search position-absolute" style="left: 10px; top: 8px;"></i>
+            <input type="text" id="brewingSearch" class="form-control border-dark rounded-0 ps-5" placeholder="search" onkeyup="filterBrewingOrders()">
+        </div>
+    </div>
+
+    <table class="table table-bordered border-dark" id="brewingTable">
+        <thead class="table-light border-dark">
+            <tr>
+                <th>Mã đơn hàng</th>
+                <th>tên</th>
+                <th>thời gian</th>
+                <th>trạng thái</th>
+                <th>hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="5" class="text-center">Không có đơn hàng nào đang chờ pha chế</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var o in Model)
+                {
+                    <tr class="brewing-row" data-name="@o.RecipientName.ToLower()" data-id="@o.OrderId.ToLower()">
+                        <td>@o.OrderId</td>
+                        <td>@o.RecipientName</td>
+                        <td>@o.OrderTime.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@o.DisplayStatus</td>
+                        <td>
+                            <a href="#" class="text-primary text-decoration-none" onclick="showBrewingDetails('@o.OrderId', '@o.BrewingStatus')">xem chi tiết</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: Brewing Details -->
+<div class="modal fade" id="brewingDetailsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-dark rounded-0">
+            <div class="modal-body p-4" id="brewingDetailsContent">
+                <!-- Loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: In Progress Alert -->
+<div class="modal fade" id="inProgressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-dark rounded-0 text-center p-5">
+            <h4 class="mb-5 fw-bold">đang trong quá trình pha chế</h4>
+            <div class="d-flex justify-content-between px-4">
+                <button type="button" class="btn btn-outline-dark rounded-0 px-4 fw-bold" data-bs-dismiss="modal">quay lại</button>
+                <button type="button" class="btn btn-outline-dark rounded-0 px-4 fw-bold" onclick="completeBrewing()">hoàn thành</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var currentBrewingOrderId = null;
+
+        function filterBrewingOrders() {
+            var search = document.getElementById("brewingSearch").value.toLowerCase();
+            var rows = document.querySelectorAll('.brewing-row');
+
+            rows.forEach(row => {
+                var cName = row.getAttribute('data-name');
+                var cId = row.getAttribute('data-id');
+                
+                if (cName.includes(search) || cId.includes(search)) {
+                    row.classList.remove('d-none');
+                } else {
+                    row.classList.add('d-none');
+                }
+            });
+        }
+
+        function showBrewingDetails(orderId, status) {
+            currentBrewingOrderId = orderId;
+            
+            if (status === "Brewing in Progress") {
+                // Show the "In progress" modal directly if it's already brewing
+                var modal = new bootstrap.Modal(document.getElementById('inProgressModal'));
+                modal.show();
+            } else {
+                // Load details for "Waiting for Brewing"
+                fetch('@Url.Action("GetOrderDetails", "Brewing")?orderId=' + orderId)
+                    .then(res => res.text())
+                    .then(html => {
+                        document.getElementById('brewingDetailsContent').innerHTML = html;
+                        var modal = new bootstrap.Modal(document.getElementById('brewingDetailsModal'));
+                        modal.show();
+                    });
+            }
+        }
+
+        function startBrewing() {
+            fetch('@Url.Action("StartBrewing", "Brewing")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ orderId: currentBrewingOrderId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    var m1 = bootstrap.Modal.getInstance(document.getElementById('brewingDetailsModal'));
+                    if (m1) m1.hide();
+                    location.reload(); // Reload to update status on grid
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        function completeBrewing() {
+            fetch('@Url.Action("CompleteBrewing", "Brewing")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ orderId: currentBrewingOrderId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    var m2 = bootstrap.Modal.getInstance(document.getElementById('inProgressModal'));
+                    if (m2) m2.hide();
+                    location.reload(); // Reload to update status on grid
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    </script>
+}

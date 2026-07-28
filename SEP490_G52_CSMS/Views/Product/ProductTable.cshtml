@@ -48,11 +48,13 @@
                     </td>
 
                     <td class="text-center">
-                        <button type="button"
-                                class="product-action-button"
-                                title="Quản lý biến thể">
+                        <a asp-controller="Product"
+                           asp-action="Variants"
+                           asp-route-id="@item.ProductId"
+                           class="product-action-button text-decoration-none"
+                           title="Quản lý biến thể">
                             ⚙️
-                        </button>
+                        </a>
 
                         <button type="button"
                                 class="product-action-button"
