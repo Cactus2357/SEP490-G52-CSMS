@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(Roles = "RManager")]
     public class ReportingController : Controller
     {
         private readonly CSMSAppDbContext _context;

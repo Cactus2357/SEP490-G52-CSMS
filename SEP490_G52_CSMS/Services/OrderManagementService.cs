@@ -25,16 +25,18 @@ namespace SEP490_G52_CSMS.Services
             return "Đang xử lý";
         }
 
-        public async Task<OrderManagementListViewModel> GetOrderManagementListAsync(string branchId, string branchName, string searchCashier, string status)
+        public async Task<OrderManagementListViewModel> GetOrderManagementListAsync(string branchId, string branchName, string searchCashier, string status, DateTime? fromDate = null, DateTime? toDate = null)
         {
-            var data = await _repository.GetOrdersAsync(branchId, searchCashier, status);
+            var data = await _repository.GetOrdersAsync(branchId, searchCashier, status, fromDate, toDate);
 
             var model = new OrderManagementListViewModel
             {
                 BranchId = branchId,
                 BranchName = branchName,
                 SearchCashier = searchCashier,
-                FilterStatus = status
+                FilterStatus = status,
+                FromDate = fromDate,
+                ToDate = toDate
             };
 
             foreach (var item in data)

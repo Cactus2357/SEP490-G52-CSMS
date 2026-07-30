@@ -7,6 +7,9 @@ using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services;
 using SEP490_G52_CSMS.Reponsitories;
+using SEP490_G52_CSMS.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -14,20 +17,42 @@ namespace SEP490_G52_CSMS.Controllers
     {
         private readonly IOrderService _orderService;
         private readonly IMenuRepository _menuRepo;
+        private readonly CSMSAppDbContext _context;
         
-        public SaleManagementController(IOrderService orderService, IMenuRepository menuRepo)
+        public SaleManagementController(IOrderService orderService, IMenuRepository menuRepo, CSMSAppDbContext context)
         {
             _orderService = orderService;
             _menuRepo = menuRepo;
+            _context = context;
         }
 
-        // Mock current branch ID for testing purposes (like in MenuManagement)
-        private string GetCurrentBranchId() => "CB004";
-        private int GetCurrentCashierId() => 1; // Mock cashier
+        private async Task<string> GetUserBranchIdAsync()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId);
+                if (employee != null && !string.IsNullOrEmpty(employee.BranchId))
+                {
+                    return employee.BranchId;
+                }
+            }
+            return "CB004"; // Default fallback
+        }
+
+        private async Task<int> GetUserCashierIdAsync()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                return userId;
+            }
+            return 5; // Default fallback (cashier is 5)
+        }
 
         public async Task<IActionResult> CreateOrder()
         {
-            var branchId = GetCurrentBranchId();
+            var branchId = await GetUserBranchIdAsync();
             var menus = await _menuRepo.GetMenusByBranchAsync(branchId);
             var activeMenu = menus?.FirstOrDefault(m => m.IsActive);
             BranchMenu? menu = null;
@@ -94,8 +119,8 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest(new { success = false, message = "Invalid order data" });
             }
 
-            var branchId = GetCurrentBranchId();
-            var cashierId = GetCurrentCashierId();
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
 
             var orderItems = model.Items.Select(i => new OrderItem
             {
@@ -119,7 +144,8 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> OrderHistory(string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1)
         {
-            var vm = await _orderService.GetOrderHistoryAsync(status, fromDate, toDate, search, page);
+            var branchId = await GetUserBranchIdAsync();
+            var vm = await _orderService.GetOrderHistoryAsync(branchId, status, fromDate, toDate, search, page);
             return View(vm);
         }
 

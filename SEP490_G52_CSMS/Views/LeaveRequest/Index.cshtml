@@ -4,60 +4,51 @@
 }
 
 <div class="container-fluid px-4 pt-3">
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-dark pb-2">
-        <h3 class="fw-bold mb-0 text-uppercase">DANH SÁCH ĐƠN XIN NGHỈ</h3>
+    <!-- Tiêu đề -->
+    <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
+        <h3 class="fw-bold mb-0 text-uppercase text-dark">
+            <i class="bi bi-calendar-x-fill text-danger me-2"></i>Danh Sách Đơn Xin Nghỉ
+        </h3>
     </div>
 
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div class="fs-5">
-            Họ &amp; Tên: <span class="fw-semibold">@Model.EmployeeName</span>
-        </div>
-        
-        <form method="get" asp-action="Index" class="d-flex align-items-center gap-3 m-0" id="filterForm">
-            <div class="border border-dark rounded bg-white" style="border-width: 2px !important; height: 38px;">
-                <select name="status" class="form-select border-0 shadow-none h-100" style="min-width: 150px; background-color: transparent;" onchange="document.getElementById('filterForm').submit()">
-                    <option value="Tất cả" selected="@(Model.Status == "Tất cả")">Trạng thái: Tất cả</option>
-                    <option value="Đã gửi" selected="@(Model.Status == "Đã gửi")">Đã gửi</option>
-                    <option value="Đã duyệt" selected="@(Model.Status == "Đã duyệt")">Đã duyệt</option>
-                    <option value="Từ chối" selected="@(Model.Status == "Từ chối")">Từ chối</option>
-                    <option value="Đã hủy" selected="@(Model.Status == "Đã hủy")">Đã hủy</option>
-                </select>
+    <!-- Thông tin nhân viên & Bộ lọc -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="fs-5 text-dark">
+                Nhân viên: <span class="fw-bold text-primary">@Model.EmployeeName</span>
             </div>
             
-            <div class="d-flex align-items-center border border-dark rounded px-2 bg-white" style="border-width: 2px !important; height: 38px;">
-                <input type="date" id="filterFromDate" name="fromDate" class="form-control border-0 shadow-none p-0 mx-2"
-                       value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" style="width: 125px;" onchange="validateFilterDates()" />
-                <span>-</span>
-                <input type="date" id="filterToDate" name="toDate" class="form-control border-0 shadow-none p-0 mx-2"
-                       value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" style="width: 125px;" onchange="validateFilterDates()" />
-                <i class="bi bi-calendar-check ms-1 fs-5"></i>
-            </div>
-        </form>
+            <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-3 m-0" id="filterForm">
+                <div>
+                    <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit()">
+                        <option value="Tất cả" selected="@(Model.Status == "Tất cả")">Tất cả trạng thái</option>
+                        <option value="Đã gửi" selected="@(Model.Status == "Đã gửi")">Đã gửi</option>
+                        <option value="Đã duyệt" selected="@(Model.Status == "Đã duyệt")">Đã duyệt</option>
+                        <option value="Từ chối" selected="@(Model.Status == "Từ chối")">Từ chối</option>
+                        <option value="Đã hủy" selected="@(Model.Status == "Đã hủy")">Đã hủy</option>
+                    </select>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <input type="date" id="filterFromDate" name="fromDate" class="form-control"
+                           value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" style="width: 145px;" onchange="validateFilterDates()" />
+                    <span class="text-muted">đến</span>
+                    <input type="date" id="filterToDate" name="toDate" class="form-control"
+                           value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" style="width: 145px;" onchange="validateFilterDates()" />
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <div class="table-responsive border border-dark rounded" style="border-width: 2px !important; max-height: 400px; overflow-y: auto;">
-            <table class="table align-middle mb-0" style="table-layout: fixed;">
-                <thead style="background-color: #e9ecef; position: sticky; top: 0; z-index: 1;">
-                    <tr class="border-bottom border-dark">
-                        <th class="ps-3 border-end border-dark" style="width: 25%;">Ngày gửi đơn</th>
-                        <th class="border-end border-dark" style="width: 35%;">Trạng thái</th>
-                        <th style="width: 40%;">Hành động</th>
+    <!-- Bảng danh sách -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 30%;">Ngày gửi đơn</th>
+                        <th style="width: 40%;">Trạng thái</th>
+                        <th class="pe-4" style="width: 30%;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -65,20 +56,49 @@
                     {
                         foreach (var item in Model.Items)
                         {
-                            <tr class="border-bottom border-dark bg-white">
-                                <td class="ps-3 border-end border-dark">@item.SubmittedAt</td>
-                                <td class="border-end border-dark">@item.Status</td>
+                            <tr>
+                                <td class="ps-4 fw-semibold text-secondary">@item.SubmittedAt</td>
                                 <td>
+                                    @if (item.Status == "Đã duyệt")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Đã duyệt
+                                        </span>
+                                    }
+                                    else if (item.Status == "Từ chối")
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Từ chối
+                                        </span>
+                                    }
+                                    else if (item.Status == "Đã hủy")
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-dash-circle-fill me-1"></i>Đã hủy
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-send-fill me-1"></i>Đã gửi
+                                        </span>
+                                    }
+                                </td>
+                                <td class="pe-4">
                                     @if (item.CanCancel)
                                     {
                                         <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn này?');">
                                             <input type="hidden" name="applicationId" value="@item.ApplicationId" />
-                                            <button type="submit" class="btn btn-link text-primary p-0 text-decoration-underline fw-semibold">Hủy đơn</button>
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-x-circle me-1"></i>Hủy đơn
+                                            </button>
                                         </form>
                                     }
                                     else
                                     {
-                                        <span class="text-muted" style="text-decoration: line-through;">Hủy đơn</span>
+                                        <button class="btn btn-sm btn-light text-muted" disabled>
+                                            <i class="bi bi-slash-circle me-1"></i>Hủy đơn
+                                        </button>
                                     }
                                 </td>
                             </tr>
@@ -87,7 +107,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="3" class="text-center py-4 text-muted border-0 bg-white">Không có đơn xin nghỉ phép nào.</td>
+                            <td colspan="3" class="text-center py-4 text-muted">Không có đơn xin nghỉ phép nào.</td>
                         </tr>
                     }
                 </tbody>
@@ -95,37 +115,44 @@
         </div>
     </div>
 
-    <div class="d-flex align-items-start justify-content-between">
-        <div class="border border-dark p-3 bg-white" style="border-width: 2px !important; max-width: 500px;">
-            <div class="fw-bold mb-1">- Lưu ý:</div>
-            <div>Chỉ hủy đơn khi trạng thái: "Đã gửi" (trước khi quản lý duyệt đơn)</div>
+    <!-- Chú thích & Nút mở đơn xin nghỉ -->
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div class="card border-0 shadow-sm" style="max-width: 500px;">
+            <div class="card-body py-2 px-3 bg-light rounded border">
+                <span class="fw-semibold text-danger"><i class="bi bi-info-circle-fill me-1"></i>Lưu ý:</span>
+                <span class="text-secondary small">Chỉ hủy đơn khi trạng thái là "Đã gửi" (trước khi quản lý duyệt đơn).</span>
+            </div>
         </div>
-        <button type="button" class="btn btn-outline-dark fw-bold px-4 rounded" style="border-width: 2px;" data-bs-toggle="modal" data-bs-target="#createLeaveModal">Đơn xin nghỉ</button>
+        <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#createLeaveModal">
+            <i class="bi bi-plus-lg me-1"></i>Đơn xin nghỉ
+        </button>
     </div>
 </div>
 
 <!-- Modal Đơn Xin Nghỉ Phép -->
 <div class="modal fade" id="createLeaveModal" tabindex="-1" aria-labelledby="createLeaveModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border border-dark rounded-0" style="border-width: 3px !important;">
-            <div class="modal-header border-bottom border-dark rounded-0 px-4 py-3">
-                <h4 class="modal-title fw-bold text-uppercase" id="createLeaveModalLabel">ĐƠN XIN NGHỈ PHÉP</h4>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold text-uppercase" id="createLeaveModalLabel">
+                    <i class="bi bi-file-earmark-plus me-2"></i>ĐƠN XIN NGHỈ PHÉP
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
             <form asp-action="Create" method="post" id="createLeaveForm">
-                <div class="modal-body px-4 py-4 row g-0">
-                    <div class="col-md-8 pe-4 border-end border-dark" style="border-width: 2px !important;">
+                <div class="modal-body p-4 row g-0">
+                    <div class="col-md-8 pe-md-4 border-end">
                         <!-- Row 1: Họ tên & Chức vụ -->
-                        <div class="d-flex mb-4 align-items-center">
-                            <div style="width: 140px;" class="fs-5 text-nowrap">Họ &amp; Tên:</div>
-                            <div class="border border-dark px-2 py-1" style="width: 180px; background-color: #f8f9fa;">
-                                @Model.EmployeeName
-                            </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Họ &amp; Tên nhân viên</label>
+                            <input type="text" class="form-control" value="@Model.EmployeeName" readonly />
                             <input type="hidden" name="EmployeeName" value="@Model.EmployeeName" />
-                            
-                            <div class="fs-5 text-nowrap ms-4 me-2">Chức vụ:</div>
-                            <select name="RoleName" class="form-select border border-dark rounded-0 shadow-none" style="width: 140px;">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Chức vụ</label>
+                            <select name="RoleName" class="form-select">
                                 <option value="Thu ngân" selected>Thu ngân</option>
                                 <option value="Quản lý">Quản lý</option>
                                 <option value="Pha chế">Pha chế</option>
@@ -133,44 +160,47 @@
                         </div>
 
                         <!-- Row 2: Ngày xin nghỉ -->
-                        <div class="d-flex mb-4 align-items-center">
-                            <div style="width: 140px;" class="fs-5 text-nowrap">Ngày xin nghỉ:</div>
-                            <div class="d-flex align-items-center border border-dark px-2" style="background-color: #fff;">
-                                <input type="date" id="modalStartDate" name="StartDate" class="form-control border-0 p-1 shadow-none" value="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" min="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" required style="width: 130px;" onchange="validateModalDates()" />
-                                <i class="bi bi-calendar3 ms-1"></i>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold text-secondary">Nghỉ từ ngày</label>
+                                <input type="date" id="modalStartDate" name="StartDate" class="form-control" 
+                                       value="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" 
+                                       min="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" required onchange="validateModalDates()" />
                             </div>
-                            <span class="fs-5 mx-3">đến</span>
-                            <div class="d-flex align-items-center border border-dark px-2" style="background-color: #fff;">
-                                <input type="date" id="modalEndDate" name="EndDate" class="form-control border-0 p-1 shadow-none" value="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" min="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" required style="width: 130px;" onchange="validateModalDates()" />
-                                <i class="bi bi-calendar3 ms-1"></i>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold text-secondary">Đến ngày</label>
+                                <input type="date" id="modalEndDate" name="EndDate" class="form-control" 
+                                       value="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" 
+                                       min="@(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" required onchange="validateModalDates()" />
                             </div>
                         </div>
 
                         <!-- Row 3: Ca muốn nghỉ -->
-                        <div class="d-flex mb-4 align-items-center">
-                            <div style="width: 140px;" class="fs-5 text-nowrap">Ca muốn nghỉ:</div>
-                            <input type="text" name="LeaveShifts" class="form-control border border-dark rounded-0 shadow-none flex-grow-1" placeholder="VD: Ca 1, Ca 2" required />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Ca muốn nghỉ</label>
+                            <input type="text" name="LeaveShifts" class="form-control" placeholder="VD: Ca 1, Ca 2" required />
                         </div>
 
                         <!-- Row 4: Lý do -->
-                        <div class="d-flex">
-                            <div style="width: 140px;" class="fs-5 text-nowrap">Lý do:</div>
-                            <textarea name="Reason" class="form-control border border-dark rounded-0 shadow-none flex-grow-1" rows="4" required></textarea>
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold text-secondary">Lý do nghỉ phép</label>
+                            <textarea name="Reason" class="form-control" rows="3" placeholder="Lý do chi tiết..." required></textarea>
                         </div>
                     </div>
                     
-                    <div class="col-md-4 ps-4 d-flex flex-column justify-content-between">
-                        <div>
-                            <div class="fw-bold mb-2">* Lưu ý:</div>
-                            <div class="mb-2">- Xin nghỉ trước 1 ngày.</div>
-                            <div class="mb-3">- Nếu:</div>
-                            <div class="mb-4">Nếu trường hợp khẩn cấp ngoài làm đơn cần liên hệ trực tiếp quản lý</div>
-                            <div class="fw-bold">* SDT: 039787961</div>
+                    <div class="col-md-4 ps-md-4 d-flex flex-column justify-content-between mt-3 mt-md-0">
+                        <div class="bg-light p-3 rounded border">
+                            <div class="fw-bold text-danger mb-2 small"><i class="bi bi-exclamation-circle-fill me-1"></i>LƯU Ý QUAN TRỌNG:</div>
+                            <ul class="small text-secondary ps-3 mb-0">
+                                <li class="mb-1">Cần xin nghỉ trước ít nhất 1 ngày.</li>
+                                <li class="mb-1">Đối với trường hợp khẩn cấp, ngoài việc gửi đơn trên hệ thống cần liên hệ trực tiếp với quản lý.</li>
+                                <li class="fw-bold text-dark mt-2">Hotline: 039787961</li>
+                            </ul>
                         </div>
                         
-                        <div class="d-flex gap-2 justify-content-end mt-auto">
-                            <button type="button" class="btn btn-outline-dark fw-bold px-4 rounded-0 border-2" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-outline-dark fw-bold px-4 rounded-0 border-2" style="background-color: #f8f9fa;">Xác nhận</button>
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary px-4">Gửi đơn</button>
                         </div>
                     </div>
                 </div>
@@ -183,11 +213,11 @@
     <script>
         function validateFilterDates() {
             const fromDate = document.getElementById('filterFromDate').value;
-            const toDate = document.getElementById('filterToDate').value;
+            const textToDate = document.getElementById('filterToDate').value;
 
-            if (fromDate && toDate && fromDate > toDate) {
+            if (fromDate && textToDate && fromDate > textToDate) {
                 alert('Từ ngày không được lớn hơn Đến ngày!');
-                return; // Ngăn chặn submit
+                return;
             }
             document.getElementById('filterForm').submit();
         }
@@ -198,14 +228,12 @@
             
             if (startDateInput && endDateInput && startDateInput.value && endDateInput.value) {
                 if (startDateInput.value > endDateInput.value) {
-                    endDateInput.value = startDateInput.value; // Tự động sửa EndDate cho hợp lệ
+                    endDateInput.value = startDateInput.value;
                 }
-                // Update min cho EndDate bằng StartDate
                 endDateInput.min = startDateInput.value;
             }
         }
         
-        // Gọi 1 lần lúc mới mở form modal
         const createLeaveModal = document.getElementById('createLeaveModal');
         if (createLeaveModal) {
             createLeaveModal.addEventListener('show.bs.modal', function () {

@@ -12,7 +12,7 @@ namespace SEP490_G52_CSMS.Services
         Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod);
         Task<bool> StartBrewingAsync(string orderId);
         Task<bool> CompleteBrewingAsync(string orderId);
-        Task<OrderHistoryViewModel> GetOrderHistoryAsync(string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1);
+        Task<OrderHistoryViewModel> GetOrderHistoryAsync(string branchId, string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1);
         Task<IEnumerable<OrderSummaryViewModel>> GetWaitingAndBrewingOrdersAsync();
         Task<SaleOrderDetailViewModel?> GetOrderDetailsAsync(string orderId);
     }

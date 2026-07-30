@@ -99,7 +99,9 @@ namespace SEP490_G52_CSMS.Services
                 Status = branch.Status,
                 ManagerName = managerAssignment?.Manager?.FullName ?? BranchConstants.UnassignedManagerLabel,
                 ManagerCode = managerAssignment?.Manager?.Username ?? "-",
-                ManagerAssignedDate = managerAssignment?.AppointedDate.ToString("dd/MM/yyyy") ?? "-"
+                ManagerAssignedDate = managerAssignment?.AppointedDate.ToString("dd/MM/yyyy") ?? "-",
+                CurrentManagerId = managerAssignment?.ManagerId,
+                Managers = await GetManagerOptionsAsync()
             };
         }
 

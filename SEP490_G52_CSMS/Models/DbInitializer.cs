@@ -26,20 +26,20 @@ namespace SEP490_G52_CSMS.Models
                 // Skip if already seeded beyond the base 3 branches or if CB004/CB005 already exist
                 if (context.Branches.Count() > 3 || context.Branches.Any(b => b.BranchId == "CB004" || b.BranchId == "CB005")) return;
 
-                // Seed Admin if it doesn't exist
-                if (!context.Employees.Any(e => e.Role == "Admin"))
+                // Seed RManager if it doesn't exist
+                if (!context.Employees.Any(e => e.Role == "RManager"))
                 {
                     context.Employees.Add(new Employee
                     {
-                        FullName = "System Administrator",
-                        Username = "admin",
+                        FullName = "Regional Manager",
+                        Username = "rmanager",
                         Password = Commons.DAT_PasswordHasher.HashPassword("12345678"),
-                        Email = "admin@gmail.com",
+                        Email = "rmanager@gmail.com",
                         PhoneNumber = "0900000000",
                         CitizenId = "000000000000",
                         DateOfBirth = new DateTime(1990, 1, 1),
                         Address = "Headquarters",
-                        Role = "Admin",
+                        Role = "RManager",
                         EmploymentType = "Full-time",
                         BranchId = null,
                         Status = "Active"

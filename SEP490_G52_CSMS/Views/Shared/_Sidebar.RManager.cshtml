@@ -13,6 +13,13 @@
 <li class="menu-item">
     <a asp-controller="BranchManager" asp-action="Index" class="menu-link @ActiveIf("BranchManager", "Index")">
         <i class="bi bi-person-badge-fill"></i>
+        <span>Quản lý - quản lý chi nhánh</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Branch" asp-action="Index" class="menu-link @ActiveIf("Branch", "Index")">
+        <i class="bi bi-git"></i>
         <span>Quản lý chi nhánh</span>
     </a>
 </li>

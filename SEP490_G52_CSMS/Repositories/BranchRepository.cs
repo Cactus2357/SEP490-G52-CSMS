@@ -3,6 +3,7 @@ using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
+using SEP490_G52_CSMS.Models.Attendance;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -143,6 +144,26 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task RemoveBranchManagersAsync(string branchId)
         {
+            // Nullify approved_branch_id/approved_manager_id in leave_applications
+            var leaveApplications = await _context.LeaveApplications
+                .Where(la => la.ApprovedBranchId == branchId)
+                .ToListAsync();
+            foreach (var la in leaveApplications)
+            {
+                la.ApprovedBranchId = null;
+                la.ApprovedManagerId = null;
+            }
+
+            // Nullify approved_branch_id/approved_manager_id in shift_change_requests
+            var shiftChangeRequests = await _context.ShiftChangeRequests
+                .Where(scr => scr.ApprovedBranchId == branchId)
+                .ToListAsync();
+            foreach (var scr in shiftChangeRequests)
+            {
+                scr.ApprovedBranchId = null;
+                scr.ApprovedManagerId = null;
+            }
+
             var assignments = _context.BranchManagers.Where(bm => bm.BranchId == branchId);
             _context.BranchManagers.RemoveRange(assignments);
             await _context.SaveChangesAsync();

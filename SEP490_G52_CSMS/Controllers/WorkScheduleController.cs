@@ -29,7 +29,11 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(DateTime? weekStart)
         {
-            // (Removed redirect to EmployeeIndex so Manager view is always accessible here)
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                return RedirectToAction(nameof(EmployeeIndex), new { weekStart });
+            }
+
             var loggedInBranchId = User.GetBranchId() ?? "";
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
             var sunday = monday.AddDays(6);

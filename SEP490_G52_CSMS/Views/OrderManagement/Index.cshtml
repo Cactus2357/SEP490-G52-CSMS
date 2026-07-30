@@ -1,57 +1,83 @@
 @model SEP490_G52_CSMS.Models.ViewModels.OrderManagementListViewModel
 @{
-    ViewData["Title"] = "Quản lý Order";
-    ViewData["ContainerClass"] = "container-fluid p-0";
+    ViewData["Title"] = "Quản lý Đơn Hàng";
 }
 
 <div class="container-fluid px-4 pt-3 pb-5">
     <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-dark pb-2" style="border-width: 2px !important;">
-            <h2 class="fw-bold mb-0">Quản lý Order</h2>
-            <div class="fs-4 fw-semibold text-primary">@Model.BranchName</div>
+    <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
+        <h3 class="fw-bold mb-0 text-uppercase text-dark">
+            <i class="bi bi-cart-check-fill text-success me-2"></i>Quản lý Đơn Hàng
+        </h3>
+        <div class="fs-5 fw-semibold text-primary">
+            <i class="bi bi-shop me-1"></i>@Model.BranchName
         </div>
+    </div>
 
-        <!-- Filter Form -->
-        <form method="get" asp-action="Index" class="mb-4">
-            <div class="d-flex justify-content-between align-items-end">
-                <div>
-                    <label class="form-label fw-semibold">Tìm kiếm theo tên nhân viên</label>
-                    <div class="input-group border border-dark rounded-0" style="width: 400px; border-width: 2px !important;">
-                        <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
-                        <input type="text" name="searchCashier" class="form-control border-0 shadow-none" placeholder="search" value="@Model.SearchCashier">
+    <!-- Bộ lọc & Tìm kiếm -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" asp-action="Index" id="filterForm" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-secondary">Tìm kiếm nhân viên</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" name="searchCashier" class="form-control" placeholder="Tên thu ngân..." value="@Model.SearchCashier">
                     </div>
                 </div>
                 
-                <div>
-                    <select name="status" class="form-select border border-dark rounded-0 shadow-none" style="width: 180px; border-width: 2px !important;" onchange="this.form.submit()">
-                        <option value="Tất cả" selected="@(Model.FilterStatus == "Tất cả")">Lọc trạng thái</option>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary">Khoảng ngày</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="date" name="fromDate" class="form-control" value="@Model.FromDate?.ToString("yyyy-MM-dd")" placeholder="Từ ngày" />
+                        <span class="text-muted small">đến</span>
+                        <input type="date" name="toDate" class="form-control" value="@Model.ToDate?.ToString("yyyy-MM-dd")" placeholder="Đến ngày" />
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary">Trạng thái</label>
+                    <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit()">
+                        <option value="Tất cả" selected="@(Model.FilterStatus == "Tất cả")">Tất cả trạng thái</option>
                         <option value="Hoàn thành" selected="@(Model.FilterStatus == "Hoàn thành")">Hoàn thành</option>
                         <option value="Đang xử lý" selected="@(Model.FilterStatus == "Đang xử lý")">Đang xử lý</option>
                         <option value="Đã hủy" selected="@(Model.FilterStatus == "Đã hủy")">Đã hủy</option>
                     </select>
                 </div>
-            </div>
-            <!-- Ẩn nút submit, form sẽ submit khi nhấn enter trong text hoặc đổi select -->
-            <button type="submit" class="d-none"></button>
-        </form>
 
-        <!-- Table -->
-        <div class="border border-dark" style="border-width: 2px !important;">
-            <table class="table table-bordered border-dark mb-0 table-hover align-middle">
-                <thead class="table-light border-dark">
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                        <i class="bi bi-filter me-1"></i>Lọc
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary w-100 fw-semibold">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng Danh Sách Đơn Hàng -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
                     <tr>
-                        <th class="border-dark text-center" style="width: 80px;">Mã số</th>
-                        <th class="border-dark">Thông tin đơn hàng</th>
-                        <th class="border-dark text-end" style="width: 150px;">Giá tiền</th>
-                        <th class="border-dark text-center" style="width: 150px;">Trạng thái</th>
-                        <th class="border-dark text-center" style="width: 150px;">Hành động</th>
+                        <th class="ps-4" style="width: 15%;">Mã đơn hàng</th>
+                        <th style="width: 40%;">Thông tin đơn hàng</th>
+                        <th class="text-end" style="width: 15%;">Tổng tiền</th>
+                        <th class="text-center" style="width: 15%;">Trạng thái</th>
+                        <th class="text-center pe-4" style="width: 15%;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.Items.Any())
                     {
                         <tr>
-                            <td colspan="5" class="text-center py-4 fs-5 text-muted">Không có đơn hàng nào khớp với tìm kiếm.</td>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                Không có đơn hàng nào khớp với tìm kiếm.
+                            </td>
                         </tr>
                     }
                     else
@@ -59,19 +85,38 @@
                         foreach (var item in Model.Items)
                         {
                             <tr>
-                                <td class="border-dark text-center">#@item.OrderId.Replace("ORD-", "")</td>
-                                <td class="border-dark">
-                                    <div class="fw-semibold">@item.OrderId</div>
-                                    <div class="text-muted">Thu ngân: @item.CashierName - @item.TotalItems món</div>
+                                <td class="ps-4 fw-semibold text-dark">#@item.OrderId.Replace("ORD-", "").Replace("MH", "")</td>
+                                <td>
+                                    <div class="fw-semibold text-secondary">@item.OrderId</div>
+                                    <div class="small text-muted">Thu ngân: <span class="fw-medium text-dark">@item.CashierName</span> &bull; @item.TotalItems món</div>
                                 </td>
-                                <td class="border-dark text-end fw-semibold">
-                                    @item.TotalAmount.ToString("N0") đ
+                                <td class="text-end fw-bold text-dark">
+                                    @item.TotalAmount.ToString("N0")đ
                                 </td>
-                                <td class="border-dark text-center">
-                                    @item.Status
+                                <td class="text-center">
+                                    @if (item.Status == "Hoàn thành")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
+                                        </span>
+                                    }
+                                    else if (item.Status == "Đã hủy")
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Đã hủy
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-clock-history me-1"></i>Đang xử lý
+                                        </span>
+                                    }
                                 </td>
-                                <td class="border-dark text-center">
-                                    <a href="javascript:void(0)" class="text-decoration-none text-primary fw-semibold btn-view-detail" data-id="@item.OrderId">Xem chi tiết</a>
+                                <td class="text-center pe-4">
+                                    <button type="button" class="btn btn-outline-primary btn-sm btn-view-detail" data-id="@item.OrderId">
+                                        <i class="bi bi-eye me-1"></i>Chi tiết
+                                    </button>
                                 </td>
                             </tr>
                         }
@@ -79,6 +124,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
 </div>
 
 <!-- Modal Container -->

@@ -32,21 +32,21 @@
 </li>
 
 <li class="menu-item">
-    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+    <a asp-controller="CashHandover" asp-action="Index" class="menu-link @ActiveIf("CashHandover")">
         <i class="bi bi-clock-history"></i>
-        <span>Bàn giao ca</span>
+        <span>Đóng, Mở/Bàn giao ca</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+    <a asp-controller="LeaveRequest" asp-action="Index" class="menu-link @ActiveIf("LeaveRequest")">
         <i class="bi bi-calendar-x"></i>
         <span>Xin nghỉ phép</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+    <a asp-controller="ShiftChange" asp-action="EmployeeIndex" class="menu-link @ActiveIf("ShiftChange", "EmployeeIndex")">
         <i class="bi bi-arrow-left-right"></i>
         <span>Xin chuyển ca</span>
     </a>

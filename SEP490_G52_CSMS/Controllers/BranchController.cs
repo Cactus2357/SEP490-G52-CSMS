@@ -33,6 +33,11 @@ namespace SEP490_G52_CSMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BranchCreateViewModel model)
         {
+            if (model.ClosingTime <= model.OpeningTime)
+            {
+                ModelState.AddModelError(nameof(model.ClosingTime), "Giờ đóng cửa phải sau giờ mở cửa.");
+            }
+
             if (!ModelState.IsValid)
             {
                 model.Managers = (await _branchService.GetBranchCreateModelAsync()).Managers;
@@ -171,6 +176,11 @@ namespace SEP490_G52_CSMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(BranchEditViewModel model)
         {
+            if (model.ClosingTime <= model.OpeningTime)
+            {
+                ModelState.AddModelError(nameof(model.ClosingTime), "Giờ đóng cửa phải sau giờ mở cửa.");
+            }
+
             if (!ModelState.IsValid)
             {
                 model.Managers = (await _branchService.GetBranchCreateModelAsync()).Managers;

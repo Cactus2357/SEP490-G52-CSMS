@@ -7,9 +7,10 @@ namespace SEP490_G52_CSMS.Models.ViewModels
     {
         public string BranchId { get; set; } = string.Empty;
         public string BranchName { get; set; } = string.Empty;
-        
         public string SearchCashier { get; set; } = string.Empty;
         public string FilterStatus { get; set; } = string.Empty;
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
 
         public List<OrderManagementItemViewModel> Items { get; set; } = new List<OrderManagementItemViewModel>();
     }

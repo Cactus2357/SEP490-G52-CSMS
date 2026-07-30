@@ -16,13 +16,7 @@
         <span class="fw-semibold text-uppercase text-secondary small">Chọn nhân viên để xem lịch làm việc</span>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+
 
     <div class="row g-3">
         @foreach (var emp in Model)

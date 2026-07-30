@@ -15,12 +15,12 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string Address { get; set; } = string.Empty;
 
         [Display(Name = "Số điện thoại")]
-        [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
+        [RegularExpression(@"^(0[3|5|7|8|9])[0-9]{8}$", ErrorMessage = "Số điện thoại phải là số di động Việt Nam hợp lệ (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).")]
         [StringLength(20, ErrorMessage = "Số điện thoại không được quá 20 ký tự.")]
         public string? PhoneNumber { get; set; }
 
         [Display(Name = "Email chi nhánh")]
-        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = "Email không đúng định dạng.")]
         [StringLength(150, ErrorMessage = "Email không được quá 150 ký tự.")]
         public string? Email { get; set; }
 

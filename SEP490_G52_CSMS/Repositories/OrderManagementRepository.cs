@@ -17,7 +17,7 @@ namespace SEP490_G52_CSMS.Repositories
             _context = context;
         }
 
-        public async Task<List<Order>> GetOrdersAsync(string branchId, string searchCashier, string status)
+        public async Task<List<Order>> GetOrdersAsync(string branchId, string searchCashier, string status, DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.Orders
                 .Include(o => o.Cashier)
@@ -29,9 +29,21 @@ namespace SEP490_G52_CSMS.Repositories
                 query = query.Where(o => o.BranchId == branchId);
             }
 
-            // Default business rule BR03: display current day
-            var today = DateTime.Today;
-            query = query.Where(o => o.CreatedAt.Date == today);
+            if (fromDate.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt.Date >= fromDate.Value.Date);
+            }
+            if (toDate.HasValue)
+            {
+                query = query.Where(o => o.CreatedAt.Date <= toDate.Value.Date);
+            }
+
+            // Default business rule BR03: display current day if no date is specified
+            if (!fromDate.HasValue && !toDate.HasValue)
+            {
+                var today = DateTime.Today;
+                query = query.Where(o => o.CreatedAt.Date == today);
+            }
 
             if (!string.IsNullOrEmpty(searchCashier))
             {
@@ -41,13 +53,22 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")
             {
-                // Status mapping (fake mapping based on PaymentStatus/BrewingStatus)
                 if (status == "Hoàn thành")
-                    query = query.Where(o => o.PaymentStatus == "Paid" && o.BrewingStatus == "Done");
+                {
+                    query = query.Where(o => o.PaymentStatus == "Paid" && (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed"));
+                }
                 else if (status == "Đang xử lý")
-                    query = query.Where(o => o.PaymentStatus == "Unpaid" || o.BrewingStatus == "Waiting" || o.BrewingStatus == "Brewing");
+                {
+                    query = query.Where(o => o.PaymentStatus == "Unpaid" || 
+                                           o.BrewingStatus == "Waiting" || 
+                                           o.BrewingStatus == "Brewing" || 
+                                           o.BrewingStatus == "Waiting for Brewing" || 
+                                           o.BrewingStatus == "Brewing in Progress");
+                }
                 else if (status == "Đã hủy")
+                {
                     query = query.Where(o => o.PaymentStatus == "Canceled" || o.BrewingStatus == "Canceled");
+                }
             }
 
             return await query.OrderByDescending(o => o.CreatedAt).ToListAsync();

@@ -70,9 +70,9 @@
                 </button>
             </div>
             <ul class="sidebar-menu">
-                @if (User.IsInRole("Admin") || User.IsInRole("RManager"))
+                @if (User.IsInRole("RManager"))
                 {
-                    <partial name="_Sidebar.Admin" />
+                    <partial name="_Sidebar.RManager" />
                 }
                 else if (User.IsInRole("BranchManager"))
                 {

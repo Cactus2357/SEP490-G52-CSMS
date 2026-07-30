@@ -38,36 +38,34 @@ namespace SEP490_G52_CSMS.Services
             // Lấy lịch trực hôm nay của thu ngân (trả về ca hiện tại hoặc ca sắp tới trong ngày)
             var roster = await _cashHandoverRepository.GetCurrentRosterAsync(cashierId, today);
             
-            // Nếu không có lịch trực hợp lệ (đã hết ca hoặc không có ca)
-            if (roster == null)
-            {
-                throw new InvalidOperationException("Không thể mở ca: Bạn không có lịch trực vào thời gian này hoặc đã quá hạn mở ca.");
-            }
-
-            // Kiểm tra xem đã đến giờ mở ca chưa (cho phép mở sớm 30 phút và không cho mở nếu đã hết ca)
-            var currentTime = DateTime.Now.TimeOfDay;
-            var thirtyMinutes = TimeSpan.FromMinutes(30);
-            bool isTimeToOpen = currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes) && 
-                                currentTime <= roster.FixedShift.EndTime;
-
             // Lấy tên thu ngân thực hiện mở ca
             var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(cashierId);
 
             // Lấy thông tin ca gần nhất đã đóng của chi nhánh
-            var branchId = roster?.BranchId ?? string.Empty;
+            var branchId = roster?.BranchId ?? cashierEmployee?.BranchId ?? string.Empty;
             var lastHandover = string.IsNullOrEmpty(branchId)
                 ? null
                 : await _cashHandoverRepository.GetLastClosedHandoverForBranchAsync(branchId);
+
+            bool isTimeToOpen = false;
+            if (roster != null && roster.FixedShift != null)
+            {
+                // Kiểm tra xem đã đến giờ mở ca chưa (cho phép mở sớm 30 phút và không cho mở nếu đã hết ca)
+                var currentTime = DateTime.Now.TimeOfDay;
+                var thirtyMinutes = TimeSpan.FromMinutes(30);
+                isTimeToOpen = currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes) && 
+                               currentTime <= roster.FixedShift.EndTime;
+            }
 
             var model = new OpenShiftViewModel
             {
                 CashierId = cashierId,
                 BranchId = branchId,
-                ShiftId = roster?.ShiftId ?? CashHandoverConstants.DefaultShiftId,
-                ShiftName = roster?.FixedShift?.ShiftName ?? "Ca 1",
+                ShiftId = roster?.ShiftId ?? 0,
+                ShiftName = roster?.FixedShift?.ShiftName ?? "(Chưa có ca trực)",
                 ShiftTimeRange = roster?.FixedShift != null
                     ? $"{roster.FixedShift.StartTime:hh\\:mm} – {roster.FixedShift.EndTime:hh\\:mm}"
-                    : "06:00 – 10:00",
+                    : "-",
                 HandoverDate = today,
                 CashierName = cashierEmployee?.FullName
                               ?? CashHandoverConstants.UnassignedCashierLabel,

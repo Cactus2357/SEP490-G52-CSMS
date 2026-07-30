@@ -13,20 +13,7 @@
             <a class="btn btn-primary btn-add" asp-controller="Branch" asp-action="Create">+ Thêm chi nhánh</a>
         </div>
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                @TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
+
 
         <!-- Filter bar -->
         <form id="searchForm" method="get" class="d-flex flex-wrap align-items-end gap-3 mb-4">
@@ -68,7 +55,7 @@
                         <th>Địa Chỉ ⇅</th>
                         <th>Quản Lý</th>
                         <th>Trạng Thái</th>
-                        <th class="text-center">Hành Động</th>
+                        <th class="text-center" style="min-width: 380px;">Hành Động</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -97,8 +84,37 @@
                                         <span><span class="text-danger">✕</span> Tạm dừng</span>
                                     }
                                 </td>
-                                <td class="text-center">
-                                    <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@branch.BranchId">...v</a>
+                                <td>
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <a class="btn btn-sm btn-outline-info" asp-action="Details" asp-route-id="@branch.BranchId" title="Chi tiết">
+                                            <i class="bi bi-eye"></i> Chi tiết
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@branch.BranchId" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil-square"></i> Sửa
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-warning text-dark" asp-action="AssignManager" asp-route-id="@branch.BranchId" title="Gán quản lý">
+                                            <i class="bi bi-person-gear"></i> Gán QL
+                                        </a>
+                                        @if (branch.Status == "Active")
+                                        {
+                                            <a class="btn btn-sm btn-outline-danger" asp-action="Deactivate" asp-route-id="@branch.BranchId" title="Ngừng hoạt động">
+                                                <i class="bi bi-slash-circle"></i> Ngừng HĐ
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="ActivateConfirmed" method="post" class="d-inline" onsubmit="return confirm('Kích hoạt chi nhánh này?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="branchId" value="@branch.BranchId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Kích hoạt">
+                                                    <i class="bi bi-check-circle"></i> Kích hoạt
+                                                </button>
+                                            </form>
+                                        }
+                                        <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@branch.BranchId" title="Xóa">
+                                            <i class="bi bi-trash"></i> Xóa
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         }

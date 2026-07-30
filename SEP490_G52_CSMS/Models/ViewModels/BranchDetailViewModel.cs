@@ -13,5 +13,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string ManagerName { get; set; } = string.Empty;
         public string ManagerCode { get; set; } = string.Empty;
         public string ManagerAssignedDate { get; set; } = string.Empty;
+        public int? CurrentManagerId { get; set; }
+        public List<BranchManagerOption> Managers { get; set; } = new List<BranchManagerOption>();
     }
 }

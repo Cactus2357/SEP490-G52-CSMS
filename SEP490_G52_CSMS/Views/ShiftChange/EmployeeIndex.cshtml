@@ -3,55 +3,52 @@
     ViewData["Title"] = "Đơn xin đổi ca";
 }
 
-<div class="container-fluid px-4">
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+<div class="container-fluid px-4 pt-3">
+    <!-- Tiêu đề -->
+    <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
+        <h3 class="fw-bold mb-0 text-uppercase text-dark">
+            <i class="bi bi-arrow-left-right text-primary me-2"></i>Đơn Xin Đổi Ca
+        </h3>
+    </div>
 
-    <h4 class="fw-bold text-uppercase mb-3">ĐƠN XIN ĐỔI CA</h4>
+    <!-- Bộ lọc -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="fs-5 text-dark">
+                Nhân viên: <span class="fw-bold text-primary">@Model.EmployeeName</span>
+            </div>
 
-    <!-- Filter -->
-    <form id="filterForm" method="get" asp-action="EmployeeIndex" class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <div class="d-flex align-items-center border border-dark rounded px-2 bg-white" style="border-width: 2px !important; height: 38px;">
-            <select name="status" class="form-select border-0 shadow-none p-0" style="width: 160px;" onchange="document.getElementById('filterForm').submit()">
-                <option value="">-- Trạng thái --</option>
-                <option value="Đã gửi" selected="@(Model.Status == "Đã gửi")">Đã gửi</option>
-                <option value="Đã duyệt" selected="@(Model.Status == "Đã duyệt")">Đã duyệt</option>
-                <option value="Từ chối" selected="@(Model.Status == "Từ chối")">Từ chối</option>
-                <option value="Đã hủy" selected="@(Model.Status == "Đã hủy")">Đã hủy</option>
-            </select>
+            <form id="filterForm" method="get" asp-action="EmployeeIndex" class="d-flex flex-wrap align-items-center gap-3 m-0">
+                <div>
+                    <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit()">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="Đã gửi" selected="@(Model.Status == "Đã gửi")">Đã gửi</option>
+                        <option value="Đã duyệt" selected="@(Model.Status == "Đã duyệt")">Đã duyệt</option>
+                        <option value="Từ chối" selected="@(Model.Status == "Từ chối")">Từ chối</option>
+                        <option value="Đã hủy" selected="@(Model.Status == "Đã hủy")">Đã hủy</option>
+                    </select>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <input type="date" id="filterFromDate" name="fromDate" class="form-control"
+                           value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" style="width: 145px;" onchange="validateFilterDates()" />
+                    <span class="text-muted">đến</span>
+                    <input type="date" id="filterToDate" name="toDate" class="form-control"
+                           value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" style="width: 145px;" onchange="validateFilterDates()" />
+                </div>
+            </form>
         </div>
+    </div>
 
-        <div class="d-flex align-items-center border border-dark rounded px-2 bg-white" style="border-width: 2px !important; height: 38px;">
-            <input type="date" id="filterFromDate" name="fromDate" class="form-control border-0 shadow-none p-0 mx-2"
-                   value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" style="width: 125px;" onchange="validateFilterDates()" />
-            <span>-</span>
-            <input type="date" id="filterToDate" name="toDate" class="form-control border-0 shadow-none p-0 mx-2"
-                   value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" style="width: 125px;" onchange="validateFilterDates()" />
-            <i class="bi bi-calendar-check ms-1 fs-5"></i>
-        </div>
-    </form>
-
-    <!-- Table -->
-    <div class="mb-3">
-        <div class="table-responsive border border-dark rounded" style="border-width: 2px !important; max-height: 400px; overflow-y: auto;">
-            <table class="table align-middle mb-0" style="table-layout: fixed;">
-                <thead style="background-color: #e9ecef; position: sticky; top: 0; z-index: 1;">
-                    <tr class="border-bottom border-dark">
-                        <th class="ps-3 border-end border-dark" style="width: 25%;">Ngày gửi đơn</th>
-                        <th class="border-end border-dark" style="width: 35%;">Trạng thái</th>
-                        <th style="width: 40%;">Hành động</th>
+    <!-- Bảng danh sách -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 30%;">Ngày gửi đơn</th>
+                        <th style="width: 40%;">Trạng thái</th>
+                        <th class="pe-4" style="width: 30%;">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,20 +56,49 @@
                     {
                         foreach (var item in Model.Items)
                         {
-                            <tr class="border-bottom border-dark bg-white">
-                                <td class="ps-3 border-end border-dark">@item.SubmittedAt</td>
-                                <td class="border-end border-dark">@item.Status</td>
+                            <tr>
+                                <td class="ps-4 fw-semibold text-secondary">@item.SubmittedAt</td>
                                 <td>
+                                    @if (item.Status == "Đã duyệt")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Đã duyệt
+                                        </span>
+                                    }
+                                    else if (item.Status == "Từ chối")
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Từ chối
+                                        </span>
+                                    }
+                                    else if (item.Status == "Đã hủy")
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-dash-circle-fill me-1"></i>Đã hủy
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-send-fill me-1"></i>Đã gửi
+                                        </span>
+                                    }
+                                </td>
+                                <td class="pe-4">
                                     @if (item.CanCancel)
                                     {
                                         <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn này?');">
                                             <input type="hidden" name="requestId" value="@item.RequestId" />
-                                            <button type="submit" class="btn btn-link text-primary p-0 text-decoration-underline fw-semibold">Hủy đơn</button>
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-x-circle me-1"></i>Hủy đơn
+                                            </button>
                                         </form>
                                     }
                                     else
                                     {
-                                        <span class="text-muted" style="text-decoration: line-through;">Hủy đơn</span>
+                                        <button class="btn btn-sm btn-light text-muted" disabled>
+                                            <i class="bi bi-slash-circle me-1"></i>Hủy đơn
+                                        </button>
                                     }
                                 </td>
                             </tr>
@@ -81,7 +107,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="3" class="text-center py-4 text-muted border-0 bg-white">Không có đơn xin đổi ca nào.</td>
+                            <td colspan="3" class="text-center py-4 text-muted">Không có đơn xin đổi ca nào.</td>
                         </tr>
                     }
                 </tbody>
@@ -89,63 +115,68 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="d-flex align-items-start justify-content-between">
-        <div class="border border-dark p-3 bg-white" style="border-width: 2px !important; max-width: 500px;">
-            <div class="fw-bold mb-1">- Lưu ý:</div>
-            <div>Chỉ hủy đơn khi trạng thái: "Đã gửi" (trước khi quản lý duyệt đơn)</div>
+    <!-- Chú thích & Nút đổi ca -->
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div class="card border-0 shadow-sm" style="max-width: 500px;">
+            <div class="card-body py-2 px-3 bg-light rounded border">
+                <span class="fw-semibold text-danger"><i class="bi bi-info-circle-fill me-1"></i>Lưu ý:</span>
+                <span class="text-secondary small">Chỉ hủy đơn khi trạng thái là "Đã gửi" (trước khi quản lý duyệt đơn).</span>
+            </div>
         </div>
-        <button type="button" class="btn btn-outline-dark fw-bold px-4 rounded" style="border-width: 2px;"
-                data-bs-toggle="modal" data-bs-target="#createShiftChangeModal">Đơn đổi ca</button>
+        <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#createShiftChangeModal">
+            <i class="bi bi-plus-lg me-1"></i>Đơn đổi ca
+        </button>
     </div>
 </div>
 
 <!-- Modal Đơn Xin Đổi Ca -->
 <div class="modal fade" id="createShiftChangeModal" tabindex="-1" aria-labelledby="createShiftChangeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border border-dark rounded-0" style="border-width: 3px !important;">
-            <div class="modal-header border-bottom border-dark rounded-0 px-4 py-3">
-                <h4 class="modal-title fw-bold text-uppercase" id="createShiftChangeModalLabel">ĐƠN XIN ĐỔI CA</h4>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold text-uppercase" id="createShiftChangeModalLabel">
+                    <i class="bi bi-file-earmark-plus me-2"></i>ĐƠN XIN ĐỔI CA
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <form asp-action="Create" method="post" id="createShiftChangeForm">
-                <div class="modal-body px-4 py-4">
-                    <!-- Họ tên -->
-                    <div class="d-flex mb-4 align-items-center">
-                        <div style="width: 150px;" class="fs-5 text-nowrap fw-semibold">Họ &amp; Tên:</div>
-                        <div class="border border-dark px-3 py-1 flex-grow-1" style="background-color: #f8f9fa; border-width: 2px !important;">
-                            @Model.EmployeeName
+                <div class="modal-body p-4 row g-0">
+                    <div class="col-md-8 pe-md-4 border-end">
+                        <!-- Họ tên -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Họ &amp; Tên nhân viên</label>
+                            <input type="text" class="form-control" value="@Model.EmployeeName" readonly />
+                            <input type="hidden" name="EmployeeName" value="@Model.EmployeeName" />
                         </div>
-                        <input type="hidden" name="EmployeeName" value="@Model.EmployeeName" />
-                    </div>
 
-                    <!-- Nguyện vọng -->
-                    <div class="d-flex mb-4">
-                        <div style="width: 150px;" class="fs-5 text-nowrap mt-1 fw-semibold">Nguyện vọng:</div>
-                        <textarea name="Aspiration" class="form-control border border-dark rounded-0 shadow-none flex-grow-1"
-                                  style="border-width: 2px !important;" rows="4"
-                                  placeholder="Mong muốn đổi từ ca 1 sang ca 3 ở thứ 3 từ tuần..." required></textarea>
-                    </div>
-
-                    <!-- Lý do -->
-                    <div class="d-flex mb-4">
-                        <div style="width: 150px;" class="fs-5 text-nowrap mt-1 fw-semibold">Lý do:</div>
-                        <textarea name="Reason" class="form-control border border-dark rounded-0 shadow-none flex-grow-1"
-                                  style="border-width: 2px !important;" rows="3" placeholder="Nhập lý do" required></textarea>
-                    </div>
-
-                    <!-- Footer Modal -->
-                    <div class="d-flex align-items-end justify-content-between mt-5">
-                        <div style="font-size: 0.95rem; line-height: 1.4;">
-                            <div class="fw-medium">*Lưu ý: Ghi rõ ca hiện xếp, ca mong muốn đổi, ở thứ nào trong tuần,<br />khoảng tuần muốn đổi</div>
-                            <div class="fw-medium">*Có thể ghi thời gian rảnh có thể làm để quản lý dễ xếp ca.</div>
+                        <!-- Nguyện vọng -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Nguyện vọng đổi ca</label>
+                            <textarea name="Aspiration" class="form-control" rows="3"
+                                      placeholder="VD: Mong muốn đổi từ ca 1 sang ca 3 ở thứ 3 từ tuần sau..." required></textarea>
                         </div>
-                        <div class="d-flex gap-3">
-                            <button type="button" class="btn btn-white fw-bold px-4 rounded-0 border-dark"
-                                    style="border-width: 2px;" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-white fw-bold px-4 rounded-0 border-dark"
-                                    style="border-width: 2px; box-shadow: 3px 3px 0px 0px #000;">Xác nhận</button>
+
+                        <!-- Lý do -->
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold text-secondary">Lý do đổi ca</label>
+                            <textarea name="Reason" class="form-control" rows="3" placeholder="Nhập lý do đổi ca chi tiết..." required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 ps-md-4 d-flex flex-column justify-content-between mt-3 mt-md-0">
+                        <div class="bg-light p-3 rounded border">
+                            <div class="fw-bold text-danger mb-2 small"><i class="bi bi-exclamation-circle-fill me-1"></i>HƯỚNG DẪN:</div>
+                            <ul class="small text-secondary ps-3 mb-0">
+                                <li class="mb-1">Ghi rõ ca hiện xếp của bạn.</li>
+                                <li class="mb-1">Ghi rõ ca mong muốn đổi, ở thứ mấy trong tuần và khoảng thời gian bắt đầu.</li>
+                                <li class="mb-1">Có thể ghi chú thêm các khung thời gian rảnh khác để quản lý dễ sắp xếp ca phù hợp.</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary px-4">Xác nhận</button>
                         </div>
                     </div>
                 </div>

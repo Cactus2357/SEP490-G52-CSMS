@@ -5,7 +5,7 @@ using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "RManager")]
     public class ProductCategoriesController : Controller
     {
         private readonly IProductCategoryService _productCategoryService;

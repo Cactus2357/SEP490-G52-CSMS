@@ -75,9 +75,14 @@ namespace SEP490_G52_CSMS.Services
             return true;
         }
 
-        public async Task<OrderHistoryViewModel> GetOrderHistoryAsync(string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1)
+        public async Task<OrderHistoryViewModel> GetOrderHistoryAsync(string branchId, string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1)
         {
             var orders = await _orderRepo.GetAllOrdersAsync();
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                orders = orders.Where(o => o.BranchId == branchId);
+            }
 
             if (fromDate.HasValue)
                 orders = orders.Where(o => o.CreatedAt.Date >= fromDate.Value.Date);
@@ -92,9 +97,9 @@ namespace SEP490_G52_CSMS.Services
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")
             {
                 if (status == "Đang xử lý")
-                    orders = orders.Where(o => o.BrewingStatus != "Completed");
+                    orders = orders.Where(o => o.BrewingStatus != "Completed" && o.BrewingStatus != "Done");
                 else if (status == "Đã hoàn thành")
-                    orders = orders.Where(o => o.BrewingStatus == "Completed");
+                    orders = orders.Where(o => o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
             }
 
             int pageSize = 10;
@@ -120,7 +125,7 @@ namespace SEP490_G52_CSMS.Services
                     OrderTime = o.CreatedAt,
                     PaymentStatus = o.PaymentStatus,
                     BrewingStatus = o.BrewingStatus,
-                    DisplayStatus = o.BrewingStatus == "Completed" ? "đã hoàn thành" : "đang xử lý"
+                    DisplayStatus = (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done") ? "đã hoàn thành" : "đang xử lý"
                 }).ToList()
             };
 
