@@ -12,8 +12,8 @@ using SEP490_G52_CSMS.Models;
 namespace SEP490_G52_CSMS.Migrations
 {
     [DbContext(typeof(CSMSAppDbContext))]
-    [Migration("20260716084255_AddShiftEntities")]
-    partial class AddShiftEntities
+    [Migration("20260730091342_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -111,6 +111,10 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("actual_cash");
 
+                    b.Property<decimal>("BankTransferRevenue")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("bank_transfer_revenue");
+
                     b.Property<string>("BranchId")
                         .IsRequired()
                         .HasColumnType("nvarchar(20)")
@@ -118,6 +122,10 @@ namespace SEP490_G52_CSMS.Migrations
 
                     b.Property<string>("BranchId1")
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("closed_at");
 
                     b.Property<DateTime>("HandoverDate")
                         .HasColumnType("datetime2")
@@ -139,6 +147,14 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("machine_cash_revenue");
 
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTime>("OpenedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("opened_at");
+
                     b.Property<int>("OutgoingCashierId")
                         .HasColumnType("int")
                         .HasColumnName("outgoing_cashier_id");
@@ -146,6 +162,12 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Property<int>("ShiftId")
                         .HasColumnType("int")
                         .HasColumnName("shift_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("status");
 
                     b.Property<decimal>("TheoreticalCash")
                         .HasColumnType("decimal(18,2)")
@@ -218,6 +240,11 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2")
                         .HasColumnName("end_date");
+
+                    b.Property<string>("LeaveShifts")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("leave_shifts");
 
                     b.Property<string>("Reason")
                         .IsRequired()
@@ -384,78 +411,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.ToTable("branches");
                 });
 
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Core.HandoverRecord", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FromCashierId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ShiftSessionId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ToCashierId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ShiftSessionId");
-
-                    b.ToTable("HandoverRecords");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Core.ShiftSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CashierId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("ClosingFloat")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("EndTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ShiftCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("StartingFloat")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ShiftSessions");
-                });
-
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Employees.BranchManager", b =>
                 {
                     b.Property<string>("BranchId")
@@ -494,6 +449,11 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Property<string>("BranchId")
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("branch_id");
+
+                    b.Property<string>("CccdFilePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("cccd_file_path");
 
                     b.Property<string>("CitizenId")
                         .IsRequired()
@@ -609,6 +569,10 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("menu_name");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
                     b.HasKey("MenuId");
 
                     b.HasIndex("BranchId");
@@ -628,6 +592,16 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int")
                         .HasColumnName("category_id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("image_url");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
@@ -704,6 +678,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("payment_status");
 
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("recipient_name");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total_amount");
@@ -756,6 +735,11 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)")
                         .HasColumnName("category_name");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -923,15 +907,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Navigation("FixedShift");
                 });
 
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Core.HandoverRecord", b =>
-                {
-                    b.HasOne("SEP490_G52_CSMS.Models.Core.ShiftSession", null)
-                        .WithMany("Handovers")
-                        .HasForeignKey("ShiftSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Employees.BranchManager", b =>
                 {
                     b.HasOne("SEP490_G52_CSMS.Models.Core.Branch", "Branch")
@@ -1064,11 +1039,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Navigation("Orders");
 
                     b.Navigation("WeeklyRosterGrids");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Core.ShiftSession", b =>
-                {
-                    b.Navigation("Handovers");
                 });
 
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Employees.Employee", b =>

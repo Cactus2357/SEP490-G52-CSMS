@@ -365,8 +365,10 @@ namespace SEP490_G52_CSMS.Models
                 {
                     var cashiers = employeesByBranch[branchId].Where(e => e.Role == "Cashier").ToList();
                     if (!cashiers.Any()) cashiers = employeesByBranch[branchId];
+                    var targetMenu = branchMenus.FirstOrDefault(m => m.BranchId == branchId);
+                    var targetMenuId = targetMenu?.MenuId ?? 0;
                     var branchVariantIds = context.MenuDetails
-                        .Where(md => branchMenus.First(m => m.BranchId == branchId).MenuId == md.MenuId)
+                        .Where(md => md.MenuId == targetMenuId)
                         .Select(md => md.VariantId).ToList();
                     var variantPriceLookup = context.ProductVariants.ToDictionary(v => v.VariantId, v => v.SellingPrice);
 
