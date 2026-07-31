@@ -12,10 +12,10 @@
 
     string GetStatusBadgeClass(string? status) => status switch
     {
-        "Submitted" => "bg-warning text-dark",
-        "Approved" => "bg-success",
-        "Rejected" => "bg-danger",
-        _ => "bg-secondary"
+        "Submitted" => "bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5",
+        "Approved" => "bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5",
+        "Rejected" => "bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5",
+        _ => "bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1.5"
     };
 }
 

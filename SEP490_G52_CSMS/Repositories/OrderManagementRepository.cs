@@ -42,7 +42,12 @@ namespace SEP490_G52_CSMS.Repositories
             if (!fromDate.HasValue && !toDate.HasValue)
             {
                 var today = DateTime.Today;
-                query = query.Where(o => o.CreatedAt.Date == today);
+                var hasOrdersToday = await _context.Orders
+                    .AnyAsync(o => (string.IsNullOrEmpty(branchId) || o.BranchId == branchId) && o.CreatedAt.Date == today);
+                if (hasOrdersToday)
+                {
+                    query = query.Where(o => o.CreatedAt.Date == today);
+                }
             }
 
             if (!string.IsNullOrEmpty(searchCashier))

@@ -313,3 +313,52 @@ body {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     margin-bottom: 24px;
 }
+
+/* Fix badge text color contrast issues for subtle/light backgrounds */
+.badge.text-success, 
+.badge.bg-success-subtle, 
+.badge.bg-opacity-10.text-success,
+.badge[class*="text-success"] {
+    color: #198754 !important;
+}
+
+.badge.text-danger, 
+.badge.bg-danger-subtle, 
+.badge.bg-opacity-10.text-danger,
+.badge[class*="text-danger"] {
+    color: #dc3545 !important;
+}
+
+.badge.text-warning, 
+.badge.text-warning-emphasis, 
+.badge.bg-warning-subtle, 
+.badge.bg-opacity-10.text-warning,
+.badge[class*="text-warning"] {
+    color: #664d03 !important;
+}
+
+.badge.text-secondary, 
+.badge.bg-secondary-subtle, 
+.badge.bg-opacity-10.text-secondary,
+.badge[class*="text-secondary"] {
+    color: #6c757d !important;
+}
+
+.badge.text-info, 
+.badge.bg-info-subtle, 
+.badge.bg-opacity-10.text-info,
+.badge[class*="text-info"] {
+    color: #055160 !important;
+}
+
+.badge.text-primary, 
+.badge.bg-primary-subtle, 
+.badge.bg-opacity-10.text-primary,
+.badge[class*="text-primary"] {
+    color: #0a58ca !important;
+}
+
+.badge.text-dark,
+.badge[class*="text-dark"] {
+    color: #212529 !important;
+}
