@@ -1,6 +1,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services;
@@ -8,6 +10,7 @@ using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize]
     public class CashHandoverController : Controller
     {
         private readonly ICashHandoverService _cashHandoverService;
@@ -23,14 +26,26 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> Index(int cashierId, string branchId = "CN001")
         {
+            var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int loggedInUserId = 0;
+            int.TryParse(userIdStr, out loggedInUserId);
+
+            // Bắt buộc dùng branchId của chính mình nếu không phải RManager
+            if (!User.IsInRole("RManager"))
+            {
+                branchId = User.GetBranchId() ?? branchId;
+            }
+
+            // Nếu không phải quản lý, bắt buộc dùng cashierId của chính mình
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                cashierId = loggedInUserId;
+            }
+
             // Nếu chưa truyền cashierId, lấy từ User đăng nhập hiện tại
             if (cashierId <= 0)
             {
-                var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int loggedInUserId))
-                {
-                    cashierId = loggedInUserId;
-                }
+                cashierId = loggedInUserId;
             }
 
             // Nếu vẫn không có cashierId (ví dụ Quản lý vào xem), chuyển sang trang chọn thu ngân
@@ -52,6 +67,16 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> SelectCashier(string branchId = "CN001")
         {
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                return Forbid();
+            }
+
+            if (!User.IsInRole("RManager"))
+            {
+                branchId = User.GetBranchId() ?? branchId;
+            }
+
             var cashiers = await _cashHandoverService.GetCashiersAsync(branchId);
             ViewBag.BranchId = branchId;
             return View(cashiers);
@@ -63,6 +88,15 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> OpenShift(int cashierId)
         {
+            var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int loggedInUserId = 0;
+            int.TryParse(userIdStr, out loggedInUserId);
+
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                cashierId = loggedInUserId;
+            }
+
             // Nếu không có cashierId hợp lệ → chuyển qua Index để tự tìm
             if (cashierId <= 0)
                 return RedirectToAction(nameof(Index));
@@ -93,6 +127,20 @@ namespace SEP490_G52_CSMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OpenShift(OpenShiftViewModel model)
         {
+            var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int loggedInUserId = 0;
+            int.TryParse(userIdStr, out loggedInUserId);
+
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                model.CashierId = loggedInUserId;
+                model.BranchId = User.GetBranchId() ?? model.BranchId;
+            }
+            else if (!User.IsInRole("RManager"))
+            {
+                model.BranchId = User.GetBranchId() ?? model.BranchId;
+            }
+
             if (!ModelState.IsValid)
             {
                 var reloadModel = await _cashHandoverService.GetOpenShiftModelAsync(model.CashierId);
@@ -139,6 +187,15 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> Handover(int cashierId)
         {
+            var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int loggedInUserId = 0;
+            int.TryParse(userIdStr, out loggedInUserId);
+
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                cashierId = loggedInUserId;
+            }
+
             // Nếu không có cashierId hợp lệ → chuyển qua Index để tự tìm
             if (cashierId <= 0)
                 return RedirectToAction(nameof(Index));
@@ -161,6 +218,20 @@ namespace SEP490_G52_CSMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Handover(HandoverViewModel model)
         {
+            var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int loggedInUserId = 0;
+            int.TryParse(userIdStr, out loggedInUserId);
+
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                model.OutgoingCashierId = loggedInUserId;
+                model.BranchId = User.GetBranchId() ?? model.BranchId;
+            }
+            else if (!User.IsInRole("RManager"))
+            {
+                model.BranchId = User.GetBranchId() ?? model.BranchId;
+            }
+
             if (!ModelState.IsValid)
             {
                 // Reload danh sách thu ngân khi model invalid
@@ -200,6 +271,16 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> History(string branchId, int page = 1)
         {
+            var userBranchId = User.GetBranchId() ?? "";
+            if (!User.IsInRole("RManager"))
+            {
+                branchId = userBranchId;
+            }
+            else if (string.IsNullOrEmpty(branchId))
+            {
+                branchId = userBranchId;
+            }
+
             var model = await _cashHandoverService.GetHistoryAsync(branchId, page);
             return View(model);
         }

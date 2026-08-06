@@ -78,16 +78,26 @@ namespace SEP490_G52_CSMS.Models
                 foreach (var branchId in allBranchIds)
                 {
                     var branchEmployees = new List<Employee>();
+                    var roleCounter = new Dictionary<string, int>(); // per-branch, per-role numbering
+
+                    int NextRoleNumber(string role)
+                    {
+                        roleCounter.TryGetValue(role, out var n);
+                        n++;
+                        roleCounter[role] = n;
+                        return n;
+                    }
 
                     // 1 manager per branch (CB001/CB002 already have managers, add for CB003-CB005)
                     bool needsManager = !context.BranchManagers.Any(bm => bm.BranchId == branchId);
                     if (needsManager)
                     {
                         globalEmpCounter++;
+                        int mgrNum = NextRoleNumber("BranchManager");
                         var mgr = new Employee
                         {
                             FullName = RandomFullName(),
-                            Username = $"manager{globalEmpCounter}",
+                            Username = $"BranchManager{branchId}{mgrNum:D2}",
                             Password = Commons.DAT_PasswordHasher.HashPassword("12345678"),
                             Email = $"manager{globalEmpCounter}@gmail.com",
                             PhoneNumber = $"09{globalEmpCounter:D8}",
@@ -102,16 +112,17 @@ namespace SEP490_G52_CSMS.Models
                         branchEmployees.Add(mgr);
                     }
 
-                    // 6-8 staff per branch
-                    int staffCount = _rng.Next(6, 9);
+                    // ~20 staff per branch
+                    int staffCount = _rng.Next(18, 23);
                     for (int i = 0; i < staffCount; i++)
                     {
                         globalEmpCounter++;
                         var role = roles[_rng.Next(roles.Length)];
+                        int roleNum = NextRoleNumber(role);
                         branchEmployees.Add(new Employee
                         {
                             FullName = RandomFullName(),
-                            Username = $"emp{globalEmpCounter:D3}",
+                            Username = $"{role}{branchId}{roleNum:D2}",
                             Password = Commons.DAT_PasswordHasher.HashPassword("12345678"),
                             Email = $"emp{globalEmpCounter:D3}@gmail.com",
                             PhoneNumber = $"09{globalEmpCounter:D8}",

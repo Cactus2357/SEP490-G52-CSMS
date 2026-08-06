@@ -34,7 +34,10 @@ namespace SEP490_G52_CSMS.Commons
             try
             {
                 var parts = hashedPassword.Split('.', 3);
-                if (parts.Length != 3) return false;
+                if (parts.Length != 3)
+                {
+                    return password == hashedPassword;
+                }
 
                 int iterations = int.Parse(parts[0]);
                 byte[] salt = Convert.FromBase64String(parts[1]);

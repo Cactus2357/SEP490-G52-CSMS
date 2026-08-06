@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Commons.Models;
 using SEP490_G52_CSMS.Models.Attendance;
@@ -194,9 +195,8 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Không tìm thấy thông tin nhân viên nhận ca.");
             }
 
-            // So sánh mật khẩu: dự án dùng plain text tạm thời,
-            // khi tích hợp BCrypt thay bằng: BCrypt.Verify(model.IncomingPassword, incomingEmployee.Password)
-            if (incomingEmployee.Password != model.IncomingPassword)
+            // So sánh mật khẩu bằng DAT_PasswordHasher
+            if (!DAT_PasswordHasher.VerifyPassword(model.IncomingPassword, incomingEmployee.Password ?? ""))
             {
                 return OperationResult.Fail("Mật khẩu xác nhận không chính xác. Vui lòng thử lại.");
             }
