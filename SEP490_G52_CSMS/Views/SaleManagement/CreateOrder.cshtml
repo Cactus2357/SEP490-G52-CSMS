@@ -9,10 +9,15 @@
     <div class="row g-4">
         <!-- Left Column: Product Catalog -->
         <div class="col-md-7 border-end pe-4">
-            <h3 class="fw-bold mb-3 border-bottom pb-2 text-dark">Tạo đơn hàng</h3>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
+                <h3 class="fw-bold text-dark mb-0">Tạo đơn hàng</h3>
+                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm" onclick="openCustomerMonitor()">
+                    <i class="bi bi-display me-1"></i> Mở màn hình phụ (Khách)
+                </button>
+            </div>
             
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="position-relative" style="width: 250px;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div class="position-relative" style="width: 250px; min-width: 200px;">
                     <i class="bi bi-search position-absolute" style="left: 12px; top: 8px; color: #6c757d;"></i>
                     <input type="text" id="productSearch" class="form-control ps-5" placeholder="Tìm kiếm sản phẩm..." onkeyup="filterProducts()">
                 </div>
@@ -30,8 +35,8 @@
             <div class="row" id="productGrid">
                 @foreach (var product in Model.MenuProducts)
                 {
-                    <div class="col-md-6 mb-4 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
-                        <div class="card border shadow-sm p-3 d-flex flex-row align-items-center bg-white" style="height: 110px;">
+                    <div class="col-xl-6 col-12 mb-4 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
+                        <div class="card border shadow-sm p-3 d-flex flex-row align-items-center bg-white" style="min-height: 110px; height: auto;">
                             <!-- Placeholder for image -->
                             <div class="border rounded bg-light me-3 d-flex justify-content-center align-items-center text-muted" style="width: 60px; height: 60px; font-size: 1.8rem; flex-shrink: 0;">
                                 <i class="bi bi-image"></i>
@@ -123,77 +128,16 @@
                     </table>
                 </div>
                 <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded mb-4">
-                    <h5 class="fw-semibold mb-0 text-secondary">Tổng tiền cần thanh toán:</h5>
+                    <h5 class="fw-semibold mb-0 text-secondary">Tổng tiền</h5>
                     <h4 class="fw-bold text-success mb-0" id="reviewTotalAmount">0 đ</h4>
                 </div>
                 <div class="d-flex justify-content-between">
                     <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Quay lại</button>
                     <div>
                         <button type="button" class="btn btn-success px-4 py-2 me-2" onclick="processCashPayment()">Tiền mặt</button>
-                        <button type="button" class="btn btn-primary px-4 py-2" onclick="showBankTransferModal()">Chuyển khoản</button>
+                        <button type="button" class="btn btn-primary px-4 py-2" onclick="initiateBankTransfer()">Chuyển khoản</button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal 2: Bank Transfer QR Code -->
-<div class="modal fade" id="bankTransferModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-bottom">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Thanh toán chuyển khoản QR</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="row m-0">
-                    <div class="col-md-7 border-end p-4">
-                        <h6 class="fw-bold mb-3 text-secondary">ĐƠN HÀNG BẠN ĐÃ CHỌN</h6>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0" id="qrCartTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Tên</th>
-                                        <th>Size</th>
-                                        <th>SL</th>
-                                        <th class="text-end">Giá</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="qrCartBody">
-                                    <!-- Filled by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="col-md-5 p-5 text-center bg-light-subtle d-flex flex-column align-items-center justify-content-center">
-                        <h6 class="mb-2 text-secondary fw-semibold">TỔNG TIỀN CẦN THANH TOÁN</h6>
-                        <h3 class="fw-bold text-success mb-4" id="qrTotalAmount">0 đ</h3>
-                        <div class="border rounded d-inline-block p-4 mb-4 bg-white shadow-sm">
-                            <div style="width: 150px; height: 150px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-qr-code" style="font-size: 5rem; color: #1f2937;"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="simulateTransferSuccess()">[Giả lập Khách chuyển khoản thành công]</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal 3: Transfer Success -->
-<div class="modal fade" id="transferSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow text-center p-5">
-            <div class="mb-4">
-                <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
-            </div>
-            <h4 class="mb-4 fw-bold text-dark">KHÁCH HÀNG ĐÃ CHUYỂN TIỀN THÀNH CÔNG</h4>
-            <div class="d-grid gap-2 col-8 mx-auto">
-                <button type="button" class="btn btn-success py-2.5 fw-semibold shadow-sm" onclick="confirmPaymentReceived()">Đã nhận</button>
             </div>
         </div>
     </div>
@@ -216,6 +160,35 @@
     <script>
         var cart = []; 
         var currentOrderId = null;
+
+        // Load cart from localStorage on init
+        try {
+            var savedCart = localStorage.getItem('csms_cart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+            }
+        } catch (e) {
+            console.error("Failed to load cart from localStorage", e);
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('showCheckout') === 'true') {
+                currentOrderId = urlParams.get('orderId');
+                renderCart();
+                renderReviewCarts();
+                var modal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
+                modal.show();
+                // Clean URL query parameters
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                renderCart();
+            }
+        });
+
+        function openCustomerMonitor() {
+            window.open('@Url.Action("CustomerMonitor", "SaleManagement")', 'customerMonitorWindow', 'width=1024,height=768');
+        }
 
         function showToast(message, isError = false) {
             const toastEl = document.getElementById('statusToast');
@@ -299,9 +272,9 @@
                         <td class="align-middle border-0 py-3 fw-semibold text-dark">${item.name}</td>
                         <td class="align-middle border-0 py-3 text-secondary">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
                         <td class="align-middle border-0 py-3 text-end">
-                            <div class="d-flex align-items-center justify-content-end">
-                                <div class="me-3">${sizeOptions}</div>
-                                <div class="me-2">
+                            <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
+                                <div>${sizeOptions}</div>
+                                <div>
                                     <input type="number" class="form-control form-control-sm text-center" style="width: 50px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger px-2" onclick="removeFromCart('${item.cartId}')">
@@ -315,6 +288,18 @@
 
             tbody.innerHTML = html;
             document.getElementById("totalAmount").innerText = total.toLocaleString('vi-VN') + " đ";
+            localStorage.setItem('csms_cart', JSON.stringify(cart));
+
+            // Sync with Customer Monitor if open
+            try {
+                localStorage.setItem('customer_display_state', JSON.stringify({
+                    mode: 'Cart',
+                    cart: cart,
+                    total: total
+                }));
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function changeSize(cartId, variantId, newPrice) {
@@ -347,6 +332,7 @@
                     cart = [];
                     document.getElementById("recipientName").value = "";
                     renderCart();
+                    localStorage.removeItem('csms_cart');
                 }
             }
         }
@@ -416,35 +402,43 @@
                 `;
             });
             document.getElementById("reviewCartBody").innerHTML = html;
-            document.getElementById("qrCartBody").innerHTML = html;
             
             var tStr = total.toLocaleString('vi-VN') + " đ";
             document.getElementById("reviewTotalAmount").innerText = tStr;
-            document.getElementById("qrTotalAmount").innerText = tStr;
         }
 
         function processCashPayment() {
             processPayment('Cash');
         }
 
-        function showBankTransferModal() {
-            var m1 = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
-            m1.hide();
+        function initiateBankTransfer() {
+            if (!currentOrderId) {
+                showToast("Không tìm thấy thông tin đơn hàng.", true);
+                return;
+            }
             
-            var m2 = new bootstrap.Modal(document.getElementById('bankTransferModal'));
-            m2.show();
-        }
-
-        function simulateTransferSuccess() {
-            var m2 = bootstrap.Modal.getInstance(document.getElementById('bankTransferModal'));
-            m2.hide();
-
-            var m3 = new bootstrap.Modal(document.getElementById('transferSuccessModal'));
-            m3.show();
-        }
-
-        function confirmPaymentReceived() {
-            processPayment('Bank Transfer');
+            var formData = new URLSearchParams();
+            formData.append('orderId', currentOrderId);
+            
+            fetch('@Url.Action("SelectBankTransfer", "SaleManagement")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
+                    if (modal) modal.hide();
+                    window.location.href = '@Url.Action("BankTransferPayment", "SaleManagement")?orderId=' + currentOrderId;
+                } else {
+                    showToast("Lỗi ghi nhận phương thức thanh toán chuyển khoản.", true);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Lỗi kết nối hệ thống.", true);
+            });
         }
 
         function processPayment(method) {
@@ -462,14 +456,13 @@
                 if (data.success) {
                     var m1 = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
                     if (m1) m1.hide();
-                    var m3 = bootstrap.Modal.getInstance(document.getElementById('transferSuccessModal'));
-                    if (m3) m3.hide();
                     
                     showToast("Thanh toán thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
                     
                     cart = [];
                     document.getElementById("recipientName").value = "";
                     currentOrderId = null;
+                    localStorage.removeItem('csms_cart');
                     renderCart();
                 } else {
                     showToast("Lỗi thanh toán: " + data.message, true);

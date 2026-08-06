@@ -1,0 +1,376 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Monitor - CSMS</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #110d0a 0%, #20150f 100%);
+            color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Decorative background light sources */
+        .ambient-light-1 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(230, 126, 34, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -100px;
+            left: -100px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .ambient-light-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(142, 68, 173, 0.1) 0%, rgba(0,0,0,0) 70%);
+            bottom: -150px;
+            right: -150px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .monitor-container {
+            width: 100%;
+            max-width: 1400px;
+            padding: 40px;
+            z-index: 2;
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* Glassmorphism Panel styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            height: 100%;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 25px 50px rgba(230, 126, 34, 0.08);
+        }
+
+        /* Idle State / Welcome */
+        .idle-screen {
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .coffee-cup-icon {
+            font-size: 7rem;
+            color: #d35400;
+            display: inline-block;
+            margin-bottom: 20px;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .welcome-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #f39c12, #d35400);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.8rem;
+            font-weight: 300;
+            color: #a8a9ab;
+        }
+
+        /* Active State / Bank Transfer Details */
+        .checkout-screen {
+            display: none;
+            animation: slideUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .screen-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #f39c12;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .table-custom {
+            color: #f8f9fa;
+        }
+
+        .table-custom tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background-color 0.2s ease;
+        }
+
+        .table-custom tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .table-custom th {
+            font-weight: 600;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 16px 8px;
+        }
+
+        .table-custom td {
+            padding: 18px 8px;
+            font-size: 1.15rem;
+        }
+
+        .size-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .summary-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .total-price {
+            font-size: 3.2rem;
+            font-weight: 800;
+            color: #2ecc71;
+            margin: 15px 0 25px 0;
+            text-shadow: 0 0 15px rgba(46, 204, 113, 0.2);
+        }
+
+        .qr-container {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 20px;
+            display: inline-block;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .qr-container:hover {
+            transform: scale(1.03);
+        }
+
+        .qr-img {
+            width: 260px;
+            height: 260px;
+            object-fit: contain;
+        }
+
+        .qr-hint {
+            font-size: 1.1rem;
+            color: #a8a9ab;
+            line-height: 1.5;
+        }
+
+        /* Success State */
+        .success-screen {
+            display: none;
+            text-align: center;
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .checkmark-icon {
+            font-size: 8rem;
+            color: #2ecc71;
+            margin-bottom: 30px;
+            animation: pulseSuccess 2s infinite;
+        }
+
+        .success-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #2ecc71;
+            margin-bottom: 15px;
+            text-shadow: 0 0 25px rgba(46, 204, 113, 0.25);
+        }
+
+        .success-subtitle {
+            font-size: 1.8rem;
+            color: #bdc3c7;
+            font-weight: 300;
+        }
+
+        /* Keyframes */
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @@keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @@keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @@keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        @@keyframes pulseSuccess {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(46, 204, 113, 0)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(46, 204, 113, 0.4)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(46, 204, 113, 0)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-light-1"></div>
+    <div class="ambient-light-2"></div>
+
+    <div class="monitor-container">
+        <!-- Idle Welcome Screen -->
+        <div id="idleScreen" class="idle-screen glass-panel">
+            <i class="bi bi-cup-hot-fill coffee-cup-icon"></i>
+            <h1 class="welcome-title">CSMS CAFE</h1>
+            <p class="welcome-subtitle">Xin chào! Rất hân hạnh được phục vụ quý khách.</p>
+            <p class="text-secondary small mt-4 opacity-50">Vui lòng gọi món và thanh toán tại quầy.</p>
+        </div>
+
+        <!-- Active Checkout Screen -->
+        <div id="checkoutScreen" class="checkout-screen">
+            <div class="glass-panel text-center d-flex flex-column justify-content-center align-items-center mx-auto" style="max-width: 580px; padding: 50px 30px;">
+                <h4 class="summary-title mb-2">TỔNG TIỀN CẦN THANH TOÁN</h4>
+                <div id="totalAmountText" class="total-price">0 đ</div>
+                
+                <div class="qr-container my-4">
+                    <img id="qrImage" src="" alt="Mã QR Chuyển khoản" class="qr-img">
+                </div>
+                
+                <p class="qr-hint mb-0 text-white-50">
+                    <strong>Quét mã QR để thanh toán chuyển khoản</strong><br>
+                    <span class="small text-muted">Vui lòng kiểm tra kỹ số tiền trước khi thực hiện giao dịch.</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Success Celebration Screen -->
+        <div id="successScreen" class="success-screen glass-panel">
+            <i class="bi bi-check-circle-fill checkmark-icon"></i>
+            <h1 class="success-title">THANH TOÁN THÀNH CÔNG!</h1>
+            <p class="success-subtitle">Cảm ơn quý khách! Đơn hàng của bạn đã được chuyển xuống quầy pha chế.</p>
+            <p class="text-secondary small mt-4 opacity-50">Màn hình tự động quay lại trang chào mừng trong giây lát...</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var idleScreen = document.getElementById('idleScreen');
+        var checkoutScreen = document.getElementById('checkoutScreen');
+        var successScreen = document.getElementById('successScreen');
+
+        function showIdle() {
+            idleScreen.style.display = 'block';
+            checkoutScreen.style.display = 'none';
+            successScreen.style.display = 'none';
+        }
+
+        function showCheckout(data) {
+            // Update details
+            document.getElementById('totalAmountText').innerText = data.total.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('qrImage').src = data.qrCodeUrl;
+
+            // Toggle screens
+            idleScreen.style.display = 'none';
+            checkoutScreen.style.display = 'block';
+            successScreen.style.display = 'none';
+        }
+
+        function showSuccess() {
+            idleScreen.style.display = 'none';
+            checkoutScreen.style.display = 'none';
+            successScreen.style.display = 'block';
+            
+            // Revert to welcome screen after 5 seconds
+            setTimeout(function() {
+                // Double check we haven't switched to a new checkout in the meantime
+                var currentState = localStorage.getItem('customer_display_state');
+                if (currentState) {
+                    var parsed = JSON.parse(currentState);
+                    if (parsed.mode === 'PaidSuccess' || parsed.mode === 'Idle') {
+                        showIdle();
+                    }
+                } else {
+                    showIdle();
+                }
+            }, 5000);
+        }
+
+        function updateState(state) {
+            if (!state || state.mode === 'Idle') {
+                showIdle();
+            } else if (state.mode === 'BankTransfer') {
+                showCheckout(state);
+            } else if (state.mode === 'PaidSuccess') {
+                showSuccess();
+            } else if (state.mode === 'Cart') {
+                // If cashier is typing and updating cart, we can optionally show it,
+                // but the spec only mandates showing order review + QR when Bank Transfer is selected.
+                // We keep it on idle or welcome unless bank transfer is selected.
+                showIdle();
+            }
+        }
+
+        // Listen for storage events from the Cashier window
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'customer_display_state') {
+                if (e.newValue) {
+                    updateState(JSON.parse(e.newValue));
+                } else {
+                    showIdle();
+                }
+            }
+        });
+
+        // Initialize state on load
+        var initialState = localStorage.getItem('customer_display_state');
+        if (initialState) {
+            updateState(JSON.parse(initialState));
+        } else {
+            showIdle();
+        }
+    </script>
+</body>
+</html>

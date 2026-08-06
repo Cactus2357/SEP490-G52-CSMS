@@ -1,0 +1,213 @@
+@model SEP490_G52_CSMS.Models.ViewModels.SaleOrderDetailViewModel
+
+@{
+    ViewData["Title"] = "Thanh toán Chuyển khoản";
+}
+
+<div class="container-fluid mt-3 pb-5">
+    <div class="row g-4">
+        <!-- Left Column: Order Review -->
+        <div class="col-md-7 border-end pe-4">
+            <div class="d-flex align-items-center mb-3">
+                <h3 class="fw-bold text-dark mb-0">ĐƠN HÀNG BẠN ĐÃ CHỌN</h3>
+                <span class="badge bg-secondary ms-3 px-2.5 py-1.5 fw-semibold text-white">Mã Đơn: @Model.OrderId</span>
+            </div>
+            
+            <p class="text-muted">Nhân viên & Khách hàng vui lòng kiểm tra danh sách sản phẩm bên dưới trước khi thực hiện chuyển khoản.</p>
+
+            <div class="card border shadow-sm mt-4">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="orderItemsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Tên Sản Phẩm</th>
+                                    <th>Size</th>
+                                    <th>Số Lượng</th>
+                                    <th class="text-end pe-4">Thành Tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Items)
+                                {
+                                    var itemTotal = item.Quantity * item.UnitPrice;
+                                    <tr>
+                                        <td class="ps-4 fw-semibold text-dark">@item.ProductName</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border px-2 py-1">@item.Size</span>
+                                        </td>
+                                        <td class="fw-semibold">@item.Quantity</td>
+                                        <td class="text-end pe-4 fw-semibold text-secondary">@itemTotal.ToString("N0") đ</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: QR and Payment Controls -->
+        <div class="col-md-5 ps-4">
+            <div class="card border shadow-sm bg-white">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-uppercase text-secondary fw-bold mb-2">TỔNG TIỀN CẦN THANH TOÁN</h6>
+                    <h2 class="fw-bold text-success mb-4">@Model.TotalAmount.ToString("N0") đ</h2>
+                    
+                    <div class="border rounded d-inline-block p-3 mb-4 bg-light shadow-sm">
+                        <img id="qrCodeImg" 
+                             src="https://img.vietqr.io/image/MB-0333333333-compact2.png?amount=@((int)Model.TotalAmount)&addInfo=Thanh+toan+don+hang+@(Model.OrderId)&accountName=CSMS+CAFE" 
+                             alt="Mã QR Chuyển khoản Ngân hàng" 
+                             style="width: 250px; height: 250px; object-fit: contain; border-radius: 4px;" />
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 small border-0 bg-info bg-opacity-10 text-info text-start mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>Hướng dẫn: Khách hàng mở ứng dụng ngân hàng và quét mã QR trên để chuyển khoản tự động với số tiền chính xác.
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        <button type="button" class="btn btn-outline-primary fw-semibold py-2" onclick="simulateSuccess()">
+                            <i class="bi bi-patch-check me-2"></i>[Giả lập Khách chuyển khoản thành công]
+                        </button>
+                        
+                        <button type="button" class="btn btn-outline-danger fw-semibold py-2" onclick="cancelPayment()">
+                            <i class="bi bi-x-circle me-2"></i>Hủy giao dịch / Quay lại
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Transfer Success Popup -->
+<div class="modal fade" id="transferSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow text-center p-5">
+            <div class="mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 rounded-circle" style="width: 80px; height: 80px;">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 3.5rem;"></i>
+                </div>
+            </div>
+            <h4 class="mb-3 fw-bold text-dark">KHÁCH HÀNG ĐÃ CHUYỂN TIỀN THÀNH CÔNG</h4>
+            <p class="text-secondary mb-4">Giao dịch đã được hệ thống ghi nhận. Vui lòng bấm xác nhận bên dưới để hoàn tất.</p>
+            <div class="d-grid gap-2 col-10 mx-auto">
+                <button type="button" class="btn btn-success py-2.5 fw-semibold shadow-sm" onclick="confirmPaymentReceived()">Đã nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var orderId = '@Model.OrderId';
+        var totalAmount = @Model.TotalAmount;
+        var recipientName = '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.RecipientName))';
+        var orderItems = @Html.Raw(Json.Serialize(Model.Items.Select(i => new { 
+            name = i.ProductName, 
+            size = i.Size, 
+            quantity = i.Quantity, 
+            amount = i.Quantity * i.UnitPrice 
+        })));
+        var qrCodeUrl = document.getElementById('qrCodeImg').src;
+
+        // Sync order details and QR code with Customer Monitor immediately on load
+        try {
+            localStorage.setItem('customer_display_state', JSON.stringify({
+                mode: 'BankTransfer',
+                orderId: orderId,
+                recipientName: recipientName,
+                total: totalAmount,
+                items: orderItems,
+                qrCodeUrl: qrCodeUrl
+            }));
+        } catch (e) {
+            console.error("Failed to sync state to Customer Monitor:", e);
+        }
+
+        // Start polling payment status every 2 seconds
+        var pollInterval = setInterval(function() {
+            fetch('@Url.Action("CheckPaymentStatus", "SaleManagement")?orderId=' + orderId)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.paymentStatus === 'TransferSuccessPending') {
+                        clearInterval(pollInterval);
+                        
+                        // Sync paid status to Customer Monitor
+                        localStorage.setItem('customer_display_state', JSON.stringify({
+                            mode: 'PaidSuccess',
+                            orderId: orderId
+                        }));
+
+                        // Show cashier modal
+                        var successModal = new bootstrap.Modal(document.getElementById('transferSuccessModal'));
+                        successModal.show();
+                    }
+                })
+                .catch(err => console.error("Error polling payment status:", err));
+        }, 2000);
+
+        function simulateSuccess() {
+            fetch('@Url.Action("SimulateBankTransferSuccess", "SaleManagement")?orderId=' + orderId, {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    alert("Giả lập lỗi: " + data.message);
+                }
+            })
+            .catch(err => console.error("Failed to request bank simulation:", err));
+        }
+
+        function cancelPayment() {
+            if (confirm("Xác nhận hủy giao dịch chuyển khoản này và quay lại màn hình chọn phương thức thanh toán?")) {
+                clearInterval(pollInterval);
+                fetch('@Url.Action("CancelBankTransfer", "SaleManagement")?orderId=' + orderId, {
+                    method: 'POST'
+                })
+                .then(() => {
+                    // Reset Customer Monitor
+                    localStorage.setItem('customer_display_state', JSON.stringify({
+                        mode: 'Idle'
+                    }));
+                    window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
+                })
+                .catch(err => {
+                    console.error(err);
+                    window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
+                });
+            }
+        }
+
+        function confirmPaymentReceived() {
+            var formData = new URLSearchParams();
+            formData.append('orderId', orderId);
+            formData.append('paymentMethod', 'Bank Transfer');
+
+            fetch('@Url.Action("ProcessPayment", "SaleManagement")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    var successModal = bootstrap.Modal.getInstance(document.getElementById('transferSuccessModal'));
+                    if (successModal) successModal.hide();
+                    
+                    localStorage.removeItem('csms_cart');
+                    
+                    // Redirect back to main POS
+                    window.location.href = '@Url.Action("CreateOrder", "SaleManagement")';
+                } else {
+                    alert("Lỗi hoàn tất thanh toán: " + data.message);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to complete payment receipt:", err);
+                alert("Lỗi kết nối máy chủ.");
+            });
+        }
+    </script>
+}

@@ -142,6 +142,70 @@ namespace SEP490_G52_CSMS.Controllers
             return BadRequest(new { success = false, message = "Payment failed" });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> BankTransferPayment(string orderId)
+        {
+            var details = await _orderService.GetOrderDetailsAsync(orderId);
+            if (details == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy đơn hàng.";
+                return RedirectToAction("CreateOrder");
+            }
+            return View(details);
+        }
+
+        [HttpGet]
+        public IActionResult CustomerMonitor()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SelectBankTransfer(string orderId)
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            if (order == null) return NotFound(new { success = false, message = "Order not found" });
+
+            order.PaymentMethod = "Bank Transfer";
+            order.PaymentStatus = "Unpaid";
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SimulateBankTransferSuccess(string orderId)
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            if (order == null) return NotFound(new { success = false, message = "Order not found" });
+
+            order.PaymentStatus = "TransferSuccessPending";
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CheckPaymentStatus(string orderId)
+        {
+            var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderId == orderId);
+            if (order == null) return NotFound(new { success = false, message = "Order not found" });
+
+            return Json(new { success = true, paymentStatus = order.PaymentStatus });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CancelBankTransfer(string orderId)
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            if (order != null && order.PaymentStatus == "Unpaid")
+            {
+                order.PaymentStatus = "Cancelled";
+                await _context.SaveChangesAsync();
+            }
+            return Json(new { success = true });
+        }
+
         public async Task<IActionResult> OrderHistory(string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1)
         {
             var branchId = await GetUserBranchIdAsync();
