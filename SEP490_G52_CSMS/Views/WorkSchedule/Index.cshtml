@@ -1,7 +1,7 @@
 @model SEP490_G52_CSMS.Controllers.WeeklyScheduleViewModel
 @{
     ViewData["Title"] = "Quản lý lịch làm việc";
-    var dayNames = new[] { "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy", "Chủ nhật" };
+    var dayNames = new[] { "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật" };
 }
 
 <style>
@@ -61,7 +61,7 @@
             <table class="table table-bordered align-middle text-center">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:140px;">Ca làm việc</th>
+                        <th style="width:140px;">Ca Làm Việc</th>
                         @for (var d = 0; d < 7; d++)
                         {
                             <th>
