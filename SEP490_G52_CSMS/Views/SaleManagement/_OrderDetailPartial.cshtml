@@ -1,42 +1,72 @@
 @model SEP490_G52_CSMS.Models.ViewModels.SaleOrderDetailViewModel
 
-<div class="mb-4">
-    <h4 class="fw-bold mb-4">chi tiết đơn hàng</h4>
-    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">Mã đơn hàng :</span> @Model.OrderId</div>
-    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">người dùng:</span> @Model.RecipientName</div>
-    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">thời gian :</span> @Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</div>
-    <div class="mb-4"><span class="fw-bold" style="width: 150px; display: inline-block;">trạng thái :</span> @Model.DisplayStatus</div>
+<div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+    <h5 class="fw-bold mb-0 text-uppercase text-dark">
+        <i class="bi bi-receipt me-2 text-primary"></i>Chi Tiết Đơn Hàng
+    </h5>
+    <span class="badge bg-primary px-2.5 py-1.5 fw-bold">@Model.OrderId</span>
+</div>
+<div class="card-body p-4">
+    <div class="mb-4">
+        <div class="row mb-2">
+            <div class="col-4 text-muted small">- Khách hàng:</div>
+            <div class="col-8 fw-semibold text-dark">@(string.IsNullOrEmpty(Model.RecipientName) ? "Khách vãng lai" : Model.RecipientName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-4 text-muted small">- Thời gian:</div>
+            <div class="col-8 text-secondary">@Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+        <div class="row">
+            <div class="col-4 text-muted small">- Trạng thái:</div>
+            <div class="col-8">
+                @if (Model.DisplayStatus == "đã hoàn thành")
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
+                        <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 small">
+                        <i class="bi bi-clock-history me-1"></i>Đang xử lý
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
 
-    <h4 class="fw-bold mb-3">danh sách món</h4>
-    <table class="table table-bordered border-dark">
-        <thead class="table-light border-dark">
-            <tr>
-                <th>STT</th>
-                <th>Tên Món</th>
-                <th>Size</th>
-                <th>SL</th>
-                <th>Đơn Giá</th>
-                <th>Thành Tiền</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (int i = 0; i < Model.Items.Count; i++)
-            {
-                var item = Model.Items[i];
+    <h6 class="fw-bold mb-3 border-bottom pb-2">Danh Sách Món</h6>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-4">
+            <thead class="table-light">
                 <tr>
-                    <td>@(i + 1)</td>
-                    <td>@item.ProductName</td>
-                    <td>@item.Size</td>
-                    <td>@item.Quantity</td>
-                    <td>@item.UnitPrice.ToString("N0")</td>
-                    <td>@item.Amount.ToString("N0")</td>
+                    <th style="width: 8%;">STT</th>
+                    <th>Tên Món</th>
+                    <th style="width: 15%;">Size</th>
+                    <th style="width: 12%;">SL</th>
+                    <th class="text-end" style="width: 20%;">Đơn Giá</th>
+                    <th class="text-end" style="width: 25%;">Thành Tiền</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    var item = Model.Items[i];
+                    <tr>
+                        <td class="text-secondary">@(i + 1)</td>
+                        <td class="fw-semibold text-dark">@item.ProductName</td>
+                        <td><span class="badge bg-secondary">@item.Size</span></td>
+                        <td>@item.Quantity</td>
+                        <td class="text-end text-dark">@item.UnitPrice.ToString("N0") đ</td>
+                        <td class="text-end fw-semibold text-dark">@item.Amount.ToString("N0") đ</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <h4 class="fw-bold">tổng tiền :</h4>
-        <h4 class="fw-bold">@Model.TotalAmount.ToString("N0") đ</h4>
+    <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded">
+        <h5 class="fw-semibold mb-0">Tổng tiền:</h5>
+        <h4 class="fw-bold text-success mb-0">@Model.TotalAmount.ToString("N0") đ</h4>
     </div>
 </div>

@@ -21,7 +21,7 @@
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center vh-100">
 
-    <div class="card shadow-sm" style="max-width: 580px; width: 100%;">
+    <div class="card shadow-sm" style="width: 540px; height: 600px; display: flex; flex-direction: column;">
         <div class="card-header text-center bg-white">
             <a class="d-inline-flex align-items-center justify-content-center border rounded fw-bold h5 mb-2 px-3 py-2 text-decoration-none text-dark"
                asp-area="" asp-controller="Home" asp-action="Index">
@@ -65,69 +65,73 @@
             </li>
         </ul>
 
-        <div class="tab-content card-body p-4">
-            <div class="tab-pane fade @(hasCredsError ? "" : "show active")" id="face-login" role="tabpanel" aria-labelledby="face-tab-btn">
-                <div class="ratio ratio-4x3 bg-dark rounded mb-3 mx-auto" id="cameraFrame" style="max-width:480px;">
-                    <video id="webcamView" class="d-none" autoplay playsinline muted style="object-fit:cover; transform:scaleX(-1);"></video>
+        <div class="tab-content card-body p-4 flex-grow-1 d-flex flex-column">
+            <div class="tab-pane fade @(hasCredsError ? "" : "show active") flex-grow-1" id="face-login" role="tabpanel" aria-labelledby="face-tab-btn">
+                <div class="d-flex flex-column justify-content-between h-100">
+                    <div class="ratio ratio-4x3 bg-dark rounded mb-3 mx-auto" id="cameraFrame" style="max-width:440px;">
+                        <video id="webcamView" class="d-none" autoplay playsinline muted style="object-fit:cover; transform:scaleX(-1);"></video>
 
-                    <div class="text-white text-center d-flex flex-column align-items-center justify-content-center" id="cameraPlaceholder">
-                        <i class="bi bi-camera-video-fill fs-1 mb-2"></i>
-                        <span class="small">Đang kết nối camera...</span>
+                        <div class="text-white text-center d-flex flex-column align-items-center justify-content-center" id="cameraPlaceholder">
+                            <i class="bi bi-camera-video-fill fs-1 mb-2"></i>
+                            <span class="small">Đang kết nối camera...</span>
+                        </div>
+
+                        <div class="d-none align-items-center justify-content-center" id="scanSpinner">
+                            <div class="spinner-border text-success" role="status"><span class="visually-hidden">Đang quét...</span></div>
+                        </div>
                     </div>
 
-                    <div class="d-none align-items-center justify-content-center" id="scanSpinner">
-                        <div class="spinner-border text-success" role="status"><span class="visually-hidden">Đang quét...</span></div>
+                    <div class="d-none mb-3 mx-auto" id="scanProgressContainer" style="max-width:440px;">
+                        <div class="progress" style="height:6px;">
+                            <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width:0%"></div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="d-none mb-3 mx-auto" id="scanProgressContainer" style="max-width:480px;">
-                    <div class="progress" style="height:6px;">
-                        <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width:0%"></div>
+                    <div class="text-center mb-3">
+                        <button type="button" class="btn btn-outline-dark" onclick="retryFaceScan()">Quét lại</button>
                     </div>
-                </div>
 
-                <div class="text-center mb-3">
-                    <button type="button" class="btn btn-outline-dark" onclick="retryFaceScan()">Quét lại</button>
-                </div>
-
-                <div class="text-center text-secondary small" id="faceStatus">
-                    * Trạng thái: Đang kết nối camera...
+                    <div class="text-center text-secondary small" id="faceStatus">
+                        * Trạng thái: Đang kết nối camera...
+                    </div>
                 </div>
             </div>
 
-            <div class="tab-pane fade @(hasCredsError ? "show active" : "")" id="creds-login" role="tabpanel" aria-labelledby="password-tab-btn">
-                @if (hasCredsError && credsErrors.Any())
-                {
-                    <div class="alert alert-danger py-2 px-3 mb-4 small text-center">
-                        @foreach (var error in credsErrors)
-                        {
-                            <div class="d-flex align-items-center justify-content-center @(!error.Equals(credsErrors.Last()) ? "mb-1" : "")">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                <span>@error</span>
-                            </div>
-                        }
-                    </div>
-                }
+            <div class="tab-pane fade @(hasCredsError ? "show active" : "") flex-grow-1" id="creds-login" role="tabpanel" aria-labelledby="password-tab-btn">
+                <div class="d-flex flex-column justify-content-center h-100">
+                    @if (hasCredsError && credsErrors.Any())
+                    {
+                        <div class="alert alert-danger py-2 px-3 mb-4 small text-center">
+                            @foreach (var error in credsErrors)
+                            {
+                                <div class="d-flex align-items-center justify-content-center @(!error.Equals(credsErrors.Last()) ? "mb-1" : "")">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <span>@error</span>
+                                </div>
+                            }
+                        </div>
+                    }
 
-                <form method="post" action="/Auth/Login" class="needs-validation" novalidate>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nhập Email/Username</label>
-                        <input type="text" name="username" class="form-control" placeholder="Nhập Email hoặc Tên tài khoản" required />
-                    </div>
+                    <form method="post" action="/Auth/Login" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nhập Email/Username</label>
+                            <input type="text" name="username" class="form-control" placeholder="Nhập Email hoặc Tên tài khoản" required />
+                        </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Nhập Mật khẩu</label>
-                        <input type="password" name="password" class="form-control" placeholder="Nhập Mật khẩu" required />
-                    </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Nhập Mật khẩu</label>
+                            <input type="password" name="password" class="form-control" placeholder="Nhập Mật khẩu" required />
+                        </div>
 
-                    <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-dark fw-bold">Đăng nhập</button>
-                    </div>
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-dark fw-bold">Đăng nhập</button>
+                        </div>
 
-                    <div class="text-center">
-                        <a href="/Auth/ForgotPassword" class="text-decoration-none fw-bold">Quên mật khẩu ></a>
-                    </div>
-                </form>
+                        <div class="text-center">
+                            <a href="/Auth/ForgotPassword" class="text-decoration-none fw-bold">Quên mật khẩu ></a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

@@ -1,4 +1,4 @@
-﻿@model SEP490_G52_CSMS.Controllers.HandoverRowVM
+@model SEP490_G52_CSMS.Controllers.HandoverRowVM
 @{
     var h = Model.Handover;
     var variance = h.ActualCash - h.TheoreticalCash;
@@ -11,7 +11,8 @@
 </div>
 <div class="modal-body">
     <p class="mb-1">Ca: @(h.FixedShift?.ShiftName ?? "Ca ?") -&gt; @(Model.NextShift?.ShiftName ?? "?")</p>
-    <p class="mb-1">Nhân viên: @(h.OutgoingCashier?.FullName ?? "?") -&gt; @(h.IncomingCashier?.FullName ?? "?")</p>
+    <p class="mb-1">Người giao: @(h.OutgoingCashier?.FullName ?? "?")</p>
+    <p class="mb-1">Người nhận: @(h.IncomingCashier?.FullName ?? "?")</p>
     <p class="mb-3"><i class="bi bi-clock"></i> Thời gian bàn giao: @(h.HandoverDate.ToString("HH:mm - dd/MM/yyyy"))</p>
 
     <div class="d-flex justify-content-between mb-1">

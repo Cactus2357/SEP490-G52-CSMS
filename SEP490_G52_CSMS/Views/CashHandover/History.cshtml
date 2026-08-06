@@ -114,9 +114,15 @@
                 <button type="button" class="btn-close float-end" onclick="hideDetail()"></button>
             </div>
             <div class="p-3">
-                <div class="mb-3">
-                    <span>- Người ký nhận:</span>
-                    <span class="ms-1" id="detailIncoming">–</span>
+                <div class="mb-3 d-flex flex-wrap gap-4">
+                    <div>
+                        <span class="text-muted">- Người giao tiền:</span>
+                        <span class="fw-semibold ms-1" id="detailOutgoing">–</span>
+                    </div>
+                    <div>
+                        <span class="text-muted">- Người nhận tiền:</span>
+                        <span class="fw-semibold ms-1" id="detailIncoming">–</span>
+                    </div>
                 </div>
                 <div class="row m-0 border border-dark" style="border-width: 2px !important;">
                     <div class="col-md-5 p-3 border-end border-dark" style="border-width: 2px !important;">
@@ -183,6 +189,7 @@
             const sessionType = row.dataset.sessionType;  // vd: "mở ca"
             const date        = row.dataset.date;
             const shift       = row.dataset.shift;
+            const outgoing    = row.dataset.outgoing;
             const incoming    = row.dataset.incoming;
             const theoretical = row.dataset.theoretical;
             const actual      = row.dataset.actual;
@@ -193,6 +200,7 @@
             document.getElementById('detailTitle').textContent =
                 `CHI TIẾT PHIÊN: ${sessionType.toUpperCase()} - ${shift} - ${date}`;
 
+            document.getElementById('detailOutgoing').textContent    = outgoing;
             document.getElementById('detailIncoming').textContent    = incoming;
             document.getElementById('detailTheoretical').textContent = theoretical;
             document.getElementById('detailActual').textContent      = actual;

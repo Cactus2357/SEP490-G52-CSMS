@@ -1,0 +1,47 @@
+@model SEP490_G52_CSMS.Models.ViewModels.MenuEditViewModel
+
+<div class="modal-header border-bottom">
+    <h5 class="modal-title fw-bold text-dark">
+        <i class="bi bi-journal-text me-2 text-primary"></i>Chi Tiết Thực Đơn: @Model.MenuName
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body p-4">
+    @if (Model.Products == null || !Model.Products.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
+            Thực đơn này hiện chưa được cấu hình món nào.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 10%;">STT</th>
+                        <th>Tên Món</th>
+                        <th>Phân Loại</th>
+                        <th>Kích Cỡ & Giá Bán</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Products.Count; i++)
+                    {
+                        var p = Model.Products[i];
+                        <tr>
+                            <td class="text-secondary">@(i + 1)</td>
+                            <td class="fw-bold text-dark">@p.ProductName</td>
+                            <td><span class="badge bg-secondary">@p.CategoryName</span></td>
+                            <td class="text-muted small fw-semibold">@p.SizeAndPrice</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+<div class="modal-footer border-top">
+    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Đóng</button>
+</div>

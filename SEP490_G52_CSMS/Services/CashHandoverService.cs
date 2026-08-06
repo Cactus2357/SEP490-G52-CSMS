@@ -58,6 +58,13 @@ namespace SEP490_G52_CSMS.Services
                                currentTime <= roster.FixedShift.EndTime;
             }
 
+            bool isFirstShift = (lastHandover == null || lastHandover.HandoverDate.Date < today.Date);
+            decimal initialCash = 0;
+            if (!isFirstShift && lastHandover != null)
+            {
+                initialCash = lastHandover.ActualCash;
+            }
+
             var model = new OpenShiftViewModel
             {
                 CashierId = cashierId,
@@ -78,7 +85,8 @@ namespace SEP490_G52_CSMS.Services
                     ? lastHandover.InitialCash.ToString("N0") + " ₫"
                     : "-",
                 PreviousApproverName = lastHandover?.IncomingCashier?.FullName ?? "-",
-                InitialCash = 0,
+                InitialCash = initialCash,
+                IsFirstShift = isFirstShift,
                 IsTimeToOpen = isTimeToOpen
             };
 
@@ -110,6 +118,20 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Chưa đến giờ mở ca. Bạn chỉ có thể mở ca trước 30 phút so với giờ bắt đầu ca trực.");
             }
 
+            // Lấy thông tin ca gần nhất đã đóng của chi nhánh để lấy tiền đầu ca
+            var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.CashierId);
+            var branchId = roster?.BranchId ?? cashierEmployee?.BranchId ?? model.BranchId;
+            var lastHandover = string.IsNullOrEmpty(branchId)
+                ? null
+                : await _cashHandoverRepository.GetLastClosedHandoverForBranchAsync(branchId);
+
+            decimal initialCash = model.InitialCash;
+            bool isFirstShift = (lastHandover == null || lastHandover.HandoverDate.Date < today.Date);
+            if (!isFirstShift && lastHandover != null)
+            {
+                initialCash = lastHandover.ActualCash;
+            }
+
             // Tạo bản ghi CashHandover mới với trạng thái Active
             var handover = new CashHandover
             {
@@ -118,10 +140,10 @@ namespace SEP490_G52_CSMS.Services
                 ShiftId = model.ShiftId,
                 OutgoingCashierId = model.CashierId,
                 IncomingCashierId = model.CashierId,   // Tạm thời = chính mình, cập nhật khi giao ca
-                InitialCash = model.InitialCash,
+                InitialCash = initialCash,
                 MachineCashRevenue = 0,
                 BankTransferRevenue = 0,               // Cập nhật sau từ module Bán hàng
-                TheoreticalCash = model.InitialCash,   // Lúc mở ca TheoreticalCash = InitialCash
+                TheoreticalCash = initialCash,   // Lúc mở ca TheoreticalCash = InitialCash
                 ActualCash = 0,
                 IsPasswordConfirmed = false,
                 Status = CashHandoverConstants.ActiveStatus,
@@ -129,7 +151,7 @@ namespace SEP490_G52_CSMS.Services
             };
 
             await _cashHandoverRepository.AddHandoverAsync(handover);
-            return OperationResult.Ok($"Đã mở ca thành công. Tiền đầu ca: {model.InitialCash:N0} đ");
+            return OperationResult.Ok($"Đã mở ca thành công. Tiền đầu ca: {initialCash:N0} đ");
         }
 
         // =========================================================

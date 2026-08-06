@@ -4,21 +4,21 @@
     ViewData["Title"] = "Tạo đơn hàng";
 }
 
-<div class="container-fluid mt-3">
+<div class="container-fluid mt-3 pb-5">
     <!-- Main Two Columns -->
-    <div class="row">
+    <div class="row g-4">
         <!-- Left Column: Product Catalog -->
-        <div class="col-md-7 border-end border-dark pe-4">
-            <h3 class="fw-normal mb-3 border-bottom border-dark pb-2">Tạo đơn hàng</h3>
+        <div class="col-md-7 border-end pe-4">
+            <h3 class="fw-bold mb-3 border-bottom pb-2 text-dark">Tạo đơn hàng</h3>
             
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="position-relative" style="width: 250px;">
-                    <i class="bi bi-search position-absolute" style="left: 10px; top: 6px;"></i>
-                    <input type="text" id="productSearch" class="form-control border-dark border-2 rounded-0 ps-5 fw-bold" placeholder="search" onkeyup="filterProducts()">
+                    <i class="bi bi-search position-absolute" style="left: 12px; top: 8px; color: #6c757d;"></i>
+                    <input type="text" id="productSearch" class="form-control ps-5" placeholder="Tìm kiếm sản phẩm..." onkeyup="filterProducts()">
                 </div>
-                <div class="d-flex border border-dark border-2 rounded-0 p-1 bg-white">
-                    <select id="categoryFilter" class="form-select border-0 bg-transparent fw-bold p-1 shadow-none" onchange="filterProducts()" style="width: 100px;">
-                        <option value="">Loại</option>
+                <div style="width: 140px;">
+                    <select id="categoryFilter" class="form-select fw-semibold" onchange="filterProducts()">
+                        <option value="">Tất cả loại</option>
                         @foreach (var cat in Model.Categories)
                         {
                             <option value="@cat.CategoryId">@cat.CategoryName</option>
@@ -27,57 +27,71 @@
                 </div>
             </div>
 
-            <div class="row overflow-auto" style="max-height: 600px;" id="productGrid">
+            <div class="row" id="productGrid">
                 @foreach (var product in Model.MenuProducts)
                 {
                     <div class="col-md-6 mb-4 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
-                        <div class="border border-dark border-2 p-3 d-flex align-items-center bg-white" style="height: 110px;">
+                        <div class="card border shadow-sm p-3 d-flex flex-row align-items-center bg-white" style="height: 110px;">
                             <!-- Placeholder for image -->
-                            <div class="border border-dark border-2 me-3 d-flex justify-content-center align-items-center" style="width: 60px; height: 60px; font-size: 2rem;">
-                                <i class="bi bi-x"></i>
+                            <div class="border rounded bg-light me-3 d-flex justify-content-center align-items-center text-muted" style="width: 60px; height: 60px; font-size: 1.8rem; flex-shrink: 0;">
+                                <i class="bi bi-image"></i>
                             </div>
-                            <div class="flex-grow-1 text-center me-2">
-                                <div class="fw-normal text-truncate" style="max-width: 120px;" title="@product.ProductName">@product.ProductName</div>
-                                <div class="fw-normal mt-1">@product.DefaultPrice.ToString("N0") đ</div>
+                            <div class="flex-grow-1 min-width-0 me-2">
+                                <div class="fw-bold text-dark text-truncate" title="@product.ProductName">@product.ProductName</div>
+                                <div class="text-secondary small mt-1">@product.DefaultPrice.ToString("N0") đ</div>
                             </div>
-                            <div>
-                                <button type="button" class="btn btn-white border border-dark border-2 rounded-0 fw-bold px-3 py-1 shadow-sm" style="box-shadow: 2px 2px 0px black !important;"
-                                    onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>thêm</button>
+                            <div style="flex-shrink: 0;">
+                                <button type="button" class="btn btn-primary btn-sm fw-semibold px-3 py-1.5 shadow-sm"
+                                    onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>Thêm</button>
                             </div>
                         </div>
                     </div>
                 }
             </div>
-            <div id="noProductsMsg" class="d-none text-center mt-4">Không tìm thấy sản phẩm.</div>
+            <div id="noProductsMsg" class="d-none text-center mt-5 text-muted py-4">
+                <i class="bi bi-search display-6 d-block mb-3 opacity-50"></i>
+                Không tìm thấy sản phẩm phù hợp.
+            </div>
         </div>
 
         <!-- Right Column: Cart & Checkout -->
-        <div class="col-md-5 ps-4 position-relative" style="min-height: 650px;">
-            <table class="table border-0 mt-3" id="cartTable">
-                <thead class="border-bottom border-dark border-2">
-                    <tr>
-                        <th class="border-0 fw-normal">Tên</th>
-                        <th class="border-0 fw-normal">Giá Tiền</th>
-                        <th class="border-0 fw-normal text-end">Hành Động</th>
-                    </tr>
-                </thead>
-                <tbody id="cartBody">
-                    <!-- Cart items rendered by JS -->
-                </tbody>
-            </table>
+        <div class="col-md-5 ps-4">
+            <div class="card border shadow-sm sticky-top" style="top: 24px;">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold mb-0 text-uppercase text-dark">
+                        <i class="bi bi-cart3 me-2 text-primary"></i>Giỏ Hàng
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                        <table class="table align-middle" id="cartTable">
+                            <thead>
+                                <tr class="border-bottom text-muted small">
+                                    <th>Tên</th>
+                                    <th>Giá Tiền</th>
+                                    <th class="text-end">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartBody">
+                                <!-- Cart items rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
 
-            <div class="position-absolute w-100 pe-4" style="bottom: 20px;">
-                <div class="d-flex justify-content-between align-items-center border-bottom border-dark border-2 pb-3 mb-4">
-                    <h4 class="fw-normal mb-0">Tổng tiền:</h4>
-                    <h4 class="fw-normal mb-0" id="totalAmount">0 đ</h4>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-5">
-                    <h4 class="fw-normal mb-0">Người nhận :</h4>
-                    <input type="text" id="recipientName" class="form-control border-dark border-2 rounded-0 shadow-sm" style="width: 250px;">
-                </div>
-                <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 fw-normal shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="cancelOrder()">Hủy</button>
-                    <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 fw-normal shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="showPaymentModal()">Thanh toán</button>
+                    <div class="mt-4 border-top pt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-semibold mb-0 text-secondary">Tổng tiền:</h5>
+                            <h3 class="fw-bold text-success mb-0" id="totalAmount">0 đ</h3>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-secondary small">Người nhận:</label>
+                            <input type="text" id="recipientName" class="form-control" placeholder="Nhập tên người nhận...">
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary w-50 fw-semibold" onclick="cancelOrder()">Hủy</button>
+                            <button type="button" class="btn btn-primary w-50 fw-semibold" onclick="showPaymentModal()">Thanh toán</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -87,30 +101,36 @@
 <!-- Modal 1: Payment Method Selection -->
 <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-dark border-2 rounded-0">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body p-4">
-                <table class="table table-bordered border-dark mb-4" id="reviewCartTable">
-                    <thead class="table-light border-dark">
-                        <tr>
-                            <th>Tên</th>
-                            <th>Size</th>
-                            <th>SL</th>
-                            <th>Giá</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reviewCartBody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-                <div class="d-flex align-items-center mb-5 mt-4">
-                    <h5 class="fw-normal me-4 mb-0">Tổng tiền:</h5>
-                    <h5 class="fw-normal mb-0" id="reviewTotalAmount">0 đ</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover align-middle mb-0" id="reviewCartTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tên</th>
+                                <th>Size</th>
+                                <th>SL</th>
+                                <th class="text-end">Giá</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reviewCartBody">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded mb-4">
+                    <h5 class="fw-semibold mb-0 text-secondary">Tổng tiền cần thanh toán:</h5>
+                    <h4 class="fw-bold text-success mb-0" id="reviewTotalAmount">0 đ</h4>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" data-bs-dismiss="modal">quay lại</button>
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Quay lại</button>
                     <div>
-                        <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 me-3 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="processCashPayment()">Tiền mặt</button>
-                        <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-4 py-2 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="showBankTransferModal()">Chuyển khoản</button>
+                        <button type="button" class="btn btn-success px-4 py-2 me-2" onclick="processCashPayment()">Tiền mặt</button>
+                        <button type="button" class="btn btn-primary px-4 py-2" onclick="showBankTransferModal()">Chuyển khoản</button>
                     </div>
                 </div>
             </div>
@@ -121,38 +141,41 @@
 <!-- Modal 2: Bank Transfer QR Code -->
 <div class="modal fade" id="bankTransferModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content border-dark border-2 rounded-0">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Thanh toán chuyển khoản QR</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <div class="modal-body p-0">
-                <h3 class="text-center fw-bold mt-4 mb-4">ĐƠN HÀNG BẠN ĐÃ CHỌN</h3>
-                <div class="row m-0 border-top border-dark border-2">
-                    <div class="col-md-7 border-end border-dark border-2 p-0">
-                        <table class="table table-bordered border-dark border-2 m-0 border-top-0 border-bottom-0 border-start-0" id="qrCartTable">
-                            <thead class="table-light border-dark border-2">
-                                <tr>
-                                    <th>Tên</th>
-                                    <th>Size</th>
-                                    <th>SL</th>
-                                    <th>Giá</th>
-                                </tr>
-                            </thead>
-                            <tbody id="qrCartBody">
-                                <!-- Filled by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="col-md-5 p-5 text-center">
-                        <h5 class="mb-4 fw-normal">TỔNG TIỀN CẦN THANH TOÁN</h5>
-                        <div class="d-flex justify-content-center align-items-center mb-5">
-                            <h4 class="me-4 mb-0 fw-normal">Tổng tiền:</h4>
-                            <h4 class="fw-normal mb-0" id="qrTotalAmount">0 đ</h4>
+                <div class="row m-0">
+                    <div class="col-md-7 border-end p-4">
+                        <h6 class="fw-bold mb-3 text-secondary">ĐƠN HÀNG BẠN ĐÃ CHỌN</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="qrCartTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tên</th>
+                                        <th>Size</th>
+                                        <th>SL</th>
+                                        <th class="text-end">Giá</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="qrCartBody">
+                                    <!-- Filled by JS -->
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="border border-dark border-2 d-inline-block p-4 mb-4 bg-white shadow-sm">
+                    </div>
+                    <div class="col-md-5 p-5 text-center bg-light-subtle d-flex flex-column align-items-center justify-content-center">
+                        <h6 class="mb-2 text-secondary fw-semibold">TỔNG TIỀN CẦN THANH TOÁN</h6>
+                        <h3 class="fw-bold text-success mb-4" id="qrTotalAmount">0 đ</h3>
+                        <div class="border rounded d-inline-block p-4 mb-4 bg-white shadow-sm">
                             <div style="width: 150px; height: 150px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-qr-code" style="font-size: 5rem;"></i>
+                                <i class="bi bi-qr-code" style="font-size: 5rem; color: #1f2937;"></i>
                             </div>
                         </div>
                         <div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm mt-4" onclick="simulateTransferSuccess()">[Giả lập Khách chuyển khoản thành công]</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm px-3" onclick="simulateTransferSuccess()">[Giả lập Khách chuyển khoản thành công]</button>
                         </div>
                     </div>
                 </div>
@@ -164,11 +187,27 @@
 <!-- Modal 3: Transfer Success -->
 <div class="modal fade" id="transferSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-dark border-2 rounded-0 text-center p-5">
-            <h4 class="mb-5 fw-normal">KHÁCH HÀNG ĐÃ CHUYỂN TIỀN THÀNH CÔNG</h4>
-            <div>
-                <button type="button" class="btn btn-white border border-dark border-2 rounded-0 px-5 py-2 shadow-sm" style="box-shadow: 2px 2px 0px black !important;" onclick="confirmPaymentReceived()">Đã nhận</button>
+        <div class="modal-content border-0 shadow text-center p-5">
+            <div class="mb-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
             </div>
+            <h4 class="mb-4 fw-bold text-dark">KHÁCH HÀNG ĐÃ CHUYỂN TIỀN THÀNH CÔNG</h4>
+            <div class="d-grid gap-2 col-8 mx-auto">
+                <button type="button" class="btn btn-success py-2.5 fw-semibold shadow-sm" onclick="confirmPaymentReceived()">Đã nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="statusToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2">
+                <i id="toastIcon" class="bi text-white fs-5"></i>
+                <span id="toastMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
@@ -177,6 +216,25 @@
     <script>
         var cart = []; 
         var currentOrderId = null;
+
+        function showToast(message, isError = false) {
+            const toastEl = document.getElementById('statusToast');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastMessage = document.getElementById('toastMessage');
+
+            if (isError) {
+                toastEl.className = 'toast align-items-center text-white bg-danger border-0';
+                toastIcon.className = 'bi bi-exclamation-triangle-fill';
+            } else {
+                toastEl.className = 'toast align-items-center text-white bg-success border-0';
+                toastIcon.className = 'bi bi-check-circle-fill';
+            }
+
+            toastMessage.textContent = message;
+
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
+        }
 
         function filterProducts() {
             var search = document.getElementById("productSearch").value.toLowerCase();
@@ -230,23 +288,25 @@
                 var itemTotal = item.quantity * item.unitPrice;
                 total += itemTotal;
 
-                // Wireframe format: S M L
+                // Toggle badges for sizes
                 var sizeOptions = item.variants.map(v => 
-                    `<span class="mx-1" style="cursor:pointer; font-weight: ${v.variantId == item.selectedVariantId ? 'bold' : 'normal'}; text-decoration: ${v.variantId == item.selectedVariantId ? 'underline' : 'none'};" 
+                    `<span class="badge ${v.variantId == item.selectedVariantId ? 'bg-primary' : 'bg-light text-dark border'} mx-0.5" style="cursor:pointer;" 
                         onclick="changeSize('${item.cartId}', ${v.variantId}, ${v.sellingPrice})">${v.sizeVariant}</span>`
                 ).join('');
 
                 html += `
                     <tr>
-                        <td class="align-middle border-0 py-3">${item.name}</td>
-                        <td class="align-middle border-0 py-3">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td class="align-middle border-0 py-3 fw-semibold text-dark">${item.name}</td>
+                        <td class="align-middle border-0 py-3 text-secondary">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
                         <td class="align-middle border-0 py-3 text-end">
                             <div class="d-flex align-items-center justify-content-end">
-                                <div class="me-3 text-nowrap">${sizeOptions}</div>
-                                <div class="me-3">
-                                    <input type="number" class="form-control form-control-sm border-dark border-2 rounded-0 text-center" style="width: 50px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
+                                <div class="me-3">${sizeOptions}</div>
+                                <div class="me-2">
+                                    <input type="number" class="form-control form-control-sm text-center" style="width: 50px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
                                 </div>
-                                <button class="btn btn-sm btn-white border border-dark border-2 rounded-0 px-2 shadow-sm" style="box-shadow: 1px 1px 0px black !important;" onclick="removeFromCart('${item.cartId}')">xóa</button>
+                                <button class="btn btn-sm btn-outline-danger px-2" onclick="removeFromCart('${item.cartId}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -293,14 +353,27 @@
 
         function showPaymentModal() {
             if (cart.length === 0) {
-                alert("Vui lòng thêm ít nhất 1 sản phẩm vào đơn hàng.");
+                showToast("Vui lòng thêm ít nhất 1 sản phẩm vào đơn hàng.", true);
                 return;
             }
             var recipient = document.getElementById("recipientName").value.trim();
             if (!recipient) {
-                alert("Vui lòng nhập tên người nhận.");
+                showToast("Vui lòng nhập tên người nhận.", true);
                 return;
             }
+
+            // Gộp các sản phẩm trùng lặp (cùng selectedVariantId)
+            var mergedCart = [];
+            cart.forEach(item => {
+                var existing = mergedCart.find(m => m.selectedVariantId === item.selectedVariantId);
+                if (existing) {
+                    existing.quantity += item.quantity;
+                } else {
+                    mergedCart.push(item);
+                }
+            });
+            cart = mergedCart;
+            renderCart(); // Cập nhật lại giao diện giỏ hàng ngoài màn hình chính
 
             var orderData = {
                 recipientName: recipient,
@@ -320,7 +393,7 @@
                     var modal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
                     modal.show();
                 } else {
-                    alert("Lỗi khi tạo đơn hàng: " + data.message);
+                    showToast("Lỗi khi tạo đơn hàng: " + data.message, true);
                 }
             });
         }
@@ -338,7 +411,7 @@
                         <td>${item.name}</td>
                         <td>${selectedSize}</td>
                         <td>${item.quantity}</td>
-                        <td>${itemTotal.toLocaleString('vi-VN')} đ</td>
+                        <td class="text-end">${itemTotal.toLocaleString('vi-VN')} đ</td>
                     </tr>
                 `;
             });
@@ -392,14 +465,14 @@
                     var m3 = bootstrap.Modal.getInstance(document.getElementById('transferSuccessModal'));
                     if (m3) m3.hide();
                     
-                    alert("Thanh toán thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
+                    showToast("Thanh toán thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
                     
                     cart = [];
                     document.getElementById("recipientName").value = "";
                     currentOrderId = null;
                     renderCart();
                 } else {
-                    alert("Lỗi thanh toán: " + data.message);
+                    showToast("Lỗi thanh toán: " + data.message, true);
                 }
             });
         }

@@ -94,5 +94,13 @@ namespace SEP490_G52_CSMS.Controllers
             var products = await _menuService.GetMasterProductsForSelectionAsync(categoryId);
             return PartialView("_ProductSelectionPartial", products);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetMenuDetails(int id)
+        {
+            var model = await _menuService.GetMenuForEditAsync(id);
+            if (model == null) return NotFound();
+            return PartialView("_MenuDetailPartial", model);
+        }
     }
 }

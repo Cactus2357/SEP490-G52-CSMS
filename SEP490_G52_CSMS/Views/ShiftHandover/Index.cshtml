@@ -135,7 +135,8 @@
                 <tr>
                     <th>Ca Bàn Giao</th>
                     <th>Thời Gian</th>
-                    <th>Nhân Viên (Giao -&gt; Nhận)</th>
+                    <th>Người Giao</th>
+                    <th>Người Nhận</th>
                     <th>Chuyển Khoản</th>
                     <th>Tiền Mặt</th>
                     <th>Tiền Bàn Giao</th>
@@ -148,7 +149,7 @@
                 @if (Model.Rows.Count == 0)
                 {
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-4">
+                        <td colspan="10" class="text-center text-muted py-4">
                             Không có dữ liệu bàn giao ca nào cho ngày đã chọn.
                         </td>
                     </tr>
@@ -164,7 +165,8 @@
                         <tr>
                             <td>@(h.FixedShift?.ShiftName ?? "Ca ?") -&gt; @(row.NextShift?.ShiftName ?? "?")</td>
                             <td>@h.HandoverDate.ToString("HH:mm")</td>
-                            <td>@(h.OutgoingCashier?.FullName ?? "?") -&gt; @(h.IncomingCashier?.FullName ?? "?")</td>
+                            <td>@(h.OutgoingCashier?.FullName ?? "?")</td>
+                            <td>@(h.IncomingCashier?.FullName ?? "?")</td>
                             <td>@FormatMoney(h.MachineCashRevenue)</td>
                             <td>@FormatMoney(h.TheoreticalCash)</td>
                             <td>@FormatMoney(h.ActualCash)</td>

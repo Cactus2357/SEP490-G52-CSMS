@@ -18,7 +18,9 @@
             <input type="text" id="searchInput" class="form-control" placeholder="Search..." onkeyup="filterTable()">
         </div>
         <div>
-            <!-- We need a selected row logic for Edit if we follow the mockup strictly, or just pass ID from row. The mockup has buttons on top. We will disable edit if no row selected or just use row actions. For simplicity, we'll put edit in row actions, or have a JS selected state. -->
+            <button class="btn btn-outline-primary mr-2" id="btnViewDetails" onclick="viewDetailsSelected()" disabled>
+                <i class="bi bi-eye me-1"></i>Xem chi tiết
+            </button>
             <button class="btn btn-outline-secondary mr-2" id="btnEdit" onclick="editSelected()" disabled>+ Sửa thực đơn</button>
             <a asp-action="Create" class="btn btn-outline-dark">+ Thêm thực đơn mới</a>
         </div>
@@ -67,6 +69,15 @@
     </table>
 </div>
 
+<!-- Modal View Menu Content -->
+<div class="modal fade" id="menuDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <!-- Loaded by JS -->
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         let selectedMenuId = null;
@@ -79,11 +90,48 @@
             
             selectedMenuId = menuId;
             document.getElementById('btnEdit').disabled = false;
+            document.getElementById('btnViewDetails').disabled = false;
         }
 
         function editSelected() {
             if (selectedMenuId) {
                 window.location.href = '@Url.Action("Edit", "MenuManagement")/' + selectedMenuId;
+            }
+        }
+
+        function viewDetailsSelected() {
+            if (selectedMenuId) {
+                var modalEl = document.getElementById('menuDetailModal');
+                var modalContent = modalEl.querySelector('.modal-content');
+                modalContent.innerHTML = `
+                    <div class="modal-body text-center py-5 text-primary">
+                        <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+                        <div class="small fw-semibold">Đang tải danh sách món...</div>
+                    </div>
+                `;
+                var modal = new bootstrap.Modal(modalEl);
+                modal.show();
+
+                fetch('@Url.Action("GetMenuDetails", "MenuManagement")?id=' + selectedMenuId)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Không tìm thấy chi tiết thực đơn');
+                        return res.text();
+                    })
+                    .then(html => {
+                        modalContent.innerHTML = html;
+                    })
+                    .catch(err => {
+                        modalContent.innerHTML = `
+                            <div class="modal-header border-bottom">
+                                <h5 class="modal-title text-danger">Lỗi</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center py-4 text-danger">
+                                <i class="bi bi-exclamation-triangle fs-2 d-block mb-2"></i>
+                                <div>${err.message}</div>
+                            </div>
+                        `;
+                    });
             }
         }
 

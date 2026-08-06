@@ -64,17 +64,28 @@
                         <i class="bi bi-cash-coin me-2 text-success"></i>* KHAI BÁO DÒNG TIỀN ĐẦU CA
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small mb-2">- Nhập số tiền đang có trong két:</p>
+                        <p class="text-muted small mb-2">
+                            @if (Model.IsFirstShift)
+                            {
+                                <text>- Nhập số tiền đang có trong két:</text>
+                            }
+                            else
+                            {
+                                <text>- Số tiền đầu ca (tự động nhận từ ca trước):</text>
+                            }
+                        </p>
                         <div class="mb-3">
                             <div class="input-group">
                                 <input type="text" id="initialCashDisplay"
-                                       class="form-control form-control-lg fw-semibold"
+                                       class="form-control form-control-lg fw-semibold @(Model.IsFirstShift ? "" : "bg-light")"
                                        placeholder="VD: 3.000.000"
+                                       value="@(Model.IsFirstShift ? "" : Model.InitialCash.ToString("N0"))"
+                                       @(Model.IsFirstShift ? "" : "readonly")
                                        inputmode="numeric" autocomplete="off" />
                                 <span class="input-group-text bg-light fw-semibold">đ</span>
                             </div>
                             @* Hidden number field thực sự submit *@
-                            <input asp-for="InitialCash" type="hidden" id="initialCashHidden" />
+                            <input asp-for="InitialCash" type="hidden" id="initialCashHidden" value="@Model.InitialCash" />
                             <span asp-validation-for="InitialCash" class="text-danger small"></span>
                         </div>
 
