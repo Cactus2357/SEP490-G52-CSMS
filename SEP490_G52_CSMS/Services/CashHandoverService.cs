@@ -188,6 +188,7 @@ namespace SEP490_G52_CSMS.Services
                 BankTransferRevenue = activeHandover.BankTransferRevenue,  // Doanh thu CK (không vào két)
                 MachineCashRevenue = activeHandover.MachineCashRevenue,
                 IncomingCashierId = nextCashierId, // Tự động chọn người nhận ca tiếp theo
+                DelivererName = activeHandover.DelivererName,
                 IncomingCashiers = cashiers.Select(c => new CashierOption
                 {
                     CashierId = c.EmployeeId,
@@ -231,6 +232,7 @@ namespace SEP490_G52_CSMS.Services
             handover.ActualCash = model.ActualCash;
             handover.TheoreticalCash = theoretical;
             handover.Notes = model.Notes;
+            handover.DelivererName = model.DelivererName;
             handover.IsPasswordConfirmed = true;
             handover.Status = CashHandoverConstants.ClosedStatus;
             handover.ClosedAt = DateTime.Now;
@@ -281,6 +283,7 @@ namespace SEP490_G52_CSMS.Services
                         OpenedAt = ch.OpenedAt.ToString("HH:mm dd/MM/yyyy"),
                         ClosedAt = ch.ClosedAt?.ToString("HH:mm dd/MM/yyyy") ?? "-",
                         Notes = ch.Notes,
+                        DelivererName = ch.DelivererName,
                         SessionType = ch.Status == CashHandoverConstants.ActiveStatus ? "Mở ca" : "Giao ca",
                     };
                 }).ToList()

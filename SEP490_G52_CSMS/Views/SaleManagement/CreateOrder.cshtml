@@ -4,19 +4,32 @@
     ViewData["Title"] = "Tạo đơn hàng";
 }
 
-<div class="container-fluid mt-3 pb-5">
+<style>
+    .create-order-container { display: flex; flex-direction: column; height: calc(100vh - 124px); overflow: hidden; }
+    .create-order-row { display: flex; flex: 1; overflow: hidden; gap: 20px; }
+    .catalog-column { flex: 0 0 58%; display: flex; flex-direction: column; overflow: hidden; }
+    .cart-column { flex: 0 0 40%; display: flex; flex-direction: column; overflow: hidden; }
+    .catalog-grid-wrapper { flex: 1; overflow-y: auto; padding-right: 5px; }
+    .cart-card { display: flex; flex-direction: column; height: 100%; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); background: var(--bg-card); }
+    .cart-card-header { padding: 1rem; border-bottom: 1px solid var(--border-color); }
+    .cart-card-body { flex: 1; display: flex; flex-direction: column; padding: 1rem; overflow: hidden; }
+    .cart-items-wrapper { flex: 1; overflow-y: auto; }
+    .cart-card-footer { padding-top: 1rem; border-top: 1px solid var(--border-color); }
+</style>
+
+<div class="create-order-container">
     <!-- Main Two Columns -->
-    <div class="row g-4">
+    <div class="create-order-row">
         <!-- Left Column: Product Catalog -->
-        <div class="col-md-7 border-end pe-4">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
+        <div class="catalog-column">
+            <div class="catalog-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
                 <h3 class="fw-bold text-dark mb-0">Tạo đơn hàng</h3>
                 <button type="button" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm" onclick="openCustomerMonitor()">
                     <i class="bi bi-display me-1"></i> Mở màn hình phụ (Khách)
                 </button>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+            <div class="catalog-search-bar d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div class="position-relative" style="width: 250px; min-width: 200px;">
                     <i class="bi bi-search position-absolute" style="left: 12px; top: 8px; color: #6c757d;"></i>
                     <input type="text" id="productSearch" class="form-control ps-5" placeholder="Tìm kiếm sản phẩm..." onkeyup="filterProducts()">
@@ -32,43 +45,45 @@
                 </div>
             </div>
 
-            <div class="row" id="productGrid">
-                @foreach (var product in Model.MenuProducts)
-                {
-                    <div class="col-xl-6 col-12 mb-4 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
-                        <div class="card border shadow-sm p-3 d-flex flex-row align-items-center bg-white" style="min-height: 110px; height: auto;">
-                            <!-- Placeholder for image -->
-                            <div class="border rounded bg-light me-3 d-flex justify-content-center align-items-center text-muted" style="width: 60px; height: 60px; font-size: 1.8rem; flex-shrink: 0;">
-                                <i class="bi bi-image"></i>
-                            </div>
-                            <div class="flex-grow-1 min-width-0 me-2">
-                                <div class="fw-bold text-dark text-truncate" title="@product.ProductName">@product.ProductName</div>
-                                <div class="text-secondary small mt-1">@product.DefaultPrice.ToString("N0") đ</div>
-                            </div>
-                            <div style="flex-shrink: 0;">
-                                <button type="button" class="btn btn-primary btn-sm fw-semibold px-3 py-1.5 shadow-sm"
-                                    onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>Thêm</button>
+            <div class="catalog-grid-wrapper">
+                <div class="row g-2" id="productGrid">
+                    @foreach (var product in Model.MenuProducts)
+                    {
+                        <div class="col-xl-6 col-12 mb-2 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
+                            <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white" style="min-height: 90px; height: auto;">
+                                <!-- Placeholder for image -->
+                                <div class="border rounded bg-light me-3 d-flex justify-content-center align-items-center text-muted" style="width: 50px; height: 50px; font-size: 1.5rem; flex-shrink: 0;">
+                                    <i class="bi bi-image"></i>
+                                </div>
+                                <div class="flex-grow-1 min-width-0 me-2">
+                                    <div class="fw-bold text-dark text-truncate small" title="@product.ProductName">@product.ProductName</div>
+                                    <div class="text-secondary small mt-1">@product.DefaultPrice.ToString("N0") đ</div>
+                                </div>
+                                <div style="flex-shrink: 0;">
+                                    <button type="button" class="btn btn-primary btn-sm fw-semibold px-2.5 py-1 shadow-sm"
+                                        onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>Thêm</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                }
-            </div>
-            <div id="noProductsMsg" class="d-none text-center mt-5 text-muted py-4">
-                <i class="bi bi-search display-6 d-block mb-3 opacity-50"></i>
-                Không tìm thấy sản phẩm phù hợp.
+                    }
+                </div>
+                <div id="noProductsMsg" class="d-none text-center mt-5 text-muted py-4">
+                    <i class="bi bi-search display-6 d-block mb-3 opacity-50"></i>
+                    Không tìm thấy sản phẩm phù hợp.
+                </div>
             </div>
         </div>
 
         <!-- Right Column: Cart & Checkout -->
-        <div class="col-md-5 ps-4">
-            <div class="card border shadow-sm sticky-top" style="top: 24px;">
-                <div class="card-header bg-white py-3 border-bottom">
+        <div class="cart-column">
+            <div class="cart-card">
+                <div class="cart-card-header">
                     <h5 class="fw-bold mb-0 text-uppercase text-dark">
                         <i class="bi bi-cart3 me-2 text-primary"></i>Giỏ Hàng
                     </h5>
                 </div>
-                <div class="card-body p-4">
-                    <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                <div class="cart-card-body">
+                    <div class="cart-items-wrapper">
                         <table class="table align-middle" id="cartTable">
                             <thead>
                                 <tr class="border-bottom text-muted small">
@@ -83,14 +98,14 @@
                         </table>
                     </div>
 
-                    <div class="mt-4 border-top pt-3">
+                    <div class="cart-card-footer">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-semibold mb-0 text-secondary">Tổng tiền:</h5>
                             <h3 class="fw-bold text-success mb-0" id="totalAmount">0 đ</h3>
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-semibold text-secondary small">Người nhận:</label>
-                            <input type="text" id="recipientName" class="form-control" placeholder="Nhập tên người nhận...">
+                            <input type="text" id="recipientName" class="form-control" placeholder="Nhập tên người nhận (Tùy chọn)...">
                         </div>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-outline-secondary w-50 fw-semibold" onclick="cancelOrder()">Hủy</button>
@@ -275,7 +290,7 @@
                             <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
                                 <div>${sizeOptions}</div>
                                 <div>
-                                    <input type="number" class="form-control form-control-sm text-center" style="width: 50px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
+                                    <input type="number" class="form-control form-control-sm text-center" style="width: 75px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger px-2" onclick="removeFromCart('${item.cartId}')">
                                     <i class="bi bi-trash"></i>
@@ -343,10 +358,6 @@
                 return;
             }
             var recipient = document.getElementById("recipientName").value.trim();
-            if (!recipient) {
-                showToast("Vui lòng nhập tên người nhận.", true);
-                return;
-            }
 
             // Gộp các sản phẩm trùng lặp (cùng selectedVariantId)
             var mergedCart = [];

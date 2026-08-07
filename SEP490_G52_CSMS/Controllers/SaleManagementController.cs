@@ -114,10 +114,12 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> SubmitOrder([FromBody] OrderSubmissionModel model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.RecipientName) || !model.Items.Any())
+            if (model == null || !model.Items.Any())
             {
                 return BadRequest(new { success = false, message = "Invalid order data" });
             }
+
+            var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
 
             var branchId = await GetUserBranchIdAsync();
             var cashierId = await GetUserCashierIdAsync();
@@ -129,7 +131,7 @@ namespace SEP490_G52_CSMS.Controllers
                 UnitPrice = i.UnitPrice
             }).ToList();
 
-            var order = await _orderService.CreateOrderAsync(model.RecipientName, branchId, cashierId, orderItems);
+            var order = await _orderService.CreateOrderAsync(recipient, branchId, cashierId, orderItems);
             
             return Json(new { success = true, orderId = order.OrderId });
         }

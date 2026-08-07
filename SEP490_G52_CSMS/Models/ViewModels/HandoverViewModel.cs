@@ -45,6 +45,11 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         [Display(Name = "Lý do (nếu có)")]
         public string? Notes { get; set; }
 
+        /// <summary> Thông tin người giao tiền </summary>
+        [StringLength(100)]
+        [Display(Name = "Thông tin người giao tiền")]
+        public string? DelivererName { get; set; }
+
         // ===== Đồng ý xác nhận – Input người dùng =====
         /// <summary> Danh sách thu ngân có thể nhận ca </summary>
         public List<CashierOption> IncomingCashiers { get; set; } = new();

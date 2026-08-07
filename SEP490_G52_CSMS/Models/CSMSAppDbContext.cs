@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
@@ -61,7 +61,7 @@ namespace SEP490_G52_CSMS.Models
 
                 // Khóa ngoại 3: Chi nhánh (Nên đổi luôn nếu gặp lỗi tương tự với bảng Branch)
                 entity.HasOne(ch => ch.Branch)
-                      .WithMany()
+                      .WithMany(b => b.CashHandovers)
                       .HasForeignKey(ch => ch.BranchId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
@@ -108,6 +108,37 @@ namespace SEP490_G52_CSMS.Models
 
             modelBuilder.Entity<AttendanceLog>()
                 .HasIndex(a => new { a.RosterId, a.EmployeeId }).IsUnique();
+
+            // Cấu hình Column Type cho các thuộc tính decimal để tránh cảnh báo mất dữ liệu
+            modelBuilder.Entity<AttendanceLog>(entity =>
+            {
+                entity.Property(e => e.CheckInConfidence).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.CheckOutConfidence).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<CashHandover>(entity =>
+            {
+                entity.Property(e => e.ActualCash).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.BankTransferRevenue).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.InitialCash).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.MachineCashRevenue).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.TheoreticalCash).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<OrderItem>(entity =>
+            {
+                entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<ProductVariant>(entity =>
+            {
+                entity.Property(e => e.SellingPrice).HasColumnType("decimal(18, 2)");
+            });
 
             //base.OnModelCreating(modelBuilder);
         }

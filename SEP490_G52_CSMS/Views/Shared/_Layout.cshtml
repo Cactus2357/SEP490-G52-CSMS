@@ -38,6 +38,34 @@
     @await RenderSectionAsync("Styles", required: false)
 
     <script>
+        // Persist and restore user theme selection early to prevent color flashing
+        (function () {
+            const savedTheme = localStorage.getItem('user-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.setAttribute('data-theme', savedTheme);
+                
+                // Sync toggle switch state on load
+                const toggleSwitch = document.getElementById('themeToggleSwitch');
+                if (toggleSwitch) {
+                    toggleSwitch.checked = (savedTheme === 'dark');
+                }
+            });
+        })();
+
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            document.body.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('user-theme', nextTheme);
+            
+            const toggleSwitch = document.getElementById('themeToggleSwitch');
+            if (toggleSwitch) {
+                toggleSwitch.checked = (nextTheme === 'dark');
+            }
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const icon = document.getElementById('toggleIcon');
@@ -136,6 +164,15 @@
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
+                                    <div class="px-3 py-2 d-flex align-items-center justify-content-between">
+                                        <div class="small text-muted fw-semibold m-0"><i class="bi bi-moon-stars me-1.5"></i>Giao diện</div>
+                                        <div class="form-check form-switch m-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="themeToggleSwitch" onclick="toggleTheme()" style="cursor: pointer;">
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
                                     <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
                                         <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
                                     </button>
@@ -155,7 +192,7 @@
             </header>
 
             <main class="content-area">
-                <div class="container-fluid px-4 pt-3">
+                <div class="container-fluid px-4">
                     @if (TempData["ErrorMessage"] != null)
                     {
                         <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">

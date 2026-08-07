@@ -53,7 +53,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Detail(string orderId)
+        public async Task<IActionResult> Detail(string orderId, bool isInline = false)
         {
             var (branchId, _) = await GetUserBranchAsync();
             var model = await _orderManagementService.GetOrderDetailAsync(orderId, branchId);
@@ -61,6 +61,11 @@ namespace SEP490_G52_CSMS.Controllers
             if (model == null)
             {
                 return NotFound("Không tìm thấy đơn hàng.");
+            }
+
+            if (isInline)
+            {
+                return PartialView("_OrderDetailInline", model);
             }
 
             return PartialView("_OrderDetailModal", model);
