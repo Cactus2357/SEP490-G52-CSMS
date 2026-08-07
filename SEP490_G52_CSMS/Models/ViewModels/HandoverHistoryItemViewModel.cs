@@ -20,6 +20,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string ClosedAt { get; set; } = string.Empty;
         /// <summary> Lý do chênh lệch tiền (nếu có) </summary>
         public string? Notes { get; set; }
+        /// <summary> Thông tin người giao tiền </summary>
+        public string? DelivererName { get; set; }
         /// <summary> Loại phiên: "Mở ca" hoặc "Giao ca" </summary>
         public string SessionType { get; set; } = string.Empty;
     }

@@ -58,14 +58,14 @@
                                 <strong class="text-dark ms-1">@Model.InitialCash.ToString("N0") đ</strong>
                             </span>
                             <span class="text-muted small">
-                                — Doanh thu CK:
+                                — Doanh thu CK (Trong ca):
                                 <strong class="text-dark ms-1">@Model.BankTransferRevenue.ToString("N0") đ</strong>
                             </span>
                         </div>
 
                         @* Hàng 2: Doanh thu tiền mặt trên máy *@
                         <div class="mb-2 text-muted small">
-                            - Doanh thu tiền mặt trên máy:
+                            - Tiền mặt ghi nhận trong ca (Doanh thu mặt):
                             <strong class="text-dark ms-1" id="displayMachineRevenue">@Model.MachineCashRevenue.ToString("N0") đ</strong>
                         </div>
 
@@ -87,7 +87,7 @@
                         @* Tiền mặt thực tế *@
                         <div class="mb-2">
                             <label asp-for="ActualCash" class="form-label small text-muted mb-1">
-                                - Tiền mặt thực tế:
+                                - Tiền mặt thực tế cuối ca:
                             </label>
                             <div class="input-group input-group-sm">
                                 <input asp-for="ActualCash" type="number" step="1000" min="0"
@@ -133,6 +133,16 @@
                         <div class="mb-3">
                             <span class="text-muted small">- Người Giao (Nhân viên ca trước):</span>
                             <span class="fw-semibold ms-2">@Model.OutgoingCashierName</span>
+                        </div>
+
+                        @* Thông tin người giao tiền *@
+                        <div class="mb-3">
+                            <label asp-for="DelivererName" class="form-label small text-muted mb-1">
+                                - Thông tin người giao tiền (Tên/SĐT):
+                            </label>
+                            <input asp-for="DelivererName" type="text" class="form-control form-control-sm"
+                                   placeholder="Nhập tên/SĐT người giao tiền..." />
+                            <span asp-validation-for="DelivererName" class="text-danger small"></span>
                         </div>
 
                         @* Dropdown chọn người nhận ca *@

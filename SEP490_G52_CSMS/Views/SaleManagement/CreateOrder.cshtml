@@ -275,7 +275,7 @@
                             <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
                                 <div>${sizeOptions}</div>
                                 <div>
-                                    <input type="number" class="form-control form-control-sm text-center" style="width: 50px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
+                                    <input type="number" class="form-control form-control-sm text-center" style="width: 75px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger px-2" onclick="removeFromCart('${item.cartId}')">
                                     <i class="bi bi-trash"></i>
@@ -343,10 +343,6 @@
                 return;
             }
             var recipient = document.getElementById("recipientName").value.trim();
-            if (!recipient) {
-                showToast("Vui lòng nhập tên người nhận.", true);
-                return;
-            }
 
             // Gộp các sản phẩm trùng lặp (cùng selectedVariantId)
             var mergedCart = [];

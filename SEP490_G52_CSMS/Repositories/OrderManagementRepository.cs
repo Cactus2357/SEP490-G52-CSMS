@@ -76,7 +76,23 @@ namespace SEP490_G52_CSMS.Repositories
                 }
             }
 
-            return await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+            var list = await query.ToListAsync();
+            return list.OrderBy(o => {
+                bool isCanceled = o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled";
+                bool isCompleted = o.PaymentStatus == "Paid" && (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed");
+                
+                if (!isCanceled && !isCompleted) return 0; // Đang xử lý
+                if (isCompleted) return 1; // Hoàn thành
+                return 2; // Đã hủy
+            })
+            .ThenBy(o => {
+                bool isCanceled = o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled";
+                bool isCompleted = o.PaymentStatus == "Paid" && (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed");
+                
+                if (!isCanceled && !isCompleted) return o.CreatedAt.Ticks; // Oldest first
+                return -o.CreatedAt.Ticks; // Newest first
+            })
+            .ToList();
         }
 
         public async Task<Order?> GetOrderDetailsAsync(string orderId, string branchId)

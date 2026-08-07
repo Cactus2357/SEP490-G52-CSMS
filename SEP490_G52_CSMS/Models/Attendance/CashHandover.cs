@@ -48,6 +48,10 @@ namespace SEP490_G52_CSMS.Models.Attendance
         [Column("notes")]
         public string? Notes { get; set; } = null;
 
+        [Column("deliverer_name")]
+        [StringLength(100)]
+        public string? DelivererName { get; set; }
+
         [Column("is_password_confirmed")]
         public bool IsPasswordConfirmed { get; set; } = false;
 

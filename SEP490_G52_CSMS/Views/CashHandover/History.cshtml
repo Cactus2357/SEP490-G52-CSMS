@@ -76,9 +76,12 @@
                                 data-session-type="@item.SessionType.ToLower()"
                                 data-outgoing="@item.OutgoingCashierName"
                                 data-incoming="@item.IncomingCashierName"
+                                data-initial="@item.InitialCash"
+                                data-revenue="@item.MachineCashRevenue"
                                 data-theoretical="@item.TheoreticalCash"
                                 data-actual="@item.ActualCash"
                                 data-discrepancy="@item.Discrepancy"
+                                data-deliverer="@(item.DelivererName ?? "")"
                                 data-notes="@(item.Notes ?? "")">
                                 <td class="ps-3 border-end border-dark">
                                     @{
@@ -116,27 +119,39 @@
             <div class="p-3">
                 <div class="mb-3 d-flex flex-wrap gap-4">
                     <div>
-                        <span class="text-muted">- Người giao tiền:</span>
+                        <span class="text-muted">- Nhân viên bàn giao:</span>
                         <span class="fw-semibold ms-1" id="detailOutgoing">–</span>
                     </div>
                     <div>
-                        <span class="text-muted">- Người nhận tiền:</span>
+                        <span class="text-muted">- Nhân viên nhận ca:</span>
                         <span class="fw-semibold ms-1" id="detailIncoming">–</span>
+                    </div>
+                    <div>
+                        <span class="text-muted">- Người giao tiền:</span>
+                        <span class="fw-semibold ms-1 text-primary" id="detailDeliverer">–</span>
                     </div>
                 </div>
                 <div class="row m-0 border border-dark" style="border-width: 2px !important;">
                     <div class="col-md-5 p-3 border-end border-dark" style="border-width: 2px !important;">
                         <div class="mb-2">
-                            <span>- Tiền mặt hệ thống:</span>
-                            <span id="detailTheoretical">–</span>
+                            <span>- Tiền mặt đầu ca:</span>
+                            <span id="detailInitial" class="fw-semibold text-dark">–</span>
                         </div>
                         <div class="mb-2">
-                            <span>- Tiền mặt thực tế:</span>
-                            <span id="detailActual">–</span>
+                            <span>- Tiền mặt phát sinh trong ca:</span>
+                            <span id="detailRevenue" class="fw-semibold text-dark">–</span>
+                        </div>
+                        <div class="mb-2">
+                            <span>- Tổng lý thuyết:</span>
+                            <span id="detailTheoretical" class="fw-semibold text-dark">–</span>
+                        </div>
+                        <div class="mb-2">
+                            <span>- Tiền mặt thực tế cuối ca:</span>
+                            <span id="detailActual" class="fw-semibold text-success">–</span>
                         </div>
                         <div>
-                            <span>- Chênh lệch:</span>
-                            <span id="detailDiscrepancy">–</span>
+                            <span>- Chênh lệch kết ca:</span>
+                            <span id="detailDiscrepancy" class="fw-semibold">–</span>
                         </div>
                     </div>
                     <div class="col-md-7 p-3">
@@ -191,9 +206,12 @@
             const shift       = row.dataset.shift;
             const outgoing    = row.dataset.outgoing;
             const incoming    = row.dataset.incoming;
+            const initial     = row.dataset.initial;
+            const revenue     = row.dataset.revenue;
             const theoretical = row.dataset.theoretical;
             const actual      = row.dataset.actual;
             const discrepancy = row.dataset.discrepancy;
+            const deliverer   = row.dataset.deliverer;
             const notes       = row.dataset.notes;
 
             // Tiêu đề panel: "CHI TIẾT PHIÊN: GIAO CA - CA 2 - 15/06"
@@ -202,13 +220,16 @@
 
             document.getElementById('detailOutgoing').textContent    = outgoing;
             document.getElementById('detailIncoming').textContent    = incoming;
+            document.getElementById('detailDeliverer').textContent   = deliverer || '–';
+            document.getElementById('detailInitial').textContent     = initial;
+            document.getElementById('detailRevenue').textContent     = revenue;
             document.getElementById('detailTheoretical').textContent = theoretical;
             document.getElementById('detailActual').textContent      = actual;
 
             // Màu chênh lệch
             const discEl = document.getElementById('detailDiscrepancy');
             discEl.textContent = discrepancy;
-            discEl.className = discrepancy.startsWith('-') ? 'text-danger' : '';
+            discEl.className = discrepancy.startsWith('-') ? 'text-danger' : 'text-success';
 
             document.getElementById('detailNotes').textContent = notes || '(không có lý do)';
 
