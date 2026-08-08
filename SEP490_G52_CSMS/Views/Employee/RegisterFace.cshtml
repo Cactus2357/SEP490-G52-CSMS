@@ -201,20 +201,7 @@
         </div>
     </div>
     <div class="card-body p-4">
-        <!-- FaceIO Config Block -->
-        <div class="config-panel mb-4">
-            <h6 class="fw-bold mb-2"><i class="bi bi-gear-fill me-1"></i> Cấu hình FaceIO Public ID</h6>
-            <div class="row g-2 align-items-center">
-                <div class="col-md-6">
-                    <input type="text" id="faceioAppId" class="form-control" placeholder="fioXXXXX (Để trống để tự động chạy quét giả lập)">
-                </div>
-                <div class="col-md-6">
-                    <div class="form-text text-muted mb-0 ms-md-2" style="font-size: 0.8rem;">
-                        Đăng ký Public ID miễn phí tại <a href="https://faceio.net" target="_blank" class="text-decoration-underline text-primary">faceio.net</a>. Nhập ID để quét camera thật với FaceIO, hoặc bỏ trống để test offline.
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- face-api.js is fully self-hosted, no config panel required -->
 
         <div class="row g-4">
             <!-- Left Panel: Instructions -->
@@ -323,29 +310,16 @@
 </div>
 
 @section Scripts {
-<script src="https://cdn.faceio.net/fio.js"></script>
-<script>
-    window.FACEIO_APP_ID = "@Configuration["FaceIO:AppId"]";
-</script>
+<!-- face-api.js Library loaded locally -->
+<script src="/lib/face-api/face-api.min.js"></script>
 <script src="~/js/faceid.js" asp-append-version="true"></script>
 <script>
     const employeeId = @Model.EmployeeId;
     const employeeEmail = '@Model.Email';
     const employeeUsername = '@Model.Username';
-    // Sync the UI App ID input to window.FACEIO_APP_ID so CSMSFaceIO uses it.
-    // If the input is empty, falls back to CentralizedFaceIOConfig.
-    const faceioAppIdInput = document.getElementById('faceioAppId');
-    if (faceioAppIdInput) {
-        faceioAppIdInput.addEventListener('change', () => {
-            const val = faceioAppIdInput.value.trim();
-            window.FACEIO_APP_ID = val || undefined;
-        });
-    }
     let webcamStream = null;
     let isScanning = false;
     let scanInterval = null;
-    let faceDetectorInstance = null;
-    let lastVideoTime = -1;
     let capturedImageBase64 = null;
     let savedFacialId = null;
 
@@ -409,99 +383,14 @@
         stopWebcam();
     });
 
-    // Lazy-load MediaPipe Face Detector on-demand
-    async function getFaceDetector() {
-        if (faceDetectorInstance) return faceDetectorInstance;
-        
-        // Dynamically import the ES module bundle from jsdelivr
-        const { FaceDetector, FilesetResolver } = await import("https://cdn.jsdelivr.net/npm/@@mediapipe/tasks-vision@0.10.8/vision_bundle.mjs");
-        
-        // Locate WASM binaries
-        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@@mediapipe/tasks-vision@0.10.8/wasm");
-        
-        // Initialize face detector short range model (BlazeFace short range)
-        faceDetectorInstance = await FaceDetector.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite"
-            },
-            runningMode: "VIDEO"
-        });
-        
-        return faceDetectorInstance;
-    }
-
-    // Start scan flow - use centralized App ID (or UI override if set)
+    // Start scan flow
     function startBiometricScan() {
         if (isScanning) return;
-
-        // Sync UI input to window.FACEIO_APP_ID before reading it
-        const inputVal = document.getElementById('faceioAppId')?.value?.trim();
-        if (inputVal) {
-            window.FACEIO_APP_ID = inputVal;
-        } else {
-            // Clear override so centralized config is used
-            window.FACEIO_APP_ID = undefined;
-        }
-
-        const appId = CSMSFaceIO.getAppId();
-
-        if (appId) {
-            runRealFaceIO(appId);
-        } else {
-            runSimulatedScan();
-        }
+        runRealScan();
     }
 
-    // Run real FaceIO enroll flow using CSMSFaceIO shared script
-    function runRealFaceIO(appId) {
-        const statusMsg = document.getElementById('statusMessage');
-        const video = document.getElementById('webcamView');
-        statusMsg.textContent = "Trạng thái: Đang kết nối FaceIO...";
-        statusMsg.className = "w-100 text-center status-bar status-scanning";
-
-        CSMSFaceIO.enroll({
-            appId: appId,
-            username: employeeUsername,
-            employeeId: employeeId,
-            email: employeeEmail,
-            onSuccess: (facialId, isSimulated) => {
-                captureFaceSnapshot(video);
-                savedFacialId = facialId;
-                
-                const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
-                confirmModal.show();
-            },
-            onError: (errorMessage) => {
-                statusMsg.textContent = errorMessage;
-                statusMsg.className = "w-100 text-center status-bar status-error";
-            }
-        });
-    }
-
-    // Capture face frame to hidden canvas and convert to base64 for preview
-    function captureFaceSnapshot(video) {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            
-            // Mirror horizontal to align with camera preview
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-            
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            capturedImageBase64 = canvas.toDataURL('image/jpeg');
-            document.getElementById('capturedFaceImg').src = capturedImageBase64;
-        } catch (err) {
-            console.error("Lỗi chụp ảnh khuôn mặt:", err);
-            document.getElementById('capturedFaceImg').src = "https://placehold.co/400x300?text=Camera+Snapshot+Error";
-        }
-    }
-
-    // Run real-time face validation via MediaPipe Face Detector (fallback if no FaceIO)
-    async function runSimulatedScan() {
+    // Run real-time face validation via face-api.js
+    async function runRealScan() {
         isScanning = true;
         const btnScan = document.getElementById('btnStartScan');
         const chkAgreement = document.getElementById('chkAgreement');
@@ -517,15 +406,15 @@
         cameraFrame.classList.add('scanning-active');
         progressContainer.classList.remove('d-none');
         
-        statusMsg.textContent = "Trạng thái: Đang khởi tạo mô hình nhận dạng khuôn mặt (MediaPipe)...";
+        statusMsg.textContent = "Trạng thái: Đang khởi tạo mô hình nhận dạng khuôn mặt...";
         statusMsg.className = "w-100 text-center status-bar status-scanning";
 
-        let detector;
         try {
-            detector = await getFaceDetector();
+            await CSMSFaceAPI.loadModels();
         } catch (err) {
-            console.warn("Không thể khởi tạo MediaPipe FaceDetector. Sử dụng quét mô phỏng dự phòng...", err);
-            runLegacySimulation();
+            statusMsg.textContent = "Lỗi: Không thể tải mô hình nhận diện khuôn mặt.";
+            statusMsg.className = "w-100 text-center status-bar status-error";
+            resetUI();
             return;
         }
 
@@ -534,6 +423,7 @@
 
         let percent = 0;
         progressBar.style.width = `0%`;
+        let lastDescriptor = null;
 
         scanInterval = setInterval(async () => {
             if (!isScanning) {
@@ -542,109 +432,49 @@
             }
 
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const now = performance.now();
-                if (video.currentTime !== lastVideoTime) {
-                    lastVideoTime = video.currentTime;
+                try {
+                    const detection = await CSMSFaceAPI.detectFace(video);
+                    const validation = CSMSFaceAPI.validatePosition(detection, video);
 
-                    try {
-                        const detections = detector.detectForVideo(video, now).detections;
+                    statusMsg.textContent = "Trạng thái: " + validation.message;
 
-                        if (detections && detections.length === 1) {
-                            const detection = detections[0];
-                            const box = detection.boundingBox;
+                    if (validation.valid) {
+                        percent += 5;
+                        if (percent > 100) percent = 100;
 
-                            // Bounding Box checks:
-                            // Check if face borders are too close to the edges of camera view (meaning it is a cut-off half face)
-                            const edgeMargin = 20; // 20px padding from any border
-                            const isNearEdge = box.originX <= edgeMargin || 
-                                               box.originY <= edgeMargin || 
-                                               (box.originX + box.width) >= (video.videoWidth - edgeMargin) || 
-                                               (box.originY + box.height) >= (video.videoHeight - edgeMargin);
+                        progressBar.style.width = `${percent}%`;
+                        progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
+                        statusMsg.className = "w-100 text-center status-bar status-scanning text-success fw-bold";
+                        
+                        lastDescriptor = Array.from(detection.descriptor);
 
-                            // Check face size: Must be large enough (e.g. at least 20% of webcam frame width)
-                            const isTooSmall = box.width < (video.videoWidth * 0.20);
+                        if (percent >= 100) {
+                            clearInterval(scanInterval);
+                            isScanning = false;
 
-                            if (isNearEdge) {
-                                statusMsg.textContent = "CẢNH BÁO: Khuôn mặt bị lệch hoặc bị khuất (chỉ đưa một nửa khuôn mặt)!";
-                                statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                                progressText.textContent = "Vui lòng đưa đầy đủ khuôn mặt và giữ ở chính giữa khung camera.";
-                            } else if (isTooSmall) {
-                                statusMsg.textContent = "CẢNH BÁO: Di chuyển khuôn mặt lại gần camera hơn!";
-                                statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                                progressText.textContent = "Vị trí quá xa. Vui lòng di chuyển sát hơn.";
-                            } else {
-                                // Full features detected & well positioned. Advance progress.
-                                percent += 5;
-                                if (percent > 100) percent = 100;
+                            cameraFrame.classList.remove('scanning-active');
+                            statusMsg.textContent = "Trạng thái: Nhận diện thành công! Vui lòng xác nhận...";
+                            statusMsg.className = "w-100 text-center status-bar status-success";
 
-                                progressBar.style.width = `${percent}%`;
-                                progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
-                                statusMsg.textContent = "Trạng thái: Điểm đặc điểm đầy đủ. Giữ vị trí...";
-                                statusMsg.className = "w-100 text-center status-bar status-scanning text-success fw-bold";
+                            capturedImageBase64 = CSMSFaceAPI.captureSnapshot(video);
+                            document.getElementById('capturedFaceImg').src = capturedImageBase64;
+                            savedFacialId = JSON.stringify(lastDescriptor);
 
-                                if (percent >= 100) {
-                                    clearInterval(scanInterval);
-                                    isScanning = false;
-
-                                    cameraFrame.classList.remove('scanning-active');
-                                    statusMsg.textContent = "Trạng thái: Nhận diện thành công! Vui lòng xác nhận...";
-                                    statusMsg.className = "w-100 text-center status-bar status-success";
-
-                                    // Capture webcam snapshot for validation popup
-                                    captureFaceSnapshot(video);
-
-                                    // Open confirmation modal
-                                    savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
-                                    const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
-                                    confirmModal.show();
-                                }
-                            }
-                        } else if (detections && detections.length > 1) {
-                            statusMsg.textContent = "CẢNH BÁO: Phát hiện nhiều hơn 1 khuôn mặt trong khung hình!";
-                            statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                            progressText.textContent = "Đảm bảo chỉ có 1 người trước camera quét.";
-                        } else {
-                            statusMsg.textContent = "CẢNH BÁO: Không tìm thấy khuôn mặt hoặc mặt bị che khuất!";
-                            statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                            progressText.textContent = "Vui lòng giữ tư thế nhìn thẳng trực diện.";
+                            const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
+                            confirmModal.show();
                         }
-                    } catch (detectErr) {
-                        console.error("Lỗi trong vòng lặp phát hiện:", detectErr);
+                    } else {
+                        // Slowly decay progress if face is out of view or invalid
+                        percent = Math.max(0, percent - 2);
+                        progressBar.style.width = `${percent}%`;
+                        progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
+                        statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
                     }
+                } catch (detectErr) {
+                    console.error("Lỗi trong vòng lặp phát hiện:", detectErr);
                 }
             }
-        }, 120);
-    }
-
-    // Legacy simulation fallback in case CDN loading fails
-    function runLegacySimulation() {
-        let percent = 0;
-        const progressBar = document.getElementById('scanProgressBar');
-        const progressText = document.getElementById('scanProgressText');
-        const statusMsg = document.getElementById('statusMessage');
-        const video = document.getElementById('webcamView');
-
-        scanInterval = setInterval(() => {
-            percent += 4;
-            progressBar.style.width = `${percent}%`;
-            progressText.textContent = `Đang phân tích các điểm đặc trưng khuôn mặt (${percent}%)...`;
-
-            if (percent >= 100) {
-                clearInterval(scanInterval);
-                isScanning = false;
-
-                const cameraFrame = document.getElementById('cameraFrame');
-                cameraFrame.classList.remove('scanning-active');
-                statusMsg.textContent = "Trạng thái: Phân tích thành công! Chờ xác nhận...";
-                statusMsg.className = "w-100 text-center status-bar status-success";
-
-                captureFaceSnapshot(video);
-
-                savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
-                const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
-                confirmModal.show();
-            }
-        }, 120);
+        }, 200);
     }
 
     // Confirm scan & Save Face ID to database
@@ -720,7 +550,8 @@
             scanInterval = null;
         }
         document.getElementById('chkAgreement').disabled = false;
-        document.getElementById('btnStartScan').disabled = false;
+        document.getElementById('chkAgreement').checked = false;
+        document.getElementById('btnStartScan').disabled = true;
         document.getElementById('scanProgressContainer').classList.add('d-none');
         document.getElementById('scanProgressBar').style.width = '0%';
         document.getElementById('cameraFrame').classList.remove('scanning-active');

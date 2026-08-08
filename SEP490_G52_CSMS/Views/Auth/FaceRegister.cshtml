@@ -3,11 +3,8 @@
     ViewData["Title"] = "Đăng ký Khuôn mặt";
 }
 
-<!-- FaceIO Library (page-specific, not needed on other pages) -->
-<script src="https://cdn.faceio.net/fio.js"></script>
-<script>
-    window.FACEIO_APP_ID = "@Configuration["FaceIO:AppId"]";
-</script>
+<!-- face-api.js Library loaded locally -->
+<script src="/lib/face-api/face-api.min.js"></script>
 <script src="~/js/faceid.js" asp-append-version="true"></script>
 
 <style>
@@ -323,17 +320,12 @@
 </div>
 
 <script>
-    // Centralized FaceIO configuration read from faceid.js
-    const FACEIO_APP_ID = CSMSFaceIO.getAppId();
-
     const employeeId = @Model.EmployeeId;
     const employeeEmail = '@Model.Email';
     const employeeUsername = '@Model.Username';
     let webcamStream = null;
     let isScanning = false;
     let scanInterval = null;
-    let faceDetectorInstance = null;
-    let lastVideoTime = -1;
     let capturedImageBase64 = null;
     let savedFacialId = null;
 
@@ -393,78 +385,12 @@
         stopWebcam();
     });
 
-    async function getFaceDetector() {
-        if (faceDetectorInstance) return faceDetectorInstance;
-
-        const { FaceDetector, FilesetResolver } = await import("https://cdn.jsdelivr.net/npm/@@mediapipe/tasks-vision@0.10.8/vision_bundle.mjs");
-        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@@mediapipe/tasks-vision@0.10.8/wasm");
-
-        faceDetectorInstance = await FaceDetector.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite"
-            },
-            runningMode: "VIDEO"
-        });
-
-        return faceDetectorInstance;
-    }
-
     function startBiometricScan() {
         if (isScanning) return;
-
-        if (FACEIO_APP_ID) {
-            runRealFaceIO(FACEIO_APP_ID);
-        } else {
-            runSimulatedScan();
-        }
+        runRealScan();
     }
 
-    function runRealFaceIO(appId) {
-        const statusMsg = document.getElementById('statusMessage');
-        const video = document.getElementById('webcamView');
-        statusMsg.textContent = "Trạng thái: Đang kết nối FaceIO...";
-        statusMsg.className = "w-100 text-center status-bar status-scanning";
-
-        CSMSFaceIO.enroll({
-            appId: appId,
-            username: employeeUsername,
-            employeeId: employeeId,
-            email: employeeEmail,
-            onSuccess: (facialId, isSimulated) => {
-                captureFaceSnapshot(video);
-                savedFacialId = facialId;
-
-                const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
-                confirmModal.show();
-            },
-            onError: (errorMessage) => {
-                statusMsg.textContent = errorMessage;
-                statusMsg.className = "w-100 text-center status-bar status-error";
-            }
-        });
-    }
-
-    function captureFaceSnapshot(video) {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            capturedImageBase64 = canvas.toDataURL('image/jpeg');
-            document.getElementById('capturedFaceImg').src = capturedImageBase64;
-        } catch (err) {
-            console.error("Lỗi chụp ảnh khuôn mặt:", err);
-            document.getElementById('capturedFaceImg').src = "https://placehold.co/400x300?text=Camera+Snapshot+Error";
-        }
-    }
-
-    async function runSimulatedScan() {
+    async function runRealScan() {
         isScanning = true;
         const btnScan = document.getElementById('btnStartScan');
         const chkAgreement = document.getElementById('chkAgreement');
@@ -480,15 +406,15 @@
         cameraFrame.classList.add('scanning-active');
         progressContainer.classList.remove('d-none');
 
-        statusMsg.textContent = "Trạng thái: Đang khởi tạo mô hình nhận dạng khuôn mặt (MediaPipe)...";
+        statusMsg.textContent = "Trạng thái: Đang khởi tạo mô hình nhận dạng khuôn mặt...";
         statusMsg.className = "w-100 text-center status-bar status-scanning";
 
-        let detector;
         try {
-            detector = await getFaceDetector();
+            await CSMSFaceAPI.loadModels();
         } catch (err) {
-            console.warn("Không thể khởi tạo MediaPipe FaceDetector. Sử dụng quét mô phỏng dự phòng...", err);
-            runLegacySimulation();
+            statusMsg.textContent = "Lỗi: Không thể tải mô hình nhận diện khuôn mặt.";
+            statusMsg.className = "w-100 text-center status-bar status-error";
+            resetUI();
             return;
         }
 
@@ -497,6 +423,7 @@
 
         let percent = 0;
         progressBar.style.width = `0%`;
+        let lastDescriptor = null;
 
         scanInterval = setInterval(async () => {
             if (!isScanning) {
@@ -505,104 +432,49 @@
             }
 
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                const now = performance.now();
-                if (video.currentTime !== lastVideoTime) {
-                    lastVideoTime = video.currentTime;
+                try {
+                    const detection = await CSMSFaceAPI.detectFace(video);
+                    const validation = CSMSFaceAPI.validatePosition(detection, video);
 
-                    try {
-                        const detections = detector.detectForVideo(video, now).detections;
+                    statusMsg.textContent = "Trạng thái: " + validation.message;
 
-                        if (detections && detections.length === 1) {
-                            const detection = detections[0];
-                            const box = detection.boundingBox;
+                    if (validation.valid) {
+                        percent += 5;
+                        if (percent > 100) percent = 100;
 
-                            const edgeMargin = 20;
-                            const isNearEdge = box.originX <= edgeMargin ||
-                                               box.originY <= edgeMargin ||
-                                               (box.originX + box.width) >= (video.videoWidth - edgeMargin) ||
-                                               (box.originY + box.height) >= (video.videoHeight - edgeMargin);
+                        progressBar.style.width = `${percent}%`;
+                        progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
+                        statusMsg.className = "w-100 text-center status-bar status-scanning text-success fw-bold";
+                        
+                        lastDescriptor = Array.from(detection.descriptor);
 
-                            const isTooSmall = box.width < (video.videoWidth * 0.20);
+                        if (percent >= 100) {
+                            clearInterval(scanInterval);
+                            isScanning = false;
 
-                            if (isNearEdge) {
-                                statusMsg.textContent = "CẢNH BÁO: Khuôn mặt bị lệch hoặc bị khuất (chỉ đưa một nửa khuôn mặt)!";
-                                statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                                progressText.textContent = "Vui lòng đưa đầy đủ khuôn mặt và giữ ở chính giữa khung camera.";
-                            } else if (isTooSmall) {
-                                statusMsg.textContent = "CẢNH BÁO: Di chuyển khuôn mặt lại gần camera hơn!";
-                                statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                                progressText.textContent = "Vị trí quá xa. Vui lòng di chuyển sát hơn.";
-                            } else {
-                                percent += 5;
-                                if (percent > 100) percent = 100;
+                            cameraFrame.classList.remove('scanning-active');
+                            statusMsg.textContent = "Trạng thái: Nhận diện thành công! Vui lòng xác nhận...";
+                            statusMsg.className = "w-100 text-center status-bar status-success";
 
-                                progressBar.style.width = `${percent}%`;
-                                progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
-                                statusMsg.textContent = "Trạng thái: Điểm đặc điểm đầy đủ. Giữ vị trí...";
-                                statusMsg.className = "w-100 text-center status-bar status-scanning text-success fw-bold";
+                            capturedImageBase64 = CSMSFaceAPI.captureSnapshot(video);
+                            document.getElementById('capturedFaceImg').src = capturedImageBase64;
+                            savedFacialId = JSON.stringify(lastDescriptor);
 
-                                if (percent >= 100) {
-                                    clearInterval(scanInterval);
-                                    isScanning = false;
-
-                                    cameraFrame.classList.remove('scanning-active');
-                                    statusMsg.textContent = "Trạng thái: Nhận diện thành công! Vui lòng xác nhận...";
-                                    statusMsg.className = "w-100 text-center status-bar status-success";
-
-                                    captureFaceSnapshot(video);
-
-                                    // Use unique simulated ID based on username
-                                    savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
-                                    const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
-                                    confirmModal.show();
-                                }
-                            }
-                        } else if (detections && detections.length > 1) {
-                            statusMsg.textContent = "CẢNH BÁO: Phát hiện nhiều hơn 1 khuôn mặt trong khung hình!";
-                            statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                            progressText.textContent = "Đảm bảo chỉ có 1 người trước camera quét.";
-                        } else {
-                            statusMsg.textContent = "CẢNH BÁO: Không tìm thấy khuôn mặt hoặc mặt bị che khuất!";
-                            statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
-                            progressText.textContent = "Vui lòng giữ tư thế nhìn thẳng trực diện.";
+                            const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
+                            confirmModal.show();
                         }
-                    } catch (detectErr) {
-                        console.error("Lỗi trong vòng lặp phát hiện:", detectErr);
+                    } else {
+                        // Slowly decay progress if face is out of view or invalid
+                        percent = Math.max(0, percent - 2);
+                        progressBar.style.width = `${percent}%`;
+                        progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
+                        statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
                     }
+                } catch (detectErr) {
+                    console.error("Lỗi trong vòng lặp phát hiện:", detectErr);
                 }
             }
-        }, 120);
-    }
-
-    function runLegacySimulation() {
-        let percent = 0;
-        const progressBar = document.getElementById('scanProgressBar');
-        const progressText = document.getElementById('scanProgressText');
-        const statusMsg = document.getElementById('statusMessage');
-        const video = document.getElementById('webcamView');
-
-        scanInterval = setInterval(() => {
-            percent += 4;
-            progressBar.style.width = `${percent}%`;
-            progressText.textContent = `Đang phân tích các điểm đặc trưng khuôn mặt (${percent}%)...`;
-
-            if (percent >= 100) {
-                clearInterval(scanInterval);
-                isScanning = false;
-
-                const cameraFrame = document.getElementById('cameraFrame');
-                cameraFrame.classList.remove('scanning-active');
-                statusMsg.textContent = "Trạng thái: Phân tích thành công! Chờ xác nhận...";
-                statusMsg.className = "w-100 text-center status-bar status-success";
-
-                captureFaceSnapshot(video);
-
-                // Use unique simulated ID based on username
-                savedFacialId = "fio_sim_" + employeeUsername.trim().toLowerCase();
-                const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
-                confirmModal.show();
-            }
-        }, 120);
+        }, 200);
     }
 
     async function confirmAndSaveFace() {
@@ -675,7 +547,8 @@
             scanInterval = null;
         }
         document.getElementById('chkAgreement').disabled = false;
-        document.getElementById('btnStartScan').disabled = false;
+        document.getElementById('chkAgreement').checked = false;
+        document.getElementById('btnStartScan').disabled = true;
         document.getElementById('scanProgressContainer').classList.add('d-none');
         document.getElementById('scanProgressBar').style.width = '0%';
         document.getElementById('cameraFrame').classList.remove('scanning-active');
