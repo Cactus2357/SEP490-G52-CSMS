@@ -361,6 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/SEP490_G52_CSMS/rep/uc18.txt
 /SEP490_G52_CSMS.Tests
-/SEP490_G52_CSMS/rep
+/SEP490_G52_CSMS/private
