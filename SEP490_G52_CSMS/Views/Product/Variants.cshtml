@@ -50,9 +50,9 @@
             <table class="table align-middle variant-table m-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 40%;">Tên Biến Thể <i class="bi bi-caret-down-fill"></i></th>
-                        <th style="width: 40%;">Giá Bán <i class="bi bi-caret-down-fill"></i></th>
-                        <th style="width: 20%;" class="text-center">Thao Tác</th>
+                        <th style="width: 35%;">Tên Biến Thể <i class="bi bi-caret-down-fill"></i></th>
+                        <th style="width: 35%;">Giá Bán <i class="bi bi-caret-down-fill"></i></th>
+                        <th style="width: 30%;" class="text-center">Thao Tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,17 +64,21 @@
                                 <td>@item.SizeVariant</td>
                                 <td>@item.SellingPrice.ToString("N0")</td>
                                 <td class="text-center">
-                                    <form asp-action="DeleteVariant" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa biến thể này?');">
-                                        <input type="hidden" name="variantId" value="@item.VariantId" />
-                                        <input type="hidden" name="productId" value="@Model.ProductId" />
-                                        <button type="submit" class="action-btn text-danger" title="Xóa">
-                                            <i class="bi bi-trash-fill fs-5"></i>
-                                        </button>
-                                    </form>
-                                    <button type="button" class="action-btn text-dark ms-2" title="Sửa" 
+                                    <button type="button" class="action-btn text-success border-success" title="Định lượng nguyên liệu" 
+                                            onclick="openRecipeModal(@item.VariantId, '@item.SizeVariant')">
+                                        <i class="bi bi-cup-hot fs-5"></i>
+                                    </button>
+                                    <button type="button" class="action-btn text-dark border-dark ms-2" title="Sửa" 
                                             onclick="openEditModal(@item.VariantId, '@item.SizeVariant', @item.SellingPrice)">
                                         <i class="bi bi-pencil-square fs-5"></i>
                                     </button>
+                                    <form asp-action="DeleteVariant" method="post" class="d-inline ms-2" onsubmit="return confirm('Bạn có chắc chắn muốn xóa biến thể này?');">
+                                        <input type="hidden" name="variantId" value="@item.VariantId" />
+                                        <input type="hidden" name="productId" value="@Model.ProductId" />
+                                        <button type="submit" class="action-btn text-danger border-danger" title="Xóa">
+                                            <i class="bi bi-trash-fill fs-5"></i>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         }
@@ -154,6 +158,88 @@
     </div>
 </div>
 
+<!-- Recipe Modal (Screen B) -->
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 rounded-4">
+            <div class="modal-header bg-dark text-white rounded-top-4">
+                <h5 class="modal-title fw-bold" id="recipeModalLabel">
+                    QUẢN LÝ SỐ LƯỢNG NGUYÊN LIỆU: @Model.ProductName - <span id="recipeModalVariantName" class="text-warning"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row">
+                    <!-- Left Panel: Input Form -->
+                    <div class="col-lg-5 col-md-12 border-end pe-lg-4 mb-4 mb-lg-0">
+                        <h5 class="border-bottom pb-2 mb-3 fw-bold text-dark">Nhập nguyên liệu cần dùng</h5>
+                        
+                        <div class="mb-3 position-relative">
+                            <label class="form-label fw-bold text-secondary small">Tên nguyên liệu <span class="text-danger">*</span></label>
+                            <input type="text" id="materialSearchInput" class="form-control py-2 shadow-sm" placeholder="Nhập/ Chọn tên NgL" autocomplete="off" />
+                            <div id="materialAutocompleteDropdown" class="autocomplete-dropdown shadow rounded border d-none"></div>
+                            <input type="hidden" id="selectedMaterialId" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-secondary small">Loại nguyên liệu</label>
+                            <input type="text" id="materialCategoryInput" class="form-control bg-light py-2" placeholder="Thô/ Thành phẩm..." readonly />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-secondary small">Số lượng cần <span class="text-danger">*</span></label>
+                            <input type="number" id="materialQtyInput" class="form-control py-2 shadow-sm" placeholder="Nhập số lượng cần" min="0.01" step="any" />
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small">Đơn vị</label>
+                            <input type="text" id="materialUnitInput" class="form-control bg-light py-2" placeholder="Gam/ml" readonly />
+                        </div>
+                        
+                        <div class="alert alert-danger-custom text-danger small mb-4 py-2 px-3 border border-danger-subtle rounded bg-danger-subtle">
+                            Nhập những loại nguyên liệu cần để pha chế đồ uống. <br/>
+                            Số lượng nguyên liệu là số lượng cần dùng để pha chế một ly đồ uống.
+                        </div>
+                        
+                        <button type="button" id="btnAddRecipeLine" class="btn btn-dark w-100 py-2 fw-bold transition-all shadow-sm">
+                            Thêm vào danh sách
+                        </button>
+                    </div>
+                    
+                    <!-- Right Panel: Recipe Line Table -->
+                    <div class="col-lg-7 col-md-12 ps-lg-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="m-0 fw-bold text-dark">Bảng công thức thành phần</h5>
+                            <span class="badge bg-secondary rounded-pill fs-7" id="recipeItemCount">0 dòng</span>
+                        </div>
+                        
+                        <div class="table-responsive border rounded bg-white shadow-sm" style="max-height: 380px;">
+                            <table class="table table-hover align-middle m-0" id="recipeTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 10%;">STT</th>
+                                        <th style="width: 40%;">Tên nguyên liệu</th>
+                                        <th style="width: 20%;">Loại nguyên liệu</th>
+                                        <th style="width: 20%;">Số lượng cần dùng</th>
+                                        <th style="width: 10%;" class="text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recipeTableBody">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top p-3 d-flex justify-content-end gap-2 rounded-bottom-4">
+                <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" id="btnSaveRecipe" class="btn btn-primary px-4 py-2 fw-bold shadow-sm">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .variant-page {
         padding: 20px;
@@ -178,10 +264,43 @@
         background: #f0f0f0;
         transform: translateY(-2px);
     }
+    
+    /* Autocomplete dropdown styles */
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        z-index: 1050;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .autocomplete-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.9rem;
+    }
+    .autocomplete-item:hover, .autocomplete-item.active {
+        background-color: #e9ecef;
+    }
+    .alert-danger-custom {
+        color: #842029;
+        background-color: #f8d7da;
+        border-color: #f5c2c7;
+        font-size: 0.85rem;
+    }
 </style>
 
 @section Scripts {
     <script>
+        let recipeLines = [];
+        let currentVariantId = 0;
+        let selectedMaterial = null;
+        let activeIndex = -1;
+        let debounceTimer;
+
         function openEditModal(id, size, price) {
             document.getElementById('editVariantId').value = id;
             document.getElementById('editSizeVariant').value = size;
@@ -190,5 +309,252 @@
             var modal = new bootstrap.Modal(document.getElementById('editVariantModal'));
             modal.show();
         }
+
+        // Open recipe management modal (Screen B)
+        function openRecipeModal(variantId, sizeVariant) {
+            currentVariantId = variantId;
+            document.getElementById('recipeModalVariantName').textContent = sizeVariant;
+            clearRecipeInputs();
+            recipeLines = [];
+            renderRecipeTable();
+
+            // Fetch existing recipe
+            $.ajax({
+                url: '/Product/GetRecipe',
+                type: 'GET',
+                data: { variantId: variantId },
+                success: function(data) {
+                    recipeLines = data;
+                    renderRecipeTable();
+                    var modal = new bootstrap.Modal(document.getElementById('recipeModal'));
+                    modal.show();
+                },
+                error: function() {
+                    alert('Lỗi tải công thức pha chế.');
+                }
+            });
+        }
+
+        // Autocomplete material lookup
+        $('#materialSearchInput').on('input', function() {
+            clearTimeout(debounceTimer);
+            const query = $(this).val().trim();
+            
+            selectedMaterial = null;
+            $('#selectedMaterialId').val('');
+            $('#materialCategoryInput').val('');
+            $('#materialUnitInput').val('');
+            activeIndex = -1;
+
+            if (query.length < 1) {
+                $('#materialAutocompleteDropdown').addClass('d-none').empty();
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                $.ajax({
+                    url: '/Product/SearchMaterials',
+                    type: 'GET',
+                    data: { term: query },
+                    success: function(data) {
+                        const dropdown = $('#materialAutocompleteDropdown');
+                        dropdown.empty();
+                        if (data.length === 0) {
+                            dropdown.addClass('d-none');
+                            return;
+                        }
+                        data.forEach(m => {
+                            const item = $('<div class="autocomplete-item"></div>')
+                                .text(`${m.materialName} (${m.materialCode} - NCC: ${m.supplier})`)
+                                .on('click', () => {
+                                    selectMaterialItem(m);
+                                });
+                            dropdown.append(item);
+                        });
+                        dropdown.removeClass('d-none');
+                    }
+                });
+            }, 200);
+        });
+
+        // Keyboard navigation for autocomplete list
+        $('#materialSearchInput').on('keydown', function(e) {
+            const dropdown = $('#materialAutocompleteDropdown');
+            if (dropdown.hasClass('d-none')) return;
+
+            const items = dropdown.find('.autocomplete-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = (activeIndex + 1) % items.length;
+                highlightActiveItem(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = (activeIndex - 1 + items.length) % items.length;
+                highlightActiveItem(items);
+            } else if (e.key === 'Enter') {
+                if (activeIndex !== -1) {
+                    e.preventDefault();
+                    items.eq(activeIndex).click();
+                }
+            }
+        });
+
+        function highlightActiveItem(items) {
+            items.removeClass('active');
+            if (activeIndex >= 0 && activeIndex < items.length) {
+                items.eq(activeIndex).addClass('active');
+            }
+        }
+
+        function selectMaterialItem(m) {
+            selectedMaterial = m;
+            $('#selectedMaterialId').val(m.materialId);
+            $('#materialSearchInput').val(m.materialName);
+            $('#materialCategoryInput').val(m.category);
+            $('#materialUnitInput').val(m.materialKind === "Dạng lỏng" ? "ml" : "Gam");
+            $('#materialAutocompleteDropdown').addClass('d-none').empty();
+            $('#materialQtyInput').focus();
+        }
+
+        // Close dropdown when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#materialSearchInput, #materialAutocompleteDropdown').length) {
+                $('#materialAutocompleteDropdown').addClass('d-none');
+            }
+        });
+
+        // Add line to recipe table
+        $('#btnAddRecipeLine').on('click', function() {
+            const materialId = parseInt($('#selectedMaterialId').val());
+            const materialName = $('#materialSearchInput').val().trim();
+            const category = $('#materialCategoryInput').val();
+            const qtyStr = $('#materialQtyInput').val();
+            const unit = $('#materialUnitInput').val() === "ml" ? "ml" : "g";
+
+            // AT2: Validate material matching suggestion
+            if (isNaN(materialId) || !selectedMaterial || selectedMaterial.materialName !== materialName) {
+                alert('Không tìm thấy nguyên liệu này trong hệ thống. Vui lòng chọn từ gợi ý.');
+                return;
+            }
+
+            // AT1: Validate positive quantity
+            const quantity = parseFloat(qtyStr);
+            if (isNaN(quantity) || quantity <= 0) {
+                alert('Số lượng phải là số dương.');
+                return;
+            }
+
+            // AT3: Check duplicates
+            const existingIndex = recipeLines.findIndex(line => line.materialId === materialId);
+            if (existingIndex !== -1) {
+                const confirmUpdate = confirm('Nguyên liệu này đã có trong công thức. Cập nhật số lượng thay vì thêm dòng mới?');
+                if (confirmUpdate) {
+                    recipeLines[existingIndex].quantity = quantity;
+                    recipeLines[existingIndex].unit = unit;
+                    renderRecipeTable();
+                    clearRecipeInputs();
+                }
+            } else {
+                recipeLines.push({
+                    materialId: materialId,
+                    materialName: materialName,
+                    category: category,
+                    quantity: quantity,
+                    unit: unit
+                });
+                renderRecipeTable();
+                clearRecipeInputs();
+            }
+        });
+
+        function clearRecipeInputs() {
+            selectedMaterial = null;
+            $('#selectedMaterialId').val('');
+            $('#materialSearchInput').val('');
+            $('#materialCategoryInput').val('');
+            $('#materialQtyInput').val('');
+            $('#materialUnitInput').val('');
+            activeIndex = -1;
+        }
+
+        function removeRecipeLine(materialId) {
+            recipeLines = recipeLines.filter(line => line.materialId !== materialId);
+            renderRecipeTable();
+        }
+
+        function renderRecipeTable() {
+            const tbody = $('#recipeTableBody');
+            tbody.empty();
+            if (recipeLines.length === 0) {
+                tbody.append('<tr><td colspan="5" class="text-center text-muted py-4">Chưa có nguyên liệu nào trong công thức.</td></tr>');
+                $('#recipeItemCount').text('0 dòng');
+                return;
+            }
+            recipeLines.forEach((item, index) => {
+                tbody.append(`
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${escapeHtml(item.materialName)}</td>
+                        <td>${escapeHtml(item.category)}</td>
+                        <td>${item.quantity} ${item.unit}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeRecipeLine(${item.materialId})">
+                                <i class="bi bi-x-circle fs-5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+            $('#recipeItemCount').text(recipeLines.length + ' dòng');
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Save entire recipe (bottom click)
+        $('#btnSaveRecipe').on('click', function() {
+            // AT4: Empty warning soft check
+            if (recipeLines.length === 0) {
+                const confirmEmptySave = confirm('Biến thể chưa có công thức pha chế, hệ thống sẽ không thể tự động trừ kho khi bán. Bạn vẫn muốn lưu?');
+                if (!confirmEmptySave) {
+                    return;
+                }
+            }
+
+            const payload = {
+                variantId: currentVariantId,
+                items: recipeLines.map(line => ({
+                    materialId: line.materialId,
+                    quantity: line.quantity
+                }))
+            };
+
+            $.ajax({
+                url: '/Product/SaveRecipe',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        $('#recipeModal').modal('hide');
+                        window.location.reload();
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function() {
+                    alert('Đã xảy ra lỗi khi lưu công thức.');
+                }
+            });
+        });
     </script>
 }

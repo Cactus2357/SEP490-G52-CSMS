@@ -343,6 +343,24 @@ namespace SEP490_G52_CSMS.Models
                 context.ProductVariants.AddRange(variants);
                 context.SaveChanges();
 
+                // ---------- 11.5 MATERIALS ----------
+                if (!context.Materials.Any())
+                {
+                    var materials = new List<Material>
+                    {
+                        new Material { MaterialCode = "MAT001", MaterialName = "Cà phê hột", MaterialKind = "Dạng đặc", Category = "Thô", Supplier = "Trung Nguyên", UnitPrice = 150000m, StorageUnit = "kg", Origin = "Buôn Ma Thuột" },
+                        new Material { MaterialCode = "MAT002", MaterialName = "Sữa đặc", MaterialKind = "Dạng lỏng", Category = "Thành phẩm", Supplier = "Vinamilk", UnitPrice = 35000m, StorageUnit = "lít" },
+                        new Material { MaterialCode = "MAT003", MaterialName = "Đường cát", MaterialKind = "Dạng đặc", Category = "Thành phẩm", Supplier = "Đường Biên Hòa", UnitPrice = 20000m, StorageUnit = "kg" },
+                        new Material { MaterialCode = "MAT004", MaterialName = "Sữa tươi ít đường", MaterialKind = "Dạng lỏng", Category = "Thành phẩm", Supplier = "Dalat Milk", UnitPrice = 42000m, StorageUnit = "lít" },
+                        new Material { MaterialCode = "MAT005", MaterialName = "Hạt sen tươi", MaterialKind = "Dạng đặc", Category = "Thô", Supplier = "Sen Việt", UnitPrice = 85000m, StorageUnit = "kg", Origin = "Đồng Tháp" },
+                        new Material { MaterialCode = "MAT006", MaterialName = "Đào ngâm", MaterialKind = "Dạng đặc", Category = "Thành phẩm", Supplier = "Kronos", UnitPrice = 65000m, StorageUnit = "kg" },
+                        new Material { MaterialCode = "MAT007", MaterialName = "Trà Oolong túi lọc", MaterialKind = "Dạng đặc", Category = "Thô", Supplier = "Phúc Long", UnitPrice = 120000m, StorageUnit = "kg" },
+                        new Material { MaterialCode = "MAT008", MaterialName = "Siro Bạc hà", MaterialKind = "Dạng lỏng", Category = "Thành phẩm", Supplier = "Monin", UnitPrice = 180000m, StorageUnit = "lít" }
+                    };
+                    context.Materials.AddRange(materials);
+                    context.SaveChanges();
+                }
+
                 // ---------- 12. BRANCH MENUS + MENU DETAILS ----------
                 var branchMenus = new List<BranchMenu>();
                 foreach (var branchId in allBranchIds)

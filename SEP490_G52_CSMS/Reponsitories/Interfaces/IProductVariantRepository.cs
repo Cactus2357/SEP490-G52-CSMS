@@ -11,5 +11,8 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         Task UpdateVariantAsync(ProductVariant variant);
         Task DeleteVariantAsync(ProductVariant variant);
         Task<bool> CanDeleteVariantAsync(int variantId);
+        Task<List<Material>> SearchMaterialsAsync(string term);
+        Task<List<Recipe>> GetRecipeAsync(int variantId);
+        Task SaveRecipeAsync(int variantId, List<Recipe> recipeItems);
     }
 }

@@ -137,5 +137,49 @@ namespace SEP490_G52_CSMS.Services
             await _variantRepository.DeleteVariantAsync(variant);
             return (true, "Xóa biến thể thành công.");
         }
+
+        public async Task<List<Material>> SearchMaterialsAsync(string term)
+        {
+            return await _variantRepository.SearchMaterialsAsync(term);
+        }
+
+        public async Task<List<Recipe>> GetRecipeAsync(int variantId)
+        {
+            return await _variantRepository.GetRecipeAsync(variantId);
+        }
+
+        public async Task<(bool Success, string Message)> SaveRecipeAsync(int variantId, List<(int MaterialId, decimal Quantity)> items)
+        {
+            var variant = await _variantRepository.GetVariantByIdAsync(variantId);
+            if (variant == null)
+            {
+                return (false, "Không tìm thấy biến thể.");
+            }
+
+            var recipeItems = new List<Recipe>();
+            foreach (var item in items)
+            {
+                if (item.Quantity <= 0)
+                {
+                    return (false, "Số lượng định lượng phải lớn hơn 0.");
+                }
+                recipeItems.Add(new Recipe
+                {
+                    VariantId = variantId,
+                    MaterialId = item.MaterialId,
+                    Quantity = item.Quantity
+                });
+            }
+
+            try
+            {
+                await _variantRepository.SaveRecipeAsync(variantId, recipeItems);
+                return (true, "Lưu công thức pha chế thành công.");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi lưu công thức: {ex.Message}");
+            }
+        }
     }
 }

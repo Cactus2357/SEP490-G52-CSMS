@@ -75,5 +75,52 @@ namespace SEP490_G52_CSMS.Repositories
 
             return !usedInOrders && !usedInMenus;
         }
+
+        public async Task<List<Material>> SearchMaterialsAsync(string term)
+        {
+            if (string.IsNullOrWhiteSpace(term))
+            {
+                return await _context.Materials.Take(10).ToListAsync();
+            }
+            return await _context.Materials
+                .Where(m => m.MaterialName.Contains(term))
+                .Take(20)
+                .ToListAsync();
+        }
+
+        public async Task<List<Recipe>> GetRecipeAsync(int variantId)
+        {
+            return await _context.Recipes
+                .Include(r => r.Material)
+                .Where(r => r.VariantId == variantId && r.BranchId == null)
+                .ToListAsync();
+        }
+
+        public async Task SaveRecipeAsync(int variantId, List<Recipe> recipeItems)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var existing = await _context.Recipes
+                    .Where(r => r.VariantId == variantId && r.BranchId == null)
+                    .ToListAsync();
+                _context.Recipes.RemoveRange(existing);
+
+                foreach (var item in recipeItems)
+                {
+                    item.VariantId = variantId;
+                    item.BranchId = null; // RManager saves global recipe
+                    await _context.Recipes.AddAsync(item);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }

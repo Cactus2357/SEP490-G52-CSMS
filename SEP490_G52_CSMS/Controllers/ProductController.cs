@@ -214,5 +214,62 @@ namespace SEP490_G52_CSMS.Controllers
 
             return RedirectToAction(nameof(Variants), new { id = productId });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> SearchMaterials(string? term)
+        {
+            var materials = await _variantService.SearchMaterialsAsync(term ?? string.Empty);
+            var result = materials.Select(m => new
+            {
+                materialId = m.MaterialId,
+                materialCode = m.MaterialCode,
+                materialName = m.MaterialName,
+                materialKind = m.MaterialKind,
+                category = m.Category,
+                storageUnit = m.StorageUnit
+            });
+            return Json(result);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRecipe(int variantId)
+        {
+            var recipe = await _variantService.GetRecipeAsync(variantId);
+            var result = recipe.Select(r => new
+            {
+                materialId = r.MaterialId,
+                materialName = r.Material?.MaterialName ?? string.Empty,
+                materialKind = r.Material?.MaterialKind ?? string.Empty,
+                category = r.Material?.Category ?? string.Empty,
+                quantity = r.Quantity,
+                unit = r.Material?.MaterialKind == "Dạng lỏng" ? "ml" : "g"
+            });
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveRecipe([FromBody] SaveRecipeRequest request)
+        {
+            if (request == null || request.VariantId <= 0)
+            {
+                return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
+            }
+
+            var items = request.Items.Select(i => (i.MaterialId, i.Quantity)).ToList();
+            var result = await _variantService.SaveRecipeAsync(request.VariantId, items);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+    }
+
+    public class SaveRecipeRequest
+    {
+        public int VariantId { get; set; }
+        public List<RecipeItemRequest> Items { get; set; } = new();
+    }
+
+    public class RecipeItemRequest
+    {
+        public int MaterialId { get; set; }
+        public decimal Quantity { get; set; }
     }
 }

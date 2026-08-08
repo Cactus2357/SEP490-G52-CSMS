@@ -25,6 +25,8 @@ namespace SEP490_G52_CSMS.Models
         public DbSet<MenuDetail> MenuDetails { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Material> Materials { get; set; }
+        public DbSet<Recipe> Recipes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -138,6 +140,28 @@ namespace SEP490_G52_CSMS.Models
             modelBuilder.Entity<ProductVariant>(entity =>
             {
                 entity.Property(e => e.SellingPrice).HasColumnType("decimal(18, 2)");
+            });
+
+            // Configure Material and Recipe relationships
+            modelBuilder.Entity<Material>(entity =>
+            {
+                entity.HasIndex(m => new { m.MaterialName, m.Supplier }).IsUnique();
+                entity.Property(m => m.UnitPrice).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<Recipe>(entity =>
+            {
+                entity.Property(r => r.Quantity).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(r => r.ProductVariant)
+                      .WithMany()
+                      .HasForeignKey(r => r.VariantId)
+                      .OnDelete(DeleteBehavior.Cascade); // Deleting variant deletes its recipe lines
+
+                entity.HasOne(r => r.Material)
+                      .WithMany()
+                      .HasForeignKey(r => r.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict); // Keep materials safe from automatic cascade
             });
 
             //base.OnModelCreating(modelBuilder);
