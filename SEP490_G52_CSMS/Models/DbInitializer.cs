@@ -23,9 +23,6 @@ namespace SEP490_G52_CSMS.Models
 
             try
             {
-                // Skip if already seeded beyond the base 3 branches or if CB004/CB005 already exist
-                if (context.Branches.Count() > 3 || context.Branches.Any(b => b.BranchId == "CB004" || b.BranchId == "CB005")) return;
-
                 // Seed RManager if it doesn't exist
                 if (!context.Employees.Any(e => e.Role == "RManager"))
                 {
@@ -45,6 +42,34 @@ namespace SEP490_G52_CSMS.Models
                         Status = "Active"
                     });
                     context.SaveChanges();
+                }
+
+                // Seed WarehouseManager if it doesn't exist
+                if (!context.Employees.Any(e => e.Role == "WarehouseManager"))
+                {
+                    context.Employees.Add(new Employee
+                    {
+                        FullName = "Warehouse Manager",
+                        Username = "wmanager",
+                        Password = Commons.DAT_PasswordHasher.HashPassword("12345678"),
+                        Email = "wmanager@gmail.com",
+                        PhoneNumber = "0911111111",
+                        CitizenId = "111111111111",
+                        DateOfBirth = new DateTime(1992, 1, 1),
+                        Address = "Central Warehouse",
+                        Role = "WarehouseManager",
+                        EmploymentType = "Full-time",
+                        BranchId = null,
+                        Status = "Active"
+                    });
+                    context.SaveChanges();
+                }
+
+                // Skip branch-specific seeding if already seeded beyond the base 3 branches or if CB004/CB005 already exist
+                if (context.Branches.Count() > 3 || context.Branches.Any(b => b.BranchId == "CB004" || b.BranchId == "CB005"))
+                {
+                    SeedMaterials(context);
+                    return;
                 }
 
                 // ---------- 1. BRANCHES (2 more, total 5) ----------
@@ -344,22 +369,7 @@ namespace SEP490_G52_CSMS.Models
                 context.SaveChanges();
 
                 // ---------- 11.5 MATERIALS ----------
-                if (!context.Materials.Any())
-                {
-                    var materials = new List<Material>
-                    {
-                        new Material { MaterialCode = "MAT001", MaterialName = "Cà phê hột", MaterialKind = "Dạng đặc", Category = "Thô", Supplier = "Trung Nguyên", UnitPrice = 150000m, StorageUnit = "kg", Origin = "Buôn Ma Thuột" },
-                        new Material { MaterialCode = "MAT002", MaterialName = "Sữa đặc", MaterialKind = "Dạng lỏng", Category = "Thành phẩm", Supplier = "Vinamilk", UnitPrice = 35000m, StorageUnit = "lít" },
-                        new Material { MaterialCode = "MAT003", MaterialName = "Đường cát", MaterialKind = "Dạng đặc", Category = "Thành phẩm", Supplier = "Đường Biên Hòa", UnitPrice = 20000m, StorageUnit = "kg" },
-                        new Material { MaterialCode = "MAT004", MaterialName = "Sữa tươi ít đường", MaterialKind = "Dạng lỏng", Category = "Thành phẩm", Supplier = "Dalat Milk", UnitPrice = 42000m, StorageUnit = "lít" },
-                        new Material { MaterialCode = "MAT005", MaterialName = "Hạt sen tươi", MaterialKind = "Dạng đặc", Category = "Thô", Supplier = "Sen Việt", UnitPrice = 85000m, StorageUnit = "kg", Origin = "Đồng Tháp" },
-                        new Material { MaterialCode = "MAT006", MaterialName = "Đào ngâm", MaterialKind = "Dạng đặc", Category = "Thành phẩm", Supplier = "Kronos", UnitPrice = 65000m, StorageUnit = "kg" },
-                        new Material { MaterialCode = "MAT007", MaterialName = "Trà Oolong túi lọc", MaterialKind = "Dạng đặc", Category = "Thô", Supplier = "Phúc Long", UnitPrice = 120000m, StorageUnit = "kg" },
-                        new Material { MaterialCode = "MAT008", MaterialName = "Siro Bạc hà", MaterialKind = "Dạng lỏng", Category = "Thành phẩm", Supplier = "Monin", UnitPrice = 180000m, StorageUnit = "lít" }
-                    };
-                    context.Materials.AddRange(materials);
-                    context.SaveChanges();
-                }
+                SeedMaterials(context);
 
                 // ---------- 12. BRANCH MENUS + MENU DETAILS ----------
                 var branchMenus = new List<BranchMenu>();
@@ -442,6 +452,242 @@ namespace SEP490_G52_CSMS.Models
             catch (Exception ex)
             {
                 logger.LogError(ex, "An error occurred while generating medium seed data.");
+            }
+        }
+
+        private static void SeedMaterials(CSMSAppDbContext context)
+        {
+            // Seed Categories first
+            if (!context.MaterialCategories.Any())
+            {
+                context.MaterialCategories.AddRange(new List<MaterialCategory>
+                {
+                    new MaterialCategory { CategoryName = "Cà phê", Description = "Các loại nguyên liệu cà phê thô hoặc hạt" },
+                    new MaterialCategory { CategoryName = "Sữa", Description = "Sữa đặc, sữa tươi và chế phẩm từ sữa" },
+                    new MaterialCategory { CategoryName = "Gia vị", Description = "Đường, muối, bột ngọt, siro hương vị" }
+                });
+                context.SaveChanges();
+            }
+
+            if (context.Materials.Any(m => m.MaterialCode.StartsWith("MAT")))
+            {
+                context.Recipes.RemoveRange(context.Recipes);
+                context.Materials.RemoveRange(context.Materials);
+                context.SaveChanges();
+            }
+
+            if (!context.Materials.Any())
+            {
+                var materials = new List<Material>
+                {
+                    new Material { MaterialCode = "NL001", MaterialName = "Cà phê hạt", MaterialKind = "Thô", Category = "Cà phê", PhysicalState = "Dạng đặc", Supplier = "Trung Nguyên", UnitPrice = 150000m, StorageUnit = "kg", StockQuantity = 500m, Origin = "Buôn Ma Thuột" },
+                    new Material { MaterialCode = "NL002", MaterialName = "Sữa đặc", MaterialKind = "Thành phẩm", Category = "Sữa", PhysicalState = "Dạng lỏng", Supplier = "Vinamilk", UnitPrice = 35000m, StorageUnit = "lít", StockQuantity = 200m },
+                    new Material { MaterialCode = "NL003", MaterialName = "Đường cát trắng", MaterialKind = "Thô", Category = "Gia vị", PhysicalState = "Dạng đặc", Supplier = "Đường Biên Hòa", UnitPrice = 20000m, StorageUnit = "kg", StockQuantity = 150m },
+                    new Material { MaterialCode = "NL004", MaterialName = "Sữa tươi ít đường", MaterialKind = "Thành phẩm", Category = "Sữa", PhysicalState = "Dạng lỏng", Supplier = "Dalat Milk", UnitPrice = 42000m, StorageUnit = "lít", StockQuantity = 300m },
+                    new Material { MaterialCode = "NL005", MaterialName = "Hạt sen tươi", MaterialKind = "Thô", Category = "Gia vị", PhysicalState = "Dạng đặc", Supplier = "Sen Việt", UnitPrice = 85000m, StorageUnit = "kg", StockQuantity = 80m, Origin = "Đồng Tháp" },
+                    new Material { MaterialCode = "NL006", MaterialName = "Đào ngâm", MaterialKind = "Thành phẩm", Category = "Gia vị", PhysicalState = "Dạng đặc", Supplier = "Kronos", UnitPrice = 65000m, StorageUnit = "kg", StockQuantity = 120m },
+                    new Material { MaterialCode = "NL007", MaterialName = "Trà Oolong túi lọc", MaterialKind = "Thô", Category = "Cà phê", PhysicalState = "Dạng đặc", Supplier = "Phúc Long", UnitPrice = 120000m, StorageUnit = "kg", StockQuantity = 100m },
+                    new Material { MaterialCode = "NL008", MaterialName = "Siro Bạc hà", MaterialKind = "Thành phẩm", Category = "Gia vị", PhysicalState = "Dạng lỏng", Supplier = "Monin", UnitPrice = 180000m, StorageUnit = "lít", StockQuantity = 60m }
+                };
+                context.Materials.AddRange(materials);
+                context.SaveChanges();
+            }
+
+            // Seed Warehouse Receipts matching the screenshot
+            if (!context.WarehouseReceipts.Any())
+            {
+                var caphe = context.Materials.FirstOrDefault(m => m.MaterialCode == "NL001");
+                var sua = context.Materials.FirstOrDefault(m => m.MaterialCode == "NL002");
+
+                if (caphe != null && sua != null)
+                {
+                    var r1 = new WarehouseReceipt
+                    {
+                        ReceiptCode = "PN-001",
+                        ImportDate = new DateTime(2026, 6, 12, 9, 30, 0),
+                        Supplier = "Trung Nguyên",
+                        TotalAmount = 75000000m,
+                        Status = "Đã nhập kho",
+                        DelivererName = "Nguyễn Văn A",
+                        DelivererPhone = "0397321999",
+                        ReceiverName = "Nguyễn Hữu B",
+                        CreatedBy = "Nguyễn Hữu B"
+                    };
+                    context.WarehouseReceipts.Add(r1);
+                    context.SaveChanges();
+
+                    context.WarehouseReceiptItems.Add(new WarehouseReceiptItem
+                    {
+                        ReceiptId = r1.ReceiptId,
+                        MaterialId = caphe.MaterialId,
+                        Quantity = 500m,
+                        UnitPrice = 150000m,
+                        Amount = 75000000m
+                    });
+
+                    var r2 = new WarehouseReceipt
+                    {
+                        ReceiptCode = "PN-002",
+                        ImportDate = new DateTime(2026, 6, 12, 14, 15, 0),
+                        Supplier = "Vinamilk",
+                        TotalAmount = 3500000m,
+                        Status = "Đã nhập kho",
+                        DelivererName = "Nguyễn Thị C",
+                        DelivererPhone = "0905123456",
+                        ReceiverName = "Nguyễn Hữu B",
+                        CreatedBy = "Nguyễn Hữu B"
+                    };
+                    context.WarehouseReceipts.Add(r2);
+                    context.SaveChanges();
+
+                    context.WarehouseReceiptItems.Add(new WarehouseReceiptItem
+                    {
+                        ReceiptId = r2.ReceiptId,
+                        MaterialId = sua.MaterialId,
+                        Quantity = 100m,
+                        UnitPrice = 35000m,
+                        Amount = 3500000m
+                    });
+
+                    var r3 = new WarehouseReceipt
+                    {
+                        ReceiptCode = "PN-003",
+                        ImportDate = new DateTime(2026, 6, 15, 10, 0, 0),
+                        Supplier = "Trung Nguyên",
+                        TotalAmount = 45000000m,
+                        Status = "Đã nhập kho",
+                        DelivererName = "Nguyễn Văn A",
+                        DelivererPhone = "0397321999",
+                        ReceiverName = "Nguyễn Hữu B",
+                        CreatedBy = "Nguyễn Hữu B"
+                    };
+                    context.WarehouseReceipts.Add(r3);
+                    context.SaveChanges();
+
+                    context.WarehouseReceiptItems.Add(new WarehouseReceiptItem
+                    {
+                        ReceiptId = r3.ReceiptId,
+                        MaterialId = caphe.MaterialId,
+                        Quantity = 300m,
+                        UnitPrice = 150000m,
+                        Amount = 45000000m
+                    });
+
+                    context.SaveChanges();
+                }
+            }
+
+            // Cleanup legacy receipts
+            var legacyReceipts = context.WarehouseReceipts.Where(r => r.DelivererName == "").ToList();
+            if (legacyReceipts.Any())
+            {
+                foreach (var r in legacyReceipts)
+                {
+                    r.DelivererName = r.Supplier == "Vinamilk" ? "Nguyễn Thị C" : "Nguyễn Văn A";
+                    r.DelivererPhone = r.Supplier == "Vinamilk" ? "0905123456" : "0397321999";
+                    r.ReceiverName = "Nguyễn Hữu B";
+                    r.CreatedBy = "Nguyễn Hữu B";
+                }
+                context.SaveChanges();
+            }
+
+            // Seed Branch Inventories for active branches
+            if (!context.BranchInventories.Any())
+            {
+                var materials = context.Materials.ToList();
+                var branchIds = new[] { "CB004", "CB005" };
+                
+                foreach (var branchId in branchIds)
+                {
+                    foreach (var m in materials)
+                    {
+                        decimal stock = m.MaterialCode == "NL001" ? 500m :
+                                        m.MaterialCode == "NL002" ? 200m :
+                                        m.MaterialCode == "NL003" ? 150m : 50m;
+                        
+                        context.BranchInventories.Add(new BranchInventory
+                        {
+                            BranchId = branchId,
+                            MaterialId = m.MaterialId,
+                            StockQuantity = stock,
+                            LowStockThreshold = 10m
+                        });
+                    }
+                }
+                context.SaveChanges();
+            }
+
+            if (!context.BranchSupplyRequests.Any())
+            {
+                var caphe = context.Materials.FirstOrDefault(m => m.MaterialCode == "NL001");
+                var sua = context.Materials.FirstOrDefault(m => m.MaterialCode == "NL002");
+                var duong = context.Materials.FirstOrDefault(m => m.MaterialCode == "NL003");
+
+                if (caphe != null && sua != null && duong != null)
+                {
+                    // YC-004: Đã xuất kho (Đang giao hàng)
+                    var y4 = new BranchSupplyRequest
+                    {
+                        RequestCode = "YC-004",
+                        BranchId = "CB004",
+                        RequestDate = new DateTime(2026, 6, 12, 10, 0, 0),
+                        Status = "Đã xuất kho",
+                        WarehouseNote = "Đang giao hàng",
+                        ApprovedBy = "Nguyễn Hữu B",
+                        ApprovedDate = new DateTime(2026, 6, 20, 14, 0, 0)
+                    };
+                    context.BranchSupplyRequests.Add(y4);
+                    context.SaveChanges();
+
+                    context.BranchSupplyRequestItems.AddRange(
+                        new BranchSupplyRequestItem { RequestId = y4.RequestId, MaterialId = caphe.MaterialId, QuantityRequested = 100m, QuantityReleased = 100m },
+                        new BranchSupplyRequestItem { RequestId = y4.RequestId, MaterialId = sua.MaterialId, QuantityRequested = 90m, QuantityReleased = 50m },
+                        new BranchSupplyRequestItem { RequestId = y4.RequestId, MaterialId = duong.MaterialId, QuantityRequested = 100m, QuantityReleased = 100m }
+                    );
+
+                    // YC-005: Đã hoàn thành (Đã giao hàng)
+                    var y5 = new BranchSupplyRequest
+                    {
+                        RequestCode = "YC-005",
+                        BranchId = "CB004",
+                        RequestDate = new DateTime(2026, 6, 12, 11, 0, 0),
+                        Status = "Đã hoàn thành",
+                        WarehouseNote = "Đã giao đủ",
+                        ApprovedBy = "Nguyễn Hữu B",
+                        ApprovedDate = new DateTime(2026, 6, 20, 14, 0, 0),
+                        DelivererName = "Mai Xuân A",
+                        DelivererPhone = "039783926",
+                        ReceivedDate = new DateTime(2026, 6, 20, 16, 30, 0)
+                    };
+                    context.BranchSupplyRequests.Add(y5);
+                    context.SaveChanges();
+
+                    context.BranchSupplyRequestItems.AddRange(
+                        new BranchSupplyRequestItem { RequestId = y5.RequestId, MaterialId = caphe.MaterialId, QuantityRequested = 100m, QuantityReleased = 100m },
+                        new BranchSupplyRequestItem { RequestId = y5.RequestId, MaterialId = sua.MaterialId, QuantityRequested = 90m, QuantityReleased = 50m },
+                        new BranchSupplyRequestItem { RequestId = y5.RequestId, MaterialId = duong.MaterialId, QuantityRequested = 100m, QuantityReleased = 100m }
+                    );
+
+                    // YC-006: Chờ duyệt
+                    var y6 = new BranchSupplyRequest
+                    {
+                        RequestCode = "YC-006",
+                        BranchId = "CB004",
+                        RequestDate = new DateTime(2026, 6, 15, 13, 24, 0),
+                        Status = "Chờ duyệt",
+                        WarehouseNote = ""
+                    };
+                    context.BranchSupplyRequests.Add(y6);
+                    context.SaveChanges();
+
+                    context.BranchSupplyRequestItems.AddRange(
+                        new BranchSupplyRequestItem { RequestId = y6.RequestId, MaterialId = caphe.MaterialId, QuantityRequested = 100m },
+                        new BranchSupplyRequestItem { RequestId = y6.RequestId, MaterialId = sua.MaterialId, QuantityRequested = 90m },
+                        new BranchSupplyRequestItem { RequestId = y6.RequestId, MaterialId = duong.MaterialId, QuantityRequested = 100m }
+                    );
+
+                    context.SaveChanges();
+                }
             }
         }
     }

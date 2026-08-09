@@ -22,6 +22,24 @@
             branchName = branch.BranchName;
         }
     }
+
+    int unreadCount = 0;
+    List<Notification> notificationsList = new();
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        int userId = 0;
+        int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out userId);
+        var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+        notificationsList = DbContext.Notifications
+            .Where(n => !n.IsRead && (n.RecipientUserId == null || n.RecipientUserId == userId || n.RecipientRole == userRole))
+            .OrderByDescending(n => n.CreatedTime)
+            .Take(5)
+            .ToList();
+
+        unreadCount = DbContext.Notifications
+            .Count(n => !n.IsRead && (n.RecipientUserId == null || n.RecipientUserId == userId || n.RecipientRole == userRole));
+    }
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -102,6 +120,10 @@
                 {
                     <partial name="_Sidebar.RManager" />
                 }
+                else if (User.IsInRole("WarehouseManager"))
+                {
+                    <partial name="_Sidebar.WarehouseManager" />
+                }
                 else if (User.IsInRole("BranchManager"))
                 {
                     <partial name="_Sidebar.BranchManager" />
@@ -140,9 +162,40 @@
                     <span>@branchName</span>
                 </div>
                 <div class="header-right">
-                    <button class="header-icon-btn">
-                        <i class="bi bi-bell"></i>
-                    </button>
+                    <div class="dropdown me-2">
+                        <button class="btn btn-link text-dark position-relative p-1 header-icon-btn border-0 text-decoration-none dropdown-toggle no-caret" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="markAllNotificationsAsRead()">
+                            <i class="bi bi-bell fs-5 text-secondary"></i>
+                            @if (unreadCount > 0)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadgeCount" style="font-size: 0.65rem; padding: 0.25em 0.45em; margin-top: -3px; margin-left: -3px;">
+                                    @unreadCount
+                                </span>
+                            }
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3" style="width: 320px; max-height: 400px; overflow-y: auto; z-index: 1060;">
+                            <li class="dropdown-header bg-dark text-white rounded-top-3 py-2 fw-bold text-uppercase small d-flex justify-content-between align-items-center">
+                                <span>Thông báo mới</span>
+                                <span class="badge bg-secondary">@unreadCount mới</span>
+                            </li>
+                            @if (notificationsList != null && notificationsList.Any())
+                            {
+                                foreach (var n in notificationsList)
+                                {
+                                    <li class="p-3 border-bottom hover-bg-light" style="cursor: default;">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <strong class="text-dark small" style="font-size: 0.85rem;">@n.Title</strong>
+                                            <small class="text-muted" style="font-size: 0.7rem;">@n.CreatedTime.ToString("HH:mm dd/MM")</small>
+                                        </div>
+                                        <p class="m-0 mt-1 text-secondary small text-wrap" style="font-size: 0.8rem; line-height: 1.3;">@n.Message</p>
+                                    </li>
+                                }
+                            }
+                            else
+                            {
+                                <li class="p-4 text-center text-muted small">Không có thông báo mới nào.</li>
+                            }
+                        </ul>
+                    </div>
                     <div class="dropdown">
                         <button class="btn user-avatar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="user-avatar-img @(User.Identity?.IsAuthenticated == true ? "" : "unauthenticated")">
@@ -232,5 +285,70 @@
 
     @await RenderSectionAsync("Scripts", required: false)
 
+    <!-- Floating Toast Container -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+        <div id="appToast" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i id="toastIcon" class="bi"></i>
+                    <span id="toastMessage" class="fw-semibold"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .no-caret::after {
+            display: none !important;
+        }
+        .hover-bg-light:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+
+    <script>
+        function showToast(message, type = 'success') {
+            const toastEl = document.getElementById('appToast');
+            if (!toastEl) return;
+
+            toastEl.className = 'toast align-items-center text-white border-0 shadow';
+            const iconEl = document.getElementById('toastIcon');
+            const closeBtn = toastEl.querySelector('.btn-close');
+
+            if (type === 'success') {
+                toastEl.classList.add('bg-success');
+                iconEl.className = 'bi bi-check-circle-fill fs-5 text-white';
+                closeBtn.classList.add('btn-close-white');
+            } else if (type === 'warning') {
+                toastEl.classList.add('bg-warning', 'text-dark');
+                iconEl.className = 'bi bi-exclamation-triangle-fill fs-5 text-dark';
+                closeBtn.classList.remove('btn-close-white');
+            } else {
+                toastEl.classList.add('bg-danger');
+                iconEl.className = 'bi bi-x-circle-fill fs-5 text-white';
+                closeBtn.classList.add('btn-close-white');
+            }
+
+            document.getElementById('toastMessage').textContent = message;
+
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
+        }
+
+        function markAllNotificationsAsRead() {
+            setTimeout(function() {
+                $.ajax({
+                    url: '/Notification/MarkRead',
+                    type: 'POST',
+                    success: function (res) {
+                        if (res.success) {
+                            $('#notificationBadgeCount').fadeOut();
+                        }
+                    }
+                });
+            }, 1000);
+        }
+    </script>
 </body>
 </html>

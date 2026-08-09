@@ -1,0 +1,411 @@
+@model List<SEP490_G52_CSMS.Models.Sales.Material>
+
+@{
+    ViewData["Title"] = "Phiếu Nhập Kho";
+    var currentUser = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Warehouse Manager";
+}
+
+<div class="warehouse-page p-4">
+    <!-- STEP 1: DRAFT RECEIPT (SCREEN A) -->
+    <div id="step1Container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark m-0">PHIẾU NHẬP KHO</h2>
+            <span class="badge bg-secondary p-2 fs-6">Bước 1: Lập phiếu nhập</span>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4 rounded-3">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Họ & Tên Người giao <span class="text-danger">*</span></label>
+                        <input type="text" id="delivererName" class="form-control" placeholder="Họ và tên người giao hàng..." required maxlength="100" />
+                        <div class="invalid-feedback">Vui lòng nhập tên người giao hàng.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Số điện thoại</label>
+                        <input type="text" id="delivererPhone" class="form-control" placeholder="Số điện thoại..." maxlength="15" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Thời gian nhập kho</label>
+                        <input type="text" class="form-control bg-light" readonly value="@ViewBag.CurrentTime" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supplier Rule Alert Note -->
+        <div class="alert alert-danger py-2 mb-4 d-none" id="supplierErrorAlert" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Mỗi đơn chỉ nhập các nguyên liệu cùng nhà cung cấp.
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Available Materials Catalog -->
+            <div class="col-lg-5 col-md-12 mb-4 mb-lg-0">
+                <div class="card shadow-sm border-0 rounded-3 h-100">
+                    <div class="card-header bg-light py-3 border-0">
+                        <h6 class="fw-bold m-0 text-dark">Danh mục kho tổng</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="supplierSearchInput" class="form-control" placeholder="Tìm theo tên nhà cung cấp..." oninput="filterCatalogTable()" />
+                        </div>
+                        
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-hover table-sm align-middle" id="catalogTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tên NgL</th>
+                                        <th>Kiểu</th>
+                                        <th>NCC</th>
+                                        <th class="text-center">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var m in Model)
+                                    {
+                                        <tr data-supplier="@m.Supplier.ToLower()" data-name="@m.MaterialName.ToLower()">
+                                            <td class="fw-semibold">@m.MaterialName</td>
+                                            <td><span class="small text-muted">@m.MaterialKind</span></td>
+                                            <td>@m.Supplier</td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-dark fw-bold px-2 py-1" onclick="addMaterialToReceipt(@m.MaterialId, '@m.MaterialName.Replace("'", "\\'")', '@m.MaterialKind.Replace("'", "\\'")', '@m.Category.Replace("'", "\\'")', '@m.StorageUnit', '@m.Supplier.Replace("'", "\\'")', @m.UnitPrice)">
+                                                    [Thêm+]
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Receipt Line Items Grid -->
+            <div class="col-lg-7 col-md-12">
+                <div class="card shadow-sm border-0 rounded-3 h-100">
+                    <div class="card-header bg-dark text-white py-3 border-0 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold m-0"><i class="bi bi-cart-check me-2 text-warning"></i>Chi tiết phiếu nhập draft</h6>
+                        <span class="badge bg-warning text-dark fw-bold" id="activeSupplierBadge">Chưa chọn NCC</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="min-height: 250px;">
+                            <table class="table align-middle m-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 25%;">Tên NgL</th>
+                                        <th style="width: 15%;">Đơn vị</th>
+                                        <th style="width: 20%;">NCC</th>
+                                        <th style="width: 20%;">Giá hàng (đ)</th>
+                                        <th style="width: 15%;">S/L nhập</th>
+                                        <th style="width: 5%;" class="text-center">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="receiptTableBody">
+                                    <tr id="emptyReceiptRow">
+                                        <td colspan="6" class="text-center text-muted py-5">
+                                            <i class="bi bi-plus-circle fs-1 mb-2 d-block text-secondary-subtle"></i>
+                                            Chưa chọn nguyên liệu. Thêm nguyên liệu từ cột trái.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top p-4 d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="cancelReceiptDraft()">Hủy</button>
+                        <button type="button" class="btn btn-dark px-4 py-2 fw-bold" onclick="goToStep2()">Tạo Phiếu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2: CONFIRMATION SUMMARY (SCREEN B) -->
+    <div id="step2Container" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark m-0">PHIẾU NHẬP KHO</h2>
+            <span class="badge bg-success p-2 fs-6">Bước 2: Xác nhận nhập kho</span>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4 rounded-3 bg-light">
+            <div class="card-body p-4 text-dark fs-6">
+                <div class="row">
+                    <div class="col-md-4"><strong>Họ & Tên Người giao:</strong> <span id="recapDeliverer"></span></div>
+                    <div class="col-md-4"><strong>Số điện thoại:</strong> <span id="recapPhone"></span></div>
+                    <div class="col-md-4"><strong>Thời gian nhập kho:</strong> @ViewBag.CurrentTime</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4 rounded-3">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle m-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Tên NgL</th>
+                                <th>Kiểu NgL</th>
+                                <th>Loại NgL</th>
+                                <th>Đơn vị</th>
+                                <th>NCC</th>
+                                <th>Giá hàng</th>
+                                <th>Số lượng</th>
+                                <th class="pe-3 text-end">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody id="confirmTableBody">
+                            <!-- Populated on step transition -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-4 border-top bg-light-subtle">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fs-5 fw-bold text-dark">Tổng tiền thanh toán:</span>
+                        <span class="fs-3 fw-bold text-success" id="confirmTotalAmount">0 đ</span>
+                    </div>
+
+                    <div class="row g-3 align-items-center border-top pt-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">Người lập phiếu (Quản Kho)</label>
+                            <input type="text" class="form-control bg-light" readonly value="@currentUser" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">Người nhận hàng <span class="text-danger">*</span></label>
+                            <input type="text" id="receiverName" class="form-control" value="@currentUser" placeholder="Nhập tên người nhận hàng..." required />
+                            <div class="invalid-feedback" id="valReceiverName">Vui lòng nhập tên người nhận hàng.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white border-top p-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="backToStep1()"><i class="bi bi-arrow-left me-2"></i> Quay lại sửa</button>
+                    <button type="button" class="btn btn-success px-5 py-2 fw-bold" onclick="submitReceiptToWarehouse()">Nhập kho <i class="bi bi-box-arrow-in-down ms-2"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Global state for receipt draft
+        let receiptItems = [];
+        let activeSupplier = null;
+
+        // --- 1. CATALOG FILTER ---
+        function filterCatalogTable() {
+            let filter = $('#supplierSearchInput').val().toLowerCase();
+            $('#catalogTable tbody tr').each(function() {
+                let supplier = $(this).attr('data-supplier');
+                let name = $(this).attr('data-name');
+                if (supplier.indexOf(filter) > -1 || name.indexOf(filter) > -1) {
+                    $(this).removeClass('d-none');
+                } else {
+                    $(this).addClass('d-none');
+                }
+            });
+        }
+
+        // --- 2. ADD / REMOVE DRAFT ITEMS ---
+        function addMaterialToReceipt(id, name, kind, category, unit, supplier, price) {
+            $('#supplierErrorAlert').addClass('d-none');
+
+            // BR01 (Single-Supplier Rule)
+            if (activeSupplier !== null && activeSupplier.toLowerCase() !== supplier.toLowerCase()) {
+                $('#supplierErrorAlert').removeClass('d-none');
+                return;
+            }
+
+            // Check if already in list
+            let exists = receiptItems.find(item => item.materialId === id);
+            if (exists) {
+                alert('Nguyên liệu này đã được thêm vào phiếu nhập.');
+                return;
+            }
+
+            // Set active supplier if first item
+            if (receiptItems.length === 0) {
+                activeSupplier = supplier;
+                $('#activeSupplierBadge').text(supplier).removeClass('bg-warning text-dark').addClass('bg-success text-white');
+            }
+
+            let newItem = {
+                materialId: id,
+                materialName: name,
+                materialKind: kind,
+                category: category,
+                storageUnit: unit,
+                supplier: supplier,
+                unitPrice: price,
+                quantity: 1.0
+            };
+            receiptItems.push(newItem);
+            renderReceiptTable();
+        }
+
+        function removeReceiptItem(id) {
+            receiptItems = receiptItems.filter(item => item.materialId !== id);
+            
+            if (receiptItems.length === 0) {
+                activeSupplier = null;
+                $('#activeSupplierBadge').text('Chưa chọn NCC').removeClass('bg-success text-white').addClass('bg-warning text-dark');
+            }
+            renderReceiptTable();
+        }
+
+        function renderReceiptTable() {
+            $('#emptyReceiptRow').addClass('d-none');
+            $('#receiptTableBody').find('.receipt-row').remove();
+
+            if (receiptItems.length === 0) {
+                $('#emptyReceiptRow').removeClass('d-none');
+                return;
+            }
+
+            receiptItems.forEach(item => {
+                let row = `
+                    <tr class="receipt-row" id="itemRow_${item.materialId}">
+                        <td class="fw-bold">${item.materialName}</td>
+                        <td>${item.storageUnit}</td>
+                        <td class="small text-muted">${item.supplier}</td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm item-price-input" style="max-width: 120px;" value="${item.unitPrice}" min="1" step="any" onchange="updateItemPrice(${item.materialId}, this.value)" />
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm item-qty-input" style="max-width: 100px;" value="${item.quantity}" min="0.001" step="any" onchange="updateItemQty(${item.materialId}, this.value)" />
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger p-1" onclick="removeReceiptItem(${item.materialId})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                $('#receiptTableBody').append(row);
+            });
+        }
+
+        function updateItemPrice(id, val) {
+            let price = parseFloat(val);
+            if (isNaN(price) || price <= 0) {
+                alert('Giá mua hàng phải lớn hơn 0.');
+                return;
+            }
+            let item = receiptItems.find(i => i.materialId === id);
+            if (item) item.unitPrice = price;
+        }
+
+        function updateItemQty(id, val) {
+            let qty = parseFloat(val);
+            if (isNaN(qty) || qty <= 0) {
+                alert('Số lượng phải là số dương.');
+                return;
+            }
+            let item = receiptItems.find(i => i.materialId === id);
+            if (item) item.quantity = qty;
+        }
+
+        // --- 3. DRAFT NAVIGATION & CANCEL ---
+        function cancelReceiptDraft() {
+            if (confirm('Lưu ý: Tất cả dữ liệu đang nhập sẽ bị hủy bỏ. Bạn có chắc chắn muốn thoát?')) {
+                window.location.href = '/Warehouse/ImportHistory';
+            }
+        }
+
+        function goToStep2() {
+            let name = $('#delivererName').val().trim();
+            $('#delivererName').removeClass('is-invalid');
+
+            if (!name) {
+                $('#delivererName').addClass('is-invalid');
+                return;
+            }
+
+            if (receiptItems.length === 0) {
+                alert('Phiếu nhập phải có ít nhất một nguyên liệu.');
+                return;
+            }
+
+            // Populate Step 2 Confirmation Recaps
+            $('#recapDeliverer').text(name);
+            $('#recapPhone').text($('#delivererPhone').val().trim() || 'Không có');
+
+            let rows = "";
+            let grandTotal = 0;
+
+            receiptItems.forEach(item => {
+                let rowTotal = item.unitPrice * item.quantity;
+                grandTotal += rowTotal;
+
+                rows += `
+                    <tr>
+                        <td class="fw-bold ps-3">${item.materialName}</td>
+                        <td>${item.materialKind}</td>
+                        <td>${item.category}</td>
+                        <td>${item.storageUnit}</td>
+                        <td>${item.supplier}</td>
+                        <td>${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td>${item.quantity.toString()}</td>
+                        <td class="pe-3 text-end fw-bold text-dark">${rowTotal.toLocaleString('vi-VN')} đ</td>
+                    </tr>
+                `;
+            });
+
+            $('#confirmTableBody').html(rows);
+            $('#confirmTotalAmount').text(grandTotal.toLocaleString('vi-VN') + " đ");
+
+            // Switch steps
+            $('#step1Container').addClass('d-none');
+            $('#step2Container').removeClass('d-none');
+        }
+
+        function backToStep1() {
+            $('#step2Container').addClass('d-none');
+            $('#step1Container').removeClass('d-none');
+        }
+
+        // --- 4. SUBMIT TO DATABASE ---
+        function submitReceiptToWarehouse() {
+            let receiver = $('#receiverName').val().trim();
+            $('#receiverName').removeClass('is-invalid');
+
+            if (!receiver) {
+                $('#receiverName').addClass('is-invalid');
+                return;
+            }
+
+            let payload = {
+                delivererName: $('#delivererName').val().trim(),
+                delivererPhone: $('#delivererPhone').val().trim(),
+                receiverName: receiver,
+                items: receiptItems.map(i => ({
+                    materialId: i.materialId,
+                    quantity: i.quantity,
+                    unitPrice: i.unitPrice
+                }))
+            };
+
+            $.ajax({
+                url: '/Warehouse/SubmitReceipt',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(res) {
+                    if (res.success) {
+                        alert(`Nhập kho thành công! Phiếu nhập ${res.receiptCode} đã được lưu.`);
+                        window.location.href = '/Warehouse/ImportHistory';
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function() {
+                    alert('Lỗi kết nối máy chủ khi lập phiếu nhập kho.');
+                }
+            });
+        }
+    </script>
+}

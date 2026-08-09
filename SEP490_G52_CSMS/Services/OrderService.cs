@@ -2,19 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Reponsitories;
+using Microsoft.EntityFrameworkCore;
 
 namespace SEP490_G52_CSMS.Services
 {
     public class OrderService : IOrderService
     {
         private readonly IOrderRepository _orderRepo;
+        private readonly CSMSAppDbContext _context;
 
-        public OrderService(IOrderRepository orderRepo)
+        public OrderService(IOrderRepository orderRepo, CSMSAppDbContext context)
         {
             _orderRepo = orderRepo;
+            _context = context;
         }
 
         public async Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items)
@@ -72,6 +76,52 @@ namespace SEP490_G52_CSMS.Services
 
             order.BrewingStatus = "Completed";
             await _orderRepo.UpdateOrderAsync(order);
+
+            // BR05: Auto-Deduction on Order Completion
+            try
+            {
+                var orderItems = await _context.OrderItems
+                    .Where(oi => oi.OrderId == orderId)
+                    .Include(oi => oi.ProductVariant)
+                    .ToListAsync();
+
+                foreach (var oi in orderItems)
+                {
+                    if (oi.ProductVariant != null)
+                    {
+                        var recipes = await _context.Recipes
+                            .Where(r => r.VariantId == oi.VariantId)
+                            .Include(r => r.Material)
+                            .ToListAsync();
+
+                        foreach (var r in recipes)
+                        {
+                            if (r.Material != null)
+                            {
+                                var branchInv = await _context.BranchInventories
+                                    .FirstOrDefaultAsync(bi => bi.BranchId == order.BranchId && bi.MaterialId == r.MaterialId);
+
+                                if (branchInv != null)
+                                {
+                                    // Conversion: Recipe quantity in g/ml, storage unit in kg/lít. Convert by dividing by 1000.
+                                    decimal deduction = (r.Quantity * oi.Quantity) / 1000m;
+                                    branchInv.StockQuantity -= deduction;
+                                    if (branchInv.StockQuantity < 0)
+                                    {
+                                        branchInv.StockQuantity = 0; // Clamp at 0 to prevent negative stock
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                // Silently log or ignore to prevent blocking order completions
+            }
+
             return true;
         }
 

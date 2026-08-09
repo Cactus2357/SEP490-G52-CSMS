@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SEP490_G52_CSMS.Models;
 
@@ -11,9 +12,11 @@ using SEP490_G52_CSMS.Models;
 namespace SEP490_G52_CSMS.Migrations
 {
     [DbContext(typeof(CSMSAppDbContext))]
-    partial class CSMSAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260808134330_UpdateMaterialsForWarehouse")]
+    partial class UpdateMaterialsForWarehouse
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -543,86 +546,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.ToTable("employees");
                 });
 
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("notification_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_time");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_read");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("message");
-
-                    b.Property<string>("RecipientRole")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("recipient_role");
-
-                    b.Property<int?>("RecipientUserId")
-                        .HasColumnType("int")
-                        .HasColumnName("recipient_user_id");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("title");
-
-                    b.HasKey("NotificationId");
-
-                    b.ToTable("notifications");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchInventory", b =>
-                {
-                    b.Property<int>("InventoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("inventory_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InventoryId"));
-
-                    b.Property<string>("BranchId")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("branch_id");
-
-                    b.Property<decimal>("LowStockThreshold")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("low_stock_threshold");
-
-                    b.Property<int>("MaterialId")
-                        .HasColumnType("int")
-                        .HasColumnName("material_id");
-
-                    b.Property<decimal>("StockQuantity")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("stock_quantity");
-
-                    b.HasKey("InventoryId");
-
-                    b.HasIndex("MaterialId");
-
-                    b.HasIndex("BranchId", "MaterialId")
-                        .IsUnique();
-
-                    b.ToTable("branch_inventories");
-                });
-
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchMenu", b =>
                 {
                     b.Property<int>("MenuId")
@@ -655,106 +578,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.HasIndex("BranchId");
 
                     b.ToTable("branch_menus");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchSupplyRequest", b =>
-                {
-                    b.Property<int>("RequestId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("request_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestId"));
-
-                    b.Property<string>("ApprovedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("approved_by");
-
-                    b.Property<DateTime?>("ApprovedDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("approved_date");
-
-                    b.Property<string>("BranchId")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("branch_id");
-
-                    b.Property<string>("DelivererName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("deliverer_name");
-
-                    b.Property<string>("DelivererPhone")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .HasColumnName("deliverer_phone");
-
-                    b.Property<DateTime?>("ReceivedDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("received_date");
-
-                    b.Property<string>("RequestCode")
-                        .IsRequired()
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .HasColumnName("request_code");
-
-                    b.Property<DateTime>("RequestDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("request_date");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("WarehouseNote")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("warehouse_note");
-
-                    b.HasKey("RequestId");
-
-                    b.HasIndex("BranchId");
-
-                    b.ToTable("branch_supply_requests");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchSupplyRequestItem", b =>
-                {
-                    b.Property<int>("RequestItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("request_item_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestItemId"));
-
-                    b.Property<int>("MaterialId")
-                        .HasColumnType("int")
-                        .HasColumnName("material_id");
-
-                    b.Property<decimal?>("QuantityReleased")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("quantity_released");
-
-                    b.Property<decimal>("QuantityRequested")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("quantity_requested");
-
-                    b.Property<int>("RequestId")
-                        .HasColumnType("int")
-                        .HasColumnName("request_id");
-
-                    b.HasKey("RequestItemId");
-
-                    b.HasIndex("MaterialId");
-
-                    b.HasIndex("RequestId");
-
-                    b.ToTable("branch_supply_request_items");
                 });
 
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.MasterProduct", b =>
@@ -872,34 +695,6 @@ namespace SEP490_G52_CSMS.Migrations
                         .IsUnique();
 
                     b.ToTable("materials");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.MaterialCategory", b =>
-                {
-                    b.Property<int>("CategoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("category_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryId"));
-
-                    b.Property<string>("CategoryName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("category_name");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("description");
-
-                    b.HasKey("CategoryId");
-
-                    b.HasIndex("CategoryName")
-                        .IsUnique();
-
-                    b.ToTable("material_categories");
                 });
 
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.MenuDetail", b =>
@@ -1098,110 +893,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.ToTable("recipes");
                 });
 
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.WarehouseReceipt", b =>
-                {
-                    b.Property<int>("ReceiptId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("receipt_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReceiptId"));
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("DelivererName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("deliverer_name");
-
-                    b.Property<string>("DelivererPhone")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .HasColumnName("deliverer_phone");
-
-                    b.Property<DateTime>("ImportDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("import_date");
-
-                    b.Property<string>("ReceiptCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("receipt_code");
-
-                    b.Property<string>("ReceiverName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("receiver_name");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Supplier")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("supplier");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("total_amount");
-
-                    b.HasKey("ReceiptId");
-
-                    b.HasIndex("ReceiptCode")
-                        .IsUnique();
-
-                    b.ToTable("warehouse_receipts");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.WarehouseReceiptItem", b =>
-                {
-                    b.Property<int>("ReceiptItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("receipt_item_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReceiptItemId"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("amount");
-
-                    b.Property<int>("MaterialId")
-                        .HasColumnType("int")
-                        .HasColumnName("material_id");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("quantity");
-
-                    b.Property<int>("ReceiptId")
-                        .HasColumnType("int")
-                        .HasColumnName("receipt_id");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("unit_price");
-
-                    b.HasKey("ReceiptItemId");
-
-                    b.HasIndex("MaterialId");
-
-                    b.HasIndex("ReceiptId");
-
-                    b.ToTable("warehouse_receipt_items");
-                });
-
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Attendance.AttendanceLog", b =>
                 {
                     b.HasOne("SEP490_G52_CSMS.Models.Employees.Employee", "Employee")
@@ -1347,25 +1038,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Navigation("Branch");
                 });
 
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchInventory", b =>
-                {
-                    b.HasOne("SEP490_G52_CSMS.Models.Core.Branch", "Branch")
-                        .WithMany()
-                        .HasForeignKey("BranchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SEP490_G52_CSMS.Models.Sales.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Branch");
-
-                    b.Navigation("Material");
-                });
-
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchMenu", b =>
                 {
                     b.HasOne("SEP490_G52_CSMS.Models.Core.Branch", "Branch")
@@ -1373,36 +1045,6 @@ namespace SEP490_G52_CSMS.Migrations
                         .HasForeignKey("BranchId");
 
                     b.Navigation("Branch");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchSupplyRequest", b =>
-                {
-                    b.HasOne("SEP490_G52_CSMS.Models.Core.Branch", "Branch")
-                        .WithMany()
-                        .HasForeignKey("BranchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Branch");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchSupplyRequestItem", b =>
-                {
-                    b.HasOne("SEP490_G52_CSMS.Models.Sales.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("SEP490_G52_CSMS.Models.Sales.BranchSupplyRequest", "BranchSupplyRequest")
-                        .WithMany("Items")
-                        .HasForeignKey("RequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BranchSupplyRequest");
-
-                    b.Navigation("Material");
                 });
 
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.MasterProduct", b =>
@@ -1501,25 +1143,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Navigation("ProductVariant");
                 });
 
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.WarehouseReceiptItem", b =>
-                {
-                    b.HasOne("SEP490_G52_CSMS.Models.Sales.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("SEP490_G52_CSMS.Models.Sales.WarehouseReceipt", "WarehouseReceipt")
-                        .WithMany("Items")
-                        .HasForeignKey("ReceiptId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Material");
-
-                    b.Navigation("WarehouseReceipt");
-                });
-
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Attendance.WeeklyRosterGrid", b =>
                 {
                     b.Navigation("AttendanceLogs");
@@ -1556,11 +1179,6 @@ namespace SEP490_G52_CSMS.Migrations
                     b.Navigation("MenuDetails");
                 });
 
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchSupplyRequest", b =>
-                {
-                    b.Navigation("Items");
-                });
-
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.MasterProduct", b =>
                 {
                     b.Navigation("ProductVariants");
@@ -1574,11 +1192,6 @@ namespace SEP490_G52_CSMS.Migrations
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.ProductCategory", b =>
                 {
                     b.Navigation("MasterProducts");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.WarehouseReceipt", b =>
-                {
-                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

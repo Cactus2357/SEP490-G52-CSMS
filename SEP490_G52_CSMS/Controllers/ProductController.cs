@@ -226,6 +226,7 @@ namespace SEP490_G52_CSMS.Controllers
                 materialName = m.MaterialName,
                 materialKind = m.MaterialKind,
                 category = m.Category,
+                physicalState = m.PhysicalState,
                 storageUnit = m.StorageUnit
             });
             return Json(result);
@@ -242,7 +243,7 @@ namespace SEP490_G52_CSMS.Controllers
                 materialKind = r.Material?.MaterialKind ?? string.Empty,
                 category = r.Material?.Category ?? string.Empty,
                 quantity = r.Quantity,
-                unit = r.Material?.MaterialKind == "Dạng lỏng" ? "ml" : "g"
+                unit = r.Material?.PhysicalState == "Dạng lỏng" ? "ml" : "g"
             });
             return Json(result);
         }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SEP490_G52_CSMS.Models;
 
@@ -11,9 +12,11 @@ using SEP490_G52_CSMS.Models;
 namespace SEP490_G52_CSMS.Migrations
 {
     [DbContext(typeof(CSMSAppDbContext))]
-    partial class CSMSAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260809042708_AddBranchSupplyRequests")]
+    partial class AddBranchSupplyRequests
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -541,49 +544,6 @@ namespace SEP490_G52_CSMS.Migrations
                         .IsUnique();
 
                     b.ToTable("employees");
-                });
-
-            modelBuilder.Entity("SEP490_G52_CSMS.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("notification_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_time");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_read");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("message");
-
-                    b.Property<string>("RecipientRole")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("recipient_role");
-
-                    b.Property<int?>("RecipientUserId")
-                        .HasColumnType("int")
-                        .HasColumnName("recipient_user_id");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("title");
-
-                    b.HasKey("NotificationId");
-
-                    b.ToTable("notifications");
                 });
 
             modelBuilder.Entity("SEP490_G52_CSMS.Models.Sales.BranchInventory", b =>

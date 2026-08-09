@@ -27,6 +27,13 @@ namespace SEP490_G52_CSMS.Models
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Material> Materials { get; set; }
         public DbSet<Recipe> Recipes { get; set; }
+        public DbSet<MaterialCategory> MaterialCategories { get; set; }
+        public DbSet<WarehouseReceipt> WarehouseReceipts { get; set; }
+        public DbSet<WarehouseReceiptItem> WarehouseReceiptItems { get; set; }
+        public DbSet<BranchInventory> BranchInventories { get; set; }
+        public DbSet<BranchSupplyRequest> BranchSupplyRequests { get; set; }
+        public DbSet<BranchSupplyRequestItem> BranchSupplyRequestItems { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -147,6 +154,7 @@ namespace SEP490_G52_CSMS.Models
             {
                 entity.HasIndex(m => new { m.MaterialName, m.Supplier }).IsUnique();
                 entity.Property(m => m.UnitPrice).HasColumnType("decimal(18, 2)");
+                entity.Property(m => m.StockQuantity).HasColumnType("decimal(18, 2)");
             });
 
             modelBuilder.Entity<Recipe>(entity =>
@@ -162,6 +170,64 @@ namespace SEP490_G52_CSMS.Models
                       .WithMany()
                       .HasForeignKey(r => r.MaterialId)
                       .OnDelete(DeleteBehavior.Restrict); // Keep materials safe from automatic cascade
+            });
+
+            modelBuilder.Entity<MaterialCategory>().HasIndex(mc => mc.CategoryName).IsUnique();
+
+            modelBuilder.Entity<WarehouseReceipt>(entity =>
+            {
+                entity.HasIndex(wr => wr.ReceiptCode).IsUnique();
+                entity.Property(wr => wr.TotalAmount).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<WarehouseReceiptItem>(entity =>
+            {
+                entity.Property(wri => wri.Quantity).HasColumnType("decimal(18, 2)");
+                entity.Property(wri => wri.UnitPrice).HasColumnType("decimal(18, 2)");
+                entity.Property(wri => wri.Amount).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(wri => wri.WarehouseReceipt)
+                      .WithMany(wr => wr.Items)
+                      .HasForeignKey(wri => wri.ReceiptId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(wri => wri.Material)
+                      .WithMany()
+                      .HasForeignKey(wri => wri.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<BranchInventory>(entity =>
+            {
+                entity.HasIndex(bi => new { bi.BranchId, bi.MaterialId }).IsUnique();
+                entity.Property(bi => bi.StockQuantity).HasColumnType("decimal(18, 2)");
+                entity.Property(bi => bi.LowStockThreshold).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(bi => bi.Branch)
+                      .WithMany()
+                      .HasForeignKey(bi => bi.BranchId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(bi => bi.Material)
+                      .WithMany()
+                      .HasForeignKey(bi => bi.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<BranchSupplyRequestItem>(entity =>
+            {
+                entity.Property(ri => ri.QuantityRequested).HasColumnType("decimal(18, 2)");
+                entity.Property(ri => ri.QuantityReleased).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(ri => ri.BranchSupplyRequest)
+                      .WithMany(r => r.Items)
+                      .HasForeignKey(ri => ri.RequestId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ri => ri.Material)
+                      .WithMany()
+                      .HasForeignKey(ri => ri.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             //base.OnModelCreating(modelBuilder);

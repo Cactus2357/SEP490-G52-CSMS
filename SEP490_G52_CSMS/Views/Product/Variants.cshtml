@@ -413,7 +413,7 @@
             $('#selectedMaterialId').val(m.materialId);
             $('#materialSearchInput').val(m.materialName);
             $('#materialCategoryInput').val(m.category);
-            $('#materialUnitInput').val(m.materialKind === "Dạng lỏng" ? "ml" : "Gam");
+            $('#materialUnitInput').val(m.physicalState === "Dạng lỏng" ? "ml" : "Gam");
             $('#materialAutocompleteDropdown').addClass('d-none').empty();
             $('#materialQtyInput').focus();
         }

@@ -1,0 +1,410 @@
+@model List<SEP490_G52_CSMS.Models.Sales.BranchInventory>
+
+@{
+    ViewData["Title"] = "Đơn Nhập Hàng Từ Kho Tổng";
+}
+
+<div class="warehouse-page p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark m-0">ĐƠN NHẬP HÀNG TỪ KHO TỔNG</h2>
+            <span class="text-secondary fw-semibold fs-5"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Chi nhánh: @ViewBag.BranchName</span>
+        </div>
+        <span class="badge bg-secondary p-2 fs-6">Tạo đơn yêu cầu</span>
+    </div>
+
+    <div class="row">
+        <!-- Left: Form Input Panel & Bulk List -->
+        <div class="col-lg-5 col-md-12 mb-4 mb-lg-0">
+            <!-- Part A: Autocomplete Finder -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-light py-3">
+                    <h6 class="fw-bold m-0 text-dark">Nhập nguyên liệu cần nhập (Tìm kiếm lẻ)</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form id="itemForm">
+                        <div class="mb-3 position-relative">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tên nguyên liệu <span class="text-danger">*</span></label>
+                            <input type="text" id="inputMatName" class="form-control" placeholder="Nhập/ Chọn tên NgL..." autocomplete="off" oninput="searchTrackedSuggestions(this.value)" />
+                            <div id="autocompleteSuggestions" class="list-group position-absolute w-100 mt-1 shadow-sm d-none" style="z-index: 1050; max-height: 200px; overflow-y: auto;">
+                                <!-- suggestions -->
+                            </div>
+                            <div class="invalid-feedback" id="valInputMatName"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Loại nguyên liệu</label>
+                            <input type="text" id="inputCategory" class="form-control bg-light" placeholder="Thô/ Thành phẩm..." readonly />
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Số lượng cần <span class="text-danger">*</span></label>
+                                <input type="number" id="inputQuantity" class="form-control" placeholder="Nhập số lượng cần..." min="0.001" step="any" required />
+                                <div class="invalid-feedback" id="valInputQuantity"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đơn vị</label>
+                                <input type="text" id="inputUnit" class="form-control bg-light" placeholder="Kg, Lon..." readonly />
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-dark w-100 py-2 fw-bold" onclick="addRequestLine()">Thêm vào danh sách</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Part B: Bulk Request List -->
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold m-0 text-dark">Chọn nhanh hàng loạt từ chi nhánh</h6>
+                    <button class="btn btn-sm btn-outline-dark fw-bold" onclick="bulkAddSelected()">Thêm hàng loạt</button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                        <table class="table table-sm align-middle m-0 small">
+                            <thead class="table-light sticky-top" style="z-index: 10;">
+                                <tr>
+                                    <th style="width: 5%;" class="ps-2"></th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th style="width: 30%;">Tồn kho</th>
+                                    <th style="width: 25%;">Số lượng cần</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    for (int i = 0; i < Model.Count; i++)
+                                    {
+                                        var inv = Model[i];
+                                        var mat = inv.Material;
+                                        if (mat != null)
+                                        {
+                                            var isLow = inv.StockQuantity <= inv.LowStockThreshold;
+                                            var warningClass = isLow ? "table-danger text-danger fw-bold" : "";
+                                            <tr class="@warningClass" data-bulk-id="@mat.MaterialId" data-name="@mat.MaterialName" data-kind="@mat.MaterialKind" data-unit="@mat.StorageUnit">
+                                                <td class="ps-2 text-center">
+                                                    <input type="checkbox" class="form-check-input bulk-checkbox" style="cursor: pointer;" />
+                                                </td>
+                                                <td>
+                                                    <span>@mat.MaterialName</span>
+                                                    @if (isLow)
+                                                    {
+                                                        <span class="badge bg-danger ms-1 p-1 small" style="font-size:0.65rem;">Sắp hết</span>
+                                                    }
+                                                </td>
+                                                <td class="text-secondary small">
+                                                    @inv.StockQuantity.ToString("G29") @mat.StorageUnit
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm bulk-qty-input" placeholder="0" min="0.001" step="any" style="padding: 2px 5px;" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3">Chưa có nguyên liệu theo dõi tại chi nhánh.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 bg-light p-3 rounded border border-light-subtle">
+                <p class="m-0 text-danger small fw-semibold"><i class="bi bi-info-circle-fill me-1"></i> Lưu ý:</p>
+                <p class="m-0 mt-1 text-danger small">Nhập những loại nguyên liệu cần để pha chế đồ uống.</p>
+                <p class="m-0 mt-1 text-danger small">Số lượng nguyên liệu là số lượng cần dùng để pha chế một đồ uống.</p>
+            </div>
+        </div>
+
+        <!-- Right: Draft Supply Request Lines -->
+        <div class="col-lg-7 col-md-12">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-dark text-white py-3">
+                    <h6 class="fw-bold m-0"><i class="bi bi-list-check me-2 text-warning"></i>Danh sách nguyên liệu yêu cầu</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="min-height: 250px;">
+                        <table class="table align-middle m-0 table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 10%;" class="ps-3">STT</th>
+                                    <th style="width: 45%;">Tên nguyên liệu</th>
+                                    <th style="width: 20%;">Loại nguyên liệu</th>
+                                    <th style="width: 20%;">Số lượng cần dùng</th>
+                                    <th style="width: 5%;" class="text-center">Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestTableBody">
+                                <tr id="emptyRow">
+                                    <td colspan="5" class="text-center text-muted py-5">
+                                        <i class="bi bi-clipboard-plus fs-1 d-block mb-2 text-secondary-subtle"></i>
+                                        Chưa có nguyên liệu nào trong danh sách.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top p-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2 fw-bold" onclick="cancelRequestDraft()">Hủy đơn</button>
+                    <button type="button" class="btn btn-success px-5 py-2 fw-bold" onclick="submitSupplyRequest()">Tạo đơn yêu cầu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .warehouse-page {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 70px);
+    }
+    .table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #adb5bd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let selectedMatId = null;
+        let requestItems = [];
+        let suggestionsList = [];
+
+        // --- 1. AUTOCOMPLETE ---
+        function searchTrackedSuggestions(term) {
+            if (!term.trim()) {
+                $('#autocompleteSuggestions').addClass('d-none').html('');
+                return;
+            }
+
+            $.ajax({
+                url: '/BranchWarehouse/SearchTrackedMaterials',
+                type: 'GET',
+                data: { term: term },
+                success: function(list) {
+                    suggestionsList = list;
+                    let items = "";
+                    list.forEach((item, index) => {
+                        items += `
+                            <button type="button" class="list-group-item list-group-item-action py-2" onclick="selectTrackedSuggestion(${index})">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong class="text-dark">${item.materialName}</strong>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${item.category}</span>
+                                </div>
+                            </button>
+                        `;
+                    });
+                    if (list.length === 0) {
+                        items = '<div class="list-group-item text-muted small">Không tìm thấy nguyên liệu theo dõi tại chi nhánh.</div>';
+                    }
+                    $('#autocompleteSuggestions').removeClass('d-none').html(items);
+                }
+            });
+        }
+
+        function selectTrackedSuggestion(index) {
+            let item = suggestionsList[index];
+            selectedMatId = item.materialId;
+            $('#inputMatName').val(item.materialName);
+            $('#inputCategory').val(item.materialKind);
+            $('#inputUnit').val(item.storageUnit);
+            $('#autocompleteSuggestions').addClass('d-none').html('');
+        }
+
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#inputMatName, #autocompleteSuggestions').length) {
+                $('#autocompleteSuggestions').addClass('d-none');
+            }
+        });
+
+        // --- 2. ADD SINGLE LINE ---
+        function addRequestLine() {
+            $('#inputMatName').removeClass('is-invalid');
+            $('#inputQuantity').removeClass('is-invalid');
+
+            let matName = $('#inputMatName').val().trim();
+            let category = $('#inputCategory').val().trim();
+            let unit = $('#inputUnit').val().trim();
+            let qty = parseFloat($('#inputQuantity').val());
+
+            if (!selectedMatId || !matName) {
+                $('#inputMatName').addClass('is-invalid');
+                $('#valInputMatName').text('Tên nguyên liệu không khớp với danh mục chi nhánh. Vui lòng chọn từ gợi ý.');
+                return;
+            }
+
+            if (isNaN(qty) || qty <= 0) {
+                $('#inputQuantity').addClass('is-invalid');
+                $('#valInputQuantity').text('Số lượng phải là số dương.');
+                return;
+            }
+
+            let exists = requestItems.find(item => item.materialId === selectedMatId);
+            if (exists) {
+                if (confirm('Nguyên liệu này đã có trong đơn. Cập nhật số lượng thay vì thêm dòng mới?')) {
+                    exists.quantity += qty;
+                    renderRequestTable();
+                    resetForm();
+                }
+                return;
+            }
+
+            requestItems.push({
+                materialId: selectedMatId,
+                materialName: matName,
+                category: category,
+                storageUnit: unit,
+                quantity: qty
+            });
+
+            renderRequestTable();
+            resetForm();
+        }
+
+        function resetForm() {
+            selectedMatId = null;
+            $('#inputMatName').val('');
+            $('#inputCategory').val('');
+            $('#inputQuantity').val('');
+            $('#inputUnit').val('');
+        }
+
+        // --- 3. BULK REQUEST ADD ---
+        function bulkAddSelected() {
+            let addedCount = 0;
+
+            $('tr[data-bulk-id]').each(function() {
+                let checkbox = $(this).find('.bulk-checkbox');
+                if (checkbox.is(':checked')) {
+                    let id = parseInt($(this).attr('data-bulk-id'));
+                    let name = $(this).attr('data-name');
+                    let kind = $(this).attr('data-kind');
+                    let unit = $(this).attr('data-unit');
+                    let qtyInput = $(this).find('.bulk-qty-input');
+                    let qty = parseFloat(qtyInput.val());
+
+                    if (isNaN(qty) || qty <= 0) {
+                        showToast(`Số lượng cho "${name}" phải lớn hơn 0.`, 'warning');
+                        return;
+                    }
+
+                    let exists = requestItems.find(item => item.materialId === id);
+                    if (exists) {
+                        exists.quantity += qty;
+                    } else {
+                        requestItems.push({
+                            materialId: id,
+                            materialName: name,
+                            category: kind,
+                            storageUnit: unit,
+                            quantity: qty
+                        });
+                    }
+
+                    // reset
+                    qtyInput.val('');
+                    checkbox.prop('checked', false);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                renderRequestTable();
+                showToast(`Đã thêm hàng loạt ${addedCount} nguyên liệu vào đơn nháp!`, 'success');
+            } else {
+                showToast('Vui lòng tích chọn nguyên liệu và điền số lượng cần trước khi nhấn Thêm hàng loạt.', 'warning');
+            }
+        }
+
+        function removeRequestLine(id) {
+            requestItems = requestItems.filter(item => item.materialId !== id);
+            renderRequestTable();
+        }
+
+        function renderRequestTable() {
+            $('#emptyRow').addClass('d-none');
+            $('#requestTableBody').find('.draft-row').remove();
+
+            if (requestItems.length === 0) {
+                $('#emptyRow').removeClass('d-none');
+                return;
+            }
+
+            requestItems.forEach((item, idx) => {
+                let row = `
+                    <tr class="draft-row">
+                        <td class="ps-3">${idx + 1}</td>
+                        <td class="fw-bold">${item.materialName}</td>
+                        <td>${item.category}</td>
+                        <td class="fw-semibold">${item.quantity.toString()} ${item.storageUnit}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeRequestLine(${item.materialId})">
+                                <i class="bi bi-x-circle fs-5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                $('#requestTableBody').append(row);
+            });
+        }
+
+        function cancelRequestDraft() {
+            if (confirm('Lưu ý: Tất cả các dòng yêu cầu đang lập sẽ bị xóa bỏ. Bạn có chắc chắn muốn hủy?')) {
+                window.location.href = '/BranchWarehouse/Index';
+            }
+        }
+
+        function submitSupplyRequest() {
+            if (requestItems.length === 0) {
+                showToast('Đơn hàng phải có ít nhất một nguyên liệu.', 'warning');
+                return;
+            }
+
+            let payload = {
+                items: requestItems.map(i => ({
+                    materialId: i.materialId,
+                    quantity: i.quantity
+                }))
+            };
+
+            $.ajax({
+                url: '/BranchWarehouse/SubmitSupplyRequest',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(res) {
+                    if (res.success) {
+                        showToast(`Tạo đơn yêu cầu thành công! Mã đơn: ${res.requestCode}`, 'success');
+                        setTimeout(function() {
+                            window.location.href = '/BranchWarehouse/RequestHistory';
+                        }, 1500);
+                    } else {
+                        showToast(res.message, 'danger');
+                    }
+                },
+                error: function() {
+                    showToast('Lỗi kết nối máy chủ khi tạo đơn đặt hàng.', 'danger');
+                }
+            });
+        }
+    </script>
+}
