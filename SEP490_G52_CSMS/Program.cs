@@ -79,6 +79,9 @@ builder.Services.AddScoped<SEP490_G52_CSMS.Services.IOrderManagementService, SEP
 builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.ILeaveRequestRepository, SEP490_G52_CSMS.Repositories.LeaveRequestRepository>();
 builder.Services.AddScoped<SEP490_G52_CSMS.Services.ILeaveRequestService, SEP490_G52_CSMS.Services.LeaveRequestService>();
 
+// Notification (event-driven service)
+builder.Services.AddScoped<SEP490_G52_CSMS.Services.INotificationService, SEP490_G52_CSMS.Services.NotificationService>();
+
 var app = builder.Build();
 
 // Seed database

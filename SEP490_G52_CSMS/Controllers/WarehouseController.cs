@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Services;
+using System;
+using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -10,10 +13,12 @@ namespace SEP490_G52_CSMS.Controllers
     public class WarehouseController : Controller
     {
         private readonly CSMSAppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public WarehouseController(CSMSAppDbContext context)
+        public WarehouseController(CSMSAppDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -668,15 +673,13 @@ namespace SEP490_G52_CSMS.Controllers
             var bManager = await _context.Employees
                 .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
 
-            _context.Notifications.Add(new Notification
-            {
-                Title = "Yêu cầu nhập kho đã duyệt",
-                Message = $"Đơn yêu cầu {req.RequestCode} của chi nhánh bạn đã được duyệt và đang chuẩn bị xuất kho.",
-                CreatedTime = DateTime.Now,
-                IsRead = false,
-                RecipientUserId = bManager?.EmployeeId,
-                RecipientRole = "BranchManager"
-            });
+            await _notificationService.SendAsync(new NotificationEvent(
+                Title: "Yêu cầu nhập kho đã duyệt",
+                Message: $"Đơn yêu cầu {req.RequestCode} của chi nhánh bạn đã được duyệt và đang chuẩn bị xuất kho.",
+                RecipientUserId: bManager?.EmployeeId,
+                RecipientRole: "BranchManager",
+                ResourceUrl: "/BranchWarehouse/RequestHistory"
+            ));
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Đã duyệt đơn và chuyển sang trạng thái Chuẩn bị xuất." });
@@ -709,15 +712,13 @@ namespace SEP490_G52_CSMS.Controllers
             var bManager = await _context.Employees
                 .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
 
-            _context.Notifications.Add(new Notification
-            {
-                Title = "Đơn hàng đang giao",
-                Message = $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang trên đường giao tới chi nhánh.",
-                CreatedTime = DateTime.Now,
-                IsRead = false,
-                RecipientUserId = bManager?.EmployeeId,
-                RecipientRole = "BranchManager"
-            });
+            await _notificationService.SendAsync(new NotificationEvent(
+                Title: "Đơn hàng đang giao",
+                Message: $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang trên đường giao tới chi nhánh.",
+                RecipientUserId: bManager?.EmployeeId,
+                RecipientRole: "BranchManager",
+                ResourceUrl: "/BranchWarehouse/RequestHistory"
+            ));
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Xác nhận đã xuất kho thành công!" });

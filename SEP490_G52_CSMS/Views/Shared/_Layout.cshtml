@@ -183,43 +183,93 @@
                     <span class="h5 fw-bold text-dark mb-0">@displayTitle</span>
                 </div>
                 <div class="header-right">
-                    <div class="dropdown me-2">
-                        <button class="btn btn-link text-dark position-relative p-1 header-icon-btn border-0 text-decoration-none dropdown-toggle no-caret" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="markAllNotificationsAsRead()">
+                    <!-- =========================================================
+                         NOTIFICATION BELL DROPDOWN
+                    ========================================================== -->
+                    <div class="dropdown me-2" id="notificationDropdownWrapper">
+                        <button class="btn btn-link text-dark position-relative p-0 header-icon-btn border-0 text-decoration-none dropdown-toggle no-caret rounded-circle d-flex align-items-center justify-content-center"
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationBellBtn"
+                                style="width: 40px; height: 40px; background-color: #f8f9fa;">
                             <i class="bi bi-bell fs-5 text-secondary"></i>
                             @if (unreadCount > 0)
                             {
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadgeCount" style="font-size: 0.65rem; padding: 0.25em 0.45em; margin-top: -3px; margin-left: -3px;">
+                                <span class="position-absolute badge rounded-pill bg-danger"
+                                      id="notificationBadgeCount"
+                                      style="font-size: 0.62rem; padding: 0.25em 0.4em; top: -2px; right: -2px; line-height: 1;">
                                     @unreadCount
                                 </span>
                             }
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3" style="width: 320px; max-height: 400px; overflow-y: auto; z-index: 1060;">
-                            <li class="dropdown-header bg-dark text-white rounded-top-3 py-2 fw-bold text-uppercase small d-flex justify-content-between align-items-center">
-                                <span>Thông báo mới</span>
-                                <span class="badge bg-secondary">@unreadCount mới</span>
-                            </li>
-                            @if (notificationsList != null && notificationsList.Any())
-                            {
-                                foreach (var n in notificationsList)
+
+                        <div class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3"
+                             style="width: 390px; z-index: 1060;"
+                             id="notificationDropdownMenu">
+
+                            <!-- Header -->
+                            <div class="bg-dark text-white rounded-top-3 px-3 py-2 d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-uppercase small">Thông báo</span>
+                                <span class="badge bg-secondary" id="notifHeaderCount">@unreadCount mới</span>
+                            </div>
+
+                            <!-- Notification list (scrollable) -->
+                            <ul class="list-unstyled m-0" id="notificationListContainer"
+                                style="max-height: 480px; overflow-y: auto;">
+                                @if (notificationsList != null && notificationsList.Any())
                                 {
-                                    <li class="p-3 border-bottom hover-bg-light" style="cursor: default;">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <strong class="text-dark small" style="font-size: 0.85rem;">@n.Title</strong>
-                                            <small class="text-muted" style="font-size: 0.7rem;">@n.CreatedTime.ToString("HH:mm dd/MM")</small>
-                                        </div>
-                                        <p class="m-0 mt-1 text-secondary small text-wrap" style="font-size: 0.8rem; line-height: 1.3;">@n.Message</p>
-                                    </li>
+                                    foreach (var n in notificationsList)
+                                    {
+                                        <li class="notif-item border-bottom px-3 py-2 @(n.IsRead ? "" : "notif-unread")"
+                                            data-id="@n.NotificationId"
+                                            data-url="@n.ResourceUrl"
+                                            role="button"
+                                            style="cursor: pointer; transition: background 0.15s;">
+                                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        @if (!n.IsRead)
+                                                        {
+                                                            <span class="d-inline-block rounded-circle bg-primary flex-shrink-0"
+                                                                  style="width: 8px; height: 8px;"></span>
+                                                        }
+                                                        <strong class="text-dark" style="font-size: 0.82rem;">@n.Title</strong>
+                                                    </div>
+                                                    <p class="m-0 mt-1 text-secondary text-wrap" style="font-size: 0.78rem; line-height: 1.35;">@n.Message</p>
+                                                    @if (!string.IsNullOrEmpty(n.ResourceUrl))
+                                                    {
+                                                        <span class="small text-primary" style="font-size: 0.72rem;">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <small class="text-muted flex-shrink-0" style="font-size: 0.7rem; white-space: nowrap;">@n.CreatedTime.ToString("HH:mm dd/MM")</small>
+                                            </div>
+                                        </li>
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                <li class="p-4 text-center text-muted small">Không có thông báo mới nào.</li>
-                            }
-                        </ul>
+                                else
+                                {
+                                    <li class="p-4 text-center text-muted small" id="notifEmptyMsg">Không có thông báo mới nào.</li>
+                                }
+                            </ul>
+
+                            <!-- Footer -->
+                            <div class="border-top px-3 py-2 d-flex justify-content-between align-items-center bg-light rounded-bottom-3">
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary"
+                                        onclick="openAllNotificationsModal(); event.stopPropagation();">
+                                    <i class="bi bi-list-ul me-1"></i>Xem tất cả
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-danger"
+                                        onclick="clearAllNotifications(); event.stopPropagation();">
+                                    <i class="bi bi-check2-all me-1"></i>Đánh dấu tất cả đã đọc
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="dropdown">
                         <button class="btn user-avatar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <div class="user-avatar-img @(User.Identity?.IsAuthenticated == true ? "" : "unauthenticated")">
+                            <div class="user-avatar-img rounded-circle d-flex align-items-center justify-content-center @(User.Identity?.IsAuthenticated == true ? "" : "unauthenticated")"
+                                 style="width: 40px; height: 40px; overflow: hidden;">
                                 <i class="bi bi-person-fill"></i>
                             </div>
                         </button>
@@ -373,18 +423,112 @@
             toast.show();
         }
 
-        function markAllNotificationsAsRead() {
-            setTimeout(function() {
-                $.ajax({
-                    url: '/Notification/MarkRead',
-                    type: 'POST',
-                    success: function (res) {
-                        if (res.success) {
-                            $('#notificationBadgeCount').fadeOut();
-                        }
+        // ── Notification: click item to mark read ────────────────────────────
+        $(document).on('click', '.notif-item', function (e) {
+            e.stopPropagation();
+            const $item = $(this);
+            const id = $item.data('id');
+            const url = $item.data('url');
+
+            $.post('/Notification/MarkRead/' + id, function (res) {
+                if (res.success) {
+                    // Remove unread dot & styling
+                    $item.removeClass('notif-unread');
+                    $item.find('.bg-primary.rounded-circle').remove();
+
+                    // Decrement badge
+                    var $badge = $('#notificationBadgeCount');
+                    var current = parseInt($badge.text()) || 0;
+                    var next = Math.max(0, current - 1);
+                    if (next === 0) {
+                        $badge.fadeOut();
+                        $('#notifHeaderCount').text('0 mới');
+                    } else {
+                        $badge.text(next);
+                        $('#notifHeaderCount').text(next + ' mới');
                     }
+                }
+            });
+
+            // Navigate to resource URL if present
+            if (url && url.trim() !== '') {
+                setTimeout(function () { window.location.href = url; }, 250);
+            }
+        });
+
+        // ── Notification: clear all ──────────────────────────────────────────
+        function clearAllNotifications() {
+            $.post('/Notification/ClearAll', function (res) {
+                if (res.success) {
+                    $('#notificationBadgeCount').fadeOut();
+                    $('#notifHeaderCount').text('0 mới');
+                    // Remove unread dots
+                    $('#notificationListContainer .notif-unread').removeClass('notif-unread');
+                    $('#notificationListContainer .bg-primary.rounded-circle').remove();
+                    showToast('Đã đánh dấu tất cả thông báo là đã đọc.', 'success');
+                }
+            });
+        }
+
+        // ── Notification: open full history modal ────────────────────────────
+        function openAllNotificationsModal() {
+            var dropdownEl = document.getElementById('notificationBellBtn');
+            var dd = dropdownEl ? bootstrap.Dropdown.getInstance(dropdownEl) : null;
+
+            function loadNotifications() {
+                $('#allNotificationsModalBody').html('<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm me-2"></div> Đang tải...</div>');
+                $.getJSON('/Notification/All', function (data) {
+                    if (!data || data.length === 0) {
+                        $('#allNotificationsModalBody').html('<div class="p-5 text-center text-muted"><i class="bi bi-bell-slash fs-2 d-block mb-2"></i>Chưa có thông báo nào.</div>');
+                        return;
+                    }
+                    var html = '<ul class="list-unstyled m-0">';
+                    data.forEach(function (n) {
+                        var unreadDot = !n.isRead
+                            ? '<span class="d-inline-block rounded-circle bg-primary flex-shrink-0 me-2" style="width:8px;height:8px;"></span>'
+                            : '<span class="d-inline-block flex-shrink-0 me-2" style="width:8px;height:8px;"></span>';
+                        var linkBtn = n.resourceUrl
+                            ? '<a href="' + n.resourceUrl + '" class="small text-primary text-decoration-none"><i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết</a>'
+                            : '';
+                        var readCls = n.isRead ? 'opacity-65' : 'fw-semibold';
+                        html += '<li class="border-bottom px-4 py-3 ' + (n.isRead ? '' : 'bg-primary bg-opacity-10') + '">';
+                        html += '<div class="d-flex align-items-start gap-2">';
+                        html += unreadDot;
+                        html += '<div class="flex-grow-1">';
+                        html += '<div class="d-flex justify-content-between align-items-center">';
+                        html += '<strong class="' + readCls + '" style="font-size:0.85rem;">' + n.title + '</strong>';
+                        html += '<small class="text-muted ms-2" style="font-size:0.72rem;white-space:nowrap;">' + n.createdTime + '</small>';
+                        html += '</div>';
+                        html += '<p class="mb-1 mt-1 text-secondary" style="font-size:0.8rem;line-height:1.35;">' + n.message + '</p>';
+                        html += linkBtn;
+                        html += '</div></div></li>';
+                    });
+                    html += '</ul>';
+                    $('#allNotificationsModalBody').html(html);
+                }).fail(function () {
+                    $('#allNotificationsModalBody').html('<div class="p-4 text-danger text-center">Không thể tải thông báo.</div>');
                 });
-            }, 1000);
+            }
+
+            function showModal() {
+                var modalEl = document.getElementById('allNotificationsModal');
+                var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+                loadNotifications();
+            }
+
+            if (dd) {
+                // Wait until dropdown finishes hiding to avoid backdrop z-index conflict
+                var wrapper = document.getElementById('notificationDropdownWrapper');
+                function onHidden() {
+                    wrapper.removeEventListener('hidden.bs.dropdown', onHidden);
+                    showModal();
+                }
+                wrapper.addEventListener('hidden.bs.dropdown', onHidden);
+                dd.hide();
+            } else {
+                showModal();
+            }
         }
 
         // Accent-insensitive diacritics removal for Javascript client-side search
@@ -523,5 +667,31 @@
             }
         }
     </script>
+
+<!-- =========================================================
+     FULL NOTIFICATION HISTORY MODAL — body-level to avoid z-index stacking
+========================================================== -->
+<div class="modal fade" id="allNotificationsModal" tabindex="-1"
+     aria-labelledby="allNotificationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="allNotificationsModalLabel">
+                    <i class="bi bi-bell me-2"></i>Tất cả thông báo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="allNotificationsModalBody">
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div> Đang tải...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

@@ -34,5 +34,10 @@ namespace SEP490_G52_CSMS.Models
         [Column("recipient_role")]
         [StringLength(50)]
         public string? RecipientRole { get; set; }
+
+        /// <summary>Optional URL to the related resource (e.g. request details page).</summary>
+        [Column("resource_url")]
+        [StringLength(500)]
+        public string? ResourceUrl { get; set; }
     }
 }

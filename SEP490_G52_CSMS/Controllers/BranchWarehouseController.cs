@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Services;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -15,10 +16,12 @@ namespace SEP490_G52_CSMS.Controllers
     public class BranchWarehouseController : Controller
     {
         private readonly CSMSAppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public BranchWarehouseController(CSMSAppDbContext context)
+        public BranchWarehouseController(CSMSAppDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         private async Task<(string BranchId, string BranchName)> GetUserBranchAsync()
@@ -307,17 +310,15 @@ namespace SEP490_G52_CSMS.Controllers
                 _context.BranchSupplyRequestItems.Add(reqItem);
             }
 
-            // Create notification for WarehouseManager role
+            // Raise notification event for WarehouseManager role
             var branch = await _context.Branches.FindAsync(branchId);
             var branchName = branch?.BranchName ?? "Chi nhánh";
-            _context.Notifications.Add(new Notification
-            {
-                Title = "Yêu cầu xuất kho mới",
-                Message = $"Chi nhánh {branchName} đã gửi một yêu cầu xuất kho mới với mã đơn: {code}.",
-                CreatedTime = DateTime.Now,
-                IsRead = false,
-                RecipientRole = "WarehouseManager"
-            });
+            await _notificationService.SendAsync(new NotificationEvent(
+                Title: "Yêu cầu xuất kho mới",
+                Message: $"Chi nhánh {branchName} đã gửi một yêu cầu xuất kho mới với mã đơn: {code}.",
+                RecipientRole: "WarehouseManager",
+                ResourceUrl: "/Warehouse/ExportRequests"
+            ));
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, requestCode = code });
@@ -492,17 +493,15 @@ namespace SEP490_G52_CSMS.Controllers
             req.DelivererPhone = delivererPhone?.Trim();
             req.ReceivedDate = DateTime.Now;
 
-            // Create notification for WarehouseManager role
+            // Raise notification event for WarehouseManager role
             var branch = await _context.Branches.FindAsync(branchId);
             var branchName = branch?.BranchName ?? "Chi nhánh";
-            _context.Notifications.Add(new Notification
-            {
-                Title = "Nhập kho hoàn tất",
-                Message = $"Chi nhánh {branchName} đã nhận hàng thành công và cập nhật tồn kho cho đơn {code}.",
-                CreatedTime = DateTime.Now,
-                IsRead = false,
-                RecipientRole = "WarehouseManager"
-            });
+            await _notificationService.SendAsync(new NotificationEvent(
+                Title: "Nhập kho hoàn tất",
+                Message: $"Chi nhánh {branchName} đã nhận hàng thành công và cập nhật tồn kho cho đơn {code}.",
+                RecipientRole: "WarehouseManager",
+                ResourceUrl: "/Warehouse/ExportRequests"
+            ));
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Xác nhận nhận hàng thành công. Tồn kho chi nhánh đã được cập nhật." });

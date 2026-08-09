@@ -454,3 +454,26 @@ body {
 .sticky-top {
     z-index: 10 !important;
 }
+
+/* ── Notification dropdown styles ────────────────────────────────────── */
+.notif-item:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+.notif-unread {
+    background-color: rgba(13, 110, 253, 0.07);
+}
+.notif-item.notif-unread:hover {
+    background-color: rgba(13, 110, 253, 0.12);
+}
+#notificationDropdownMenu {
+    min-width: 390px;
+}
+/*
+#allNotificationsModal {
+    z-index: 1065 !important;
+}
+
+    #allNotificationsModal ~ .modal-backdrop,
+    .modal-backdrop {
+        z-index: 1060 !important;
+    }*/
