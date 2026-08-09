@@ -25,9 +25,49 @@ namespace SEP490_G52_CSMS.Services
             return "Đang xử lý";
         }
 
-        public async Task<OrderManagementListViewModel> GetOrderManagementListAsync(string branchId, string branchName, string searchCashier, string status, DateTime? fromDate = null, DateTime? toDate = null)
+        public async Task<OrderManagementListViewModel> GetOrderManagementListAsync(
+            string branchId, 
+            string branchName, 
+            string searchCashier, 
+            string status, 
+            DateTime? fromDate = null, 
+            DateTime? toDate = null,
+            string? cursor = null,
+            string direction = "next",
+            int pageSize = 10)
         {
-            var data = await _repository.GetOrdersAsync(branchId, searchCashier, status, fromDate, toDate);
+            DateTime? cursorDate = null;
+            if (!string.IsNullOrEmpty(cursor) && long.TryParse(cursor, out long ticks))
+            {
+                cursorDate = new DateTime(ticks);
+            }
+
+            var data = await _repository.GetOrdersAsync(branchId, searchCashier, status, fromDate, toDate, cursorDate, direction, pageSize);
+
+            bool hasNext = false;
+            bool hasPrev = false;
+
+            if (direction == "next")
+            {
+                if (data.Count > pageSize)
+                {
+                    hasNext = true;
+                    data.RemoveAt(data.Count - 1);
+                }
+                if (cursorDate.HasValue)
+                {
+                    hasPrev = true;
+                }
+            }
+            else // direction == "prev"
+            {
+                if (data.Count > pageSize)
+                {
+                    hasPrev = true;
+                    data.RemoveAt(0);
+                }
+                hasNext = true;
+            }
 
             var model = new OrderManagementListViewModel
             {
@@ -36,7 +76,9 @@ namespace SEP490_G52_CSMS.Services
                 SearchCashier = searchCashier,
                 FilterStatus = status,
                 FromDate = fromDate,
-                ToDate = toDate
+                ToDate = toDate,
+                HasNext = hasNext,
+                HasPrev = hasPrev
             };
 
             foreach (var item in data)
@@ -47,8 +89,15 @@ namespace SEP490_G52_CSMS.Services
                     CashierName = item.Cashier?.FullName ?? item.Cashier?.Username ?? "Unknown",
                     TotalItems = item.OrderItems.Sum(oi => oi.Quantity),
                     TotalAmount = item.TotalAmount,
-                    Status = MapStatus(item)
+                    Status = MapStatus(item),
+                    CreatedAt = item.CreatedAt
                 });
+            }
+
+            if (model.Items.Any())
+            {
+                model.NextCursor = model.Items.Last().CreatedAt.Ticks.ToString();
+                model.PrevCursor = model.Items.First().CreatedAt.Ticks.ToString();
             }
 
             return model;

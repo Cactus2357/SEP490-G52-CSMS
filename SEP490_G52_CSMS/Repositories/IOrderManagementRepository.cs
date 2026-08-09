@@ -6,7 +6,15 @@ namespace SEP490_G52_CSMS.Repositories
 {
     public interface IOrderManagementRepository
     {
-        Task<List<Order>> GetOrdersAsync(string branchId, string searchCashier, string status, System.DateTime? fromDate = null, System.DateTime? toDate = null);
+        Task<List<Order>> GetOrdersAsync(
+            string branchId, 
+            string searchCashier, 
+            string status, 
+            System.DateTime? fromDate = null, 
+            System.DateTime? toDate = null,
+            System.DateTime? cursor = null,
+            string direction = "next",
+            int pageSize = 10);
         Task<Order?> GetOrderDetailsAsync(string orderId, string branchId);
     }
 }

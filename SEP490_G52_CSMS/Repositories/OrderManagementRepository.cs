@@ -17,7 +17,15 @@ namespace SEP490_G52_CSMS.Repositories
             _context = context;
         }
 
-        public async Task<List<Order>> GetOrdersAsync(string branchId, string searchCashier, string status, DateTime? fromDate = null, DateTime? toDate = null)
+        public async Task<List<Order>> GetOrdersAsync(
+            string branchId, 
+            string searchCashier, 
+            string status, 
+            DateTime? fromDate = null, 
+            DateTime? toDate = null,
+            DateTime? cursor = null,
+            string direction = "next",
+            int pageSize = 10)
         {
             var query = _context.Orders
                 .Include(o => o.Cashier)
@@ -76,23 +84,33 @@ namespace SEP490_G52_CSMS.Repositories
                 }
             }
 
-            var list = await query.ToListAsync();
-            return list.OrderBy(o => {
-                bool isCanceled = o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled";
-                bool isCompleted = o.PaymentStatus == "Paid" && (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed");
-                
-                if (!isCanceled && !isCompleted) return 0; // Đang xử lý
-                if (isCompleted) return 1; // Hoàn thành
-                return 2; // Đã hủy
-            })
-            .ThenBy(o => {
-                bool isCanceled = o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled";
-                bool isCompleted = o.PaymentStatus == "Paid" && (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed");
-                
-                if (!isCanceled && !isCompleted) return o.CreatedAt.Ticks; // Oldest first
-                return -o.CreatedAt.Ticks; // Newest first
-            })
-            .ToList();
+            // Cursor pagination logic
+            if (cursor.HasValue)
+            {
+                if (direction == "prev")
+                {
+                    query = query.Where(o => o.CreatedAt > cursor.Value);
+                    query = query.OrderBy(o => o.CreatedAt); // Ascending order
+                }
+                else
+                {
+                    query = query.Where(o => o.CreatedAt < cursor.Value);
+                    query = query.OrderByDescending(o => o.CreatedAt); // Descending order
+                }
+            }
+            else
+            {
+                query = query.OrderByDescending(o => o.CreatedAt); // Descending order
+            }
+
+            var list = await query.Take(pageSize + 1).ToListAsync();
+
+            if (direction == "prev")
+            {
+                list.Reverse();
+            }
+
+            return list;
         }
 
         public async Task<Order?> GetOrderDetailsAsync(string orderId, string branchId)

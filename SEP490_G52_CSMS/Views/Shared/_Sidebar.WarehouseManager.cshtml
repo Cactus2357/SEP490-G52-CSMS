@@ -11,21 +11,21 @@
 }
 
 <li class="menu-item">
-    <a asp-controller="Warehouse" asp-action="Index" class="menu-link @ActiveIf("Warehouse", "Index")">
+    <a asp-controller="Warehouse" asp-action="Index" class="menu-link @ActiveIf("Warehouse", "Index")" title="Quản lý nguyên liệu">
         <i class="bi bi-box-seam-fill"></i>
         <span>Quản lý nguyên liệu</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a asp-controller="Warehouse" asp-action="ImportHistory" class="menu-link @ActiveIf("Warehouse", "ImportHistory")">
+    <a asp-controller="Warehouse" asp-action="ImportHistory" class="menu-link @ActiveIf("Warehouse", "ImportHistory")" title="Quản lý nhập kho">
         <i class="bi bi-box-arrow-in-down-fill"></i>
         <span>Quản lý nhập kho</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a asp-controller="Warehouse" asp-action="ExportRequests" class="menu-link @ActiveIf("Warehouse", "ExportRequests")">
+    <a asp-controller="Warehouse" asp-action="ExportRequests" class="menu-link @ActiveIf("Warehouse", "ExportRequests")" title="Quản lý xuất kho">
         <i class="bi bi-box-arrow-up-fill"></i>
         <span>Quản lý xuất kho</span>
     </a>

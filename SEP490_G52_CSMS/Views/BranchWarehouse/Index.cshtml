@@ -87,9 +87,9 @@
                                     <th style="width: 15%;">Mã NgL</th>
                                     <th style="width: 27%;">Tên nguyên liệu</th>
                                     <th style="width: 15%;">Kiểu NgL</th>
-                                    <th style="width: 15%;">Loại NgL</th>
+                                    <th style="width: 10%;">Loại NgL</th>
                                     <th style="width: 12%;">Tồn kho</th>
-                                    <th style="width: 8%;" class="text-center pe-3">Hành động</th>
+                                    <th style="width: 13%;" class="text-center pe-3">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -100,11 +100,11 @@
                                     {
                                         var item = Model.Items[i];
                                         bool isLow = item.StockQuantity <= item.LowStockThreshold;
-                                        <tr style="cursor: pointer;" onclick="loadInventoryDetails(@item.InventoryId)">
+                                        <tr>
                                             <td class="ps-3">@(sttOffset + i + 1)</td>
                                             <td class="fw-bold">@item.Material?.MaterialCode</td>
                                             <td>@item.Material?.MaterialName</td>
-                                            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-2">@item.Material?.MaterialKind</span></td>
+                                            <td>@item.Material?.MaterialKind</td>
                                             <td>@item.Material?.Category</td>
                                             <td class="fw-semibold">
                                                 @item.StockQuantity.ToString("G29") @item.Material?.StorageUnit
@@ -121,7 +121,7 @@
                                                 }
                                             </td>
                                             <td class="text-center pe-3">
-                                                <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none" onclick="event.stopPropagation(); loadInventoryDetails(@item.InventoryId)">
+                                                <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none" onclick="loadInventoryDetails(@item.InventoryId)">
                                                     [Chi tiết]
                                                 </button>
                                             </td>

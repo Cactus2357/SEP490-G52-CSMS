@@ -25,7 +25,7 @@ namespace SEP490_G52_CSMS.Controllers
             // Search by material name
             if (!string.IsNullOrWhiteSpace(searchString))
             {
-                query = query.Where(m => m.MaterialName.Contains(searchString));
+                query = query.Where(m => EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchString));
             }
 
             // Filter by Category (Loại NgL)

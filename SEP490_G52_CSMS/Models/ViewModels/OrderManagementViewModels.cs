@@ -12,6 +12,11 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
 
+        public string? NextCursor { get; set; }
+        public string? PrevCursor { get; set; }
+        public bool HasNext { get; set; }
+        public bool HasPrev { get; set; }
+
         public List<OrderManagementItemViewModel> Items { get; set; } = new List<OrderManagementItemViewModel>();
     }
 
@@ -22,6 +27,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int TotalItems { get; set; }
         public decimal TotalAmount { get; set; }
         public string Status { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
     }
 
     public class OrderDetailViewModel

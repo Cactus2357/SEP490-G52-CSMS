@@ -155,6 +155,26 @@ body {
     margin-bottom: 6px;
 }
 
+.menu-header {
+    padding: 14px 24px 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    list-style: none;
+    transition: all 0.2s ease;
+}
+
+.sidebar.collapsed .menu-header {
+    opacity: 0;
+    visibility: hidden;
+    height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
 .menu-link {
     display: flex;
     align-items: center;
@@ -170,6 +190,11 @@ body {
     .menu-link span {
         transition: opacity 0.2s ease, visibility 0.2s ease;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+        display: inline-block;
+        vertical-align: middle;
     }
 
     .menu-link:hover {

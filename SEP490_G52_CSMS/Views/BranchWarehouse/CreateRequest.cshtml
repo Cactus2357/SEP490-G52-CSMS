@@ -82,7 +82,7 @@
                                         {
                                             var isLow = inv.StockQuantity <= inv.LowStockThreshold;
                                             var warningClass = isLow ? "table-danger text-danger fw-bold" : "";
-                                            <tr class="@warningClass" data-bulk-id="@mat.MaterialId" data-name="@mat.MaterialName" data-kind="@mat.MaterialKind" data-unit="@mat.StorageUnit">
+                                            <tr class="@warningClass" data-bulk-id="@mat.MaterialId" data-name="@mat.MaterialName" data-kind="@mat.MaterialKind" data-unit="@mat.StorageUnit" onclick="toggleRowCheckbox(event, this)" style="cursor: pointer;">
                                                 <td class="ps-2 text-center">
                                                     <input type="checkbox" class="form-check-input bulk-checkbox" style="cursor: pointer;" />
                                                 </td>
@@ -405,6 +405,16 @@
                     showToast('Lỗi kết nối máy chủ khi tạo đơn đặt hàng.', 'danger');
                 }
             });
+        }
+
+        function toggleRowCheckbox(event, row) {
+            if (event.target.tagName.toLowerCase() === 'input') {
+                return;
+            }
+            const checkbox = row.querySelector('.bulk-checkbox');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
         }
     </script>
 }

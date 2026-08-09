@@ -53,8 +53,8 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (!string.IsNullOrEmpty(searchString))
             {
-                searchString = searchString.Trim().ToLower();
-                query = query.Where(bi => bi.Material != null && bi.Material.MaterialName.ToLower().Contains(searchString));
+                searchString = searchString.Trim();
+                query = query.Where(bi => bi.Material != null && EF.Functions.Collate(bi.Material.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchString));
             }
 
             if (!string.IsNullOrEmpty(selectedCategory))
@@ -137,7 +137,7 @@ namespace SEP490_G52_CSMS.Controllers
                 .ToListAsync();
 
             var materials = await _context.Materials
-                .Where(m => !trackedMaterialIds.Contains(m.MaterialId) && m.MaterialName.ToLower().Contains(term))
+                .Where(m => !trackedMaterialIds.Contains(m.MaterialId) && EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(term))
                 .Take(10)
                 .Select(m => new
                 {
@@ -230,7 +230,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             var materials = await _context.BranchInventories
                 .Include(bi => bi.Material)
-                .Where(bi => bi.BranchId == branchId && bi.Material != null && bi.Material.MaterialName.ToLower().Contains(term))
+                .Where(bi => bi.BranchId == branchId && bi.Material != null && EF.Functions.Collate(bi.Material.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(term))
                 .Select(bi => new
                 {
                     materialId = bi.MaterialId,

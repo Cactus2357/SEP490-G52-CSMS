@@ -12,14 +12,27 @@
         return (controllerMatch && actionMatch) ? "active" : "";
     }
 
-    var branchId = User.FindFirst("BranchId")?.Value;
-    var branchName = "Tổng công ty";
-    if (!string.IsNullOrEmpty(branchId))
+    var displayTitle = "Khách";
+    if (User.Identity != null && User.Identity.IsAuthenticated)
     {
-        var branch = DbContext.Branches.FirstOrDefault(b => b.BranchId == branchId);
-        if (branch != null)
+        var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        if (userRole == "RManager")
         {
-            branchName = branch.BranchName;
+            displayTitle = "Tổng công ty";
+        }
+        else if (userRole == "WarehouseManager")
+        {
+            displayTitle = "Kho tổng";
+        }
+        else if (userRole == "BranchManager")
+        {
+            var branchId = User.FindFirst("BranchId")?.Value;
+            var branch = !string.IsNullOrEmpty(branchId) ? DbContext.Branches.FirstOrDefault(b => b.BranchId == branchId) : null;
+            displayTitle = branch?.BranchName ?? "Chi nhánh";
+        }
+        else
+        {
+            displayTitle = userRole ?? "Nhân viên";
         }
     }
 
@@ -155,11 +168,19 @@
 
         <div class="main-wrapper">
             <header class="top-header">
-                <div class="header-left">
-                    <input type="text" class="header-search" placeholder="search">
+                <div class="header-left position-relative" style="width: 320px;">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-pill text-secondary py-1.5 px-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="navbarSearchInput" class="form-control bg-light border-start-0 rounded-end-pill py-1.5" placeholder="Tìm kiếm trang..." autocomplete="off" oninput="handleNavbarSearch(this.value)" style="font-size: 0.9rem;">
+                    </div>
+                    <div id="navbarSearchSuggestions" class="list-group position-absolute w-100 mt-1 shadow-lg d-none" style="top: 100%; left: 0; z-index: 2000; max-height: 250px; overflow-y: auto; border-radius: 8px;">
+                        <!-- Suggestions will render here -->
+                    </div>
                 </div>
                 <div class="header-branch">
-                    <span>@branchName</span>
+                    <span class="h5 fw-bold text-dark mb-0">@displayTitle</span>
                 </div>
                 <div class="header-right">
                     <div class="dropdown me-2">
@@ -285,13 +306,27 @@
 
     @await RenderSectionAsync("Scripts", required: false)
 
-    <!-- Floating Toast Container -->
+    <!-- Toast Containers -->
+    <!-- Bottom Right Container (for Success) -->
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
-        <div id="appToast" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="appToastBottom" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body d-flex align-items-center gap-2">
-                    <i id="toastIcon" class="bi"></i>
-                    <span id="toastMessage" class="fw-semibold"></span>
+                    <i id="toastIconBottom" class="bi"></i>
+                    <span id="toastMessageBottom" class="fw-semibold"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Center Container (for Warning and Danger) -->
+    <div class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1100; margin-top: 60px;">
+        <div id="appToastTop" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i id="toastIconTop" class="bi"></i>
+                    <span id="toastMessageTop" class="fw-semibold"></span>
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
@@ -309,11 +344,13 @@
 
     <script>
         function showToast(message, type = 'success') {
-            const toastEl = document.getElementById('appToast');
+            const isTop = (type === 'warning' || type === 'danger' || type === 'error');
+            const toastEl = document.getElementById(isTop ? 'appToastTop' : 'appToastBottom');
             if (!toastEl) return;
 
             toastEl.className = 'toast align-items-center text-white border-0 shadow';
-            const iconEl = document.getElementById('toastIcon');
+            const iconEl = document.getElementById(isTop ? 'toastIconTop' : 'toastIconBottom');
+            const msgEl = document.getElementById(isTop ? 'toastMessageTop' : 'toastMessageBottom');
             const closeBtn = toastEl.querySelector('.btn-close');
 
             if (type === 'success') {
@@ -330,9 +367,9 @@
                 closeBtn.classList.add('btn-close-white');
             }
 
-            document.getElementById('toastMessage').textContent = message;
+            msgEl.textContent = message;
 
-            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            const toast = new bootstrap.Toast(toastEl, { delay: 7000 });
             toast.show();
         }
 
@@ -348,6 +385,142 @@
                     }
                 });
             }, 1000);
+        }
+
+        // Accent-insensitive diacritics removal for Javascript client-side search
+        function removeVietnameseDiacritics(str) {
+            if (!str) return '';
+            return str.normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .replace(/đ/g, 'd')
+                      .replace(/Đ/g, 'D')
+                      .toLowerCase();
+        }
+
+        const currentUserRole = '@(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")';
+        const rolePages = {
+            "RManager": [
+                { name: "Quản lý nhân viên chi nhánh", url: "/BranchManager" },
+                { name: "Yêu cầu xuất kho (Tổng kho)", url: "/Warehouse/ExportRequests" },
+                { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
+                { name: "Lịch sử đặt hàng kho", url: "/BranchWarehouse/RequestHistory" },
+                { name: "Quản lý nhà cung cấp", url: "/Supplier" },
+                { name: "Quản lý nguyên vật liệu", url: "/Material" },
+                { name: "Báo cáo thống kê", url: "/Reporting" },
+                { name: "Quản lý thực đơn & sản phẩm", url: "/Product" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "WarehouseManager": [
+                { name: "Yêu cầu xuất kho (Tổng kho)", url: "/Warehouse/ExportRequests" },
+                { name: "Nhập kho (Phiếu nhập kho)", url: "/Warehouse/Receipts" },
+                { name: "Quản lý nguyên vật liệu", url: "/Material" },
+                { name: "Quản lý loại nguyên vật liệu", url: "/Material/Categories" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "BranchManager": [
+                { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
+                { name: "Đặt hàng kho (Yêu cầu nhập)", url: "/BranchWarehouse/CreateRequest" },
+                { name: "Lịch sử đặt hàng kho", url: "/BranchWarehouse/RequestHistory" },
+                { name: "Quản lý nhân viên chi nhánh", url: "/Employee" },
+                { name: "Quản lý đơn bán hàng", url: "/Order" },
+                { name: "Quản lý lịch làm việc & chia ca", url: "/Shift" },
+                { name: "Báo cáo doanh thu chi nhánh", url: "/Reporting" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Staff": [
+                { name: "Tạo hóa đơn bán hàng", url: "/Order/Create" },
+                { name: "Danh sách hóa đơn", url: "/Order" },
+                { name: "Lịch làm việc của tôi", url: "/Shift/MySchedule" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ]
+        };
+
+        let selectedSuggestionIndex = -1;
+        let filteredSuggestions = [];
+
+        function handleNavbarSearch(val) {
+            const listEl = document.getElementById('navbarSearchSuggestions');
+            if (!val.trim()) {
+                listEl.classList.add('d-none');
+                listEl.innerHTML = '';
+                filteredSuggestions = [];
+                selectedSuggestionIndex = -1;
+                return;
+            }
+
+            const cleanVal = removeVietnameseDiacritics(val);
+            const pages = rolePages[currentUserRole] || [];
+            
+            filteredSuggestions = pages.filter(p => 
+                removeVietnameseDiacritics(p.name).includes(cleanVal) || 
+                removeVietnameseDiacritics(p.url).includes(cleanVal)
+            );
+
+            if (filteredSuggestions.length === 0) {
+                listEl.classList.add('d-none');
+                listEl.innerHTML = '';
+                selectedSuggestionIndex = -1;
+                return;
+            }
+
+            let itemsHtml = "";
+            filteredSuggestions.forEach((item, index) => {
+                itemsHtml += `
+                    <a href="${item.url}" class="list-group-item list-group-item-action py-2 px-3 small border-0 d-flex justify-content-between align-items-center" id="nav-sugg-${index}">
+                        <span class="fw-semibold text-dark">${item.name}</span>
+                        <span class="text-muted" style="font-size: 0.75rem;">${item.url}</span>
+                    </a>
+                `;
+            });
+
+            listEl.innerHTML = itemsHtml;
+            listEl.classList.remove('d-none');
+            selectedSuggestionIndex = -1;
+        }
+
+        // Close on clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#navbarSearchInput, #navbarSearchSuggestions').length) {
+                $('#navbarSearchSuggestions').addClass('d-none');
+            }
+        });
+
+        // Key navigation (arrow keys + Enter)
+        $(document).on('keydown', '#navbarSearchInput', function(e) {
+            const listEl = $('#navbarSearchSuggestions');
+            if (listEl.hasClass('d-none') || filteredSuggestions.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedSuggestionIndex = (selectedSuggestionIndex + 1) % filteredSuggestions.length;
+                highlightSuggestion();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedSuggestionIndex = (selectedSuggestionIndex - 1 + filteredSuggestions.length) % filteredSuggestions.length;
+                highlightSuggestion();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < filteredSuggestions.length) {
+                    window.location.href = filteredSuggestions[selectedSuggestionIndex].url;
+                } else if (filteredSuggestions.length > 0) {
+                    window.location.href = filteredSuggestions[0].url;
+                }
+            }
+        });
+
+        function highlightSuggestion() {
+            $('#navbarSearchSuggestions a').removeClass('active bg-light text-primary');
+            if (selectedSuggestionIndex >= 0) {
+                const activeItem = $(`#nav-sugg-${selectedSuggestionIndex}`);
+                activeItem.addClass('active bg-light text-primary');
+                // Auto-fill input text with suggestion name
+                $('#navbarSearchInput').val(filteredSuggestions[selectedSuggestionIndex].name);
+
+                // Auto-scroll parent container to keep highlighted item visible
+                if (activeItem.length) {
+                    activeItem[0].scrollIntoView({ block: 'nearest' });
+                }
+            }
         }
     </script>
 </body>

@@ -11,69 +11,70 @@
 }
 
 <li class="menu-item">
-    <a asp-controller="Employee" asp-action="Index" class="menu-link @ActiveIf("Employee", "Index")">
+    <a asp-controller="Employee" asp-action="Index" class="menu-link @ActiveIf("Employee", "Index")" title="Quản lý nhân viên">
         <i class="bi bi-people-fill"></i>
         <span>Quản lý nhân viên</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a asp-controller="WorkSchedule" asp-action="Index" class="menu-link @ActiveIf("WorkSchedule", "Index")">
+    <a asp-controller="WorkSchedule" asp-action="Index" class="menu-link @ActiveIf("WorkSchedule", "Index")" title="Quản lý lịch làm việc">
         <i class="bi bi-calendar3"></i>
         <span>Quản lý lịch làm việc</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a asp-controller="MenuManagement" asp-action="Index" class="menu-link @ActiveIf("MenuManagement", "Index")">
+    <a asp-controller="MenuManagement" asp-action="Index" class="menu-link @ActiveIf("MenuManagement", "Index")" title="Quản lý thực đơn">
         <i class="bi bi-journal-text"></i>
         <span>Quản lý thực đơn</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a href="#" class="menu-link disabled-link" title="Chức năng đang phát triển">
+    <a href="#" class="menu-link disabled-link" title="Quản lý đơn xin nghỉ (Chức năng đang phát triển)">
         <i class="bi bi-calendar-x"></i>
         <span>Quản lý đơn xin nghỉ</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a asp-controller="ShiftChange" asp-action="Index" class="menu-link @ActiveIf("ShiftChange", "Index")">
+    <a asp-controller="ShiftChange" asp-action="Index" class="menu-link @ActiveIf("ShiftChange", "Index")" title="Quản lý đổi ca">
         <i class="bi bi-arrow-left-right"></i>
         <span>Quản lý đổi ca</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a asp-controller="ShiftHandover" asp-action="Index" class="menu-link @ActiveIf("ShiftHandover", "Index")">
+    <a asp-controller="ShiftHandover" asp-action="Index" class="menu-link @ActiveIf("ShiftHandover", "Index")" title="Bàn giao ca">
         <i class="bi bi-clock-history"></i>
         <span>Bàn giao ca</span>
     </a>
 </li>
 
 <li class="menu-item">
-    <a asp-controller="OrderManagement" asp-action="Index" class="menu-link @ActiveIf("OrderManagement", "Index")">
+    <a asp-controller="OrderManagement" asp-action="Index" class="menu-link @ActiveIf("OrderManagement", "Index")" title="Quản lý đơn đặt hàng">
         <i class="bi bi-cart3"></i>
         <span>Quản lý đơn đặt hàng</span>
     </a>
 </li>
 
 <li class="menu-header">Kho chi nhánh</li>
+
 <li class="menu-item">
-    <a asp-controller="BranchWarehouse" asp-action="Index" class="menu-link @ActiveIf("BranchWarehouse", "Index")">
+    <a asp-controller="BranchWarehouse" asp-action="Index" class="menu-link @ActiveIf("BranchWarehouse", "Index")" title="Tồn kho">
         <i class="bi bi-box-seam"></i>
         <span>Tồn kho</span>
     </a>
 </li>
 <li class="menu-item">
-    <a asp-controller="BranchWarehouse" asp-action="CreateRequest" class="menu-link @ActiveIf("BranchWarehouse", "CreateRequest")">
+    <a asp-controller="BranchWarehouse" asp-action="CreateRequest" class="menu-link @ActiveIf("BranchWarehouse", "CreateRequest")" title="Đặt hàng kho">
         <i class="bi bi-cart-plus"></i>
         <span>Đặt hàng kho</span>
     </a>
 </li>
 <li class="menu-item">
-    <a asp-controller="BranchWarehouse" asp-action="RequestHistory" class="menu-link @ActiveIf("BranchWarehouse", "RequestHistory")">
+    <a asp-controller="BranchWarehouse" asp-action="RequestHistory" class="menu-link @ActiveIf("BranchWarehouse", "RequestHistory")" title="Lịch sử đặt">
         <i class="bi bi-clock-history"></i>
         <span>Lịch sử đặt</span>
     </a>

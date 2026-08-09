@@ -60,13 +60,14 @@
     <!-- Bảng Danh Sách Đơn Hàng -->
     <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 table-sm">
                 <thead class="table-light">
                     <tr>
                         <th class="ps-4" style="width: 15%;">Mã Đơn Hàng</th>
-                        <th style="width: 40%;">Thông Tin Đơn Hàng</th>
-                        <th class="text-end" style="width: 15%;">Tổng Tiền</th>
-                        <th class="text-center" style="width: 15%;">Trạng Thái</th>
+                        <th style="width: 25%;">Thông Tin Đơn Hàng</th>
+                        <th style="width: 20%;">Thời Gian</th>
+                        <th class="text-end" style="width: 13%;">Tổng Tiền</th>
+                        <th class="text-center" style="width: 12%;">Trạng Thái</th>
                         <th class="text-center pe-4" style="width: 15%;">Hành Động</th>
                     </tr>
                 </thead>
@@ -74,7 +75,7 @@
                     @if (!Model.Items.Any())
                     {
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                 Không có đơn hàng nào khớp với tìm kiếm.
                             </td>
@@ -87,8 +88,10 @@
                             <tr>
                                 <td class="ps-4 fw-semibold text-dark">#@item.OrderId.Replace("ORD-", "").Replace("MH", "")</td>
                                 <td>
-                                    <div class="fw-semibold text-secondary">@item.OrderId</div>
                                     <div class="small text-muted">Thu ngân: <span class="fw-medium text-dark">@item.CashierName</span> &bull; @item.TotalItems món</div>
+                                </td>
+                                <td>
+                                    <div class="small text-dark fw-medium">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
                                 </td>
                                 <td class="text-end fw-bold text-dark">
                                     @item.TotalAmount.ToString("N0")đ
@@ -124,36 +127,69 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination Cursor-based -->
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">
+                Hiển thị các đơn hàng theo dòng thời gian
+            </span>
+            <div class="d-flex gap-2">
+                @if (Model.HasPrev)
+                {
+                    <a href="@Url.Action("Index", new { fromDate = Model.FromDate?.ToString("yyyy-MM-dd"), toDate = Model.ToDate?.ToString("yyyy-MM-dd"), searchCashier = Model.SearchCashier, status = Model.FilterStatus, cursor = Model.PrevCursor, direction = "prev" })" class="btn btn-outline-secondary btn-sm fw-semibold">
+                        <i class="bi bi-chevron-left me-1"></i>Đơn mới hơn
+                    </a>
+                }
+                else
+                {
+                    <button class="btn btn-outline-secondary btn-sm fw-semibold" disabled>
+                        <i class="bi bi-chevron-left me-1"></i>Đơn mới hơn
+                    </button>
+                }
+
+                @if (Model.HasNext)
+                {
+                    <a href="@Url.Action("Index", new { fromDate = Model.FromDate?.ToString("yyyy-MM-dd"), toDate = Model.ToDate?.ToString("yyyy-MM-dd"), searchCashier = Model.SearchCashier, status = Model.FilterStatus, cursor = Model.NextCursor, direction = "next" })" class="btn btn-outline-secondary btn-sm fw-semibold">
+                        Đơn cũ hơn<i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                }
+                else
+                {
+                    <button class="btn btn-outline-secondary btn-sm fw-semibold" disabled>
+                        Đơn cũ hơn<i class="bi bi-chevron-right ms-1"></i>
+                    </button>
+                }
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Inline Detail Panel -->
-<div id="orderDetailSection" class="card border-0 shadow-sm mt-4 d-none">
-    <div class="card-body p-0" id="orderDetailSectionContent">
-        <!-- Loaded via AJAX -->
-    </div>
-</div>
+<!-- Modal Container -->
+<div id="orderDetailModalContainer"></div>
 
 @section Scripts {
     <script>
         $(document).ready(function () {
-            $(".btn-view-detail").click(function () {
+            // Clicking "Chi tiết" button
+            $("table tbody").on("click", ".btn-view-detail", function () {
                 var orderId = $(this).data("id");
-                var $section = $("#orderDetailSection");
-                var $content = $("#orderDetailSectionContent");
-                
-                $.get('@Url.Action("Detail", "OrderManagement")?orderId=' + orderId + '&isInline=true', function (data) {
-                    $content.html(data);
-                    $section.removeClass("d-none");
-                    
-                    // Smoothly scroll to the details card below
-                    $('html, body').animate({
-                        scrollTop: $section.offset().top - 85
-                    }, 500);
-                }).fail(function () {
-                    alert("Có lỗi xảy ra khi tải chi tiết đơn hàng.");
-                });
+                showOrderDetailModal(orderId);
             });
+
+            function showOrderDetailModal(orderId) {
+                $.get('@Url.Action("Detail", "OrderManagement")?orderId=' + orderId + '&isInline=false', function (data) {
+                    // Remove existing modal from DOM if any
+                    $('#orderDetailModal').remove();
+                    
+                    // Append new modal HTML and show it
+                    $("#orderDetailModalContainer").html(data);
+                    var modalEl = document.getElementById('orderDetailModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }).fail(function () {
+                    showToast("Có lỗi xảy ra khi tải chi tiết đơn hàng.", "danger");
+                });
+            }
         });
     </script>
 }
