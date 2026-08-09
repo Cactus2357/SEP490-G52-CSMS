@@ -63,7 +63,7 @@
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle m-0">
+                <table class="table table-hover table-sm align-middle m-0">
                     <thead class="table-light">
                         <tr>
                             <th style="width: 15%;" class="ps-3">Mã đơn</th>
@@ -84,14 +84,17 @@
                                                    item.Status == "Đã hoàn thành" ? "bg-success text-white" :
                                                    item.Status == "Từ chối" ? "bg-danger text-white" : "bg-secondary text-white";
 
-                                // BR03: Visual highlighting for pending (highlighted in bold and soft yellow bg)
-                                string rowStyle = item.Status == "Chờ duyệt" ? "table-warning fw-bold border-warning-subtle" : "";
+                                string rowStyle = item.Status == "Chờ duyệt" ? "table-warning fw-semibold" :
+                                                   item.Status == "Đang chuẩn bị xuất" ? "table-primary fw-semibold" :
+                                                   item.Status == "Đã xuất kho" ? "table-info fw-semibold" :
+                                                   item.Status == "Đã hoàn thành" ? "table-success" :
+                                                   item.Status == "Từ chối" ? "table-danger" : "table-secondary";
 
-                                <tr class="@rowStyle">
+                                <tr class="@rowStyle" data-code="@item.RequestCode">
                                     <td class="ps-3 fw-bold">@item.RequestCode</td>
                                     <td>@item.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
                                     <td>@item.Branch?.BranchName</td>
-                                    <td><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
+                                    <td class="status-cell"><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
                                     <td class="text-center pe-3">
                                         <button type="button" class="btn btn-sm btn-link text-decoration-none fw-bold" onclick="viewExportRequestDetails('@item.RequestCode')">
                                             [Chi tiết]
@@ -141,12 +144,14 @@
 
 <!-- ==================== MODALS ==================== -->
 
+<!-- ==================== MODALS ==================== -->
+
 <!-- Modal: Đơn duyệt (UC66 / UC67) -->
 <div class="modal fade" id="requestProcessModal" tabindex="-1" aria-labelledby="requestProcessModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title fw-bold" id="requestProcessModalLabel">Đơn duyệt</h5>
+                <h5 class="modal-title fw-bold" id="requestProcessModalLabel">Chi tiết đơn yêu cầu xuất kho</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
@@ -156,12 +161,12 @@
                     <div class="card bg-light border-0 mb-4 rounded-3">
                         <div class="card-body py-3 small text-dark fs-6">
                             <div class="row g-2">
+                                <div class="col-md-4"><strong>Mã đơn:</strong> <span id="hdrCodeA" class="fw-bold text-primary"></span></div>
                                 <div class="col-md-4"><strong>Chi nhánh:</strong> <span id="hdrBranch" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Trạng thái đơn:</strong> <span id="hdrStatusA"></span></div>
                                 <div class="col-md-4"><strong>Người tạo đơn:</strong> <span id="hdrCreator" class="fw-semibold"></span></div>
                                 <div class="col-md-4"><strong>SĐT:</strong> <span id="hdrPhone" class="fw-semibold"></span></div>
-                                <div class="col-md-4"><strong>Trạng thái:</strong> <span id="hdrStatus" class="fw-semibold text-warning">Chờ duyệt</span></div>
                                 <div class="col-md-4"><strong>Ngày yêu cầu:</strong> <span id="hdrDate" class="fw-semibold"></span></div>
-                                <div class="col-md-4"><strong>Người duyệt:</strong> <span class="fw-semibold text-primary">@User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value</span></div>
                             </div>
                         </div>
                     </div>
@@ -176,7 +181,7 @@
                                     <th>Loại NgL</th>
                                     <th>Yêu cầu</th>
                                     <th>Tồn kho (Tổng)</th>
-                                    <th>Trạng thái</th>
+                                    <th>Trạng thái tồn kho</th>
                                     <th style="width: 15%;">Số lượng thực xuất</th>
                                     <th class="text-center">Hành động</th>
                                 </tr>
@@ -207,14 +212,42 @@
 
                 <!-- Step 2: Preparing Shipment Form (Screen B for "Đang chuẩn bị xuất") -->
                 <div id="processScreenB" class="d-none">
-                    <div class="text-center py-5">
-                        <i class="bi bi-box-seam text-primary fs-1 mb-3 d-block"></i>
-                        <h4 class="fw-bold text-dark mb-2">Chuẩn bị nguyên liệu xuất kho</h4>
-                        <p class="text-secondary fs-6 mb-4">Đang trong quá trình chuẩn bị nguyên liệu xuất kho.</p>
-                        
-                        <div class="d-flex justify-content-center gap-2">
-                            <button type="button" class="btn btn-success px-5 py-2 fw-bold" onclick="confirmShipment()">Xác nhận Đã xuất kho</button>
+                    <div class="card bg-light border-0 mb-4 rounded-3">
+                        <div class="card-body py-3 small text-dark fs-6">
+                            <div class="row g-2">
+                                <div class="col-md-4"><strong>Mã đơn:</strong> <span id="hdrCodeB" class="fw-bold text-primary"></span></div>
+                                <div class="col-md-4"><strong>Chi nhánh:</strong> <span id="hdrBranchB" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Trạng thái đơn:</strong> <span id="hdrStatusB"></span></div>
+                                <div class="col-md-4"><strong>Người tạo đơn:</strong> <span id="hdrCreatorB" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Ngày yêu cầu:</strong> <span id="hdrDateB" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Người duyệt:</strong> <span id="hdrApproverB" class="fw-semibold text-primary"></span></div>
+                            </div>
                         </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-2">Chi tiết nguyên vật liệu chuẩn bị xuất kho</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tên NgL</th>
+                                    <th>Loại NgL</th>
+                                    <th>Yêu cầu</th>
+                                    <th>Số lượng thực xuất đã duyệt</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pbItemsTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center py-3 bg-light rounded border p-3">
+                        <i class="bi bi-box-seam text-primary fs-3 mb-2 d-block"></i>
+                        <p class="text-secondary small mb-3">Vui lòng kiểm tra và đóng gói nguyên liệu theo danh sách trên trước khi xác nhận xuất kho.</p>
+                        <button type="button" class="btn btn-success px-5 py-2 fw-bold" onclick="confirmShipment()">
+                            <i class="bi bi-check-circle me-1"></i> Xác nhận Đã xuất kho
+                        </button>
                     </div>
                 </div>
 
@@ -223,15 +256,19 @@
                     <div class="card bg-light border-0 mb-4 rounded-3">
                         <div class="card-body py-3 small text-dark fs-6">
                             <div class="row g-2">
-                                <div class="col-md-6"><strong>Chi nhánh:</strong> <span id="roBranch" class="fw-semibold"></span></div>
-                                <div class="col-md-6"><strong>Trạng thái:</strong> <span id="roStatus" class="fw-semibold"></span></div>
-                                <div class="col-md-6"><strong>Ngày yêu cầu:</strong> <span id="roDate" class="fw-semibold"></span></div>
-                                <div class="col-md-6"><strong>Người Giao / Sđt:</strong> <span id="roDeliverer" class="fw-semibold text-primary"></span></div>
+                                <div class="col-md-4"><strong>Mã đơn:</strong> <span id="roCode" class="fw-bold text-primary"></span></div>
+                                <div class="col-md-4"><strong>Chi nhánh:</strong> <span id="roBranch" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Trạng thái đơn:</strong> <span id="roStatus"></span></div>
+                                <div class="col-md-4"><strong>Người tạo đơn:</strong> <span id="roCreator" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Ngày yêu cầu:</strong> <span id="roDate" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Người duyệt:</strong> <span id="roApprovedBy" class="fw-semibold"></span></div>
+                                <div class="col-md-6"><strong>Người giao / SĐT:</strong> <span id="roDeliverer" class="fw-semibold text-primary"></span></div>
+                                <div class="col-md-6"><strong>Ghi chú tổng kho:</strong> <span id="roNote" class="fw-semibold"></span></div>
                             </div>
                         </div>
                     </div>
 
-                    <h6 class="fw-bold mb-2">Chi tiết nguyên vật liệu đã xuất</h6>
+                    <h6 class="fw-bold mb-2">Chi tiết nguyên vật liệu</h6>
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm align-middle">
                             <thead class="table-light">
@@ -286,6 +323,17 @@
         let currentRequestCode = null;
         let requestDetails = null;
 
+        function getStatusBadgeHtml(status) {
+            let badgeClass = "bg-secondary text-white";
+            if (status === "Chờ duyệt") badgeClass = "bg-warning text-dark";
+            else if (status === "Đang chuẩn bị xuất") badgeClass = "bg-primary text-white";
+            else if (status === "Đã xuất kho") badgeClass = "bg-info text-dark";
+            else if (status === "Đã hoàn thành") badgeClass = "bg-success text-white";
+            else if (status === "Từ chối") badgeClass = "bg-danger text-white";
+            else if (status === "Đã hủy") badgeClass = "bg-secondary text-white";
+            return `<span class="badge ${badgeClass} rounded-pill px-3 py-2">${status}</span>`;
+        }
+
         // --- 1. DETAILS LOADER ---
         function viewExportRequestDetails(code) {
             currentRequestCode = code;
@@ -302,10 +350,13 @@
                 data: { code: code },
                 success: function(r) {
                     requestDetails = r;
+                    $('#requestProcessModalLabel').text('Chi tiết đơn yêu cầu xuất kho: ' + r.requestCode);
 
                     if (r.status === "Chờ duyệt") {
                         // Render Screen A
+                        $('#hdrCodeA').text(r.requestCode);
                         $('#hdrBranch').text(r.branchName);
+                        $('#hdrStatusA').html(getStatusBadgeHtml(r.status));
                         $('#hdrCreator').text(r.creatorName);
                         $('#hdrPhone').text(r.creatorPhone);
                         $('#hdrDate').text(r.requestDate);
@@ -313,13 +364,16 @@
 
                         let rows = "";
                         r.items.forEach(item => {
-                            let comparisonLabel = "";
-                            let initialReleased = item.quantityReleased !== "" ? item.quantityReleased : item.quantityRequested;
+                            let stock = parseFloat(item.centralStock) || 0;
+                            let requested = parseFloat(item.quantityRequested) || 0;
+                            let initialReleased = item.quantityReleased !== "" ? item.quantityReleased : Math.min(requested, stock);
+                            let catText = item.category ? item.category : (item.materialKind || '');
+                            if (item.category && item.materialKind) catText = `${item.category} (${item.materialKind})`;
 
                             rows += `
                                 <tr class="item-row" data-id="${item.materialId}" data-requested="${item.quantityRequested}" data-stock="${item.centralStock}">
                                     <td class="fw-bold">${item.materialName}</td>
-                                    <td>${item.category}</td>
+                                    <td>${catText}</td>
                                     <td class="fw-semibold">${item.quantityRequested} ${item.storageUnit}</td>
                                     <td class="text-secondary">${item.centralStock} ${item.storageUnit}</td>
                                     <td class="comparison-status text-muted">Chưa so sánh</td>
@@ -345,30 +399,65 @@
 
                     } else if (r.status === "Đang chuẩn bị xuất") {
                         // Render Screen B
+                        $('#hdrCodeB').text(r.requestCode);
+                        $('#hdrBranchB').text(r.branchName);
+                        $('#hdrStatusB').html(getStatusBadgeHtml(r.status));
+                        $('#hdrCreatorB').text(r.creatorName);
+                        $('#hdrDateB').text(r.requestDate);
+                        $('#hdrApproverB').text(r.approvedBy || 'Warehouse Manager');
+
+                        let pbRows = "";
+                        r.items.forEach(item => {
+                            let releasedQty = item.quantityReleased !== "" ? item.quantityReleased : item.quantityRequested;
+                            let catText = item.category ? item.category : (item.materialKind || '');
+                            if (item.category && item.materialKind) catText = `${item.category} (${item.materialKind})`;
+
+                            pbRows += `
+                                <tr>
+                                    <td class="fw-bold text-dark">${item.materialName}</td>
+                                    <td>${catText}</td>
+                                    <td>${item.quantityRequested} ${item.storageUnit}</td>
+                                    <td class="fw-bold text-success">[${releasedQty}] ${item.storageUnit}</td>
+                                </tr>
+                            `;
+                        });
+                        $('#pbItemsTableBody').html(pbRows);
+
                         $('#processScreenB').removeClass('d-none');
                         $('#generalModalFooter').removeClass('d-none');
 
                     } else {
                         // Render Screen C (Completed, Shipped, Rejected, Cancelled)
+                        $('#roCode').text(r.requestCode);
                         $('#roBranch').text(r.branchName);
-                        $('#roStatus').text(r.status);
+                        $('#roStatus').html(getStatusBadgeHtml(r.status));
+
+                        $('#roCreator').text(r.creatorName);
                         $('#roDate').text(r.requestDate);
+                        $('#roApprovedBy').text(r.approvedBy || 'Chưa duyệt');
                         
                         let delivererText = "Không có";
                         if (r.delivererName) {
                             delivererText = `${r.delivererName} / Sđt: ${r.delivererPhone || 'Không có'}`;
                         }
                         $('#roDeliverer').text(delivererText);
+                        $('#roNote').text(r.warehouseNote || 'Không có');
 
                         let rows = "";
                         r.items.forEach(item => {
-                            let releasedQty = item.quantityReleased !== "" ? `[${item.quantityReleased}]` : "[0]";
+                            let releasedQty = "-";
+                            if (r.status === "Đã xuất kho" || r.status === "Đã hoàn thành") {
+                                releasedQty = item.quantityReleased !== "" ? `[${item.quantityReleased}] ${item.storageUnit}` : `[0] ${item.storageUnit}`;
+                            }
+                            let catText = item.category ? item.category : (item.materialKind || '');
+                            if (item.category && item.materialKind) catText = `${item.category} (${item.materialKind})`;
+
                             rows += `
                                 <tr>
                                     <td class="fw-bold text-dark">${item.materialName}</td>
-                                    <td>${item.category}</td>
+                                    <td>${catText}</td>
                                     <td>${item.quantityRequested} ${item.storageUnit}</td>
-                                    <td class="fw-bold text-success">${releasedQty} ${item.storageUnit}</td>
+                                    <td class="fw-bold ${r.status === "Từ chối" || r.status === "Đã hủy" ? "text-muted" : "text-success"}">${releasedQty}</td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-link text-primary p-0" onclick="drilldownLineTrace('${item.materialName}')">
                                             [Chi tiết]
@@ -409,6 +498,10 @@
                     statusCell.html('<span class="badge bg-success-subtle text-success">Đủ</span>');
                 } else {
                     statusCell.html('<span class="badge bg-danger-subtle text-danger">Thiếu</span>');
+                    let input = $(this).find('.released-input');
+                    if (parseFloat(input.val()) > stock) {
+                        input.val(stock);
+                    }
                 }
             });
         }
@@ -527,10 +620,15 @@
                             success: function(approveRes) {
                                 if (approveRes.success) {
                                     showToast(approveRes.message, 'success');
-                                    // Transition visually to Screen B
-                                    $('#processScreenA').addClass('d-none');
-                                    $('#processScreenB').removeClass('d-none');
-                                    $('#generalModalFooter').removeClass('d-none');
+                                    // Update table row in main table DOM immediately
+                                    let targetRow = $(`tr[data-code='${currentRequestCode}']`);
+                                    if (targetRow.length) {
+                                        targetRow.find('.status-cell').html(getStatusBadgeHtml('Đang chuẩn bị xuất'));
+                                        targetRow.removeClass('table-warning fw-bold border-warning-subtle');
+                                    }
+
+                                    // Re-fetch details to cleanly populate Screen B
+                                    viewExportRequestDetails(currentRequestCode);
                                 } else {
                                     showToast(approveRes.message, 'danger');
                                 }

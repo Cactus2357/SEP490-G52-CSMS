@@ -192,11 +192,18 @@ namespace SEP490_G52_CSMS.Services
             return combined.Select(o => new OrderSummaryViewModel
             {
                 OrderId = o.OrderId,
-                RecipientName = o.RecipientName ?? "",
+                RecipientName = string.IsNullOrWhiteSpace(o.RecipientName) ? "Khách lẻ" : o.RecipientName,
                 OrderTime = o.CreatedAt,
                 PaymentStatus = o.PaymentStatus,
                 BrewingStatus = o.BrewingStatus,
-                DisplayStatus = o.BrewingStatus == "Waiting for Brewing" ? "đang chờ pha chế" : "đang trong quá trình pha chế"
+                DisplayStatus = o.BrewingStatus == "Waiting for Brewing" ? "đang chờ pha chế" : "đang trong quá trình pha chế",
+                Items = o.OrderItems.Select(oi => new OrderItemViewModel
+                {
+                    ProductName = oi.ProductVariant?.MasterProduct?.ProductName ?? "",
+                    Size = oi.ProductVariant?.SizeVariant ?? "",
+                    Quantity = oi.Quantity,
+                    UnitPrice = oi.UnitPrice
+                }).ToList()
             });
         }
 

@@ -71,15 +71,19 @@
                 {
                     @foreach (var req in Model.Requests)
                     {
-                        <tr>
-                            <td>@(req.RequestingEmployee?.FullName ?? $"NV#{req.RequestingEmployeeId}")</td>
+                        string rowStyle = req.Status == "Pending" ? "table-warning" :
+                                           req.Status == "Approved" ? "table-success" :
+                                           req.Status == "Rejected" ? "table-danger" : "table-secondary";
+
+                        <tr class="@rowStyle">
+                            <td class="fw-semibold">@(req.RequestingEmployee?.FullName ?? $"NV#{req.RequestingEmployeeId}")</td>
                             <td>Đơn xin đổi ca làm</td>
                             <td>@req.SubmittedAt.ToString("dd/MM/yyyy")</td>
-                            <td><span class="badge @GetStatusBadgeClass(req.Status)">@GetStatusLabel(req.Status)</span></td>
+                            <td><span class="badge @GetStatusBadgeClass(req.Status) rounded-pill px-3 py-1.5">@GetStatusLabel(req.Status)</span></td>
                             <td>
-                                <a href="#" class="link-primary" onclick="showShiftChangeDetail(@req.RequestId); return false;">
-                                    Xem chi tiết
-                                </a>
+                                <button type="button" class="btn btn-sm btn-link text-primary fw-bold p-0 text-decoration-none" onclick="showShiftChangeDetail(@req.RequestId)">
+                                    [Xem chi tiết]
+                                </button>
                             </td>
                         </tr>
                     }
@@ -152,12 +156,14 @@
 
             if (approveBtn) {
                 const requestId = parseInt(approveBtn.dataset.requestId, 10);
-                if (!confirm('Xác nhận phê duyệt đơn đổi ca này?')) return;
-                await submitDecision('/ShiftChange/Approve', requestId, 'Phê duyệt đơn đổi ca thành công!');
+                showConfirmModal('Xác nhận phê duyệt', 'Xác nhận phê duyệt đơn đổi ca này?', async function() {
+                    await submitDecision('/ShiftChange/Approve', requestId, 'Phê duyệt đơn đổi ca thành công!');
+                });
             } else if (rejectBtn) {
                 const requestId = parseInt(rejectBtn.dataset.requestId, 10);
-                if (!confirm('Xác nhận từ chối đơn đổi ca này?')) return;
-                await submitDecision('/ShiftChange/Reject', requestId, 'Đã từ chối đơn đổi ca.');
+                showConfirmModal('Xác nhận từ chối', 'Xác nhận từ chối đơn đổi ca này?', async function() {
+                    await submitDecision('/ShiftChange/Reject', requestId, 'Đã từ chối đơn đổi ca.');
+                });
             }
         });
 
@@ -171,16 +177,16 @@
                 const result = await res.json();
 
                 if (!result.success) {
-                    alert(result.errorMessage || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                    showToast(result.errorMessage || 'Đã xảy ra lỗi. Vui lòng thử lại.', 'danger');
                     return;
                 }
 
                 if (shiftDetailModal) shiftDetailModal.hide();
-                alert(successMessage);
-                window.location.reload();
+                showToast(successMessage, 'success');
+                setTimeout(() => window.location.reload(), 1000);
             } catch (err) {
                 console.error(err);
-                alert('Mất kết nối với hệ thống. Vui lòng tải lại trang hoặc thử lại sau!');
+                showToast('Mất kết nối với hệ thống. Vui lòng thử lại!', 'danger');
             }
         }
     </script>

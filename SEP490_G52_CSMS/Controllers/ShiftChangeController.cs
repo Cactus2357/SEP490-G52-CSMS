@@ -241,7 +241,7 @@ namespace SEP490_G52_CSMS.Controllers
             return RedirectToAction(nameof(EmployeeIndex));
         }
 
-        [Authorize(Roles = "Cashier,Staff,Employee")]
+        [Authorize(Roles = "Cashier,Bartender,Busser,Barista,Staff,Employee")]
         [HttpPost]
         public async Task<IActionResult> Cancel(int requestId)
         {

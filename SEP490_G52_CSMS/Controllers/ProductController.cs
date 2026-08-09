@@ -122,6 +122,22 @@ namespace SEP490_G52_CSMS.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var result = await _productService.ToggleProductStatusAsync(id);
+            if (result)
+            {
+                TempData["Success"] = "Đã thay đổi trạng thái sản phẩm thành công.";
+            }
+            else
+            {
+                TempData["Error"] = "Không thể cập nhật trạng thái sản phẩm.";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
         private async Task LoadCategoriesAsync(
             UpdateProductViewModel model)
         {

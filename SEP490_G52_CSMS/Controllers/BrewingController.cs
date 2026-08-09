@@ -28,6 +28,28 @@ namespace SEP490_G52_CSMS.Controllers
             return PartialView("_BrewingOrderDetailPartial", details);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetLiveOrders()
+        {
+            var orders = await _orderService.GetWaitingAndBrewingOrdersAsync();
+            var result = orders.Select(o => new
+            {
+                orderId = o.OrderId,
+                recipientName = string.IsNullOrWhiteSpace(o.RecipientName) ? "Khách lẻ" : o.RecipientName,
+                orderTime = o.OrderTime.ToString("dd/MM/yyyy HH:mm"),
+                brewingStatus = o.BrewingStatus,
+                displayStatus = o.DisplayStatus,
+                items = o.Items.Select((item, index) => new
+                {
+                    stt = index + 1,
+                    productName = item.ProductName,
+                    size = item.Size,
+                    quantity = item.Quantity
+                })
+            });
+            return Json(result);
+        }
+
         [HttpPost]
         public async Task<IActionResult> StartBrewing(string orderId)
         {

@@ -475,7 +475,7 @@
         let originalSupplierName = "";
 
         function triggerAction(actionName) {
-            alert(`Tính năng "${actionName}" (UC59/UC67) đang được phát triển.`);
+            showToast(`Tính năng "${actionName}" (UC59/UC67) đang được phát triển.`, 'warning');
         }
 
         // --- 1. GENERAL MATERIAL DETAILS ---
@@ -502,7 +502,7 @@
                     $('#detailContent').removeClass('d-none');
                 },
                 error: function() {
-                    alert('Lỗi tải chi tiết nguyên vật liệu.');
+                    showToast('Lỗi tải chi tiết nguyên vật liệu.', 'danger');
                     $('#detailPlaceholder').removeClass('d-none');
                 }
             });
@@ -570,7 +570,7 @@
                 success: function(res) {
                     if (res.success) {
                         loadCategories();
-                        alert('Cập nhật loại nguyên liệu thành công!');
+                        showToast('Cập nhật loại nguyên liệu thành công!', 'success');
                     } else {
                         $('#editCategoryName').addClass('is-invalid');
                         $('#valEditCategoryName').text(res.message);
@@ -599,7 +599,7 @@
                         $('#newCategoryDesc').val('');
                         $('#newCategoryName').removeClass('is-invalid');
                         loadCategories();
-                        alert('Thêm loại nguyên liệu mới thành công!');
+                        showToast('Thêm loại nguyên liệu mới thành công!', 'success');
                     } else {
                         $('#newCategoryName').addClass('is-invalid');
                         $('#valNewCategoryName').text(res.message);
@@ -689,14 +689,14 @@
                 success: function(res) {
                     if (res.success) {
                         $('#createMaterialModal').modal('hide');
-                        alert('Tạo nguyên liệu mới thành công!');
-                        location.reload();
+                        showToast('Tạo nguyên liệu mới thành công!', 'success');
+                        setTimeout(() => location.reload(), 1000);
                     } else {
                         if (res.message.includes('trùng')) {
                             $('#createMatName').addClass('is-invalid');
                             $('#valCreateMatName').text(res.message);
                         } else {
-                            alert(res.message);
+                            showToast(res.message, 'danger');
                         }
                     }
                 }
@@ -814,16 +814,14 @@
                 success: function(res) {
                     if (res.success) {
                         $('#editMaterialModal').modal('hide');
-                        alert('Cập nhật thông tin nguyên liệu thành công!');
-                        
-                        // Reload data grid without full page refresh
-                        location.reload();
+                        showToast('Cập nhật thông tin nguyên liệu thành công!', 'success');
+                        setTimeout(() => location.reload(), 1000);
                     } else {
                         if (res.message.includes('trùng')) {
                             $('#editMatName').addClass('is-invalid');
                             $('#valEditMatName').text(res.message);
                         } else {
-                            alert(res.message);
+                            showToast(res.message, 'danger');
                         }
                     }
                 }

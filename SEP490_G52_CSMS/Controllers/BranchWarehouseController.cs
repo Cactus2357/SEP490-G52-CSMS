@@ -336,7 +336,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             // Default dates logic (BR03: current month range)
             var now = DateTime.Now;
-            var defaultFrom = new DateTime(now.Year, now.Month, 1);
+            var defaultFrom = now.Date.AddMonths(-3);
             var defaultTo = now.Date;
 
             var filterFrom = fromDate ?? defaultFrom;
@@ -443,68 +443,78 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> ConfirmReceipt(string code, string delivererName, string delivererPhone)
         {
-            var (branchId, _) = await GetUserBranchAsync();
-            if (string.IsNullOrWhiteSpace(delivererName))
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                return Json(new { success = false, message = "Vui lòng nhập tên người giao hàng." });
-            }
-
-            var req = await _context.BranchSupplyRequests
-                .Include(r => r.Items)
-                .FirstOrDefaultAsync(r => r.RequestCode == code && r.BranchId == branchId);
-
-            if (req == null) return Json(new { success = false, message = "Đơn yêu cầu không tồn tại." });
-            
-            if (req.Status != "Đã xuất kho")
-            {
-                return Json(new { success = false, message = "Trạng thái đơn hàng không hợp lệ để xác nhận nhận hàng." });
-            }
-
-            // Confirm physical receipt: Increment branch stock scoped to branchId (BR03)
-            foreach (var item in req.Items)
-            {
-                var releasedQty = item.QuantityReleased ?? 0;
-                if (releasedQty > 0)
+                var (branchId, _) = await GetUserBranchAsync();
+                if (string.IsNullOrWhiteSpace(delivererName))
                 {
-                    var branchInv = await _context.BranchInventories
-                        .FirstOrDefaultAsync(bi => bi.BranchId == branchId && bi.MaterialId == item.MaterialId);
+                    return Json(new { success = false, message = "Vui lòng nhập tên người giao hàng." });
+                }
 
-                    if (branchInv == null)
+                var req = await _context.BranchSupplyRequests
+                    .Include(r => r.Items)
+                    .FirstOrDefaultAsync(r => r.RequestCode == code && r.BranchId == branchId);
+
+                if (req == null) return Json(new { success = false, message = "Đơn yêu cầu không tồn tại." });
+                
+                if (req.Status != "Đã xuất kho")
+                {
+                    return Json(new { success = false, message = "Trạng thái đơn hàng không hợp lệ để xác nhận nhận hàng." });
+                }
+
+                // Confirm physical receipt: Increment branch stock scoped to branchId (BR03)
+                foreach (var item in req.Items)
+                {
+                    var releasedQty = item.QuantityReleased ?? 0;
+                    if (releasedQty > 0)
                     {
-                        // Create one if it does not exist
-                        branchInv = new BranchInventory
+                        var branchInv = await _context.BranchInventories
+                            .FirstOrDefaultAsync(bi => bi.BranchId == branchId && bi.MaterialId == item.MaterialId);
+
+                        if (branchInv == null)
                         {
-                            BranchId = branchId,
-                            MaterialId = item.MaterialId,
-                            StockQuantity = releasedQty,
-                            LowStockThreshold = 10m
-                        };
-                        _context.BranchInventories.Add(branchInv);
-                    }
-                    else
-                    {
-                        branchInv.StockQuantity += releasedQty;
+                            // Create one if it does not exist
+                            branchInv = new BranchInventory
+                            {
+                                BranchId = branchId,
+                                MaterialId = item.MaterialId,
+                                StockQuantity = releasedQty,
+                                LowStockThreshold = 10m
+                            };
+                            _context.BranchInventories.Add(branchInv);
+                        }
+                        else
+                        {
+                            branchInv.StockQuantity += releasedQty;
+                        }
                     }
                 }
+
+                req.Status = "Đã hoàn thành";
+                req.DelivererName = delivererName.Trim();
+                req.DelivererPhone = delivererPhone?.Trim();
+                req.ReceivedDate = DateTime.Now;
+
+                // Raise notification event for WarehouseManager role
+                var branch = await _context.Branches.FindAsync(branchId);
+                var branchName = branch?.BranchName ?? "Chi nhánh";
+                await _notificationService.SendAsync(new NotificationEvent(
+                    Title: "Nhập kho hoàn tất",
+                    Message: $"Chi nhánh {branchName} đã nhận hàng thành công và cập nhật tồn kho cho đơn {code}.",
+                    RecipientRole: "WarehouseManager",
+                    ResourceUrl: "/Warehouse/ExportRequests"
+                ));
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Json(new { success = true, message = "Xác nhận nhận hàng thành công. Tồn kho chi nhánh đã được cập nhật." });
             }
-
-            req.Status = "Đã hoàn thành";
-            req.DelivererName = delivererName.Trim();
-            req.DelivererPhone = delivererPhone?.Trim();
-            req.ReceivedDate = DateTime.Now;
-
-            // Raise notification event for WarehouseManager role
-            var branch = await _context.Branches.FindAsync(branchId);
-            var branchName = branch?.BranchName ?? "Chi nhánh";
-            await _notificationService.SendAsync(new NotificationEvent(
-                Title: "Nhập kho hoàn tất",
-                Message: $"Chi nhánh {branchName} đã nhận hàng thành công và cập nhật tồn kho cho đơn {code}.",
-                RecipientRole: "WarehouseManager",
-                ResourceUrl: "/Warehouse/ExportRequests"
-            ));
-
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xác nhận nhận hàng thành công. Tồn kho chi nhánh đã được cập nhật." });
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = "Lỗi hệ thống khi xác nhận nhận hàng: " + ex.Message });
+            }
         }
     }
 

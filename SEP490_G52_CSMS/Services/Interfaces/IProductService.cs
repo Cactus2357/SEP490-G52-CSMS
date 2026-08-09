@@ -1,4 +1,4 @@
-﻿using SEP490_G52_CSMS.Models.ViewModels.Sales.Product;
+using SEP490_G52_CSMS.Models.ViewModels.Sales.Product;
 
 namespace SEP490_G52_CSMS.Services.Interfaces
 {
@@ -11,5 +11,7 @@ namespace SEP490_G52_CSMS.Services.Interfaces
         Task<bool> CreateProductAsync(CreateProductViewModel model);
 
         Task<bool> UpdateProductAsync(UpdateProductViewModel model);
+
+        Task<bool> ToggleProductStatusAsync(int productId);
     }
 }

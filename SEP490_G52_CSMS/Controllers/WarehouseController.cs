@@ -483,7 +483,7 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> ExportRequests(DateTime? fromDate, DateTime? toDate, string status = "Tất cả", int page = 1)
         {
             var now = DateTime.Now;
-            var defaultFrom = new DateTime(now.Year, now.Month, 1);
+            var defaultFrom = now.Date.AddMonths(-3);
             var defaultTo = now.Date;
 
             var filterFrom = fromDate ?? defaultFrom;
@@ -585,7 +585,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (req == null) return NotFound();
 
             var bManager = await _context.Employees
-                .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
+                .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && (e.Role == "BranchManager" || e.Role == "RManager"));
 
             var itemsResult = req.Items.Select(i => new
             {
@@ -605,7 +605,7 @@ namespace SEP490_G52_CSMS.Controllers
                 status = req.Status,
                 requestDate = req.RequestDate.ToString("dd/MM/yyyy HH:mm"),
                 branchName = req.Branch?.BranchName ?? "",
-                creatorName = bManager?.FullName ?? "Branch Manager",
+                creatorName = bManager?.FullName ?? "Quản lý chi nhánh",
                 creatorPhone = bManager?.PhoneNumber ?? "Không có",
                 approvedBy = req.ApprovedBy ?? "",
                 delivererName = req.DelivererName ?? "",
@@ -688,40 +688,53 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> ConfirmShipment(string code)
         {
-            var req = await _context.BranchSupplyRequests
-                .Include(r => r.Items)
-                .ThenInclude(i => i.Material)
-                .FirstOrDefaultAsync(r => r.RequestCode == code);
-
-            if (req == null) return Json(new { success = false, message = "Đơn hàng không tồn tại." });
-            if (req.Status != "Đang chuẩn bị xuất") return Json(new { success = false, message = "Trạng thái không hợp lệ." });
-
-            foreach (var item in req.Items)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                var releasedQty = item.QuantityReleased ?? 0;
-                if (releasedQty > 0 && item.Material != null)
+                var req = await _context.BranchSupplyRequests
+                    .Include(r => r.Items)
+                    .ThenInclude(i => i.Material)
+                    .FirstOrDefaultAsync(r => r.RequestCode == code);
+
+                if (req == null) return Json(new { success = false, message = "Đơn hàng không tồn tại." });
+                if (req.Status != "Đang chuẩn bị xuất") return Json(new { success = false, message = "Trạng thái không hợp lệ." });
+
+                foreach (var item in req.Items)
                 {
-                    item.Material.StockQuantity -= releasedQty;
-                    if (item.Material.StockQuantity < 0) item.Material.StockQuantity = 0;
+                    var releasedQty = item.QuantityReleased ?? 0;
+                    if (releasedQty > 0 && item.Material != null)
+                    {
+                        item.Material.StockQuantity -= releasedQty;
+                        if (item.Material.StockQuantity < 0) item.Material.StockQuantity = 0;
+                    }
                 }
+
+                req.Status = "Đã xuất kho";
+                if (string.IsNullOrWhiteSpace(req.WarehouseNote))
+                {
+                    req.WarehouseNote = "Đang giao hàng";
+                }
+
+                var bManager = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
+
+                await _notificationService.SendAsync(new NotificationEvent(
+                    Title: "Đơn hàng đang giao",
+                    Message: $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang trên đường giao tới chi nhánh.",
+                    RecipientUserId: bManager?.EmployeeId,
+                    RecipientRole: "BranchManager",
+                    ResourceUrl: "/BranchWarehouse/RequestHistory"
+                ));
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Json(new { success = true, message = "Xác nhận đã xuất kho thành công!" });
             }
-
-            req.Status = "Đã xuất kho";
-            req.WarehouseNote = "Đang giao hàng";
-
-            var bManager = await _context.Employees
-                .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
-
-            await _notificationService.SendAsync(new NotificationEvent(
-                Title: "Đơn hàng đang giao",
-                Message: $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang trên đường giao tới chi nhánh.",
-                RecipientUserId: bManager?.EmployeeId,
-                RecipientRole: "BranchManager",
-                ResourceUrl: "/BranchWarehouse/RequestHistory"
-            ));
-
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xác nhận đã xuất kho thành công!" });
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = "Lỗi hệ thống khi xuất kho: " + ex.Message });
+            }
         }
     }
 

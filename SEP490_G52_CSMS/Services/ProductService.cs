@@ -219,5 +219,14 @@ namespace SEP490_G52_CSMS.Services
 
             return $"/uploads/products/{fileName}";
         }
+        public async Task<bool> ToggleProductStatusAsync(int productId)
+        {
+            var product = await _productRepository.GetByIdAsync(productId);
+            if (product == null) return false;
+
+            product.Status = (product.Status == "Active" || product.Status == "Hoạt động") ? "Inactive" : "Active";
+            await _productRepository.UpdateAsync(product);
+            return true;
+        }
     }
 }

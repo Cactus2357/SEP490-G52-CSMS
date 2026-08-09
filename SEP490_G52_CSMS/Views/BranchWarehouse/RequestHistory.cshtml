@@ -46,6 +46,7 @@
                     <select name="status" class="form-select">
                         <option value="Tất cả" selected="@(Model.SelectedStatus == "Tất cả")">Tất cả</option>
                         <option value="Chờ duyệt" selected="@(Model.SelectedStatus == "Chờ duyệt")">Chờ duyệt</option>
+                        <option value="Đang chuẩn bị xuất" selected="@(Model.SelectedStatus == "Đang chuẩn bị xuất")">Đang chuẩn bị xuất</option>
                         <option value="Đã xuất kho" selected="@(Model.SelectedStatus == "Đã xuất kho")">Đã xuất kho</option>
                         <option value="Đã hoàn thành" selected="@(Model.SelectedStatus == "Đã hoàn thành")">Đã hoàn thành</option>
                         <option value="Từ chối" selected="@(Model.SelectedStatus == "Từ chối")">Từ chối</option>
@@ -81,10 +82,18 @@
                             foreach (var item in Model.Requests)
                             {
                                 string badgeClass = item.Status == "Chờ duyệt" ? "bg-warning text-dark" :
+                                                   item.Status == "Đang chuẩn bị xuất" ? "bg-primary text-white" :
                                                    item.Status == "Đã xuất kho" ? "bg-info text-dark" :
                                                    item.Status == "Đã hoàn thành" ? "bg-success text-white" :
                                                    item.Status == "Từ chối" ? "bg-danger text-white" : "bg-secondary text-white";
-                                <tr>
+
+                                string rowStyle = item.Status == "Chờ duyệt" ? "table-warning" :
+                                                   item.Status == "Đang chuẩn bị xuất" ? "table-primary" :
+                                                   item.Status == "Đã xuất kho" ? "table-info" :
+                                                   item.Status == "Đã hoàn thành" ? "table-success" :
+                                                   item.Status == "Từ chối" ? "table-danger" : "table-secondary";
+
+                                <tr class="@rowStyle">
                                     <td class="ps-3 fw-bold text-dark">@item.RequestCode</td>
                                     <td>@item.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
                                     <td><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
@@ -284,6 +293,7 @@
                     // Style status badge
                     let badgeClass = "bg-secondary text-white";
                     if (r.status === "Chờ duyệt") badgeClass = "bg-warning text-dark";
+                    else if (r.status === "Đang chuẩn bị xuất") badgeClass = "bg-primary text-white";
                     else if (r.status === "Đã xuất kho") badgeClass = "bg-info text-dark";
                     else if (r.status === "Đã hoàn thành") badgeClass = "bg-success text-white";
                     else if (r.status === "Từ chối") badgeClass = "bg-danger text-white";

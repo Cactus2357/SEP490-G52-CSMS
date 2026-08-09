@@ -1,73 +1,140 @@
 @model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.OrderSummaryViewModel>
 
 @{
-    ViewData["Title"] = "Pha Chế";
+    ViewData["Title"] = "Danh sách đơn pha chế";
 }
 
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">PHA CHẾ</h2>
-        <div class="position-relative w-25">
-            <i class="bi bi-search position-absolute" style="left: 10px; top: 8px;"></i>
-            <input type="text" id="brewingSearch" class="form-control border-dark rounded-0 ps-5" placeholder="search" onkeyup="filterBrewingOrders()">
-        </div>
-    </div>
-
-    <table class="table table-bordered border-dark" id="brewingTable">
-        <thead class="table-light border-dark">
-            <tr>
-                <th>Mã Đơn Hàng</th>
-                <th>Tên</th>
-                <th>Thời Gian</th>
-                <th>Trạng Thái</th>
-                <th>Hành Động</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!Model.Any())
-            {
-                <tr>
-                    <td colspan="5" class="text-center">Không có đơn hàng nào đang chờ pha chế</td>
-                </tr>
-            }
-            else
-            {
-                foreach (var o in Model)
-                {
-                    <tr class="brewing-row" data-name="@o.RecipientName.ToLower()" data-id="@o.OrderId.ToLower()">
-                        <td>@o.OrderId</td>
-                        <td>@o.RecipientName</td>
-                        <td>@o.OrderTime.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>@o.DisplayStatus</td>
-                        <td>
-                            <a href="#" class="text-primary text-decoration-none" onclick="showBrewingDetails('@o.OrderId', '@o.BrewingStatus')">xem chi tiết</a>
-                        </td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
-</div>
-
-<!-- Modal: Brewing Details -->
-<div class="modal fade" id="brewingDetailsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-dark rounded-0">
-            <div class="modal-body p-4" id="brewingDetailsContent">
-                <!-- Loaded via AJAX -->
+<div class="container-fluid mt-3 px-4">
+    <!-- Header -->
+    <div class="card bg-secondary-subtle border-0 rounded-3 mb-4 shadow-sm">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted small">Bartender / Pha chế</span>
+                <h4 class="fw-bold m-0 text-dark">DANH SÁCH ĐƠN PHA CHẾ</h4>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm" id="liveCounterBadge">
+                    <i class="bi bi-arrow-repeat spin me-1 text-primary"></i> Tự động cập nhật (5s)
+                </span>
+                <div class="position-relative" style="width: 280px;">
+                    <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 9px;"></i>
+                    <input type="text" id="brewingSearch" class="form-control form-control-sm rounded-pill ps-5" placeholder="Tìm theo Mã đơn / Tên khách..." onkeyup="filterBrewingOrders()">
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal: In Progress Alert -->
-<div class="modal fade" id="inProgressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-dark rounded-0 text-center p-5">
-            <h4 class="mb-5 fw-bold">đang trong quá trình pha chế</h4>
-            <div class="d-flex justify-content-between px-4">
-                <button type="button" class="btn btn-outline-dark rounded-0 px-4 fw-bold" data-bs-dismiss="modal">quay lại</button>
-                <button type="button" class="btn btn-outline-dark rounded-0 px-4 fw-bold" onclick="completeBrewing()">hoàn thành</button>
+    <!-- Orders Master-Detail Table -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle m-0" id="brewingTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%;" class="ps-3"></th>
+                            <th style="width: 20%;">Mã Đơn Hàng</th>
+                            <th style="width: 25%;">Tên Khách Hàng</th>
+                            <th style="width: 20%;">Thời Gian</th>
+                            <th style="width: 15%;">Trạng Thái</th>
+                            <th style="width: 15%;" class="text-center pe-3">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="brewingTableBody">
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-cup-hot fs-2 d-block mb-2 text-secondary-subtle"></i>
+                                    Không có đơn hàng nào đang chờ pha chế.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var o in Model)
+                            {
+                                bool isBrewing = o.BrewingStatus == "Brewing in Progress";
+                                string rowClass = isBrewing ? "table-primary fw-semibold" : "table-warning fw-semibold";
+                                string badgeClass = isBrewing ? "bg-primary text-white" : "bg-warning text-dark";
+
+                                <tr class="brewing-row @rowClass" data-name="@o.RecipientName.ToLower()" data-id="@o.OrderId.ToLower()" data-code="@o.OrderId">
+                                    <td class="ps-3">
+                                        <button type="button" class="btn btn-sm btn-link text-dark p-0 toggle-nested-btn" onclick="toggleNestedItems('@o.OrderId')">
+                                            <i class="bi bi-chevron-down" id="chevron-@o.OrderId"></i>
+                                        </button>
+                                    </td>
+                                    <td class="fw-bold text-primary">@o.OrderId</td>
+                                    <td>@o.RecipientName</td>
+                                    <td class="text-secondary">@o.OrderTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <span class="badge @badgeClass rounded-pill px-3 py-1.5">
+                                            @o.DisplayStatus
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        @if (!isBrewing)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('@o.OrderId')">
+                                                <i class="bi bi-play-fill me-1"></i> Pha chế
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('@o.OrderId')">
+                                                <i class="bi bi-check-lg me-1"></i> Hoàn thành
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <!-- Nested Table Row -->
+                                <tr class="nested-items-row" id="nested-row-@o.OrderId">
+                                    <td colspan="6" class="p-0 border-0">
+                                        <div class="bg-light p-3 border-bottom shadow-inner">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="bi bi-list-stars me-2 text-primary"></i>
+                                                <strong class="text-dark">Chi tiết món trong đơn (@o.OrderId):</strong>
+                                            </div>
+                                            <div class="table-responsive bg-white rounded border">
+                                                <table class="table table-sm table-bordered m-0 align-middle">
+                                                    <thead class="table-secondary">
+                                                        <tr>
+                                                            <th style="width: 10%;" class="ps-3 text-center">STT</th>
+                                                            <th style="width: 50%;">Tên món</th>
+                                                            <th style="width: 20%;" class="text-center">Size</th>
+                                                            <th style="width: 20%;" class="text-center">Số lượng</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @if (o.Items != null && o.Items.Any())
+                                                        {
+                                                            int idx = 1;
+                                                            foreach (var item in o.Items)
+                                                            {
+                                                                <tr>
+                                                                    <td class="text-center ps-3 text-muted">@(idx++)</td>
+                                                                    <td class="fw-bold text-dark">@item.ProductName</td>
+                                                                    <td class="text-center"><span class="badge bg-secondary-subtle text-dark">@item.Size</span></td>
+                                                                    <td class="text-center fw-bold text-primary">@item.Quantity</td>
+                                                                </tr>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <tr>
+                                                                <td colspan="4" class="text-center text-muted py-2">Không có dữ liệu chi tiết món.</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -75,77 +142,180 @@
 
 @section Scripts {
     <script>
-        var currentBrewingOrderId = null;
-
         function filterBrewingOrders() {
-            var search = document.getElementById("brewingSearch").value.toLowerCase();
-            var rows = document.querySelectorAll('.brewing-row');
+            let search = $('#brewingSearch').val().toLowerCase().trim();
+            $('.brewing-row').each(function() {
+                let name = ($(this).data('name') || '').toString();
+                let id = ($(this).data('id') || '').toString();
+                let nestedRow = $(`#nested-row-${$(this).data('code')}`);
 
-            rows.forEach(row => {
-                var cName = row.getAttribute('data-name');
-                var cId = row.getAttribute('data-id');
-                
-                if (cName.includes(search) || cId.includes(search)) {
-                    row.classList.remove('d-none');
+                if (name.includes(search) || id.includes(search)) {
+                    $(this).removeClass('d-none');
                 } else {
-                    row.classList.add('d-none');
+                    $(this).addClass('d-none');
+                    if (nestedRow.length) nestedRow.addClass('d-none');
                 }
             });
         }
 
-        function showBrewingDetails(orderId, status) {
-            currentBrewingOrderId = orderId;
-            
-            if (status === "Brewing in Progress") {
-                // Show the "In progress" modal directly if it's already brewing
-                var modal = new bootstrap.Modal(document.getElementById('inProgressModal'));
-                modal.show();
+        function toggleNestedItems(orderId) {
+            let nestedRow = $(`#nested-row-${orderId}`);
+            let icon = $(`#chevron-${orderId}`);
+            if (nestedRow.is(':visible')) {
+                nestedRow.hide();
+                icon.removeClass('bi-chevron-up').addClass('bi-chevron-down');
             } else {
-                // Load details for "Waiting for Brewing"
-                fetch('@Url.Action("GetOrderDetails", "Brewing")?orderId=' + orderId)
-                    .then(res => res.text())
-                    .then(html => {
-                        document.getElementById('brewingDetailsContent').innerHTML = html;
-                        var modal = new bootstrap.Modal(document.getElementById('brewingDetailsModal'));
-                        modal.show();
-                    });
+                nestedRow.show();
+                icon.removeClass('bi-chevron-down').addClass('bi-chevron-up');
             }
         }
 
-        function startBrewing() {
-            fetch('@Url.Action("StartBrewing", "Brewing")', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ orderId: currentBrewingOrderId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    var m1 = bootstrap.Modal.getInstance(document.getElementById('brewingDetailsModal'));
-                    if (m1) m1.hide();
-                    location.reload(); // Reload to update status on grid
-                } else {
-                    alert(data.message);
+        function startBrewingOrder(orderId) {
+            showConfirmModal(
+                'Xác nhận pha chế',
+                `Bắt đầu pha chế cho đơn hàng <strong>${orderId}</strong>?`,
+                function() {
+                    $.ajax({
+                        url: '/Brewing/StartBrewing',
+                        type: 'POST',
+                        data: { orderId: orderId },
+                        success: function(res) {
+                            showToast(`Đã chuyển đơn hàng ${orderId} sang trạng thái Đang pha chế.`, 'success');
+                            fetchLiveOrders();
+                        },
+                        error: function(xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể bắt đầu pha chế.';
+                            showToast(msg, 'danger');
+                        }
+                    });
+                }
+            );
+        }
+
+        function completeBrewingOrder(orderId) {
+            showConfirmModal(
+                'Xác nhận hoàn thành',
+                `Xác nhận đã pha chế xong đơn hàng <strong>${orderId}</strong>?`,
+                function() {
+                    $.ajax({
+                        url: '/Brewing/CompleteBrewing',
+                        type: 'POST',
+                        data: { orderId: orderId },
+                        success: function(res) {
+                            showToast(`Đã hoàn thành đơn hàng ${orderId}.`, 'success');
+                            fetchLiveOrders();
+                        },
+                        error: function(xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể hoàn thành đơn hàng.';
+                            showToast(msg, 'danger');
+                        }
+                    });
+                }
+            );
+        }
+
+        // Live Auto-Polling (every 5 seconds)
+        function fetchLiveOrders() {
+            $.ajax({
+                url: '/Brewing/GetLiveOrders',
+                type: 'GET',
+                success: function(orders) {
+                    if (!orders || orders.length === 0) {
+                        $('#brewingTableBody').html(`
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-cup-hot fs-2 d-block mb-2 text-secondary-subtle"></i>
+                                    Không có đơn hàng nào đang chờ pha chế.
+                                </td>
+                            </tr>
+                        `);
+                        return;
+                    }
+
+                    let search = $('#brewingSearch').val().toLowerCase().trim();
+                    let rowsHtml = '';
+
+                    orders.forEach(o => {
+                        let isBrewing = o.brewingStatus === 'Brewing in Progress';
+                        stringRowClass = isBrewing ? 'table-primary fw-semibold' : 'table-warning fw-semibold';
+                        badgeClass = isBrewing ? 'bg-primary text-white' : 'bg-warning text-dark';
+                        let matchesSearch = !search || o.recipientName.toLowerCase().includes(search) || o.orderId.toLowerCase().includes(search);
+                        let hiddenCls = matchesSearch ? '' : 'd-none';
+
+                        rowsHtml += `
+                            <tr class="brewing-row ${stringRowClass} ${hiddenCls}" data-name="${o.recipientName.toLowerCase()}" data-id="${o.orderId.toLowerCase()}" data-code="${o.orderId}">
+                                <td class="ps-3">
+                                    <button type="button" class="btn btn-sm btn-link text-dark p-0 toggle-nested-btn" onclick="toggleNestedItems('${o.orderId}')">
+                                        <i class="bi bi-chevron-down" id="chevron-${o.orderId}"></i>
+                                    </button>
+                                </td>
+                                <td class="fw-bold text-primary">${o.orderId}</td>
+                                <td>${o.recipientName}</td>
+                                <td class="text-secondary">${o.orderTime}</td>
+                                <td>
+                                    <span class="badge ${badgeClass} rounded-pill px-3 py-1.5">
+                                        ${o.displayStatus}
+                                    </span>
+                                </td>
+                                <td class="text-center pe-3">
+                                    ${!isBrewing ? `
+                                        <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('${o.orderId}')">
+                                            <i class="bi bi-play-fill me-1"></i> Pha chế
+                                        </button>
+                                    ` : `
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('${o.orderId}')">
+                                            <i class="bi bi-check-lg me-1"></i> Hoàn thành
+                                        </button>
+                                    `}
+                                </td>
+                            </tr>
+                            <tr class="nested-items-row ${hiddenCls}" id="nested-row-${o.orderId}" style="display: none;">
+                                <td colspan="6" class="p-0 border-0">
+                                    <div class="bg-light p-3 border-bottom shadow-inner">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-list-stars me-2 text-primary"></i>
+                                            <strong class="text-dark">Chi tiết món trong đơn (${o.orderId}):</strong>
+                                        </div>
+                                        <div class="table-responsive bg-white rounded border">
+                                            <table class="table table-sm table-bordered m-0 align-middle">
+                                                <thead class="table-secondary">
+                                                    <tr>
+                                                        <th style="width: 10%;" class="ps-3 text-center">STT</th>
+                                                        <th style="width: 50%;">Tên món</th>
+                                                        <th style="width: 20%;" class="text-center">Size</th>
+                                                        <th style="width: 20%;" class="text-center">Số lượng</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${o.items && o.items.length ? o.items.map(item => `
+                                                        <tr>
+                                                            <td class="text-center ps-3 text-muted">${item.stt}</td>
+                                                            <td class="fw-bold text-dark">${item.productName}</td>
+                                                            <td class="text-center"><span class="badge bg-secondary-subtle text-dark">${item.size}</span></td>
+                                                            <td class="text-center fw-bold text-primary">${item.quantity}</td>
+                                                        </tr>
+                                                    `).join('') : `
+                                                        <tr>
+                                                            <td colspan="4" class="text-center text-muted py-2">Không có dữ liệu chi tiết món.</td>
+                                                        </tr>
+                                                    `}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    $('#brewingTableBody').html(rowsHtml);
                 }
             });
         }
 
-        function completeBrewing() {
-            fetch('@Url.Action("CompleteBrewing", "Brewing")', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ orderId: currentBrewingOrderId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    var m2 = bootstrap.Modal.getInstance(document.getElementById('inProgressModal'));
-                    if (m2) m2.hide();
-                    location.reload(); // Reload to update status on grid
-                } else {
-                    alert(data.message);
-                }
-            });
-        }
+        $(document).ready(function() {
+            // Poll every 5 seconds
+            setInterval(fetchLiveOrders, 5000);
+        });
     </script>
 }

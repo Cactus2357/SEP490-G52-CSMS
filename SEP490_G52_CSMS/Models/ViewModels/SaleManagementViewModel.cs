@@ -61,6 +61,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string BrewingStatus { get; set; } = null!;
         // The display status logic can combine Payment/Brewing based on rules
         public string DisplayStatus { get; set; } = null!;
+        public List<OrderItemViewModel> Items { get; set; } = new List<OrderItemViewModel>();
     }
 
     public class SaleOrderDetailViewModel

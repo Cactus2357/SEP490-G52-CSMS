@@ -28,8 +28,11 @@
         {
             @foreach (var item in Model.Products)
             {
-                <tr>
-                    <td>
+                bool isActive = item.Status == "Active" || item.Status == "Hoạt động";
+                string rowClass = isActive ? "" : "table-secondary text-muted";
+
+                <tr class="@rowClass">
+                    <td class="fw-semibold">
                         @item.ProductName
                     </td>
 
@@ -38,37 +41,32 @@
                     </td>
 
                     <td class="text-center">
-                        <div class="form-check form-switch d-inline-flex m-0">
-                            <input class="form-check-input product-status-switch"
-                                   type="checkbox"
-                                   role="switch"
-                                   checked="@(item.Status == "Active")"
-                                   disabled />
-                        </div>
+                        <form asp-controller="Product" asp-action="ToggleStatus" asp-route-id="@item.ProductId" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm border-0 bg-transparent p-0" title="Click để thay đổi trạng thái sản phẩm">
+                                <span class="badge @(isActive ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border border-secondary-subtle") rounded-pill px-3 py-1.5">
+                                    <i class="bi @(isActive ? "bi-check-circle-fill" : "bi-pause-circle-fill") me-1"></i>
+                                    @(isActive ? "Đang hoạt động" : "Ngưng hoạt động")
+                                </span>
+                            </button>
+                        </form>
                     </td>
 
                     <td class="text-center">
                         <a asp-controller="Product"
                            asp-action="Variants"
                            asp-route-id="@item.ProductId"
-                           class="product-action-button text-decoration-none"
+                           class="btn btn-sm btn-outline-primary me-1"
                            title="Quản lý biến thể">
-                            ⚙️
+                            <i class="bi bi-gear-fill"></i> Biến thể
                         </a>
-
-                        <button type="button"
-                                class="product-action-button"
-                                title="Xóa sản phẩm"
-                                disabled>
-                            🗑️
-                        </button>
 
                         <a asp-controller="Product"
                            asp-action="Edit"
                            asp-route-id="@item.ProductId"
-                           class="product-action-button text-decoration-none"
+                           class="btn btn-sm btn-outline-dark"
                            title="Sửa sản phẩm">
-                            ✏️
+                            <i class="bi bi-pencil-square"></i> Sửa
                         </a>
                     </td>
                 </tr>
