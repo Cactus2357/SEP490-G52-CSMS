@@ -109,7 +109,71 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Bạn không có quyền lưu dữ liệu khuôn mặt của nhân viên thuộc chi nhánh khác." });
             }
 
-            var success = await _employeeService.RegisterFaceDataAsync(model.EmployeeId, model.FaceData);
+            var faceData = model.FaceData.Trim();
+            bool isDuplicate = false;
+
+            // Check duplicate using vector distance if incoming data is a face descriptor
+            float[]? newDescriptor = null;
+            if (faceData.StartsWith("[") && faceData.EndsWith("]"))
+            {
+                try
+                {
+                    newDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(faceData);
+                }
+                catch { }
+            }
+
+            var allEmployees = await _employeeRepository.GetAllAsync();
+
+            if (newDescriptor != null && newDescriptor.Length == 128)
+            {
+                foreach (var emp in allEmployees)
+                {
+                    if (emp.EmployeeId == employee.EmployeeId || emp.FaceData == null)
+                        continue;
+
+                    var dbFaceData = emp.FaceData.Trim();
+                    if (dbFaceData.StartsWith("[") && dbFaceData.EndsWith("]"))
+                    {
+                        try
+                        {
+                            var dbDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(dbFaceData);
+                            if (dbDescriptor != null && dbDescriptor.Length == 128)
+                            {
+                                double distance = 0;
+                                for (int i = 0; i < 128; i++)
+                                {
+                                    double diff = newDescriptor[i] - dbDescriptor[i];
+                                    distance += diff * diff;
+                                }
+                                distance = Math.Sqrt(distance);
+
+                                if (distance < 0.55) // Duplicate if too close
+                                {
+                                    isDuplicate = true;
+                                    break;
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            else
+            {
+                // Fallback: exact string check
+                isDuplicate = System.Linq.Enumerable.Any(allEmployees, emp => 
+                    emp.EmployeeId != employee.EmployeeId && 
+                    emp.FaceData != null && 
+                    emp.FaceData.Trim() == faceData);
+            }
+
+            if (isDuplicate)
+            {
+                return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt này đã được liên kết với tài khoản khác." });
+            }
+
+            var success = await _employeeService.RegisterFaceDataAsync(model.EmployeeId, faceData);
             if (success)
             {
                 return Json(new { success = true });

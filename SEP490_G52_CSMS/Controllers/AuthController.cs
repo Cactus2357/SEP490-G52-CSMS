@@ -97,42 +97,91 @@ namespace SEP490_G52_CSMS.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.FacialId))
                 return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt trống." });
 
-            // Normalize the incoming facialId (trim whitespace) to prevent minor formatting mismatches
             var facialId = request.FacialId.Trim();
+            Employee? matchedEmployee = null;
 
-            var employees = await _context.Employees
-                .Where(e => e.FaceData != null && e.FaceData.Trim() == facialId)
-                .ToListAsync();
-
-            if (employees.Count == 0 && facialId.StartsWith("fio_sim_"))
+            // Attempt to parse facialId as a JSON array of 128 floats (face-api.js descriptor)
+            float[]? inputDescriptor = null;
+            if (facialId.StartsWith("[") && facialId.EndsWith("]"))
             {
-                var simUsername = facialId.Substring("fio_sim_".Length);
-                var simEmployee = await _context.Employees
-                    .FirstOrDefaultAsync(e => e.Username == simUsername);
-                if (simEmployee != null)
+                try
                 {
-                    employees = new List<Employee> { simEmployee };
+                    inputDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(facialId);
+                }
+                catch
+                {
+                    // Ignore parsing error
                 }
             }
 
-            if (employees.Count == 0)
-                return Json(new { success = false, errorMessage = "Face not recognized" });
+            if (inputDescriptor != null && inputDescriptor.Length == 128)
+            {
+                // Retrieve all active employees with face data registered
+                var activeEmployees = await _context.Employees
+                    .Where(e => e.Status == "Active" && e.FaceData != null)
+                    .ToListAsync();
 
-            if (employees.Count > 1)
-                return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt bị trùng lặp hệ thống." });
+                double minDistance = double.MaxValue;
+                const double threshold = 0.55; // Standard distance threshold for face-api.js (usually 0.6; 0.55 is slightly more conservative)
 
-            var employee = employees[0];
+                foreach (var emp in activeEmployees)
+                {
+                    var dbFaceData = emp.FaceData!.Trim();
+                    if (dbFaceData.StartsWith("[") && dbFaceData.EndsWith("]"))
+                    {
+                        try
+                        {
+                            var dbDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(dbFaceData);
+                            if (dbDescriptor != null && dbDescriptor.Length == 128)
+                            {
+                                double distance = 0;
+                                for (int i = 0; i < 128; i++)
+                                {
+                                    double diff = inputDescriptor[i] - dbDescriptor[i];
+                                    distance += diff * diff;
+                                }
+                                distance = Math.Sqrt(distance);
 
-            if (employee.Status != "Active")
-                return Json(new { success = false, errorMessage = "Tài khoản đã bị ngừng hoạt động." });
+                                if (distance < threshold && distance < minDistance)
+                                {
+                                    minDistance = distance;
+                                    matchedEmployee = emp;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Skip parsing failures for individual records
+                        }
+                    }
+                }
+            }
 
-            if (employee.LockoutUntil.HasValue && employee.LockoutUntil.Value > DateTime.UtcNow)
-                return Json(new { success = false, errorMessage = "Account locked due to multiple failed login attempts." });
+            // Fallback 1: Exact string match (for legacy FaceIO appIds/tokens or exact simulation values)
+            if (matchedEmployee == null)
+            {
+                matchedEmployee = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.FaceData != null && e.FaceData.Trim() == facialId && e.Status == "Active");
+            }
 
-            employee.FailedLoginAttempts = 0;
-            employee.LockoutUntil = null;
+            // Fallback 2: Simulation username fallback (fio_sim_username)
+            if (matchedEmployee == null && facialId.StartsWith("fio_sim_"))
+            {
+                var simUsername = facialId.Substring("fio_sim_".Length);
+                matchedEmployee = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.Username == simUsername && e.Status == "Active");
+            }
+
+            if (matchedEmployee == null)
+                return Json(new { success = false, errorMessage = "Không nhận diện được khuôn mặt." });
+
+            if (matchedEmployee.LockoutUntil.HasValue && matchedEmployee.LockoutUntil.Value > DateTime.UtcNow)
+                return Json(new { success = false, errorMessage = "Tài khoản đang bị khóa tạm thời do nhiều lần đăng nhập sai." });
+
+            matchedEmployee.FailedLoginAttempts = 0;
+            matchedEmployee.LockoutUntil = null;
             await _context.SaveChangesAsync();
-            await SignInUserAsync(employee);
+            await SignInUserAsync(matchedEmployee);
             return Json(new { success = true });
         }
 
@@ -158,13 +207,63 @@ namespace SEP490_G52_CSMS.Controllers
             if (employee == null)
                 return Json(new { success = false, errorMessage = "Bạn cần đăng nhập để thực hiện thao tác này." });
 
-            // Normalize: trim whitespace before storing or comparing
             var faceData = request.FaceData.Trim();
+            bool isDuplicate = false;
 
-            var duplicate = await _context.Employees
-                .AnyAsync(e => e.FaceData != null && e.FaceData.Trim() == faceData && e.EmployeeId != employee.EmployeeId);
+            // Check duplicate using vector distance if incoming data is a face descriptor
+            float[]? newDescriptor = null;
+            if (faceData.StartsWith("[") && faceData.EndsWith("]"))
+            {
+                try
+                {
+                    newDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(faceData);
+                }
+                catch { }
+            }
 
-            if (duplicate)
+            if (newDescriptor != null && newDescriptor.Length == 128)
+            {
+                var otherEmployees = await _context.Employees
+                    .Where(e => e.EmployeeId != employee.EmployeeId && e.FaceData != null)
+                    .ToListAsync();
+
+                foreach (var emp in otherEmployees)
+                {
+                    var dbFaceData = emp.FaceData!.Trim();
+                    if (dbFaceData.StartsWith("[") && dbFaceData.EndsWith("]"))
+                    {
+                        try
+                        {
+                            var dbDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(dbFaceData);
+                            if (dbDescriptor != null && dbDescriptor.Length == 128)
+                            {
+                                double distance = 0;
+                                for (int i = 0; i < 128; i++)
+                                {
+                                    double diff = newDescriptor[i] - dbDescriptor[i];
+                                    distance += diff * diff;
+                                }
+                                distance = Math.Sqrt(distance);
+
+                                if (distance < 0.55) // Duplicate if too close
+                                {
+                                    isDuplicate = true;
+                                    break;
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            else
+            {
+                // Fallback: exact string check
+                isDuplicate = await _context.Employees
+                    .AnyAsync(e => e.FaceData != null && e.FaceData.Trim() == faceData && e.EmployeeId != employee.EmployeeId);
+            }
+
+            if (isDuplicate)
                 return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt này đã được liên kết với tài khoản khác." });
 
             employee.FaceData = faceData;
