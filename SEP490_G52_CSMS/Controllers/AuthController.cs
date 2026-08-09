@@ -180,10 +180,61 @@ namespace SEP490_G52_CSMS.Controllers
 
             matchedEmployee.FailedLoginAttempts = 0;
             matchedEmployee.LockoutUntil = null;
+
+            // -------------------------------------------------------
+            // CHẤM CÔNG: Nếu nhân viên có ca làm hôm nay, ghi nhận check-in
+            // -------------------------------------------------------
+            var today = DateTime.Now.Date;
+            var now = DateTime.Now;
+
+            var todayRoster = await _context.WeeklyRosterGrids
+                .Include(r => r.FixedShift)
+                .Include(r => r.AttendanceLogs)
+                .Where(r => r.EmployeeId == matchedEmployee.EmployeeId
+                         && r.AssignmentDate.Date == today)
+                .FirstOrDefaultAsync();
+
+            string? attendanceMessage = null;
+
+            if (todayRoster != null && todayRoster.FixedShift != null)
+            {
+                // Check if already checked-in today (don't double-stamp)
+                var existingLog = todayRoster.AttendanceLogs
+                    .FirstOrDefault(l => l.EmployeeId == matchedEmployee.EmployeeId);
+
+                if (existingLog == null)
+                {
+                    // Determine OnTime or Late: allow 15-minute grace window after shift start
+                    var shiftStart = todayRoster.AssignmentDate.Date + todayRoster.FixedShift.StartTime;
+                    var graceCutoff = shiftStart.AddMinutes(15);
+                    var checkInStatus = now <= graceCutoff ? "OnTime" : "Late";
+
+                    var log = new Models.Attendance.AttendanceLog
+                    {
+                        RosterId = todayRoster.RosterId,
+                        EmployeeId = matchedEmployee.EmployeeId,
+                        CheckInTime = now,
+                        IsFaceCheckInValid = true,
+                        CheckInConfidence = 95,
+                        CheckInStatus = checkInStatus,
+                        OverallStatus = "Present",
+                    };
+                    _context.AttendanceLogs.Add(log);
+                    attendanceMessage = checkInStatus == "OnTime"
+                        ? $"Chấm công thành công! Ca: {todayRoster.FixedShift.ShiftName} – Đúng giờ."
+                        : $"Chấm công thành công! Ca: {todayRoster.FixedShift.ShiftName} – Đi trễ.";
+                }
+                else
+                {
+                    attendanceMessage = "Bạn đã chấm công cho ca hôm nay rồi.";
+                }
+            }
+
             await _context.SaveChangesAsync();
             await SignInUserAsync(matchedEmployee);
-            return Json(new { success = true });
+            return Json(new { success = true, attendanceMessage });
         }
+
 
         [Authorize]
         [HttpGet]

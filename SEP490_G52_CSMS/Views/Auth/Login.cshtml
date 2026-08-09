@@ -317,11 +317,17 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    statusText.textContent = "* Trạng thái: Nhận diện thành công! Đang đăng nhập...";
+                    // Show attendance check-in status if server returned one
+                    if (result.attendanceMessage) {
+                        statusText.textContent = `* ${result.attendanceMessage}`;
+                        statusText.className = "status-text text-success fw-bold";
+                    } else {
+                        statusText.textContent = "* Trạng thái: Nhận diện thành công! Đang đăng nhập...";
+                    }
 
                     setTimeout(() => {
                         window.location.href = '/';
-                    }, 1000);
+                    }, 1800);
                 } else {
                     failedAttemptsCount++;
 
