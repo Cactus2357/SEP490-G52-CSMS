@@ -7,10 +7,11 @@ using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services;
 using System.Security.Claims;
+using SEP490_G52_CSMS.Commons;
 
 namespace SEP490_G52_CSMS.Controllers
 {
-    [Authorize(Roles = "Cashier,Bartender,Busser,Barista,Staff,Employee")]
+    [Authorize]
     public class LeaveRequestController : Controller
     {
         private readonly ILeaveRequestService _leaveRequestService;
@@ -22,24 +23,26 @@ namespace SEP490_G52_CSMS.Controllers
             _context = context;
         }
 
-        private async Task<(int Id, string Name, string Role)> GetCurrentUserAsync()
+        private async Task<(int Id, string Name, string Role, string BranchId, string BranchName)> GetCurrentUserAsync()
         {
-            var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(userIdStr, out int userId))
             {
-                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId);
+                var employee = await _context.Employees.Include(e => e.Branch).FirstOrDefaultAsync(e => e.EmployeeId == userId);
                 if (employee != null)
                 {
-                    return (employee.EmployeeId, employee.FullName ?? employee.Username ?? "", employee.Role ?? "Thu ngân");
+                    return (employee.EmployeeId, employee.FullName ?? employee.Username ?? "", employee.Role ?? "Thu ngân", employee.BranchId ?? "", employee.Branch?.BranchName ?? "Chi nhánh");
                 }
             }
-            return (4, "Nguyễn Văn A", "Thu ngân");
+            return (4, "Nguyễn Văn A", "Thu ngân", "", "Chi nhánh 1");
         }
 
+        // --- STAFF LEAVE APPLICATION VIEWS ---
+
+        [Authorize(Roles = "Cashier,Bartender,Busser,Barista,Staff,Employee")]
         public async Task<IActionResult> Index(DateTime? fromDate, DateTime? toDate, string status)
         {
             var currentUser = await GetCurrentUserAsync();
-            // Mặc định load đơn tuần này nếu không chọn ngày (theo business rule)
             if (!fromDate.HasValue && !toDate.HasValue)
             {
                 var today = DateTime.Today;
@@ -53,12 +56,12 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Cashier,Bartender,Busser,Barista,Staff,Employee")]
         public async Task<IActionResult> Create(LeaveRequestCreateViewModel model)
         {
             var currentUser = await GetCurrentUserAsync();
             model.EmployeeId = currentUser.Id;
             model.EmployeeName = currentUser.Name;
-            // model.RoleName is mapped from the form POST (dropdown)
 
             if (!ModelState.IsValid)
             {
@@ -80,6 +83,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Cashier,Bartender,Busser,Barista,Staff,Employee")]
         public async Task<IActionResult> Cancel(int applicationId)
         {
             var currentUser = await GetCurrentUserAsync();
@@ -94,6 +98,69 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // --- BRANCH MANAGER LEAVE MANAGEMENT (UC47 & UC48) ---
+
+        [HttpGet]
+        [Authorize(Roles = "BranchManager,RManager")]
+        public async Task<IActionResult> ManagerIndex(string searchName, DateTime? fromDate, DateTime? toDate, string status = "Tất cả")
+        {
+            var (userId, userName, role, branchId, branchName) = await GetCurrentUserAsync();
+            if (string.IsNullOrEmpty(branchId))
+            {
+                branchId = User.GetBranchId() ?? "";
+            }
+
+            var model = await _leaveRequestService.GetManagerLeaveRequestsAsync(branchId, branchName, searchName, fromDate, toDate, status);
+            return View(model);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "BranchManager,RManager")]
+        public async Task<IActionResult> GetDetailModal(int id)
+        {
+            var (userId, userName, role, branchId, branchName) = await GetCurrentUserAsync();
+            if (string.IsNullOrEmpty(branchId))
+            {
+                branchId = User.GetBranchId() ?? "";
+            }
+
+            var detail = await _leaveRequestService.GetLeaveRequestDetailAsync(id, branchId);
+            if (detail == null)
+            {
+                return NotFound("Không tìm thấy thông tin đơn xin nghỉ phép hoặc không thuộc chi nhánh của bạn.");
+            }
+
+            return PartialView("_ManagerDetailModal", detail);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "BranchManager,RManager")]
+        public async Task<IActionResult> Approve(int id)
+        {
+            var (userId, userName, role, branchId, branchName) = await GetCurrentUserAsync();
+            if (string.IsNullOrEmpty(branchId))
+            {
+                branchId = User.GetBranchId() ?? "";
+            }
+
+            var result = await _leaveRequestService.ApproveLeaveRequestAsync(id, branchId, userId, role);
+            return Json(new { success = result.Success, message = result.Message });
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "BranchManager,RManager")]
+        public async Task<IActionResult> Reject(int id, string? reason)
+        {
+            var (userId, userName, role, branchId, branchName) = await GetCurrentUserAsync();
+            if (string.IsNullOrEmpty(branchId))
+            {
+                branchId = User.GetBranchId() ?? "";
+            }
+
+            var result = await _leaveRequestService.RejectLeaveRequestAsync(id, branchId, userId, role, reason);
+            return Json(new { success = result.Success, message = result.Message });
         }
     }
 }

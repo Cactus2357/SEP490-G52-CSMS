@@ -47,4 +47,64 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         [Required(ErrorMessage = "Vui lòng nhập lý do.")]
         public string Reason { get; set; } = string.Empty;
     }
+
+    public class ManagerLeaveRequestListViewModel
+    {
+        public string BranchId { get; set; } = string.Empty;
+        public string BranchName { get; set; } = string.Empty;
+
+        // Filters
+        public string SearchName { get; set; } = string.Empty;
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public string Status { get; set; } = "Tất cả"; // "Tất cả", "Chờ duyệt", "Đã duyệt", "Từ chối"
+
+        public int TotalCount => Items.Count;
+        public List<ManagerLeaveRequestItemViewModel> Items { get; set; } = new();
+    }
+
+    public class ManagerLeaveRequestItemViewModel
+    {
+        public int ApplicationId { get; set; }
+        public int EmployeeId { get; set; }
+        public string EmployeeFullName { get; set; } = string.Empty;
+        public string EmployeeInitials { get; set; } = string.Empty;
+        public string ShiftName { get; set; } = string.Empty;
+        public string RequestDateStr { get; set; } = string.Empty;
+        public string FullDateStr { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty; // "Chờ duyệt", "Đã duyệt", "Từ chối"
+        public string StatusBadgeClass { get; set; } = string.Empty;
+        public string SummaryText { get; set; } = string.Empty; // e.g. "Trần Quốc Bảo - 12/06 - Ca sáng - Bị ốm"
+    }
+
+    public class LeaveRequestDetailViewModel
+    {
+        public int ApplicationId { get; set; }
+        public int EmployeeId { get; set; }
+        public string EmployeeFullName { get; set; } = string.Empty;
+        public string EmployeeUsername { get; set; } = string.Empty;
+        public string EmployeeRole { get; set; } = string.Empty;
+        public string EmployeeInitials { get; set; } = string.Empty;
+
+        public string Status { get; set; } = string.Empty;
+        public string StatusBadgeClass { get; set; } = string.Empty;
+
+        public string RequestDateStr { get; set; } = string.Empty;
+        public string ShiftDetails { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+        public string SubmittedAtStr { get; set; } = string.Empty;
+
+        // Attendance stats in current month
+        public int CurrentMonth { get; set; }
+        public int TakenShiftsMonth { get; set; }
+        public int PendingShiftsMonth { get; set; }
+        public int TotalShiftsMonth { get; set; }
+
+        // Shift warning banner
+        public bool HasShiftWarning { get; set; }
+        public string ShiftWarningMessage { get; set; } = string.Empty;
+
+        public bool CanProcess => Status == "Chờ duyệt" || Status == "Pending" || Status == "Đã gửi";
+    }
 }

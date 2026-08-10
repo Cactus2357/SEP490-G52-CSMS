@@ -31,7 +31,7 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")
             {
-                if (status == "Đã gửi")
+                if (status == "Đã gửi" || status == "Chờ duyệt")
                     query = query.Where(x => x.Status == "Pending");
                 else if (status == "Đã duyệt")
                     query = query.Where(x => x.Status == "Approved");
@@ -59,6 +59,95 @@ namespace SEP490_G52_CSMS.Repositories
         {
             _context.LeaveApplications.Update(leaveApplication);
             await _context.SaveChangesAsync();
+        }
+
+        // --- Manager UC47 & UC48 Methods ---
+
+        public async Task<List<LeaveApplication>> GetManagerLeaveRequestsAsync(string branchId, string? searchName, DateTime? fromDate, DateTime? toDate, string? status)
+        {
+            var query = _context.LeaveApplications
+                .Include(l => l.Employee)
+                .AsNoTracking()
+                .Where(l => l.Employee != null && l.Employee.BranchId == branchId);
+
+            if (!string.IsNullOrWhiteSpace(searchName))
+            {
+                var term = searchName.Trim().ToLower();
+                query = query.Where(l => l.Employee!.FullName!.ToLower().Contains(term) || l.Employee!.Username!.ToLower().Contains(term));
+            }
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(l => l.StartDate.Date >= fromDate.Value.Date || l.SubmittedAt.Date >= fromDate.Value.Date);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(l => l.StartDate.Date <= toDate.Value.Date || l.SubmittedAt.Date <= toDate.Value.Date);
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) && status != "Tất cả")
+            {
+                if (status == "Chờ duyệt" || status == "Pending" || status == "Đã gửi")
+                    query = query.Where(l => l.Status == "Pending");
+                else if (status == "Đã duyệt" || status == "Approved")
+                    query = query.Where(l => l.Status == "Approved");
+                else if (status == "Từ chối" || status == "Rejected")
+                    query = query.Where(l => l.Status == "Rejected");
+                else if (status == "Đã hủy" || status == "Canceled")
+                    query = query.Where(l => l.Status == "Canceled");
+            }
+
+            return await query.OrderByDescending(l => l.SubmittedAt).ToListAsync();
+        }
+
+        public async Task<LeaveApplication?> GetLeaveRequestDetailByIdAsync(int applicationId)
+        {
+            return await _context.LeaveApplications
+                .Include(l => l.Employee)
+                .FirstOrDefaultAsync(l => l.ApplicationId == applicationId);
+        }
+
+        public async Task<int> GetApprovedLeavesCountInMonthAsync(int employeeId, int year, int month)
+        {
+            return await _context.LeaveApplications
+                .Where(l => l.EmployeeId == employeeId && l.Status == "Approved" && l.StartDate.Year == year && l.StartDate.Month == month)
+                .CountAsync();
+        }
+
+        public async Task<int> GetPendingLeavesCountInMonthAsync(int employeeId, int year, int month)
+        {
+            return await _context.LeaveApplications
+                .Where(l => l.EmployeeId == employeeId && l.Status == "Pending" && l.StartDate.Year == year && l.StartDate.Month == month)
+                .CountAsync();
+        }
+
+        public async Task<int> GetAssignedShiftsCountInMonthAsync(int employeeId, int year, int month)
+        {
+            return await _context.WeeklyRosterGrids
+                .Where(w => w.EmployeeId == employeeId && w.AssignmentDate.Year == year && w.AssignmentDate.Month == month)
+                .CountAsync();
+        }
+
+        public async Task<int> GetOtherCoWorkersAssignedCountAsync(string branchId, DateTime date, int excludeEmployeeId)
+        {
+            return await _context.WeeklyRosterGrids
+                .Include(w => w.Employee)
+                .Where(w => w.Employee != null && w.Employee.BranchId == branchId && w.EmployeeId != excludeEmployeeId && w.AssignmentDate.Date == date.Date)
+                .CountAsync();
+        }
+
+        public async Task UnassignEmployeeRosterAsync(int employeeId, DateTime startDate, DateTime endDate)
+        {
+            var rosters = await _context.WeeklyRosterGrids
+                .Where(w => w.EmployeeId == employeeId && w.AssignmentDate.Date >= startDate.Date && w.AssignmentDate.Date <= endDate.Date)
+                .ToListAsync();
+
+            if (rosters.Any())
+            {
+                _context.WeeklyRosterGrids.RemoveRange(rosters);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }
