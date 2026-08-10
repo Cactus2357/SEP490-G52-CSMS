@@ -8,6 +8,13 @@
     .employee-entry {
         white-space: nowrap;
     }
+    .today-cell {
+        background-color: rgba(13, 110, 253, 0.08) !important;
+    }
+    .today-header {
+        background-color: rgba(13, 110, 253, 0.15) !important;
+        border-bottom: 3px solid #0d6efd !important;
+    }
 </style>
 
 <div class="container-fluid mt-3 px-4 pb-5">
@@ -69,7 +76,7 @@
     }
     else
     {
-        <!-- Weekly Schedule Matrix Grid (Balanced fixed layout similar to Manage page) -->
+        <!-- Weekly Schedule Matrix Grid (Today Highlight + Colored Employee Roles) -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="table-responsive">
                 <table class="table table-bordered table-sm align-middle text-center mb-0" style="table-layout: fixed; min-width: 980px;">
@@ -78,9 +85,18 @@
                             <th style="width: 160px;" class="text-start ps-3 py-2">Ca Làm Việc</th>
                             @for (var d = 0; d < 7; d++)
                             {
-                                <th style="width: 12.14%;" class="py-2">
-                                    <div class="fw-bold text-dark">@dayNames[d]</div>
-                                    <div class="small fw-normal text-muted">@Model.WeekStart.AddDays(d).ToString("dd/MM")</div>
+                                var dayDate = Model.WeekStart.AddDays(d);
+                                bool isToday = dayDate.Date == DateTime.Today;
+
+                                <th style="width: 12.14%;" class="py-2 @(isToday ? "today-header" : "")">
+                                    <div class="fw-bold @(isToday ? "text-primary" : "text-dark")">
+                                        @dayNames[d]
+                                        @* @if (isToday)
+                                        {
+                                            <span class="badge bg-primary rounded-pill ms-1" style="font-size: 0.65rem;">Hôm nay</span>
+                                        } *@
+                                    </div>
+                                    <div class="small fw-normal @(isToday ? "text-primary fw-bold" : "text-muted")">@dayDate.ToString("dd/MM")</div>
                                 </th>
                             }
                         </tr>
@@ -96,16 +112,22 @@
                                 @for (var d = 0; d < 7; d++)
                                 {
                                     var date = Model.WeekStart.AddDays(d);
+                                    bool isToday = date.Date == DateTime.Today;
                                     var key = (shift.ShiftId, date.Date);
                                     var hasAssignments = Model.Assignments.TryGetValue(key, out var employees) && employees.Count > 0;
 
-                                    <td class="text-start p-2 align-top">
+                                    <td class="text-start p-2 align-top @(isToday ? "today-cell" : "")">
                                         @if (hasAssignments)
                                         {
                                             @foreach (var emp in employees!)
                                             {
-                                                <div class="employee-entry small mb-1">
-                                                    <i class="bi bi-person-fill text-primary me-1"></i>@(emp.FullName ?? $"NV#{emp.EmployeeId}")
+                                                var roleStr = emp.Role ?? "";
+                                                string roleColor = roleStr.Contains("Cashier") || roleStr.Contains("Thu ngân") ? "text-primary" :
+                                                                   roleStr.Contains("Bartender") || roleStr.Contains("Barista") || roleStr.Contains("Pha chế") ? "text-success" :
+                                                                   roleStr.Contains("Busser") || roleStr.Contains("Vệ sinh") ? "text-warning-emphasis" : "text-dark";
+
+                                                <div class="employee-entry small mb-1 fw-semibold @roleColor">
+                                                    <i class="bi bi-person-fill me-1"></i>@(emp.FullName ?? $"NV#{emp.EmployeeId}")
                                                 </div>
                                             }
                                         }
@@ -122,10 +144,12 @@
             </div>
         </div>
 
-        <!-- Legend -->
-        <div class="small text-muted px-1">
-            <span class="fw-bold me-2">Chú thích:</span>
-            <span class="me-3"><i class="bi bi-person-fill text-primary"></i> Nhân viên ca làm</span>
+        <!-- Role Color Legend -->
+        <div class="small text-muted px-1 d-flex flex-wrap gap-4 align-items-center">
+            <span class="fw-bold text-dark">Phân loại vai trò:</span>
+            <span class="text-primary fw-semibold"><i class="bi bi-person-fill me-1"></i>Thu ngân (Cashier)</span>
+            <span class="text-success fw-semibold"><i class="bi bi-person-fill me-1"></i>Pha chế (Bartender/Barista)</span>
+            <span class="text-warning-emphasis fw-semibold"><i class="bi bi-person-fill me-1"></i>Phục vụ/Vệ sinh (Busser/Staff)</span>
         </div>
     }
 </div>

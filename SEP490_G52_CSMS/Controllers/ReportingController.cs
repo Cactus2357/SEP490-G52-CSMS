@@ -27,18 +27,22 @@ namespace SEP490_G52_CSMS.Controllers
         {
             var vm = new RevenueReportViewModel();
             var branches = await _context.Branches.ToListAsync();
-            
+
             // Populate Branch Dropdown
-            vm.BranchList = branches.Select(b => new SelectListItem
+            vm.BranchList = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "all", Text = "Tất cả chi nhánh" }
+            };
+            vm.BranchList.AddRange(branches.Select(b => new SelectListItem
             {
                 Value = b.BranchId,
                 Text = b.BranchName
-            }).ToList();
+            }));
 
             // Default selection
             if (string.IsNullOrEmpty(branchId))
             {
-                branchId = branches.FirstOrDefault()?.BranchId;
+                branchId = "all";
             }
             vm.SelectedBranchId = branchId;
 
@@ -59,39 +63,151 @@ namespace SEP490_G52_CSMS.Controllers
 
             int daysInMonth = DateTime.DaysInMonth(selectedMonth.Year, selectedMonth.Month);
             var startDate = selectedMonth;
-            var endDate = selectedMonth.AddMonths(1).AddDays(-1); // Last day of month
+            var endDate = selectedMonth.AddMonths(1).AddDays(-1).AddHours(23).AddMinutes(59).AddSeconds(59);
 
-            // Get Orders for all branches in this month
-            var ordersInMonth = await _context.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate.AddDays(1))
-                .ToListAsync();
+            // Fetch Orders in selected month with items & product details
+            var ordersQuery = _context.Orders
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductVariant)
+                        .ThenInclude(pv => pv!.MasterProduct)
+                            .ThenInclude(mp => mp!.ProductCategory)
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate);
 
-            // 1. Chart Data (For Selected Branch)
-            var branchOrders = ordersInMonth.Where(o => o.BranchId == branchId).ToList();
-            
+            if (branchId != "all")
+            {
+                ordersQuery = ordersQuery.Where(o => o.BranchId == branchId);
+            }
+
+            var ordersInMonth = await ordersQuery.ToListAsync();
+
+            // 1. Key Metrics Summary
+            vm.TotalRevenue = ordersInMonth.Sum(o => o.TotalAmount);
+            vm.TotalOrders = ordersInMonth.Count;
+            vm.TotalQuantitySold = ordersInMonth.SelectMany(o => o.OrderItems).Sum(oi => oi.Quantity);
+
+            // 2. Line Chart Data (Daily Revenue)
             for (int i = 1; i <= daysInMonth; i++)
             {
                 vm.ChartLabels.Add($"{i:D2}/{selectedMonth.Month:D2}");
-                var dailyTotal = branchOrders
+                var dailyTotal = ordersInMonth
                     .Where(o => o.CreatedAt.Day == i)
                     .Sum(o => o.TotalAmount);
                 vm.ChartData.Add(dailyTotal);
             }
 
-            // 2. Table Data (For All Branches)
+            // 3. Table Data Grid (Per Branch Overview)
+            var allMonthOrders = await _context.Orders
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
+                .ToListAsync();
+
             foreach (var b in branches)
             {
-                var bOrders = ordersInMonth.Where(o => o.BranchId == b.BranchId).ToList();
-                
-                var cashOrders = bOrders.Where(o => o.PaymentMethod == "Cash").Sum(o => o.TotalAmount);
-                var transferOrders = bOrders.Where(o => o.PaymentMethod != "Cash").Sum(o => o.TotalAmount);
+                var bOrders = allMonthOrders.Where(o => o.BranchId == b.BranchId).ToList();
+                var cashRevenue = bOrders.Where(o => o.PaymentMethod == "Cash").Sum(o => o.TotalAmount);
+                var transferRevenue = bOrders.Where(o => o.PaymentMethod != "Cash").Sum(o => o.TotalAmount);
 
                 vm.TableData.Add(new RevenueGridRow
                 {
                     BranchName = b.BranchName,
-                    CashRevenue = cashOrders,
-                    TransferRevenue = transferOrders
+                    CashRevenue = cashRevenue,
+                    TransferRevenue = transferRevenue,
+                    OrderCount = bOrders.Count
                 });
+            }
+
+            // 4. Category Sales & Revenue Breakdown (Doughnut Chart)
+            var categoryGrouped = ordersInMonth
+                .SelectMany(o => o.OrderItems)
+                .GroupBy(oi => oi.ProductVariant?.MasterProduct?.ProductCategory?.CategoryName ?? "Khác")
+                .Select(g => new
+                {
+                    CategoryName = g.Key,
+                    Revenue = g.Sum(x => x.UnitPrice * x.Quantity),
+                    Quantity = g.Sum(x => x.Quantity)
+                })
+                .OrderByDescending(x => x.Revenue)
+                .ToList();
+
+            foreach (var cat in categoryGrouped)
+            {
+                vm.CategoryLabels.Add(cat.CategoryName);
+                vm.CategoryRevenueData.Add(cat.Revenue);
+                vm.CategoryQuantityData.Add(cat.Quantity);
+            }
+
+            // 5. Product Sales Quantity (Bar Chart)
+            var productGrouped = ordersInMonth
+                .SelectMany(o => o.OrderItems)
+                .GroupBy(oi => oi.ProductVariant?.MasterProduct?.ProductName ?? "Sản phẩm khác")
+                .Select(g => new
+                {
+                    ProductName = g.Key,
+                    Quantity = g.Sum(x => x.Quantity)
+                })
+                .OrderByDescending(x => x.Quantity)
+                .Take(10)
+                .ToList();
+
+            foreach (var prod in productGrouped)
+            {
+                vm.ProductSalesLabels.Add(prod.ProductName);
+                vm.ProductSalesQuantityData.Add(prod.Quantity);
+            }
+
+            // 6. Top Products per Branch
+            foreach (var b in branches)
+            {
+                var bItems = ordersInMonth
+                    .Where(o => o.BranchId == b.BranchId)
+                    .SelectMany(o => o.OrderItems)
+                    .ToList();
+
+                var topProd = bItems
+                    .GroupBy(oi => oi.ProductVariant?.MasterProduct?.ProductName ?? "Sản phẩm")
+                    .Select(g => new BranchTopProductRow
+                    {
+                        BranchName = b.BranchName,
+                        ProductName = g.Key,
+                        QuantitySold = g.Sum(x => x.Quantity),
+                        TotalRevenue = g.Sum(x => x.UnitPrice * x.Quantity)
+                    })
+                    .OrderByDescending(x => x.QuantitySold)
+                    .FirstOrDefault();
+
+                if (topProd != null)
+                {
+                    vm.BranchTopProducts.Add(topProd);
+                }
+            }
+
+            // 7. Material Supply Import / Export Statistics
+            var receiptItems = await _context.WarehouseReceiptItems
+                .Include(r => r.WarehouseReceipt)
+                .Include(r => r.Material)
+                .Where(r => r.WarehouseReceipt != null && r.WarehouseReceipt.ImportDate >= startDate && r.WarehouseReceipt.ImportDate <= endDate)
+                .ToListAsync();
+
+            var supplyRequestItems = await _context.BranchSupplyRequestItems
+                .Include(s => s.BranchSupplyRequest)
+                .Include(s => s.Material)
+                .Where(s => s.BranchSupplyRequest != null && s.BranchSupplyRequest.RequestDate >= startDate && s.BranchSupplyRequest.RequestDate <= endDate)
+                .ToListAsync();
+
+            vm.TotalMaterialImportsAmount = receiptItems.Sum(r => r.Amount);
+
+            var topMaterials = receiptItems
+                .Select(r => r.Material?.MaterialName ?? "Khác")
+                .Union(supplyRequestItems.Select(s => s.Material?.MaterialName ?? "Khác"))
+                .Distinct()
+                .Take(7)
+                .ToList();
+
+            foreach (var matName in topMaterials)
+            {
+                vm.MaterialStatLabels.Add(matName);
+                vm.WarehouseImportData.Add(receiptItems.Where(r => r.Material?.MaterialName == matName).Sum(r => r.Quantity));
+                vm.WarehouseExportData.Add(supplyRequestItems.Where(s => s.Material?.MaterialName == matName && s.BranchSupplyRequest?.Status == "Đã hoàn thành").Sum(s => s.QuantityReleased ?? s.QuantityRequested));
+                vm.BranchImportRequestData.Add(supplyRequestItems.Where(s => s.Material?.MaterialName == matName).Sum(s => s.QuantityRequested));
             }
 
             return View(vm);
@@ -107,99 +223,9 @@ namespace SEP490_G52_CSMS.Controllers
                 {
                     Value = b.BranchId,
                     Text = b.BranchName
-                }).ToList(),
-                SelectedBranchId = string.IsNullOrEmpty(branchId) ? branches.FirstOrDefault()?.BranchId : branchId
+                }).ToList()
             };
-
             return View(vm);
-        }
-
-        // GET: /Reporting/ExportRevenue
-        [HttpGet]
-        public async Task<IActionResult> ExportRevenue(string branchId, DateTime fromDate, DateTime toDate)
-        {
-            if (toDate < fromDate)
-            {
-                return BadRequest("Khoảng thời gian không hợp lệ. Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
-            }
-
-            var orders = await _context.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.ProductVariant)
-                .ThenInclude(v => v.MasterProduct)
-                .Where(o => o.BranchId == branchId && o.CreatedAt.Date >= fromDate.Date && o.CreatedAt.Date <= toDate.Date)
-                .OrderBy(o => o.CreatedAt)
-                .ToListAsync();
-
-            if (!orders.Any())
-            {
-                return NotFound("Không tìm thấy dữ liệu phù hợp trong khoảng thời gian này để xuất file!");
-            }
-
-            var builder = new StringBuilder();
-            builder.AppendLine("Mã Đơn,Ngày Tạo,Người Nhận,Thu Ngân,Phương Thức TT,Tổng Tiền");
-
-            foreach (var o in orders)
-            {
-                // Simple CSV formatting
-                var recipient = o.RecipientName?.Replace(",", " ") ?? "";
-                builder.AppendLine($"{o.OrderId},{o.CreatedAt:dd/MM/yyyy HH:mm},{recipient},{o.CashierId},{o.PaymentMethod},{o.TotalAmount}");
-            }
-
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
-            return File(bytes, "text/csv", $"DoanhThu_{branchId}_{fromDate:ddMMyyyy}_{toDate:ddMMyyyy}.csv");
-        }
-
-        // GET: /Reporting/ExportTimesheet
-        [HttpGet]
-        public async Task<IActionResult> ExportTimesheet(string branchId, DateTime fromDate, DateTime toDate)
-        {
-            if (toDate < fromDate)
-            {
-                return BadRequest("Khoảng thời gian không hợp lệ. Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
-            }
-
-            // Since Attendance logic might be complex or missing models in this context, 
-            // I'll create a dummy CSV just to fulfill the UI requirement for now, or fetch from WeeklyRosterGrid
-            var builder = new StringBuilder();
-            builder.AppendLine("Mã NV,Tên NV,Ngày,Ca Làm,Chi Nhánh");
-            
-            // (Placeholder logic since Attendance is complex)
-            builder.AppendLine($"NV001,Nguyen Van A,{fromDate:dd/MM/yyyy},Ca Sang,{branchId}");
-
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
-            return File(bytes, "text/csv", $"BangCong_{branchId}_{fromDate:ddMMyyyy}_{toDate:ddMMyyyy}.csv");
-        }
-
-        // GET: /Reporting/ExportMenu
-        [HttpGet]
-        public async Task<IActionResult> ExportMenu(string branchId)
-        {
-            var branchMenu = await _context.BranchMenus
-                .Include(bm => bm.MenuDetails)
-                .ThenInclude(md => md.ProductVariant)
-                .ThenInclude(v => v.MasterProduct)
-                .FirstOrDefaultAsync(bm => bm.BranchId == branchId && bm.IsActive);
-
-            if (branchMenu == null || !branchMenu.MenuDetails.Any())
-            {
-                return NotFound("Không tìm thấy dữ liệu phù hợp trong khoảng thời gian này để xuất file!");
-            }
-
-            var builder = new StringBuilder();
-            builder.AppendLine("Tên Sản Phẩm,Size,Giá Bán");
-
-            foreach (var item in branchMenu.MenuDetails)
-            {
-                var pName = item.ProductVariant?.MasterProduct?.ProductName?.Replace(",", " ") ?? "";
-                var size = item.ProductVariant?.SizeVariant ?? "";
-                var price = item.ProductVariant?.SellingPrice.ToString() ?? "0";
-                
-                builder.AppendLine($"{pName},{size},{price}");
-            }
-
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(builder.ToString())).ToArray();
-            return File(bytes, "text/csv", $"Menu_{branchId}_{DateTime.Now:ddMMyyyy}.csv");
         }
     }
 }

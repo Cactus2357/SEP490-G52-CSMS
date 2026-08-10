@@ -112,15 +112,24 @@
     {
         <!-- Weekly schedule matrix grid -->
         <div class="table-responsive">
-            <table class="table table-bordered align-middle text-center" id="scheduleTable">
+            <table class="table table-bordered align-middle text-center" id="scheduleTable" style="table-layout: fixed; min-width: 980px;">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:140px;">Ca Làm Việc</th>
+                        <th style="width: 160px;" class="text-start ps-3 py-2">Ca Làm Việc</th>
                         @for (var d = 0; d < 7; d++)
                         {
-                            <th>
-                                @dayNames[d]<br />
-                                <small class="text-muted">@Model.WeekStartDate.AddDays(d).ToString("dd/MM")</small>
+                            var dayDate = Model.WeekStartDate.AddDays(d);
+                            bool isToday = dayDate.Date == DateTime.Today;
+
+                            <th style="width: 12.14%;" class="py-2 @(isToday ? "bg-primary-subtle border-primary" : "")">
+                                <div class="fw-bold @(isToday ? "text-primary" : "text-dark")">
+                                    @dayNames[d]
+                                    @* @if (isToday)
+                                    {
+                                        <span class="badge bg-primary rounded-pill ms-1" style="font-size: 0.65rem;">Hôm nay</span>
+                                    } *@
+                                </div>
+                                <div class="small fw-normal @(isToday ? "text-primary fw-bold" : "text-muted")">@dayDate.ToString("dd/MM")</div>
                             </th>
                         }
                     </tr>
@@ -129,13 +138,16 @@
                     @foreach (var shift in shifts)
                     {
                         <tr>
-                            <td class="table-light text-start">
+                            <td class="bg-body-tertiary text-start ps-3 py-3">
                                 <strong>@(shift.ShiftName ?? "Ca ?")</strong><br />
                                 <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</small>
                             </td>
                             @for (var d = 0; d < 7; d++)
                             {
-                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break"></td>
+                                var dayDate = Model.WeekStartDate.AddDays(d);
+                                bool isToday = dayDate.Date == DateTime.Today;
+
+                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break @(isToday ? "bg-primary-subtle bg-opacity-10" : "")"></td>
                             }
                         </tr>
                     }

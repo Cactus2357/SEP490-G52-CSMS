@@ -19,276 +19,172 @@
         _               => Model.Role ?? ""
     };
 
-    bool hasCccd     = !string.IsNullOrEmpty(Model.CccdFilePath);
+    bool hasCccd = !string.IsNullOrEmpty(Model.CccdFilePath);
     bool hasContract = !string.IsNullOrEmpty(Model.ContractFilePath);
-
-    // Determine if existing files are images (show preview) or PDFs (show icon)
-    bool cccdIsImage     = hasCccd && (Model.CccdFilePath!.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-                                     || Model.CccdFilePath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
-                                     || Model.CccdFilePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
-    bool contractIsImage = hasContract && (Model.ContractFilePath!.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-                                         || Model.ContractFilePath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
-                                         || Model.ContractFilePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
 }
 
-<style>
-    .upd-wrap                { font-family: var(--bs-body-font-family); background: #fff; }
-    .upd-back-bar            { display: flex; align-items: center; gap: 12px; padding: 20px 24px 16px; border-bottom: 1px solid #e5e7eb; }
-    .upd-back-btn            { background: none; border: none; padding: 4px; cursor: pointer; color: #111827; display: flex; align-items: center; border-radius: 6px; transition: background .15s; }
-    .upd-back-btn:hover      { background: #f3f4f6; }
-    .upd-back-title          { font-size: 1rem; font-weight: 700; color: #111827; text-transform: uppercase; letter-spacing: .4px; margin: 0; }
-
-    .upd-card                { margin: 14px 24px; padding: 14px 18px; border: 2px solid #111827; border-radius: 12px; display: flex; align-items: center; gap: 14px; }
-    .upd-avatar              { width: 52px; height: 52px; border-radius: 50%; border: 2px solid #111827; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; color: #111827; flex-shrink: 0; }
-    .upd-card-name           { font-size: 1.05rem; font-weight: 700; color: #111827; margin: 0 0 2px; }
-    .upd-card-sub            { font-size: .82rem; color: #6b7280; margin: 0; }
-
-    /* Tabs */
-    .upd-tabs                { display: flex; gap: 4px; margin: 0 24px 14px; background: #f3f4f6; border: 1.5px solid #111827; border-radius: 8px; padding: 4px; }
-    .upd-tab                 { flex: 1; padding: 8px 4px; border: none; background: transparent; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: #9ca3af; border-radius: 5px; cursor: pointer; transition: background .15s, color .15s; font-family: var(--bs-body-font-family); }
-    .upd-tab.active          { background: #111827; color: #fff; }
-
-    /* Panels */
-    .upd-panel               { display: none; }
-    .upd-panel.active        { display: block; }
-
-    /* Form fields */
-    .upd-sec                 { margin: 0 24px 14px; }
-    .upd-sec-title           { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; margin: 0 0 12px; }
-    .upd-lbl                 { display: block; font-size: .82rem; font-weight: 600; color: #374151; margin-bottom: 5px; }
-    .upd-input               { width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: .9rem; font-family: var(--bs-body-font-family); outline: none; transition: border-color .15s; box-sizing: border-box; }
-    .upd-input:focus         { border-color: #111827; }
-    .upd-hint                { font-size: .72rem; color: #9ca3af; margin-top: 3px; }
-    .upd-mb                  { margin-bottom: 14px; }
-
-    /* Error alert */
-    .upd-error               { margin: 0 24px 12px; padding: 10px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; font-size: .83rem; font-weight: 500; }
-
-    /* ---- File upload zone ---- */
-    .upd-zone-wrap           { position: relative; margin-bottom: 16px; }
-    .upd-zone                { position: relative; border: 2px dashed #d1d5db; border-radius: 10px; background: #f9fafb; padding: 20px 12px; text-align: center; transition: border-color .15s, background .15s; cursor: pointer; }
-    .upd-zone:hover          { border-color: #111827; background: #f3f4f6; }
-    .upd-zone input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-    .upd-zone-icon           { font-size: 1.6rem; color: #9ca3af; display: block; margin-bottom: 4px; }
-    .upd-zone-text           { font-size: .82rem; font-weight: 600; color: #374151; }
-    .upd-zone-sub            { font-size: .73rem; color: #9ca3af; margin-top: 2px; }
-
-    /* Preview area: side-by-side or single */
-    .upd-preview-row         { display: flex; gap: 12px; margin-top: 10px; }
-    .upd-preview-box         { flex: 1; min-width: 0; }
-    .upd-preview-label       { font-size: .7rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .3px; margin-bottom: 4px; }
-    .upd-preview-img         { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb; cursor: pointer; transition: border-color .15s; display: block; }
-    .upd-preview-img:hover   { border-color: #111827; }
-    .upd-preview-pdf         { width: 100%; aspect-ratio: 4/3; border-radius: 8px; border: 2px solid #e5e7eb; background: #f9fafb; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #6b7280; }
-    .upd-preview-pdf i       { font-size: 2rem; color: #e03b3b; }
-    .upd-preview-pdf span    { font-size: .72rem; font-weight: 600; word-break: break-all; text-align: center; padding: 0 4px; }
-    .upd-preview-change-hint { font-size: .7rem; color: #9ca3af; text-align: center; margin-top: 4px; }
-
-    /* Footer */
-    .upd-footer              { display: flex; gap: 12px; padding: 16px 24px 20px; border-top: 1px solid #e5e7eb; }
-    .upd-btn-cancel          { flex: 1; padding: 10px; border: 1.5px solid #111827; border-radius: 8px; background: #fff; color: #111827; font-size: .88rem; font-weight: 600; cursor: pointer; transition: background .15s; font-family: var(--bs-body-font-family); }
-    .upd-btn-cancel:hover    { background: #f3f4f6; }
-    .upd-btn-save            { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #111827; color: #fff; font-size: .88rem; font-weight: 600; cursor: pointer; transition: background .15s; font-family: var(--bs-body-font-family); display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .upd-btn-save:hover      { background: #1f2937; }
-    .upd-btn-save:disabled   { background: #6b7280; cursor: not-allowed; }
-</style>
-
-<div class="upd-wrap">
-
+<div class="p-4 bg-white">
     <!-- Header -->
-    <div class="upd-back-bar">
-        <button class="upd-back-btn" onclick="closeEmployeeUpdate()">
-            <i class="bi bi-arrow-left" style="font-size:1.2rem;"></i>
+    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
+        <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0" style="width: 36px; height: 36px;" onclick="closeEmployeeUpdate()" title="Hủy">
+            <i class="bi bi-arrow-left fs-5"></i>
         </button>
-        <p class="upd-back-title">Cập nhật thông tin</p>
+        <h5 class="fw-bold m-0 text-dark">Cập nhật thông tin nhân viên</h5>
     </div>
 
-    <!-- Summary card -->
-    <div class="upd-card">
-        <div class="upd-avatar">@initials</div>
-        <div>
-            <p class="upd-card-name">@Model.FullName</p>
-            <p class="upd-card-sub">@@@Model.Username &nbsp;·&nbsp; @roleText</p>
+    <!-- Summary Card -->
+    <div class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-body-tertiary">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle border border-2 border-primary bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.1rem;">
+                @initials
+            </div>
+            <div>
+                <h6 class="fw-bold m-0 text-dark">@Model.FullName</h6>
+                <p class="text-muted m-0 small">@@@Model.Username &bull; @roleText &bull; @(Model.Branch?.BranchName ?? "Chi nhánh 1")</p>
+            </div>
         </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="upd-tabs">
-        <button class="upd-tab active" onclick="updSwitchTab('personal', this)">Cá nhân</button>
-        <button class="upd-tab"       onclick="updSwitchTab('docs', this)">Hồ sơ</button>
-    </div>
+    <!-- Native Bootstrap Nav Pills Tabs -->
+    <ul class="nav nav-pills nav-justified mb-4 bg-light p-1 rounded-3 border" id="employeeUpdateTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-uppercase small py-2 rounded-3" id="upd-tab-btn-info" data-bs-toggle="tab" data-bs-target="#upd-tab-panel-info" type="button" role="tab" aria-controls="upd-tab-panel-info" aria-selected="true">
+                <i class="bi bi-person-badge me-1"></i>Thông tin cá nhân
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-uppercase small py-2 rounded-3" id="upd-tab-btn-docs" data-bs-toggle="tab" data-bs-target="#upd-tab-panel-docs" type="button" role="tab" aria-controls="upd-tab-panel-docs" aria-selected="false">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Tải hồ sơ
+            </button>
+        </li>
+    </ul>
 
-    <!-- Error alert -->
-    <div id="updateErrorAlert" class="upd-error" style="display:none;"></div>
-
-    <!-- Form wraps BOTH panels -->
+    <!-- Form -->
     <form id="updateEmployeeForm" enctype="multipart/form-data">
         <input type="hidden" name="EmployeeId" value="@Model.EmployeeId" />
 
-        <!-- ===== PANEL: CÁ NHÂN ===== -->
-        <div id="upd-panel-personal" class="upd-panel active">
-            <div class="upd-sec">
-                <p class="upd-sec-title">Thông tin cá nhân</p>
+        <div class="alert alert-danger d-none rounded-3 mb-3" id="updErrorBox"></div>
 
-                <div class="upd-mb">
-                    <label for="updateDateOfBirth" class="upd-lbl">Ngày sinh *</label>
-                    <input type="date"
-                           class="upd-input"
-                           name="DateOfBirth"
-                           id="updateDateOfBirth"
-                           value="@Model.DateOfBirth.ToString("yyyy-MM-dd")"
-                           required />
+        <!-- Tab Contents -->
+        <div class="tab-content" id="employeeUpdateTabContent">
+            <!-- TAB 1: Thông tin cá nhân -->
+            <div class="tab-pane fade show active" id="upd-tab-panel-info" role="tabpanel" aria-labelledby="upd-tab-btn-info">
+                <div class="card border-0 shadow-sm rounded-3 mb-3 bg-body-tertiary">
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold text-uppercase small text-muted mb-3 border-bottom pb-2">Họ tên &amp; Liên hệ</h6>
+                        <div class="mb-3">
+                            <label for="updFullName" class="form-label fw-bold">Họ và tên *</label>
+                            <input type="text" class="form-control rounded-3" id="updFullName" name="FullName" value="@Model.FullName" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updPhoneNumber" class="form-label fw-bold">Số điện thoại *</label>
+                            <input type="tel" class="form-control rounded-3" id="updPhoneNumber" name="PhoneNumber" value="@Model.PhoneNumber" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updEmail" class="form-label fw-bold">Email *</label>
+                            <input type="email" class="form-control rounded-3" id="updEmail" name="Email" value="@Model.Email" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updCitizenId" class="form-label fw-bold">Số CCCD (12 số) *</label>
+                            <input type="text" class="form-control rounded-3" id="updCitizenId" name="CitizenId" value="@Model.CitizenId" required />
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="upd-mb">
-                    <label for="updateAddress" class="upd-lbl">Địa chỉ *</label>
-                    <input type="text"
-                           class="upd-input"
-                           name="Address"
-                           id="updateAddress"
-                           value="@Model.Address"
-                           placeholder="Nhập địa chỉ thường trú..."
-                           required />
-                </div>
+            <!-- TAB 2: Tải hồ sơ -->
+            <div class="tab-pane fade" id="upd-tab-panel-docs" role="tabpanel" aria-labelledby="upd-tab-btn-docs">
+                <div class="card border-0 shadow-sm rounded-3 mb-3 bg-body-tertiary">
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold text-uppercase small text-muted mb-3 border-bottom pb-2">Tải tệp CCCD &amp; Hợp đồng lao động</h6>
+                        
+                        <!-- CCCD Upload Zone -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Ảnh / Tệp CCCD</label>
+                            <input type="file" class="form-control rounded-3" name="CccdFile" accept="image/*,.pdf" onchange="previewUploadFile(this, 'cccd')" />
+                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, PDF. Tối đa 5MB.</div>
+                            <div id="cccdPreviewContainer" class="mt-2">
+                                @if (hasCccd)
+                                {
+                                    <div class="small text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Đã có tệp đính kèm: @Model.CccdFilePath</div>
+                                }
+                            </div>
+                        </div>
 
-                <div class="upd-mb">
-                    <label for="updateCitizenId" class="upd-lbl">Số CCCD *</label>
-                    <input type="text"
-                           class="upd-input"
-                           name="CitizenId"
-                           id="updateCitizenId"
-                           value="@Model.CitizenId"
-                           maxlength="12"
-                           minlength="12"
-                           pattern="[0-9]{12}"
-                           placeholder="Nhập 12 chữ số..."
-                           style="font-family:monospace; letter-spacing:1px;"
-                           required />
-                    <div class="upd-hint">Phải chứa chính xác 12 chữ số.</div>
+                        <!-- Contract Upload Zone -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tệp hợp đồng lao động</label>
+                            <input type="file" class="form-control rounded-3" name="ContractFile" accept="image/*,.pdf" onchange="previewUploadFile(this, 'contract')" />
+                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, PDF. Tối đa 10MB.</div>
+                            <div id="contractPreviewContainer" class="mt-2">
+                                @if (hasContract)
+                                {
+                                    <div class="small text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Đã có tệp đính kèm: @Model.ContractFilePath</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== PANEL: HỒ SƠ ===== -->
-        <div id="upd-panel-docs" class="upd-panel">
-            <div class="upd-sec">
-                <p class="upd-sec-title">Tài liệu đính kèm</p>
-
-                <!-- ---- CCCD ---- -->
-                <div class="upd-mb">
-                    <label class="upd-lbl">Ảnh CCCD</label>
-
-                    @if (!hasCccd)
-                    {
-                        <!-- No existing file: simple dropzone -->
-                        <div class="upd-zone" id="cccd-zone">
-                            <input type="file" name="CccdFile" id="updateCccdFile"
-                                   accept=".jpg,.jpeg,.pdf"
-                                   onchange="updHandleFile(this, 'cccd')" />
-                            <i class="bi bi-cloud-arrow-up upd-zone-icon"></i>
-                            <div class="upd-zone-text">Tải tệp lên (.pdf, .jpg)</div>
-                        </div>
-                        <div id="cccd-preview-row" class="upd-preview-row" style="display:none;"></div>
-                    }
-                    else
-                    {
-                        <!-- Has existing file: show old; after pick show side-by-side -->
-                        <div id="cccd-preview-row" class="upd-preview-row">
-                            <!-- Old file -->
-                            <div class="upd-preview-box" id="cccd-old-box">
-                                <div class="upd-preview-label">Ảnh hiện tại</div>
-                                @if (cccdIsImage)
-                                {
-                                    <img src="@Model.CccdFilePath" alt="CCCD cũ"
-                                         class="upd-preview-img"
-                                         onclick="document.getElementById('updateCccdFile').click()"
-                                         title="Nhấn để thay ảnh mới" />
-                                }
-                                else
-                                {
-                                    <div class="upd-preview-pdf">
-                                        <i class="bi bi-file-earmark-pdf-fill"></i>
-                                        <span>File PDF hiện tại</span>
-                                    </div>
-                                }
-                                <div class="upd-preview-change-hint">Nhấn vào ảnh để thay mới</div>
-                            </div>
-                            <!-- New file placeholder (hidden until chosen) -->
-                            <div class="upd-preview-box" id="cccd-new-box" style="display:none;">
-                                <div class="upd-preview-label">Ảnh mới</div>
-                                <div id="cccd-new-content"></div>
-                                <div class="upd-preview-change-hint">Nhấn vào ảnh để đổi lại</div>
-                            </div>
-                        </div>
-                        <!-- Hidden file input -->
-                        <input type="file" name="CccdFile" id="updateCccdFile"
-                               accept=".jpg,.jpeg,.pdf" style="display:none;"
-                               onchange="updHandleFile(this, 'cccd')" />
-                    }
-                </div>
-
-                <!-- ---- HỢP ĐỒNG ---- -->
-                <div class="upd-mb">
-                    <label class="upd-lbl">
-                        Hợp đồng lao động – loại hợp đồng (@(Model.EmploymentType ?? "Full-time"))
-                    </label>
-
-                    @if (!hasContract)
-                    {
-                        <div class="upd-zone" id="contract-zone">
-                            <input type="file" name="ContractFile" id="updateContractFile"
-                                   accept=".jpg,.jpeg,.pdf"
-                                   onchange="updHandleFile(this, 'contract')" />
-                            <i class="bi bi-cloud-arrow-up upd-zone-icon"></i>
-                            <div class="upd-zone-text">Tải tệp lên (.pdf, .jpg)</div>
-                        </div>
-                        <div id="contract-preview-row" class="upd-preview-row" style="display:none;"></div>
-                    }
-                    else
-                    {
-                        <div id="contract-preview-row" class="upd-preview-row">
-                            <div class="upd-preview-box" id="contract-old-box">
-                                <div class="upd-preview-label">File hiện tại</div>
-                                @if (contractIsImage)
-                                {
-                                    <img src="@Model.ContractFilePath" alt="Hợp đồng cũ"
-                                         class="upd-preview-img"
-                                         onclick="document.getElementById('updateContractFile').click()"
-                                         title="Nhấn để thay file mới" />
-                                }
-                                else
-                                {
-                                    <div class="upd-preview-pdf">
-                                        <i class="bi bi-file-earmark-pdf-fill"></i>
-                                        <span>File PDF hiện tại</span>
-                                    </div>
-                                }
-                                <div class="upd-preview-change-hint">Nhấn vào ảnh để thay mới</div>
-                            </div>
-                            <div class="upd-preview-box" id="contract-new-box" style="display:none;">
-                                <div class="upd-preview-label">File mới</div>
-                                <div id="contract-new-content"></div>
-                                <div class="upd-preview-change-hint">Nhấn vào ảnh để đổi lại</div>
-                            </div>
-                        </div>
-                        <input type="file" name="ContractFile" id="updateContractFile"
-                               accept=".jpg,.jpeg,.pdf" style="display:none;"
-                               onchange="updHandleFile(this, 'contract')" />
-                    }
-                </div>
-            </div>
+        <!-- Actions -->
+        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="closeEmployeeUpdate()">Hủy</button>
+            <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSaveUpdate" onclick="submitEmployeeUpdate()">
+                <span class="spinner-border spinner-border-sm d-none me-1" id="saveUpdateSpinner" role="status"></span>
+                <i class="bi bi-save me-1"></i>Lưu thay đổi
+            </button>
         </div>
-    </form><!-- end form -->
-
-    <!-- Footer -->
-    <div class="upd-footer">
-        <button type="button" class="upd-btn-cancel" onclick="closeEmployeeUpdate()">Hủy</button>
-        <button type="button" class="upd-btn-save" id="btnSubmitUpdate"
-                onclick="submitEmployeeUpdate(@Model.EmployeeId)">
-            <span class="spinner-border spinner-border-sm d-none" id="updateSpinner" role="status"></span>
-            Lưu thay đổi
-        </button>
-    </div>
+    </form>
 </div>
 
+<script>
+    function previewUploadFile(input, type) {
+        var container = document.getElementById(type + 'PreviewContainer');
+        if (input.files && input.files[0]) {
+            var file = input.files[0];
+            container.innerHTML = `<div class="small text-primary fw-bold"><i class="bi bi-file-earmark-check-fill me-1"></i>Đã chọn: ${file.name} (${(file.size/1024).toFixed(1)} KB)</div>`;
+        }
+    }
 
+    function submitEmployeeUpdate() {
+        var form = document.getElementById('updateEmployeeForm');
+        var errBox = document.getElementById('updErrorBox');
+        errBox.classList.add('d-none');
+        errBox.innerHTML = '';
+
+        var btn = document.getElementById('btnSaveUpdate');
+        var spinner = document.getElementById('saveUpdateSpinner');
+
+        var formData = new FormData(form);
+
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        fetch('/Employee/Update/@Model.EmployeeId', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+
+            if (data.success) {
+                closeEmployeeUpdate();
+                showToast('Cập nhật thông tin nhân viên thành công!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Cập nhật thất bại.');
+                errBox.classList.remove('d-none');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+            errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi cập nhật.';
+            errBox.classList.remove('d-none');
+        });
+    }
+</script>

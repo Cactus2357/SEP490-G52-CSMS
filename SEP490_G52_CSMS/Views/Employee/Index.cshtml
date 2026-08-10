@@ -3,518 +3,271 @@
     ViewData["Title"] = "Quản lý Nhân viên";
 }
 
-@section Styles {
-    <style>
-        /* Action Bar */
-        .action-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            gap: 16px;
-        }
-
-        .search-filter-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-grow: 1;
-            max-width: 450px;
-        }
-
-        .input-search-container {
-            position: relative;
-            flex-grow: 1;
-        }
-
-        .input-search {
-            width: 100%;
-            border: 1px solid #cccccc;
-            border-radius: 4px;
-            padding: 8px 12px 8px 38px;
-            font-size: 0.9rem;
-            background-color: #ffffff;
-            outline: none;
-        }
-
-        .input-search-container i {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #888888;
-        }
-
-        .filter-btn {
-            background: none;
-            border: none;
-            color: #333333;
-            font-size: 1.3rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px;
-        }
-
-        .btn-group-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .btn-mockup-secondary {
-            background-color: #ffffff;
-            color: #333333;
-            border: 1px solid #111827;
-            padding: 8px 18px;
-            border-radius: 4px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
-        }
-
-        .btn-mockup-secondary:hover {
-            background-color: #f3f4f6;
-        }
-
-        .btn-mockup-primary {
-            background-color: #ffffff;
-            color: #333333;
-            border: 1.5px solid #111827;
-            padding: 8px 18px;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            box-shadow: 2px 2px 0px #000000;
-            transition: all 0.1s ease;
-        }
-
-        .btn-mockup-primary:hover {
-            background-color: #f3f4f6;
-            transform: translate(1px, 1px);
-            box-shadow: 1px 1px 0px #000000;
-        }
-
-        .btn-mockup-primary:active {
-            transform: translate(2px, 2px);
-            box-shadow: none;
-        }
-
-        /* Mockup Card Container */
-        .employees-list-container {
-            background-color: #ffffff;
-            border: 1.5px solid #d1d5db;
-            border-radius: 12px;
-            padding: 24px;
-        }
-
-        .employee-card-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid #e5e7eb;
-            border-radius: 50px;
-            padding: 12px 28px;
-            margin-bottom: 16px;
-            background-color: #ffffff;
-            transition: all 0.2s ease;
-        }
-
-        .employee-card-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .employee-card-item:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-            border-color: #cbd5e1;
-        }
-
-        .card-left-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-grow: 1;
-            min-width: 0;
-        }
-
-        .card-initial-circle {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 1.5px solid #4b5563;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: #1f2937;
-            background-color: #ffffff;
-            font-size: 1.05rem;
-            flex-shrink: 0;
-        }
-
-        .card-text-details {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .name-type-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .emp-name {
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: #111827;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .emp-type-label {
-            font-size: 0.8rem;
-            color: #6b7280;
-            font-weight: 500;
-        }
-
-        .emp-meta-subtext {
-            font-size: 0.85rem;
-            color: #6b7280;
-            margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .card-right-actions {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            flex-shrink: 0;
-        }
-
-        .status-block-btn {
-            background: none;
-            border: none;
-            color: #1f2937;
-            font-size: 1.35rem;
-            cursor: pointer;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: color 0.2s ease;
-        }
-
-        .status-block-btn:hover {
-            color: #dc2626;
-        }
-
-        .btn-mockup-action {
-            background-color: #ffffff;
-            color: #333333;
-            border: 1px solid #111827;
-            padding: 6px 18px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .btn-mockup-action:hover {
-            background-color: #f3f4f6;
-        }
-
-        .btn-mockup-action-primary {
-            background-color: #ffffff;
-            color: #2563eb;
-            border: 1px solid #2563eb;
-            padding: 6px 18px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .btn-mockup-action-primary:hover {
-            background-color: #eff6ff;
-        }
-
-        /* Modal Styles */
-        .form-label {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #374151;
-            margin-bottom: 6px;
-        }
-
-        .form-control, .form-select {
-            border-radius: 6px;
-            border: 1px solid #cccccc;
-            padding: 8px 12px;
-            font-size: 0.9rem;
-        }
-
-        .modal-content {
-            border-radius: 12px;
-            border: 1.5px solid #111827;
-        }
-
-        .modal-header {
-            border-bottom: 1px solid #e5e7eb;
-            padding: 20px 24px;
-        }
-
-        .modal-footer {
-            border-top: 1px solid #e5e7eb;
-            padding: 16px 24px;
-        }
-
-        /* Employment Type Toggles */
-        .emp-type-btn {
-            flex: 1;
-            border: 1px solid #cccccc;
-            background-color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 500;
-            color: #6b7280;
-            transition: all 0.2s ease;
-            outline: none;
-        }
-
-        .emp-type-btn.active {
-            border-color: #111827;
-            background-color: #111827;
-            color: #ffffff;
-        }
-    </style>
-}
-
-<div class="page-header">
-    <h2 class="page-title">Quản lý nhân viên</h2>
-</div>
-
-<!-- Action Bar -->
-<div class="action-bar">
-    <div class="search-filter-group">
-        <div class="input-search-container">
-            <input type="text" id="employeeSearchInput" class="input-search" placeholder="Tìm tên, tài khoản..." onkeyup="filterEmployeesList()">
-            <i class="bi bi-search"></i>
-        </div>
-        <button class="filter-btn" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel" title="Bộ lọc nâng cao">
-            <i class="bi bi-filter"></i>
-        </button>
-    </div>
-    <div class="btn-group-right">
-        <a href="/Employee/Permissions" class="btn-mockup-secondary text-decoration-none">Phân quyền NV</a>
-        <button class="btn-mockup-primary" data-bs-toggle="modal" data-bs-target="#createEmployeeModal" onclick="loadBranches()">
-            + Tạo NV
-        </button>
-    </div>
-</div>
-
-<!-- Collapsible Filter Panel -->
-<div id="filterPanel" class="collapse mb-3">
-    <div class="card card-body" style="border: 2px dashed #111827; border-radius: 12px; background-color: #ffffff;">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label for="filterRole" class="form-label fw-bold" style="font-size: 0.85rem;">Vai trò</label>
-                <select id="filterRole" class="form-select" onchange="filterEmployeesList()" style="border: 1px solid #111827; border-radius: 4px;">
-                    <option value="">Tất cả vai trò</option>
-                    <option value="Cashier">Thu ngân (Cashier)</option>
-                    <option value="Bartender">Pha chế (Bartender)</option>
-                    <option value="Busser">Phục vụ (Busser)</option>
-                </select>
+<div class="container-fluid mt-3 px-4 pb-5">
+    <!-- Header Section -->
+    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
+        <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                    <i class="bi bi-people-fill fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-muted small">Hệ thống / Quản lý nhân sự</span>
+                    <h4 class="fw-bold m-0 text-dark">QUẢN LÝ NHÂN VIÊN</h4>
+                </div>
             </div>
-            <div class="col-md-6">
-                <label for="filterBranch" class="form-label fw-bold" style="font-size: 0.85rem;">Chi nhánh</label>
-                <select id="filterBranch" class="form-select" onchange="filterEmployeesList()" style="border: 1px solid #111827; border-radius: 4px;">
-                    <option value="">Tất cả chi nhánh</option>
-                    @foreach (var branchName in Model.Where(e => e.Branch != null).Select(e => e.Branch.BranchName).Distinct().OrderBy(b => b))
-                    {
-                        <option value="@branchName">@branchName</option>
-                    }
-                </select>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="/Employee/Permissions" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                    <i class="bi bi-shield-lock me-1"></i>Phân quyền NV
+                </a>
+                <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createEmployeeModal" onclick="loadBranches()">
+                    <i class="bi bi-person-plus-fill me-1"></i>Tạo NV mới
+                </button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Custom Mockup Card List -->
-<div class="employees-list-container">
-    <div id="employeesList">
-        @if (!Model.Any())
-        {
-            <div class="text-center py-5 text-muted">
-                <i class="bi bi-inbox d-block fs-2 mb-2"></i>
-                Chưa có nhân viên nào được tạo.
-            </div>
-        }
-        else
-        {
-            @foreach (var emp in Model)
-            {
-                string initials = "";
-                if (!string.IsNullOrWhiteSpace(emp.FullName))
-                {
-                    var parts = emp.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    if (parts.Length >= 2)
-                    {
-                        initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
-                    }
-                    else if (parts.Length == 1)
-                    {
-                        initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
-                    }
-                }
-                else
-                {
-                    initials = "NV";
-                }
-
-                string roleText = emp.Role switch
-                {
-                    "Cashier" => "Thu ngân",
-                    "Bartender" => "Pha chế",
-                    "Busser" => "Phục vụ",
-                    "BranchManager" => "Quản lý chi nhánh",
-                    _ => emp.Role ?? ""
-                };
-
-                <div class="employee-card-item" data-fullname="@emp.FullName" data-username="@emp.Username" data-role="@emp.Role" data-branch="@(emp.Branch?.BranchName ?? "Chi nhánh 1")">
-                    <div class="card-left-info">
-                        <div class="card-initial-circle">
-                            @initials
-                        </div>
-                        <div class="card-text-details">
-                            <div class="name-type-row">
-                                <span class="emp-name">@emp.FullName</span>
-                                <span class="emp-type-label">@emp.EmploymentType</span>
-                            </div>
-                            <div class="emp-meta-subtext">
-                                <span>@@@emp.Username</span> &bull; 
-                                <span>@roleText</span> &bull; 
-                                <span>@(emp.Branch?.BranchName ?? "Chi nhánh 1")</span>
-                                @if (!string.IsNullOrEmpty(emp.FaceData))
-                                {
-                                    <span class="text-success ms-2" title="Đã đăng ký khuôn mặt">
-                                        <i class="bi bi-check-circle-fill"></i> FaceID
-                                    </span>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-right-actions">
-                         @if (emp.Status == "Active")
-                         {
-                             <button class="status-block-btn" title="Ngừng hoạt động" onclick="triggerDeactivationCheck(@emp.EmployeeId)">
-                                 <i class="bi bi-slash-circle"></i>
-                             </button>
-                         }
-                         else
-                         {
-                             <button class="status-block-btn text-muted" title="Đã ngừng hoạt động" disabled>
-                                 <i class="bi bi-x-circle-fill"></i>
-                             </button>
-                         }
-                        
-                        <button class="btn-mockup-action" onclick="showEmployeeDetail(@emp.EmployeeId)">View Detail</button>
-                        
-                        <button class="btn-mockup-action" onclick="showEmployeeUpdate(@emp.EmployeeId)">+ Update</button>
-                        
-                        @if (string.IsNullOrEmpty(emp.FaceData))
-                        {
-                            <a href="/Employee/RegisterFace/@emp.EmployeeId" class="btn-mockup-action-primary">
-                                + Quét Face
-                            </a>
-                        }
+    <!-- Action & Filter Bar -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-7 col-lg-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" id="employeeSearchInput" class="form-control" placeholder="Tìm theo tên, sđt, email, username, CCCD..." oninput="filterEmployeesList()" onkeyup="filterEmployeesList()">
+                        <button type="button" class="btn btn-outline-secondary d-none" id="btnClearSearch" onclick="clearEmployeeSearch()" title="Xóa tìm kiếm">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel" title="Bộ lọc nâng cao">
+                            <i class="bi bi-funnel-fill me-1"></i>Lọc nâng cao
+                        </button>
                     </div>
                 </div>
+                <div class="col-md-5 col-lg-6 text-md-end">
+                    <span class="text-muted small fw-semibold" id="searchResultCount">Hiển thị @Model.Count() / @Model.Count() nhân viên</span>
+                </div>
+            </div>
+
+            <!-- Collapsible Filter Panel -->
+            <div id="filterPanel" class="collapse mt-3">
+                <div class="card card-body bg-body-tertiary border-0 rounded-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="filterRole" class="form-label fw-bold small text-muted text-uppercase">Lọc theo Vai trò</label>
+                            <select id="filterRole" class="form-select rounded-3" onchange="filterEmployeesList()">
+                                <option value="">Tất cả vai trò</option>
+                                <option value="Cashier">Thu ngân (Cashier)</option>
+                                <option value="Bartender">Pha chế (Bartender)</option>
+                                <option value="Busser">Phục vụ (Busser)</option>
+                                <option value="BranchManager">Quản lý chi nhánh</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="filterBranch" class="form-label fw-bold small text-muted text-uppercase">Lọc theo Chi nhánh</label>
+                            <select id="filterBranch" class="form-select rounded-3" onchange="filterEmployeesList()">
+                                <option value="">Tất cả chi nhánh</option>
+                                @foreach (var branchName in Model.Where(e => e.Branch != null).Select(e => e.Branch.BranchName).Distinct().OrderBy(b => b))
+                                {
+                                    <option value="@branchName">@branchName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Cards List Container -->
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+        <div id="employeesList">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox d-block fs-1 mb-2 opacity-50"></i>
+                    Chưa có nhân viên nào trong hệ thống.
+                </div>
             }
-        }
+            else
+            {
+                @foreach (var emp in Model)
+                {
+                    string initials = "NV";
+                    if (!string.IsNullOrWhiteSpace(emp.FullName))
+                    {
+                        var parts = emp.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2)
+                        {
+                            initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+                        }
+                        else if (parts.Length == 1)
+                        {
+                            initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+                        }
+                    }
+
+                    string roleText = emp.Role switch
+                    {
+                        "Cashier" => "Thu ngân",
+                        "Bartender" => "Pha chế",
+                        "Busser" => "Phục vụ",
+                        "BranchManager" => "Quản lý chi nhánh",
+                        _ => emp.Role ?? ""
+                    };
+
+                    <div class="card border shadow-sm rounded-pill p-2 px-4 mb-3 d-flex flex-row align-items-center justify-content-between bg-white employee-card-item" 
+                         data-fullname="@emp.FullName" 
+                         data-username="@emp.Username" 
+                         data-phone="@emp.PhoneNumber"
+                         data-email="@emp.Email"
+                         data-citizenid="@emp.CitizenId"
+                         data-empid="@emp.EmployeeId"
+                         data-role="@emp.Role" 
+                         data-branch="@(emp.Branch?.BranchName ?? "Chi nhánh 1")">
+                        
+                        <!-- Left Info -->
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle border border-2 border-secondary d-flex align-items-center justify-content-center fw-bold text-dark bg-body-tertiary flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.05rem;">
+                                @initials
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold fs-6 text-dark">@emp.FullName</span>
+                                    <span class="badge bg-secondary-subtle text-dark border">@emp.EmploymentType</span>
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    <span class="fw-semibold">@@@emp.Username</span> &bull; 
+                                    <span>@roleText</span> &bull; 
+                                    <span>@(emp.Branch?.BranchName ?? "Chi nhánh 1")</span>
+                                    @if (!string.IsNullOrEmpty(emp.PhoneNumber))
+                                    {
+                                        <span> &bull; @emp.PhoneNumber</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(emp.FaceData))
+                                    {
+                                        <span class="badge bg-success-subtle text-success border ms-2">
+                                            <i class="bi bi-check-circle-fill me-1"></i>FaceID
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Actions -->
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            @if (emp.Status == "Active")
+                            {
+                                <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" title="Ngừng hoạt động" onclick="triggerDeactivationCheck(@emp.EmployeeId)">
+                                    <i class="bi bi-slash-circle fs-5"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-secondary border-0 rounded-circle" title="Đã ngừng hoạt động" disabled>
+                                    <i class="bi bi-x-circle-fill fs-5"></i>
+                                </button>
+                            }
+                            
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="showEmployeeDetail(@emp.EmployeeId)">
+                                Chi tiết
+                            </button>
+                            
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="showEmployeeUpdate(@emp.EmployeeId)">
+                                Cập nhật
+                            </button>
+                            
+                            @if (string.IsNullOrEmpty(emp.FaceData))
+                            {
+                                <a href="/Employee/RegisterFace/@emp.EmployeeId" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                    <i class="bi bi-camera me-1"></i>Quét Face
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+
+            <!-- Dynamic Empty State when zero results match search -->
+            <div id="noResultsMsg" class="text-center py-5 text-muted d-none">
+                <i class="bi bi-search d-block fs-1 mb-2 opacity-50"></i>
+                Không tìm thấy nhân viên nào phù hợp với từ khóa tìm kiếm.
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- MODAL 1: Tạo tài khoản NV -->
 <div class="modal fade" id="createEmployeeModal" tabindex="-1" aria-labelledby="createEmployeeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="createEmployeeModalLabel"><i class="bi bi-person-plus-fill me-2"></i>Tạo tài khoản NV</h5>
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header bg-body-tertiary">
+                <h5 class="modal-title fw-bold" id="createEmployeeModalLabel"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Tạo tài khoản NV mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
-                
-                <form id="createEmployeeForm">
+            <div class="modal-body p-4">
+                <form id="createEmployeeForm" class="needs-validation" novalidate>
+                    <div class="alert alert-danger d-none rounded-3 mb-3" id="formAlertBox"></div>
+
                     <div class="row g-3">
-                        <!-- Column Left -->
-                        <div class="col-md-6">
+                        <div class="col-md-6 border-end pe-md-4">
+                            <h6 class="fw-bold text-muted text-uppercase mb-3 small">Thông tin cá nhân</h6>
                             <div class="mb-3">
-                                <label for="fullName" class="form-label">Họ và tên *</label>
-                                <input type="text" class="form-control" id="fullName" placeholder="Nguyễn Văn An" required>
+                                <label for="fullName" class="form-label fw-bold">Họ và tên *</label>
+                                <input type="text" class="form-control rounded-3" id="fullName" placeholder="VD: Nguyễn Văn A" required>
+                                <div class="invalid-feedback">Vui lòng nhập họ và tên.</div>
                             </div>
                             <div class="mb-3">
-                                <label for="email" class="form-label">Thư điện tử (Email) *</label>
-                                <input type="email" class="form-control" id="email" placeholder="an.nguyen@gmail.com" required>
+                                <label for="phoneNumber" class="form-label fw-bold">Số điện thoại *</label>
+                                <input type="tel" class="form-control rounded-3" id="phoneNumber" placeholder="VD: 0912345678" required>
+                                <div class="invalid-feedback">Vui lòng nhập số điện thoại.</div>
                             </div>
                             <div class="mb-3">
-                                <label for="phoneNumber" class="form-label">Số điện thoại *</label>
-                                <input type="tel" class="form-control" id="phoneNumber" placeholder="0912345678" pattern="[0-9]{10,15}" required>
+                                <label for="email" class="form-label fw-bold">Email *</label>
+                                <input type="email" class="form-control rounded-3" id="email" placeholder="VD: nguyenvana@gmail.com" required>
+                                <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
                             </div>
                             <div class="mb-3">
-                                <label for="citizenId" class="form-label">Số CCCD (12 chữ số) *</label>
-                                <input type="text" class="form-control" id="citizenId" placeholder="030099001234" maxlength="12" minlength="12" pattern="[0-9]{12}" required>
+                                <label for="citizenId" class="form-label fw-bold">Số CCCD *</label>
+                                <input type="text" class="form-control rounded-3" id="citizenId" placeholder="VD: 012345678901" required>
+                                <div class="invalid-feedback">Vui lòng nhập số CCCD (12 chữ số).</div>
                             </div>
                         </div>
 
-                        <!-- Column Right -->
-                        <div class="col-md-6">
+                        <div class="col-md-6 ps-md-4">
+                            <h6 class="fw-bold text-muted text-uppercase mb-3 small">Thông tin công việc</h6>
                             <div class="mb-3">
-                                <label for="dateOfBirth" class="form-label">Ngày sinh *</label>
-                                <input type="date" class="form-control" id="dateOfBirth" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="address" class="form-label">Địa chỉ thường trú *</label>
-                                <input type="text" class="form-control" id="address" placeholder="123 Nguyễn Trãi, Quận 1, TPHCM" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="role" class="form-label">Vai trò *</label>
-                                <select class="form-select" id="role" required>
-                                    <option value="" disabled selected>Chọn vai trò...</option>
+                                <label for="role" class="form-label fw-bold">Vai trò / Vị trí *</label>
+                                <select class="form-select rounded-3" id="role" required>
+                                    <option value="" disabled selected>Chọn vị trí làm việc...</option>
                                     <option value="Cashier">Thu ngân (Cashier)</option>
                                     <option value="Bartender">Pha chế (Bartender)</option>
-                                    <option value="Busser">Phục vụ bàn (Busser)</option>
+                                    <option value="Busser">Phục vụ (Busser)</option>
                                 </select>
+                                <div class="invalid-feedback">Vui lòng chọn vị trí làm việc.</div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label d-block">Kiểu nhân viên *</label>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="emp-type-btn active" id="btnFullTime" onclick="setEmploymentType('Full-time')">Full-time</button>
-                                    <button type="button" class="emp-type-btn" id="btnPartTime" onclick="setEmploymentType('Part-time')">Part-time</button>
+                                <label class="form-label fw-bold">Loại hợp đồng *</label>
+                                <div class="btn-group w-100 rounded-3 shadow-sm" role="group">
+                                    <button type="button" class="btn btn-primary active px-3" id="btnFullTime" onclick="setEmploymentType('Full-time')">Full-time</button>
+                                    <button type="button" class="btn btn-outline-secondary px-3" id="btnPartTime" onclick="setEmploymentType('Part-time')">Part-time</button>
                                 </div>
                                 <input type="hidden" id="employmentType" value="Full-time">
                             </div>
                             <div class="mb-3">
-                                <label for="branchDisplay" class="form-label">Chi nhánh *</label>
-                                <input type="text" class="form-control" id="branchDisplay" value="Chi nhánh Quận 1" readonly style="background-color: #f3f4f6;">
+                                <label for="branchDisplay" class="form-label fw-bold">Chi nhánh *</label>
+                                <input type="text" class="form-control bg-light rounded-3" id="branchDisplay" value="Chi nhánh Quận 1" readonly>
                                 <input type="hidden" id="branchId" value="CB001">
                             </div>
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-dark px-4" onclick="submitEmployeeForm()" id="btnSubmitForm">
+            <div class="modal-footer bg-body-tertiary">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="submitEmployeeForm()" id="btnSubmitForm">
                     <span class="spinner-border spinner-border-sm d-none me-1" id="submitSpinner" role="status" aria-hidden="true"></span>
-                    Tạo tài khoản
+                    <i class="bi bi-save me-1"></i>Tạo tài khoản
                 </button>
             </div>
         </div>
@@ -524,33 +277,33 @@
 <!-- MODAL 2: Cấp tài khoản NV thành công -->
 <div class="modal fade" id="credentialsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-md">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="credentialsModalLabel"><i class="bi bi-shield-check-fill me-2 text-success"></i>Cấp tài khoản NV</h5>
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header bg-body-tertiary">
+                <h5 class="modal-title fw-bold" id="credentialsModalLabel"><i class="bi bi-shield-check-fill me-2 text-success"></i>Tài khoản đã tạo thành công</h5>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="mb-3">
-                    <label class="form-label">Tên tài khoản *</label>
-                    <input type="text" class="form-control bg-light font-monospace fw-bold" id="displayUsername" readonly>
+                    <label class="form-label fw-bold">Tên tài khoản</label>
+                    <input type="text" class="form-control bg-light font-monospace fw-bold rounded-3" id="displayUsername" readonly>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Mật khẩu *</label>
+                    <label class="form-label fw-bold">Mật khẩu khởi tạo</label>
                     <div class="input-group">
-                        <input type="password" class="form-control bg-light font-monospace fw-bold text-danger" id="displayPassword" readonly>
-                        <button class="btn btn-outline-secondary" type="button" id="btnTogglePassword" onclick="togglePasswordVisibility()">
+                        <input type="password" class="form-control bg-light font-monospace fw-bold text-danger rounded-start-3" id="displayPassword" readonly>
+                        <button class="btn btn-outline-secondary rounded-end-3" type="button" id="btnTogglePassword" onclick="togglePasswordVisibility()">
                             <i class="bi bi-eye-slash" id="eyeIcon"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="form-text text-muted mb-3" style="font-size: 0.85rem;">
-                    Lưu ý: Tên tài khoản được đặc tả là tên nhân viên không cách không dấu. Mật khẩu sẽ được tự động tạo và gửi qua email nhân viên đăng ký.
+                <div class="form-text text-muted mb-3">
+                    Lưu ý: Mật khẩu này đã được gửi qua email cho nhân viên. Nhân viên có thể dùng thông tin này để đăng nhập lần đầu.
                 </div>
             </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-light px-4 border" onclick="closeCredentialsModalAndReload()">Hủy</button>
-                <button type="button" class="btn btn-dark px-4" id="btnGoToFaceRegister" onclick="redirectToFaceRegister()">
-                    Đăng kí khuôn mặt
+            <div class="modal-footer bg-body-tertiary justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="closeCredentialsModalAndReload()">Đóng</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnGoToFaceRegister" onclick="redirectToFaceRegister()">
+                    <i class="bi bi-camera me-1"></i>Đăng ký khuôn mặt
                 </button>
             </div>
         </div>
@@ -560,9 +313,9 @@
 <!-- MODAL 3: Chi tiết nhân viên -->
 <div class="modal fade" id="employeeDetailModal" tabindex="-1" aria-labelledby="employeeDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden;" id="employeeDetailModalContent">
+        <div class="modal-content rounded-3 border-0 shadow overflow-hidden" id="employeeDetailModalContent">
             <div class="text-center py-5">
-                <div class="spinner-border text-dark" role="status"></div>
+                <div class="spinner-border text-primary" role="status"></div>
                 <p class="mt-2 text-muted">Đang tải thông tin...</p>
             </div>
         </div>
@@ -572,9 +325,9 @@
 <!-- MODAL 4: Cập nhật thông tin nhân viên -->
 <div class="modal fade" id="employeeUpdateModal" tabindex="-1" aria-labelledby="employeeUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden;" id="employeeUpdateModalContent">
+        <div class="modal-content rounded-3 border-0 shadow overflow-hidden" id="employeeUpdateModalContent">
             <div class="text-center py-5">
-                <div class="spinner-border text-dark" role="status"></div>
+                <div class="spinner-border text-primary" role="status"></div>
                 <p class="mt-2 text-muted">Đang tải thông tin...</p>
             </div>
         </div>
@@ -584,53 +337,47 @@
 <!-- MODAL 5: Ngừng hoạt động (Vô hiệu hóa nhân viên) -->
 <div class="modal fade" id="deactivateEmployeeModal" tabindex="-1" aria-labelledby="deactivateEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content" style="border: 2.5px solid #111827; border-radius: 16px; overflow: hidden; font-family: var(--bs-body-font-family);">
-            <div class="modal-header bg-light">
+        <div class="modal-content rounded-3 border-0 shadow overflow-hidden">
+            <div class="modal-header bg-body-tertiary">
                 <h5 class="modal-title fw-bold" id="deactivateEmployeeModalLabel">
-                    Ngừng hoạt động
+                    <i class="bi bi-slash-circle me-2 text-danger"></i>Ngừng hoạt động nhân viên
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <!-- Employee profile summary -->
-                <div class="d-flex align-items-center gap-3 p-3 mb-3 border border-dark rounded-3">
-                    <div class="rounded-circle border border-dark d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; background: #f3f4f6; font-size: 1.1rem;" id="deactAvatar">NV</div>
+                <div class="d-flex align-items-center gap-3 p-3 mb-3 bg-body-tertiary rounded-3 border">
+                    <div class="rounded-circle border border-2 border-secondary d-flex align-items-center justify-content-center fw-bold text-dark bg-white" style="width: 48px; height: 48px; font-size: 1.1rem;" id="deactAvatar">NV</div>
                     <div>
-                        <h6 class="fw-bold m-0" id="deactFullName">Nguyen Minh Anh</h6>
-                        <p class="text-muted m-0" style="font-size: 0.82rem;"><span id="deactUsername">@@minhanhNV</span> &nbsp;·&nbsp; <span id="deactRole">Thu ngân</span></p>
+                        <h6 class="fw-bold m-0 text-dark" id="deactFullName">Nguyen Minh Anh</h6>
+                        <p class="text-muted m-0 small"><span id="deactUsername">@@minhanhNV</span> &bull; <span id="deactRole">Thu ngân</span></p>
                     </div>
                 </div>
 
-                <!-- Warning Banner (Conditional) -->
-                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactWarningBanner" style="background-color: #fffbeb;">
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactWarningBanner">
                     <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
                     <div>
                         <div class="fw-bold text-dark">Nhân viên còn ca chưa hoàn thành</div>
-                        <div class="text-muted" style="font-size: 0.8rem;" id="deactWarningText">2 ca chưa được bàn giao. Cần hoàn tất trước khi ngừng hoạt động.</div>
+                        <div class="text-muted small" id="deactWarningText">Các ca làm chưa bàn giao cần hoàn tất trước khi ngừng hoạt động.</div>
                     </div>
                 </div>
 
-                <!-- Remaining Shifts Grid (Conditional) -->
                 <div class="mb-3 d-none" id="deactShiftsSection">
-                    <label class="form-label text-muted text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">Ca còn lại</label>
-                    <div class="border rounded-3 p-2 bg-light" id="deactShiftsContainer" style="font-size: 0.88rem;">
-                        <!-- Dynamically filled shifts -->
+                    <label class="form-label text-muted text-uppercase fw-bold small">Ca còn lại</label>
+                    <div class="border rounded-3 p-2 bg-light" id="deactShiftsContainer">
                     </div>
                 </div>
 
-                <!-- Danger Zone Block -->
-                <div class="alert alert-danger border-danger d-flex align-items-start gap-2" style="background-color: #fef2f2;">
+                <div class="alert alert-danger border-danger d-flex align-items-start gap-2">
                     <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
                     <div>
-                        <div class="fw-bold text-danger">vùng nguy hiểm</div>
-                        <div class="text-muted" style="font-size: 0.8rem;">Tài khoản sẽ bị khoá. Nhân viên không thể đăng nhập hệ thống sau khi ngừng hoạt động.</div>
+                        <div class="fw-bold text-danger">Cảnh báo vô hiệu hóa</div>
+                        <div class="text-muted small">Tài khoản sẽ bị khóa. Nhân viên sẽ không thể đăng nhập hệ thống sau khi bị vô hiệu hóa.</div>
                     </div>
                 </div>
 
-                <!-- Form fields -->
                 <div class="mb-3">
-                    <label for="deactReason" class="form-label">Lý do ngừng hoạt động *</label>
-                    <select class="form-select" id="deactReason" required>
+                    <label for="deactReason" class="form-label fw-bold">Lý do ngừng hoạt động *</label>
+                    <select class="form-select rounded-3" id="deactReason" required>
                         <option value="" disabled selected>Chọn lý do...</option>
                         <option value="Thôi việc / Nghỉ việc">Thôi việc / Nghỉ việc</option>
                         <option value="Nghỉ chế độ / Thai sản">Nghỉ chế độ / Thai sản</option>
@@ -640,579 +387,369 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="deactNotes" class="form-label">Ghi chú</label>
-                    <textarea class="form-control" id="deactNotes" rows="2" placeholder="Ghi chú thêm nếu có..."></textarea>
+                    <label for="deactNotes" class="form-label fw-bold">Ghi chú thêm</label>
+                    <textarea class="form-control rounded-3" id="deactNotes" rows="2" placeholder="Ghi chú chi tiết nếu có..."></textarea>
                 </div>
             </div>
-            <div class="modal-footer justify-content-between p-3 bg-light">
-                <button type="button" class="btn btn-outline-dark px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Hủy</button>
-                <button type="button" class="btn btn-dark px-4" id="deactConfirmBtn" onclick="confirmDeactivation()" style="border-radius: 8px;">Ngừng hoạt động</button>
+            <div class="modal-footer bg-body-tertiary justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" id="deactConfirmBtn" onclick="confirmDeactivation()">Ngừng hoạt động</button>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-<script>
-    let currentCreatedEmployeeId = null;
+    <script>
+        var createdEmpId = null;
+        var pendingDeactEmpId = null;
 
-    // Load active branches for dropdown
-    async function loadBranches() {
-        try {
-            const selectElement = document.getElementById('branchId');
-            selectElement.innerHTML = '<option value="" disabled selected>Đang tải chi nhánh...</option>';
-            
-            const response = await fetch('/Employee/GetBranches');
-            if (response.ok) {
-                const branches = await response.json();
-                selectElement.innerHTML = '<option value="" disabled selected>Chọn chi nhánh...</option>';
-                branches.forEach(branch => {
-                    const opt = document.createElement('option');
-                    opt.value = branch.branchId;
-                    opt.textContent = branch.branchName;
-                    selectElement.appendChild(opt);
-                });
-            } else {
-                selectElement.innerHTML = '<option value="" disabled selected>Lỗi tải chi nhánh</option>';
-            }
-        } catch (err) {
-            console.error("Lỗi khi tải chi nhánh:", err);
-            document.getElementById('branchId').innerHTML = '<option value="" disabled selected>Lỗi tải chi nhánh</option>';
-        }
-    }
-
-    // Toggle full-time / part-time button styling
-    function setEmploymentType(type) {
-        document.getElementById('employmentType').value = type;
-        if (type === 'Full-time') {
-            document.getElementById('btnFullTime').classList.add('active');
-            document.getElementById('btnPartTime').classList.remove('active');
-        } else {
-            document.getElementById('btnFullTime').classList.remove('active');
-            document.getElementById('btnPartTime').classList.add('active');
-        }
-    }
-
-    // Filter employee list in real time
-    function filterEmployeesList() {
-        const query = document.getElementById('employeeSearchInput').value.trim().toLowerCase();
-        const selectedRole = document.getElementById('filterRole').value;
-        const selectedBranch = document.getElementById('filterBranch').value;
-        const cards = document.querySelectorAll('.employee-card-item');
-
-        cards.forEach(card => {
-            const fullName = (card.getAttribute('data-fullname') || '').toLowerCase();
-            const userName = (card.getAttribute('data-username') || '').toLowerCase();
-            const role = card.getAttribute('data-role') || '';
-            const branch = card.getAttribute('data-branch') || '';
-
-            const matchesQuery = fullName.includes(query) || userName.includes(query);
-            const matchesRole = !selectedRole || role === selectedRole;
-            const matchesBranch = !selectedBranch || branch === selectedBranch;
-
-            if (matchesQuery && matchesRole && matchesBranch) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
-
-    // Handle creating employee account
-    async function submitEmployeeForm() {
-        const form = document.getElementById('createEmployeeForm');
-        const errorAlert = document.getElementById('errorAlert');
-        errorAlert.classList.add('d-none');
-
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
+        function removeVietnameseTones(str) {
+            if (!str) return '';
+            return str
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd').replace(/Đ/g, 'D');
         }
 
-        const btnSubmit = document.getElementById('btnSubmitForm');
-        const spinner = document.getElementById('submitSpinner');
+        function filterEmployeesList() {
+            var searchInput = document.getElementById('employeeSearchInput');
+            var rawSearchVal = searchInput.value.trim().toLowerCase();
+            var normSearchVal = removeVietnameseTones(rawSearchVal);
+            var btnClear = document.getElementById('btnClearSearch');
 
-        // Disable buttons and show spinner
-        btnSubmit.disabled = true;
-        spinner.classList.remove('d-none');
-
-        // Gather values
-        const payload = {
-            fullName: document.getElementById('fullName').value,
-            email: document.getElementById('email').value,
-            phoneNumber: document.getElementById('phoneNumber').value,
-            citizenId: document.getElementById('citizenId').value,
-            dateOfBirth: document.getElementById('dateOfBirth').value,
-            address: document.getElementById('address').value,
-            role: document.getElementById('role').value,
-            employmentType: document.getElementById('employmentType').value,
-            branchId: document.getElementById('branchId').value
-        };
-
-        try {
-            const response = await fetch('/Employee/CreateAccount', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-            if (response.ok && result.success) {
-                currentCreatedEmployeeId = result.employeeId;
-                
-                // Show credentials modal
-                document.getElementById('displayUsername').value = result.username;
-                document.getElementById('displayPassword').value = result.password;
-
-                // Hide create modal and show credentials modal
-                const createModal = bootstrap.Modal.getInstance(document.getElementById('createEmployeeModal'));
-                createModal.hide();
-                
-                const credsModal = new bootstrap.Modal(document.getElementById('credentialsModal'));
-                credsModal.show();
-                
-                // Reset form
-                form.reset();
-                setEmploymentType('Full-time');
-            } else {
-                errorAlert.textContent = result.errorMessage || "Có lỗi xảy ra khi tạo tài khoản.";
-                errorAlert.classList.remove('d-none');
-            }
-        } catch (err) {
-            console.error("Lỗi khi kết nối API:", err);
-            errorAlert.textContent = "Không thể kết nối đến máy chủ. Vui lòng thử lại.";
-            errorAlert.classList.remove('d-none');
-        } finally {
-            // Re-enable and hide spinner
-            btnSubmit.disabled = false;
-            spinner.classList.add('d-none');
-        }
-    }
-
-    function togglePasswordVisibility() {
-        const passwordInput = document.getElementById('displayPassword');
-        const eyeIcon = document.getElementById('eyeIcon');
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            eyeIcon.classList.remove('bi-eye-slash');
-            eyeIcon.classList.add('bi-eye');
-        } else {
-            passwordInput.type = 'password';
-            eyeIcon.classList.remove('bi-eye');
-            eyeIcon.classList.add('bi-eye-slash');
-        }
-    }
-
-    function closeCredentialsModalAndReload() {
-        window.location.reload();
-    }
-
-    function redirectToFaceRegister() {
-        if (currentCreatedEmployeeId) {
-            window.location.href = `/Employee/RegisterFace/${currentCreatedEmployeeId}`;
-        } else {
-            window.location.reload();
-        }
-    }
-
-    // Modal Instances
-    let detailModalInstance = null;
-    let updateModalInstance = null;
-
-    // Show Employee Detail Modal via AJAX
-    async function showEmployeeDetail(employeeId) {
-        const container = document.getElementById('employeeDetailModalContent');
-        container.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-dark" role="status"></div>
-                <p class="mt-2 text-muted">Đang tải thông tin...</p>
-            </div>`;
-        
-        detailModalInstance = new bootstrap.Modal(document.getElementById('employeeDetailModal'));
-        detailModalInstance.show();
-
-        try {
-            const url = `/Employee/Detail/${employeeId}`;
-            
-            const response = await fetch(url);
-            if (response.ok) {
-                const html = await response.text();
-                container.innerHTML = html;
-            } else {
-                const text = await response.text();
-                container.innerHTML = `<div class="alert alert-danger m-3">${text || 'Lỗi khi tải thông tin chi tiết.'}</div>`;
-            }
-        } catch (err) {
-            console.error("Lỗi khi tải chi tiết nhân viên:", err);
-            container.innerHTML = '<div class="alert alert-danger m-3">Không thể kết nối đến máy chủ. Vui lòng thử lại.</div>';
-        }
-    }
-
-    function closeEmployeeDetail() {
-        if (detailModalInstance) {
-            detailModalInstance.hide();
-        }
-    }
-
-    // Show Employee Update Modal via AJAX
-    async function showEmployeeUpdate(employeeId) {
-        const container = document.getElementById('employeeUpdateModalContent');
-        container.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-dark" role="status"></div>
-                <p class="mt-2 text-muted">Đang tải thông tin...</p>
-            </div>`;
-
-        updateModalInstance = new bootstrap.Modal(document.getElementById('employeeUpdateModal'));
-        updateModalInstance.show();
-
-        try {
-            const url = `/Employee/UpdateForm/${employeeId}`;
-            
-            const response = await fetch(url);
-            if (response.ok) {
-                const html = await response.text();
-                container.innerHTML = html;
-            } else {
-                const text = await response.text();
-                container.innerHTML = `<div class="alert alert-danger m-3">${text || 'Lỗi khi tải form cập nhật.'}</div>`;
-            }
-        } catch (err) {
-            console.error("Lỗi khi tải form cập nhật:", err);
-            container.innerHTML = '<div class="alert alert-danger m-3">Không thể kết nối đến máy chủ. Vui lòng thử lại.</div>';
-        }
-    }
-
-    function closeEmployeeUpdate() {
-        if (updateModalInstance) {
-            updateModalInstance.hide();
-        }
-    }
-
-    // Submit Employee Update Form via AJAX (handles multipart file upload)
-    async function submitEmployeeUpdate(employeeId) {
-        const form = document.getElementById('updateEmployeeForm');
-        const errorAlert = document.getElementById('updateErrorAlert');
-        if (errorAlert) errorAlert.classList.add('d-none');
-
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
-
-        // Validate phía client
-        const dobVal = document.getElementById('updateDateOfBirth').value;
-        if (!dobVal) {
-            showUpdateError(errorAlert, 'Ngày sinh là bắt buộc.');
-            return;
-        }
-
-        const addressVal = document.getElementById('updateAddress').value.trim();
-        if (!addressVal) {
-            showUpdateError(errorAlert, 'Địa chỉ là bắt buộc.');
-            return;
-        }
-
-        const citizenIdVal = document.getElementById('updateCitizenId').value.trim();
-        if (citizenIdVal.length !== 12 || !/^\d+$/.test(citizenIdVal)) {
-            showUpdateError(errorAlert, 'Số CCCD phải chứa chính xác 12 chữ số.');
-            return;
-        }
-
-        const btnSubmit = document.getElementById('btnSubmitUpdate');
-        const spinner   = document.getElementById('updateSpinner');
-        btnSubmit.disabled = true;
-        spinner.classList.remove('d-none');
-
-        const formData = new FormData(form);
-
-        try {
-            const response = await fetch(`/Employee/Update/${employeeId}`, {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-            if (response.ok && result.success) {
-                closeEmployeeUpdate();
-                showSuccessToast('Cập nhật thông tin nhân viên thành công!');
-                setTimeout(() => window.location.reload(), 1200);
-            } else {
-                showUpdateError(errorAlert, result.errorMessage || 'Có lỗi xảy ra khi cập nhật thông tin.');
-            }
-        } catch (err) {
-            console.error('Lỗi khi gửi form cập nhật:', err);
-            showUpdateError(errorAlert, 'Không thể kết nối đến máy chủ. Vui lòng thử lại.');
-        } finally {
-            btnSubmit.disabled = false;
-            spinner.classList.add('d-none');
-        }
-    }
-
-    // Hiển thị lỗi trong alert box của partial view
-    function showUpdateError(alertEl, msg) {
-        if (!alertEl) return;
-        alertEl.textContent = msg;
-        alertEl.style.display = 'block';
-        alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    // Toast thông báo thành công (không dùng alert)
-    function showSuccessToast(msg) {
-        let toast = document.getElementById('csms-success-toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'csms-success-toast';
-            toast.style.cssText = `
-                position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-                background: #111827; color: #fff; padding: 12px 28px;
-                border-radius: 10px; font-size: 0.9rem; font-weight: 600;
-                font-family: var(--bs-body-font-family); z-index: 99999;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-                animation: fadeInUp 0.25s ease;
-            `;
-            const style = document.createElement('style');
-            style.textContent = '@@keyframes fadeInUp { from { opacity:0; transform: translateX(-50%) translateY(12px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }';
-            document.head.appendChild(style);
-            document.body.appendChild(toast);
-        }
-        toast.textContent = '✓  ' + msg;
-        toast.style.display = 'block';
-        setTimeout(() => { toast.style.display = 'none'; }, 2000);
-    }
-
-    /* ---------- Dynamically loaded helper functions ---------- */
-    function dtlSwitchTab(panelName, btn) {
-        // Deactivate all tabs & panels
-        document.querySelectorAll('.dtl-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.dtl-panel').forEach(p => p.classList.remove('active'));
-        // Activate selected
-        btn.classList.add('active');
-        document.getElementById('dtl-panel-' + panelName).classList.add('active');
-    }
-
-    function updSwitchTab(panelName, btn) {
-        document.querySelectorAll('.upd-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.upd-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('upd-panel-' + panelName).classList.add('active');
-    }
-
-    const UPD_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
-    const UPD_IMG_EXTS = ['jpg', 'jpeg', 'png'];
-    const UPD_ALLOWED  = ['jpg', 'jpeg', 'pdf'];
-
-    function updHandleFile(input, key) {
-        if (!input.files || !input.files[0]) return;
-        const file = input.files[0];
-        const ext  = file.name.split('.').pop().toLowerCase();
-
-        if (!UPD_ALLOWED.includes(ext)) {
-            alert('❌ File phải có định dạng .pdf hoặc .jpg');
-            input.value = '';
-            return;
-        }
-        if (file.size > UPD_MAX_SIZE) {
-            alert('❌ Dung lượng file không được vượt quá 5 MB');
-            input.value = '';
-            return;
-        }
-
-        const isImage = UPD_IMG_EXTS.includes(ext);
-
-        // Check if there is an "old" box (means existing file existed)
-        const oldBox     = document.getElementById(key + '-old-box');
-        const newBox     = document.getElementById(key + '-new-box');
-        const newContent = document.getElementById(key + '-new-content');
-        const zoneWrap   = document.getElementById(key + '-zone');        // null if existing
-        const previewRow = document.getElementById(key + '-preview-row');
-
-        if (oldBox) {
-            // Existing file scenario: show new box side by side
-            newBox.style.display = 'block';
-            if (isImage) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    newContent.innerHTML =
-                        `<img src="${e.target.result}" alt="Ảnh mới"
-                              class="upd-preview-img"
-                              onclick="document.getElementById('update${cap(key)}File').click()"
-                              title="Nhấn để đổi lại" />`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                newContent.innerHTML =
-                    `<div class="upd-preview-pdf">
-                        <i class="bi bi-file-earmark-pdf-fill"></i>
-                        <span>${file.name}</span>
-                     </div>`;
-            }
-        } else {
-            // No existing file scenario: replace dropzone with preview
-            if (zoneWrap) zoneWrap.style.display = 'none';
-            previewRow.style.display = 'flex';
-            if (isImage) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    previewRow.innerHTML =
-                        `<div class="upd-preview-box">
-                            <div class="upd-preview-label">Đã tải lên</div>
-                            <img src="${e.target.result}" alt="Ảnh mới"
-                                 class="upd-preview-img"
-                                 onclick="document.getElementById('update${cap(key)}File').click()"
-                                 title="Nhấn để thay ảnh" />
-                            <div class="upd-preview-change-hint">Nhấn vào ảnh để thay mới</div>
-                         </div>`;
-                    // Re-attach file input into the hidden zone so it still works
-                    previewRow.appendChild(input);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                previewRow.innerHTML =
-                    `<div class="upd-preview-box">
-                        <div class="upd-preview-label">Đã tải lên</div>
-                        <div class="upd-preview-pdf" style="cursor:pointer;"
-                             onclick="document.getElementById('update${cap(key)}File').click()"
-                             title="Nhấn để thay file">
-                            <i class="bi bi-file-earmark-pdf-fill"></i>
-                            <span>${file.name}</span>
-                        </div>
-                        <div class="upd-preview-change-hint">Nhấn để thay file mới</div>
-                     </div>`;
-                previewRow.appendChild(input);
-            }
-        }
-    }
-
-    function cap(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    /* ---------- Deactivation handling ---------- */
-    let deactModalInstance = null;
-    let currentDeactEmployeeId = null;
-
-    async function triggerDeactivationCheck(employeeId) {
-        currentDeactEmployeeId = employeeId;
-        
-        // Reset modal fields
-        document.getElementById('deactWarningBanner').classList.add('d-none');
-        document.getElementById('deactShiftsSection').classList.add('d-none');
-        document.getElementById('deactReason').value = "";
-        document.getElementById('deactNotes').value = "";
-        document.getElementById('deactConfirmBtn').disabled = false;
-        
-        try {
-            const response = await fetch(`/Employee/CheckDeactivation/${employeeId}`);
-            if (!response.ok) {
-                alert('Lỗi tải dữ liệu kiểm tra.');
-                return;
-            }
-            
-            const result = await response.json();
-            if (!result.success) {
-                alert(result.errorMessage);
-                return;
-            }
-            
-            // Set employee info
-            document.getElementById('deactFullName').textContent = result.fullName;
-            document.getElementById('deactUsername').textContent = '@@' + result.username;
-            
-            let roleName = result.role;
-            if (roleName === "Cashier") roleName = "Thu ngân";
-            else if (roleName === "Bartender") roleName = "Pha chế";
-            else if (roleName === "Busser") roleName = "Phục vụ / Vệ sinh";
-            else if (!roleName) roleName = "Chưa phân quyền";
-            document.getElementById('deactRole').textContent = roleName;
-            
-            // Set avatar initials
-            let initials = "NV";
-            if (result.fullName) {
-                const parts = result.fullName.split(' ');
-                if (parts.length >= 2) initials = (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
-                else if (parts.length === 1) initials = parts[0].substring(0, 2).toUpperCase();
-            }
-            document.getElementById('deactAvatar').textContent = initials;
-            
-            // Render warning & shifts if there are uncompleted shifts
-            if (!result.canDeactivate && result.uncompletedShifts && result.uncompletedShifts.length > 0) {
-                document.getElementById('deactWarningBanner').classList.remove('d-none');
-                document.getElementById('deactWarningText').textContent = `${result.uncompletedShifts.length} ca chưa được bàn giao. Cần hoàn tất trước khi ngừng hoạt động.`;
-                
-                const container = document.getElementById('deactShiftsContainer');
-                container.innerHTML = "";
-                result.uncompletedShifts.forEach(shift => {
-                    const row = document.createElement('div');
-                    row.className = "d-flex justify-content-between py-2 border-bottom";
-                    row.style.borderBottomStyle = "dashed";
-                    row.style.borderBottomWidth = "1px";
-                    row.innerHTML = `
-                        <div class="fw-bold">${shift.date} - ${shift.shiftName}</div>
-                        <div class="text-danger fw-bold">${shift.status}</div>
-                    `;
-                    container.appendChild(row);
-                });
-                
-                // Remove last border bottom
-                if (container.lastChild) {
-                    container.lastChild.style.borderBottom = "none";
+            if (btnClear) {
+                if (rawSearchVal.length > 0) {
+                    btnClear.classList.remove('d-none');
+                } else {
+                    btnClear.classList.add('d-none');
                 }
-                
-                document.getElementById('deactShiftsSection').classList.remove('d-none');
-                // Lock / disable confirm button
-                document.getElementById('deactConfirmBtn').disabled = true;
             }
-            
-            // Show modal
-            if (!deactModalInstance) {
-                deactModalInstance = new bootstrap.Modal(document.getElementById('deactivateEmployeeModal'));
-            }
-            deactModalInstance.show();
-            
-        } catch(err) {
-            console.error(err);
-            alert('Không thể kết nối máy chủ.');
-        }
-    }
 
-    async function confirmDeactivation() {
-        if (!currentDeactEmployeeId) return;
-        
-        const reason = document.getElementById('deactReason').value;
-        const notes = document.getElementById('deactNotes').value.trim();
-        
-        if (!reason) {
-            alert('Vui lòng chọn lý do ngừng hoạt động.');
-            return;
+            var roleVal = document.getElementById('filterRole').value;
+            var branchVal = document.getElementById('filterBranch').value;
+
+            var items = document.querySelectorAll('#employeesList .employee-card-item');
+            var visibleCount = 0;
+
+            items.forEach(function(item) {
+                var fullname = (item.getAttribute('data-fullname') || '').toLowerCase();
+                var normFullname = removeVietnameseTones(fullname);
+                var username = (item.getAttribute('data-username') || '').toLowerCase();
+                var phone = (item.getAttribute('data-phone') || '').toLowerCase();
+                var email = (item.getAttribute('data-email') || '').toLowerCase();
+                var citizenId = (item.getAttribute('data-citizenid') || '').toLowerCase();
+                var empId = (item.getAttribute('data-empid') || '').toLowerCase();
+
+                var role = item.getAttribute('data-role') || '';
+                var branch = item.getAttribute('data-branch') || '';
+
+                var matchSearch = !rawSearchVal || 
+                    fullname.includes(rawSearchVal) || 
+                    normFullname.includes(normSearchVal) || 
+                    username.includes(rawSearchVal) || 
+                    phone.includes(rawSearchVal) || 
+                    email.includes(rawSearchVal) || 
+                    citizenId.includes(rawSearchVal) || 
+                    empId === rawSearchVal || 
+                    ('nv-' + empId).includes(rawSearchVal);
+
+                var matchRole = !roleVal || role === roleVal;
+                var matchBranch = !branchVal || branch === branchVal;
+
+                if (matchSearch && matchRole && matchBranch) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            var noResults = document.getElementById('noResultsMsg');
+            if (noResults) {
+                if (visibleCount === 0 && items.length > 0) {
+                    noResults.classList.remove('d-none');
+                } else {
+                    noResults.classList.add('d-none');
+                }
+            }
+
+            var resultCount = document.getElementById('searchResultCount');
+            if (resultCount) {
+                resultCount.textContent = `Hiển thị ${visibleCount} / ${items.length} nhân viên`;
+            }
         }
-        
-        const btn = document.getElementById('deactConfirmBtn');
-        btn.disabled = true;
-        
-        try {
-            const response = await fetch('/Employee/Deactivate', {
+
+        function clearEmployeeSearch() {
+            var searchInput = document.getElementById('employeeSearchInput');
+            searchInput.value = '';
+            filterEmployeesList();
+            searchInput.focus();
+        }
+
+        function setEmploymentType(type) {
+            document.getElementById('employmentType').value = type;
+            var btnFull = document.getElementById('btnFullTime');
+            var btnPart = document.getElementById('btnPartTime');
+
+            if (type === 'Full-time') {
+                btnFull.classList.add('btn-primary', 'active');
+                btnFull.classList.remove('btn-outline-secondary');
+                btnPart.classList.add('btn-outline-secondary');
+                btnPart.classList.remove('btn-primary', 'active');
+            } else {
+                btnPart.classList.add('btn-primary', 'active');
+                btnPart.classList.remove('btn-outline-secondary');
+                btnFull.classList.add('btn-outline-secondary');
+                btnFull.classList.remove('btn-primary', 'active');
+            }
+        }
+
+        function loadBranches() {
+            fetch('/Employee/GetBranches')
+                .then(response => response.json())
+                .then(branches => {
+                    if (branches && branches.length > 0) {
+                        document.getElementById('branchDisplay').value = branches[0].branchName;
+                        document.getElementById('branchId').value = branches[0].branchId;
+                    }
+                })
+                .catch(err => console.error('Lỗi tải chi nhánh:', err));
+        }
+
+        function submitEmployeeForm() {
+            var form = document.getElementById('createEmployeeForm');
+            var alertBox = document.getElementById('formAlertBox');
+            alertBox.classList.add('d-none');
+            alertBox.innerHTML = '';
+
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            var payload = {
+                FullName: document.getElementById('fullName').value.trim(),
+                PhoneNumber: document.getElementById('phoneNumber').value.trim(),
+                Email: document.getElementById('email').value.trim(),
+                CitizenId: document.getElementById('citizenId').value.trim(),
+                Role: document.getElementById('role').value,
+                EmploymentType: document.getElementById('employmentType').value,
+                BranchId: document.getElementById('branchId').value
+            };
+
+            var btnSubmit = document.getElementById('btnSubmitForm');
+            var spinner = document.getElementById('submitSpinner');
+            btnSubmit.disabled = true;
+            spinner.classList.remove('d-none');
+
+            // Original server endpoint: /Employee/CreateAccount
+            fetch('/Employee/CreateAccount', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employeeId: currentDeactEmployeeId, reason: reason, notes: notes })
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                btnSubmit.disabled = false;
+                spinner.classList.add('d-none');
+
+                if (data.success) {
+                    createdEmpId = data.employeeId;
+                    document.getElementById('displayUsername').value = data.username;
+                    document.getElementById('displayPassword').value = data.password || data.generatedPassword;
+
+                    var createModal = bootstrap.Modal.getInstance(document.getElementById('createEmployeeModal'));
+                    if (createModal) createModal.hide();
+
+                    var credentialsModal = new bootstrap.Modal(document.getElementById('credentialsModal'));
+                    credentialsModal.show();
+                } else {
+                    alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Tạo thất bại.');
+                    alertBox.classList.remove('d-none');
+                }
+            })
+            .catch(err => {
+                btnSubmit.disabled = false;
+                spinner.classList.add('d-none');
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi tạo tài khoản.';
+                alertBox.classList.remove('d-none');
             });
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                deactModalInstance.hide();
-                showSuccessToast('Đã chuyển tài khoản sang trạng thái ngừng hoạt động.');
-                setTimeout(() => window.location.reload(), 1200);
-            } else {
-                alert(result.errorMessage || 'Lỗi vô hiệu hóa tài khoản.');
-                btn.disabled = false;
-            }
-        } catch(err) {
-            console.error(err);
-            alert('Không thể kết nối máy chủ.');
-            btn.disabled = false;
         }
-    }
-</script>
+
+        function togglePasswordVisibility() {
+            var pwdInput = document.getElementById('displayPassword');
+            var eyeIcon = document.getElementById('eyeIcon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.className = 'bi bi-eye';
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.className = 'bi bi-eye-slash';
+            }
+        }
+
+        function closeCredentialsModalAndReload() {
+            location.reload();
+        }
+
+        function redirectToFaceRegister() {
+            if (createdEmpId) {
+                window.location.href = '/Employee/RegisterFace/' + createdEmpId;
+            } else {
+                location.reload();
+            }
+        }
+
+        function showEmployeeDetail(empId) {
+            var modalContent = document.getElementById('employeeDetailModalContent');
+            modalContent.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Đang tải thông tin...</p>
+                </div>
+            `;
+            var modal = new bootstrap.Modal(document.getElementById('employeeDetailModal'));
+            modal.show();
+
+            // Original server endpoint: /Employee/Detail?id=
+            fetch('/Employee/Detail?id=' + empId)
+                .then(r => r.text())
+                .then(html => {
+                    modalContent.innerHTML = html;
+                })
+                .catch(err => {
+                    modalContent.innerHTML = '<div class="alert alert-danger m-3">Không thể tải thông tin nhân viên.</div>';
+                });
+        }
+
+        function closeEmployeeDetail() {
+            var modalEl = document.getElementById('employeeDetailModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+        function showEmployeeUpdate(empId) {
+            var modalContent = document.getElementById('employeeUpdateModalContent');
+            modalContent.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Đang tải thông tin...</p>
+                </div>
+            `;
+            var modal = new bootstrap.Modal(document.getElementById('employeeUpdateModal'));
+            modal.show();
+
+            // Original server endpoint: /Employee/UpdateForm?id=
+            fetch('/Employee/UpdateForm?id=' + empId)
+                .then(r => r.text())
+                .then(html => {
+                    modalContent.innerHTML = html;
+                })
+                .catch(err => {
+                    modalContent.innerHTML = '<div class="alert alert-danger m-3">Không thể tải form cập nhật.</div>';
+                });
+        }
+
+        function closeEmployeeUpdate() {
+            var modalEl = document.getElementById('employeeUpdateModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+        function triggerDeactivationCheck(empId) {
+            pendingDeactEmpId = empId;
+            // Original server endpoint: /Employee/CheckDeactivation?id=
+            fetch('/Employee/CheckDeactivation?id=' + empId)
+                .then(r => r.json())
+                .then(data => {
+                    var fn = data.fullName || '';
+                    var parts = fn.trim().split(' ');
+                    var initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : 'NV';
+                    
+                    document.getElementById('deactAvatar').textContent = initials;
+                    document.getElementById('deactFullName').textContent = fn;
+                    document.getElementById('deactUsername').textContent = '@@' + (data.username || '');
+                    
+                    var roleMap = { 'Cashier': 'Thu ngân', 'Bartender': 'Pha chế', 'Busser': 'Phục vụ', 'BranchManager': 'Quản lý' };
+                    document.getElementById('deactRole').textContent = roleMap[data.role] || data.role || '';
+
+                    var warningBanner = document.getElementById('deactWarningBanner');
+                    var warningText = document.getElementById('deactWarningText');
+                    var shiftsSec = document.getElementById('deactShiftsSection');
+                    var shiftsContainer = document.getElementById('deactShiftsContainer');
+
+                    var shifts = data.uncompletedShifts || [];
+                    if (shifts.length > 0 || !data.canDeactivate) {
+                        warningText.textContent = shifts.length + ' ca chưa được bàn giao. Cần hoàn tất trước khi ngừng hoạt động.';
+                        warningBanner.classList.remove('d-none');
+
+                        if (shifts.length > 0) {
+                            var shiftHtml = '';
+                            shifts.forEach(s => {
+                                shiftHtml += `<div class="d-flex justify-content-between py-1 border-bottom border-secondary-subtle">
+                                    <span><strong>${s.date}</strong> &bull; ${s.shiftName}</span>
+                                    <span class="badge bg-warning text-dark">${s.status}</span>
+                                </div>`;
+                            });
+                            shiftsContainer.innerHTML = shiftHtml;
+                            shiftsSec.classList.remove('d-none');
+                        }
+                    } else {
+                        warningBanner.classList.add('d-none');
+                        shiftsSec.classList.add('d-none');
+                    }
+
+                    document.getElementById('deactReason').value = '';
+                    document.getElementById('deactNotes').value = '';
+
+                    var modal = new bootstrap.Modal(document.getElementById('deactivateEmployeeModal'));
+                    modal.show();
+                })
+                .catch(err => {
+                    showToast('Không thể lấy thông tin nhân viên.', 'danger');
+                });
+        }
+
+        function confirmDeactivation() {
+            if (!pendingDeactEmpId) return;
+            var reason = document.getElementById('deactReason').value;
+            if (!reason) {
+                showToast('Vui lòng chọn lý do ngừng hoạt động.', 'warning');
+                return;
+            }
+
+            var notes = document.getElementById('deactNotes').value;
+            var btn = document.getElementById('deactConfirmBtn');
+            btn.disabled = true;
+
+            // Original server endpoint: /Employee/Deactivate
+            fetch('/Employee/Deactivate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    EmployeeId: pendingDeactEmpId,
+                    Reason: reason,
+                    Notes: notes
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.success) {
+                    var modalEl = document.getElementById('deactivateEmployeeModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    showToast('Đã ngừng hoạt động nhân viên thành công.', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(data.errorMessage || 'Thao tác thất bại.', 'danger');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                showToast('Lỗi hệ thống khi ngừng hoạt động nhân viên.', 'danger');
+            });
+        }
+    </script>
 }

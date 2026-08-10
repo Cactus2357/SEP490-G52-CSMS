@@ -15,6 +15,10 @@ namespace SEP490_G52_CSMS.Controllers
 
         public IActionResult Index()
         {
+            if (User.IsInRole("RManager"))
+            {
+                return RedirectToAction("Revenue", "Reporting");
+            }
             if (User.IsInRole("WManager") || User.IsInRole("WarehouseManager"))
             {
                 return RedirectToAction("Index", "Warehouse");

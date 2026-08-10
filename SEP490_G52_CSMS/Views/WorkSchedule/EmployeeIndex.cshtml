@@ -4,6 +4,16 @@
     ViewData["Title"] = "Lịch làm việc nhân viên";
 }
 
+<style>
+    .today-cell {
+        background-color: rgba(13, 110, 253, 0.08) !important;
+    }
+    .today-header {
+        background-color: rgba(13, 110, 253, 0.15) !important;
+        border-bottom: 3px solid #0d6efd !important;
+    }
+</style>
+
 <div class="container-fluid mt-3 px-4 pb-5">
     <!-- Header Section -->
     <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
@@ -33,7 +43,7 @@
         </div>
     </div>
 
-    <!-- Balanced Schedule Matrix Grid -->
+    <!-- Balanced Schedule Matrix Grid (Today Highlighted) -->
     <div class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle text-center mb-0" style="table-layout: fixed; min-width: 980px;">
@@ -42,10 +52,17 @@
                         <th class="text-start ps-3 py-2" style="width: 160px;">Ca Làm Việc</th>
                         @foreach (var day in Model.Days)
                         {
+                            bool isToday = day.Date == DateTime.Today;
                             var dayName = day.DayOfWeek == DayOfWeek.Sunday ? "Chủ Nhật" : "Thứ " + ((int)day.DayOfWeek + 1);
-                            <th style="width: 12.14%;" class="py-2">
-                                <div class="fw-bold text-dark">@dayName</div>
-                                <div class="small fw-normal text-muted">@day.ToString("dd/MM")</div>
+                            <th style="width: 12.14%;" class="py-2 @(isToday ? "today-header" : "")">
+                                <div class="fw-bold @(isToday ? "text-primary" : "text-dark")">
+                                    @dayName
+                                    @* @if (isToday)
+                                    {
+                                        <span class="badge bg-primary rounded-pill ms-1" style="font-size: 0.65rem;">Hôm nay</span>
+                                    } *@
+                                </div>
+                                <div class="small fw-normal @(isToday ? "text-primary fw-bold" : "text-muted")">@day.ToString("dd/MM")</div>
                             </th>
                         }
                     </tr>
@@ -60,9 +77,10 @@
                             </td>
                             @foreach (var day in Model.Days)
                             {
+                                bool isToday = day.Date == DateTime.Today;
                                 var hasShift = Model.ScheduleData.TryGetValue((shift.ShiftId, day.Date), out var detail);
                                 
-                                <td class="p-2 align-middle">
+                                <td class="p-2 align-middle @(isToday ? "today-cell" : "")">
                                     @if (hasShift && detail != null && detail.IsAssigned)
                                     {
                                         <div class="fw-bold text-success mb-1 small">
