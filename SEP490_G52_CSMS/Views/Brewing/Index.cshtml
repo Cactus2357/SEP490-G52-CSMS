@@ -5,20 +5,16 @@
 }
 
 <div class="container-fluid mt-3 px-4">
-    <!-- Header -->
-    <div class="card bg-secondary-subtle border-0 rounded-3 mb-4 shadow-sm">
+    <!-- Header Section -->
+    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
         <div class="card-body p-3 d-flex justify-content-between align-items-center">
             <div>
                 <span class="text-muted small">Bartender / Pha chế</span>
                 <h4 class="fw-bold m-0 text-dark">DANH SÁCH ĐƠN PHA CHẾ</h4>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm" id="liveCounterBadge">
-                    <i class="bi bi-arrow-repeat spin me-1 text-primary"></i> Tự động cập nhật (5s)
-                </span>
-                <div class="position-relative" style="width: 280px;">
-                    <i class="bi bi-search position-absolute text-muted" style="left: 12px; top: 9px;"></i>
-                    <input type="text" id="brewingSearch" class="form-control form-control-sm rounded-pill ps-5" placeholder="Tìm theo Mã đơn / Tên khách..." onkeyup="filterBrewingOrders()">
+                <div style="width: 280px;">
+                    <input type="text" id="brewingSearch" class="form-control" placeholder="Tìm theo Mã đơn / Tên khách..." onkeyup="filterBrewingOrders()">
                 </div>
             </div>
         </div>
@@ -88,15 +84,11 @@
                                 </tr>
 
                                 <!-- Nested Table Row -->
-                                <tr class="nested-items-row" id="nested-row-@o.OrderId">
+                                <tr class="nested-items-row" id="nested-row-@o.OrderId" style="display: none;">
                                     <td colspan="6" class="p-0 border-0">
-                                        <div class="bg-light p-3 border-bottom shadow-inner">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="bi bi-list-stars me-2 text-primary"></i>
-                                                <strong class="text-dark">Chi tiết món trong đơn (@o.OrderId):</strong>
-                                            </div>
+                                        <div class="bg-body-tertiary p-3 border-bottom shadow-inner">
                                             <div class="table-responsive bg-white rounded border">
-                                                <table class="table table-sm table-bordered m-0 align-middle">
+                                                <table class="table table-sm table-striped table-bordered m-0 align-middle">
                                                     <thead class="table-secondary">
                                                         <tr>
                                                             <th style="width: 10%;" class="ps-3 text-center">STT</th>
@@ -108,11 +100,11 @@
                                                     <tbody>
                                                         @if (o.Items != null && o.Items.Any())
                                                         {
-                                                            int idx = 1;
-                                                            foreach (var item in o.Items)
+                                                            for (int idx = 0; idx < o.Items.Count; idx++)
                                                             {
+                                                                var item = o.Items[idx];
                                                                 <tr>
-                                                                    <td class="text-center ps-3 text-muted">@(idx++)</td>
+                                                                    <td class="text-center ps-3 text-muted">@(idx + 1)</td>
                                                                     <td class="fw-bold text-dark">@item.ProductName</td>
                                                                     <td class="text-center"><span class="badge bg-secondary-subtle text-dark">@item.Size</span></td>
                                                                     <td class="text-center fw-bold text-primary">@item.Quantity</td>
@@ -142,49 +134,58 @@
 
 @section Scripts {
     <script>
-        function filterBrewingOrders() {
-            let search = $('#brewingSearch').val().toLowerCase().trim();
-            $('.brewing-row').each(function() {
-                let name = ($(this).data('name') || '').toString();
-                let id = ($(this).data('id') || '').toString();
-                let nestedRow = $(`#nested-row-${$(this).data('code')}`);
-
-                if (name.includes(search) || id.includes(search)) {
-                    $(this).removeClass('d-none');
-                } else {
-                    $(this).addClass('d-none');
-                    if (nestedRow.length) nestedRow.addClass('d-none');
-                }
-            });
-        }
+        const expandedOrderIds = new Set();
 
         function toggleNestedItems(orderId) {
-            let nestedRow = $(`#nested-row-${orderId}`);
-            let icon = $(`#chevron-${orderId}`);
-            if (nestedRow.is(':visible')) {
-                nestedRow.hide();
-                icon.removeClass('bi-chevron-up').addClass('bi-chevron-down');
+            let row = $(`#nested-row-${orderId}`);
+            let chevron = $(`#chevron-${orderId}`);
+            if (row.is(':visible')) {
+                row.hide();
+                chevron.removeClass('bi-chevron-up').addClass('bi-chevron-down');
+                expandedOrderIds.delete(orderId);
             } else {
-                nestedRow.show();
-                icon.removeClass('bi-chevron-down').addClass('bi-chevron-up');
+                row.show();
+                chevron.removeClass('bi-chevron-down').addClass('bi-chevron-up');
+                expandedOrderIds.add(orderId);
             }
+        }
+
+        function filterBrewingOrders() {
+            let val = $('#brewingSearch').val().toLowerCase().trim();
+            $('.brewing-row').each(function() {
+                let name = $(this).data('name') || '';
+                let code = $(this).data('code') ? $(this).data('code').toLowerCase() : '';
+                let orderId = $(this).data('id') || '';
+
+                if (!val || name.includes(val) || code.includes(val) || orderId.includes(val)) {
+                    $(this).removeClass('d-none');
+                    let id = $(this).data('code');
+                    if (expandedOrderIds.has(id)) {
+                        $(`#nested-row-${id}`).removeClass('d-none').show();
+                    }
+                } else {
+                    $(this).addClass('d-none');
+                    let id = $(this).data('code');
+                    $(`#nested-row-${id}`).addClass('d-none').hide();
+                }
+            });
         }
 
         function startBrewingOrder(orderId) {
             showConfirmModal(
                 'Xác nhận pha chế',
-                `Bắt đầu pha chế cho đơn hàng <strong>${orderId}</strong>?`,
+                `Bắt đầu chuyển trạng thái đơn hàng <strong>${orderId}</strong> sang <strong>Đang pha chế</strong>?`,
                 function() {
                     $.ajax({
                         url: '/Brewing/StartBrewing',
                         type: 'POST',
                         data: { orderId: orderId },
                         success: function(res) {
-                            showToast(`Đã chuyển đơn hàng ${orderId} sang trạng thái Đang pha chế.`, 'success');
+                            showToast(`Đã nhận đơn hàng ${orderId} để pha chế.`, 'success');
                             fetchLiveOrders();
                         },
                         error: function(xhr) {
-                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể bắt đầu pha chế.';
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể cập nhật trạng thái đơn.';
                             showToast(msg, 'danger');
                         }
                     });
@@ -195,7 +196,7 @@
         function completeBrewingOrder(orderId) {
             showConfirmModal(
                 'Xác nhận hoàn thành',
-                `Xác nhận đã pha chế xong đơn hàng <strong>${orderId}</strong>?`,
+                `Xác nhận đơn hàng <strong>${orderId}</strong> đã được pha chế <strong>Hoàn thành</strong>?`,
                 function() {
                     $.ajax({
                         url: '/Brewing/CompleteBrewing',
@@ -237,16 +238,20 @@
 
                     orders.forEach(o => {
                         let isBrewing = o.brewingStatus === 'Brewing in Progress';
-                        stringRowClass = isBrewing ? 'table-primary fw-semibold' : 'table-warning fw-semibold';
-                        badgeClass = isBrewing ? 'bg-primary text-white' : 'bg-warning text-dark';
+                        let stringRowClass = isBrewing ? 'table-primary fw-semibold' : 'table-warning fw-semibold';
+                        let badgeClass = isBrewing ? 'bg-primary text-white' : 'bg-warning text-dark';
                         let matchesSearch = !search || o.recipientName.toLowerCase().includes(search) || o.orderId.toLowerCase().includes(search);
                         let hiddenCls = matchesSearch ? '' : 'd-none';
+
+                        let isExpanded = expandedOrderIds.has(o.orderId);
+                        let displayStyle = isExpanded ? '' : 'display: none;';
+                        let chevronClass = isExpanded ? 'bi-chevron-up' : 'bi-chevron-down';
 
                         rowsHtml += `
                             <tr class="brewing-row ${stringRowClass} ${hiddenCls}" data-name="${o.recipientName.toLowerCase()}" data-id="${o.orderId.toLowerCase()}" data-code="${o.orderId}">
                                 <td class="ps-3">
                                     <button type="button" class="btn btn-sm btn-link text-dark p-0 toggle-nested-btn" onclick="toggleNestedItems('${o.orderId}')">
-                                        <i class="bi bi-chevron-down" id="chevron-${o.orderId}"></i>
+                                        <i class="bi ${chevronClass}" id="chevron-${o.orderId}"></i>
                                     </button>
                                 </td>
                                 <td class="fw-bold text-primary">${o.orderId}</td>
@@ -269,15 +274,11 @@
                                     `}
                                 </td>
                             </tr>
-                            <tr class="nested-items-row ${hiddenCls}" id="nested-row-${o.orderId}" style="display: none;">
+                            <tr class="nested-items-row ${hiddenCls}" id="nested-row-${o.orderId}" style="${displayStyle}">
                                 <td colspan="6" class="p-0 border-0">
-                                    <div class="bg-light p-3 border-bottom shadow-inner">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="bi bi-list-stars me-2 text-primary"></i>
-                                            <strong class="text-dark">Chi tiết món trong đơn (${o.orderId}):</strong>
-                                        </div>
+                                    <div class="bg-body-tertiary p-3 border-bottom shadow-inner">
                                         <div class="table-responsive bg-white rounded border">
-                                            <table class="table table-sm table-bordered m-0 align-middle">
+                                            <table class="table table-sm table-striped table-bordered m-0 align-middle">
                                                 <thead class="table-secondary">
                                                     <tr>
                                                         <th style="width: 10%;" class="ps-3 text-center">STT</th>

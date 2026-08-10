@@ -38,7 +38,7 @@ namespace SEP490_G52_CSMS.Services
         {
             var notification = await _context.Notifications
                 .FirstOrDefaultAsync(n => n.NotificationId == notificationId
-                    && (n.RecipientUserId == null || n.RecipientUserId == userId || n.RecipientRole == userRole));
+                    && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)));
 
             if (notification == null) return false;
 
@@ -52,7 +52,7 @@ namespace SEP490_G52_CSMS.Services
         {
             var notifications = await _context.Notifications
                 .Where(n => !n.IsRead
-                    && (n.RecipientUserId == null || n.RecipientUserId == userId || n.RecipientRole == userRole))
+                    && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)))
                 .ToListAsync();
 
             foreach (var n in notifications)
@@ -65,7 +65,7 @@ namespace SEP490_G52_CSMS.Services
         public async Task<List<Notification>> GetAllForUserAsync(int userId, string userRole)
         {
             return await _context.Notifications
-                .Where(n => n.RecipientUserId == null || n.RecipientUserId == userId || n.RecipientRole == userRole)
+                .Where(n => n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null))
                 .OrderByDescending(n => n.CreatedTime)
                 .ToListAsync();
         }

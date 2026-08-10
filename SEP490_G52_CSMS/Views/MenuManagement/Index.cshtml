@@ -2,77 +2,97 @@
 
 @{
     ViewData["Title"] = "Quản Lý Thực Đơn";
-    // Using a default Layout if none specified, it should inherit from _ViewStart
 }
 
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>QUẢN LÝ THỰC ĐƠN</h2>
-        <div>
-            <span class="mr-3 font-weight-bold">Chi nhánh 1</span>
+<div class="container-fluid mt-3 px-4">
+    <!-- Header Section -->
+    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted small">Chi nhánh / Thực đơn</span>
+                <h4 class="fw-bold m-0 text-dark">QUẢN LÝ THỰC ĐƠN</h4>
+            </div>
+            <div class="d-flex gap-2">
+                <a asp-action="Create" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm thực đơn mới
+                </a>
+            </div>
         </div>
     </div>
 
-    <div class="d-flex justify-content-between mb-3">
-        <div class="w-50">
-            <input type="text" id="searchInput" class="form-control" placeholder="Search..." onkeyup="filterTable()">
-        </div>
-        <div>
-            <button class="btn btn-outline-primary mr-2" id="btnViewDetails" onclick="viewDetailsSelected()" disabled>
-                <i class="bi bi-eye me-1"></i>Xem chi tiết
-            </button>
-            <button class="btn btn-outline-secondary mr-2" id="btnEdit" onclick="editSelected()" disabled>+ Sửa thực đơn</button>
-            <a asp-action="Create" class="btn btn-outline-dark">+ Thêm thực đơn mới</a>
+    <!-- Filter & Data Card -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-3">
+            <div class="row g-3 mb-3 align-items-center">
+                <div class="col-md-5">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm thực đơn..." onkeyup="filterTable()">
+                </div>
+                <div class="col-md-7 text-end">
+                    <button class="btn btn-outline-primary me-2 rounded-pill px-3" id="btnViewDetails" onclick="viewDetailsSelected()" disabled>
+                        <i class="bi bi-eye me-1"></i>Xem chi tiết
+                    </button>
+                    <button class="btn btn-outline-secondary rounded-pill px-3" id="btnEdit" onclick="editSelected()" disabled>
+                        <i class="bi bi-pencil me-1"></i>Sửa thực đơn
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0" id="menuTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Danh Sách Thực Đơn</th>
+                            <th>Ngày Sửa Đổi</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-center pe-3">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            string rowClass = item.IsActive ? "table-success" : "table-secondary";
+
+                            <tr class="@rowClass" onclick="selectRow(this, @item.MenuId)" style="cursor: pointer;">
+                                <td class="ps-3 fw-semibold text-dark">@item.MenuName</td>
+                                <td>@(item.UpdatedAt.HasValue ? item.UpdatedAt.Value.ToString("dd/MM/yyyy") : "-")</td>
+                                <td>
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5">Đang hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1.5">Ngừng hoạt động</span>
+                                    }
+                                </td>
+                                <td class="text-center pe-3">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0 me-2" onclick="openMenuDetailModal(@item.MenuId)">
+                                        [Xem chi tiết]
+                                    </button>
+                                    <form asp-action="ToggleStatus" asp-route-id="@item.MenuId" method="post" class="d-inline">
+                                        @if (item.IsActive)
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-link text-danger fw-bold text-decoration-none p-0">Ngừng hoạt động</button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-link text-success fw-bold text-decoration-none p-0">Kích hoạt</button>
+                                        }
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-
-    <table class="table table-bordered table-hover" id="menuTable">
-        <thead class="thead-light">
-            <tr>
-                <th>Danh Sách Các Thực Đơn</th>
-                <th>Ngày Sửa Đổi</th>
-                <th>Trạng Thái</th>
-                <th>Thao Tác</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr onclick="selectRow(this, @item.MenuId)" style="cursor: pointer;">
-                    <td>@item.MenuName</td>
-                    <td>@(item.UpdatedAt.HasValue ? item.UpdatedAt.Value.ToString("dd/MM/yyyy") : "")</td>
-                    <td>
-                        @if (item.IsActive)
-                        {
-                            <span class="text-success">Đang hoạt động</span>
-                        }
-                        else
-                        {
-                            <span class="text-secondary">Ngừng hoạt động</span>
-                        }
-                    </td>
-                    <td>
-                        <form asp-action="ToggleStatus" asp-route-id="@item.MenuId" method="post" class="d-inline">
-                            @if (item.IsActive)
-                            {
-                                <button type="submit" class="btn btn-link p-0 text-primary">Ngừng hoạt động</button>
-                            }
-                            else
-                            {
-                                <button type="submit" class="btn btn-link p-0 text-primary">Kích hoạt</button>
-                            }
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
 </div>
 
 <!-- Modal View Menu Content -->
 <div class="modal fade" id="menuDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow-lg rounded-3">
             <!-- Loaded by JS -->
         </div>
     </div>
@@ -83,9 +103,7 @@
         let selectedMenuId = null;
 
         function selectRow(row, menuId) {
-            // Remove active class from all rows
             document.querySelectorAll('#menuTable tbody tr').forEach(r => r.classList.remove('table-active'));
-            // Add active class to clicked row
             row.classList.add('table-active');
             
             selectedMenuId = menuId;
@@ -97,6 +115,11 @@
             if (selectedMenuId) {
                 window.location.href = '@Url.Action("Edit", "MenuManagement")/' + selectedMenuId;
             }
+        }
+
+        function openMenuDetailModal(menuId) {
+            selectedMenuId = menuId;
+            viewDetailsSelected();
         }
 
         function viewDetailsSelected() {
@@ -136,20 +159,15 @@
         }
 
         function filterTable() {
-            var input, filter, table, tr, td, i, txtValue;
-            input = document.getElementById("searchInput");
-            filter = input.value.toUpperCase();
-            table = document.getElementById("menuTable");
-            tr = table.getElementsByTagName("tr");
-            for (i = 1; i < tr.length; i++) {
-                td = tr[i].getElementsByTagName("td")[0];
+            var input = document.getElementById("searchInput");
+            var filter = input.value.toUpperCase();
+            var table = document.getElementById("menuTable");
+            var tr = table.getElementsByTagName("tr");
+            for (var i = 1; i < tr.length; i++) {
+                var td = tr[i].getElementsByTagName("td")[0];
                 if (td) {
-                    txtValue = td.textContent || td.innerText;
-                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                        tr[i].style.display = "";
-                    } else {
-                        tr[i].style.display = "none";
-                    }
+                    var txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = (txtValue.toUpperCase().indexOf(filter) > -1) ? "" : "none";
                 }
             }
         }

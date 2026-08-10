@@ -45,13 +45,13 @@
         var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
         notificationsList = DbContext.Notifications
-            .Where(n => !n.IsRead && (n.RecipientUserId == null || n.RecipientUserId == userId || n.RecipientRole == userRole))
+            .Where(n => !n.IsRead && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)))
             .OrderByDescending(n => n.CreatedTime)
             .Take(5)
             .ToList();
 
         unreadCount = DbContext.Notifications
-            .Count(n => !n.IsRead && (n.RecipientUserId == null || n.RecipientUserId == userId || n.RecipientRole == userRole));
+            .Count(n => !n.IsRead && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)));
     }
 }
 <!DOCTYPE html>
@@ -544,39 +544,95 @@
         }
 
         const currentUserRole = '@(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")';
+        const allPages = [
+            { name: "Quản lý - quản lý chi nhánh", url: "/BranchManager" },
+            { name: "Quản lý chi nhánh", url: "/Branch" },
+            { name: "Quản lý danh mục", url: "/ProductCategories" },
+            { name: "Quản lý sản phẩm", url: "/Product" },
+            { name: "Báo cáo doanh thu", url: "/Reporting/Revenue" },
+            { name: "Xuất file báo cáo", url: "/Reporting/Export" },
+            { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
+            { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
+            { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
+            { name: "Quản lý nhân viên", url: "/Employee" },
+            { name: "Quản lý lịch làm việc", url: "/WorkSchedule" },
+            { name: "Quản lý thực đơn", url: "/MenuManagement" },
+            { name: "Quản lý đổi ca", url: "/ShiftChange" },
+            { name: "Bàn giao ca", url: "/ShiftHandover" },
+            { name: "Quản lý đơn đặt hàng", url: "/OrderManagement" },
+            { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
+            { name: "Đặt hàng kho", url: "/BranchWarehouse/CreateRequest" },
+            { name: "Lịch sử đặt", url: "/BranchWarehouse/RequestHistory" },
+            { name: "Bán hàng POS (Tạo đơn)", url: "/SaleManagement/CreateOrder" },
+            { name: "Lịch sử đơn hàng", url: "/SaleManagement/OrderHistory" },
+            { name: "Kết ca & Kiểm đếm tiền", url: "/CashHandover/SubmitHandover" },
+            { name: "Danh sách đơn pha chế", url: "/Brewing" },
+            { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+            { name: "Yêu cầu đổi ca", url: "/ShiftChange/EmployeeIndex" },
+            { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+        ];
+
         const rolePages = {
             "RManager": [
-                { name: "Quản lý nhân viên chi nhánh", url: "/BranchManager" },
-                { name: "Yêu cầu xuất kho (Tổng kho)", url: "/Warehouse/ExportRequests" },
-                { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
-                { name: "Lịch sử đặt hàng kho", url: "/BranchWarehouse/RequestHistory" },
-                { name: "Quản lý nhà cung cấp", url: "/Supplier" },
-                { name: "Quản lý nguyên vật liệu", url: "/Material" },
-                { name: "Báo cáo thống kê", url: "/Reporting" },
-                { name: "Quản lý thực đơn & sản phẩm", url: "/Product" },
+                { name: "Quản lý - quản lý chi nhánh", url: "/BranchManager" },
+                { name: "Quản lý chi nhánh", url: "/Branch" },
+                { name: "Quản lý danh mục", url: "/ProductCategories" },
+                { name: "Quản lý sản phẩm", url: "/Product" },
+                { name: "Báo cáo doanh thu", url: "/Reporting/Revenue" },
+                { name: "Xuất file báo cáo", url: "/Reporting/Export" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "WManager": [
+                { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
+                { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
+                { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "WarehouseManager": [
-                { name: "Yêu cầu xuất kho (Tổng kho)", url: "/Warehouse/ExportRequests" },
-                { name: "Nhập kho (Phiếu nhập kho)", url: "/Warehouse/Receipts" },
-                { name: "Quản lý nguyên vật liệu", url: "/Material" },
-                { name: "Quản lý loại nguyên vật liệu", url: "/Material/Categories" },
+                { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
+                { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
+                { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "BranchManager": [
+                { name: "Quản lý nhân viên", url: "/Employee" },
+                { name: "Quản lý lịch làm việc", url: "/WorkSchedule" },
+                { name: "Quản lý thực đơn", url: "/MenuManagement" },
+                { name: "Quản lý đổi ca", url: "/ShiftChange" },
+                { name: "Bàn giao ca", url: "/ShiftHandover" },
+                { name: "Quản lý đơn đặt hàng", url: "/OrderManagement" },
                 { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
-                { name: "Đặt hàng kho (Yêu cầu nhập)", url: "/BranchWarehouse/CreateRequest" },
-                { name: "Lịch sử đặt hàng kho", url: "/BranchWarehouse/RequestHistory" },
-                { name: "Quản lý nhân viên chi nhánh", url: "/Employee" },
-                { name: "Quản lý đơn bán hàng", url: "/Order" },
-                { name: "Quản lý lịch làm việc & chia ca", url: "/Shift" },
-                { name: "Báo cáo doanh thu chi nhánh", url: "/Reporting" },
+                { name: "Đặt hàng kho", url: "/BranchWarehouse/CreateRequest" },
+                { name: "Lịch sử đặt", url: "/BranchWarehouse/RequestHistory" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
-            "Staff": [
-                { name: "Tạo hóa đơn bán hàng", url: "/Order/Create" },
-                { name: "Danh sách hóa đơn", url: "/Order" },
-                { name: "Lịch làm việc của tôi", url: "/Shift/MySchedule" },
+            "Cashier": [
+                { name: "Bán hàng POS (Tạo đơn)", url: "/SaleManagement/CreateOrder" },
+                { name: "Lịch sử đơn hàng", url: "/SaleManagement/OrderHistory" },
+                { name: "Kết ca & Kiểm đếm tiền", url: "/CashHandover/SubmitHandover" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Yêu cầu đổi ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Bartender": [
+                { name: "Danh sách đơn pha chế", url: "/Brewing" },
+                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Barista": [
+                { name: "Danh sách đơn pha chế", url: "/Brewing" },
+                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Busser": [
+                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Chuyển ca", url: "/ShiftChange/EmployeeIndex" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ]
         };
@@ -595,12 +651,21 @@
             }
 
             const cleanVal = removeVietnameseDiacritics(val);
-            const pages = rolePages[currentUserRole] || [];
+            const roleSpecific = rolePages[currentUserRole] || [];
+            const pages = roleSpecific.length > 0 ? roleSpecific : allPages;
             
             filteredSuggestions = pages.filter(p => 
                 removeVietnameseDiacritics(p.name).includes(cleanVal) || 
                 removeVietnameseDiacritics(p.url).includes(cleanVal)
             );
+
+            if (filteredSuggestions.length === 0) {
+                // If role specific had no match, fallback to allPages
+                filteredSuggestions = allPages.filter(p => 
+                    removeVietnameseDiacritics(p.name).includes(cleanVal) || 
+                    removeVietnameseDiacritics(p.url).includes(cleanVal)
+                );
+            }
 
             if (filteredSuggestions.length === 0) {
                 listEl.classList.add('d-none');
