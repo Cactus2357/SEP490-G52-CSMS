@@ -88,7 +88,7 @@
                                                    item.Status == "Đang chuẩn bị xuất" ? "table-primary fw-semibold" :
                                                    item.Status == "Đã xuất kho" ? "table-info fw-semibold" :
                                                    item.Status == "Đã hoàn thành" ? "table-success" :
-                                                   item.Status == "Từ chối" ? "table-danger" : "table-secondary";
+                                                   item.Status == "Từ chối" ? "table-danger" : "";
 
                                 <tr class="@rowStyle" data-code="@item.RequestCode">
                                     <td class="ps-3 fw-bold">@item.RequestCode</td>
@@ -96,8 +96,8 @@
                                     <td>@item.Branch?.BranchName</td>
                                     <td class="status-cell"><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
                                     <td class="text-center pe-3">
-                                        <button type="button" class="btn btn-sm btn-link text-decoration-none fw-bold" onclick="viewExportRequestDetails('@item.RequestCode')">
-                                            [Chi tiết]
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="viewExportRequestDetails('@item.RequestCode')">
+                                            Chi tiết
                                         </button>
                                     </td>
                                 </tr>

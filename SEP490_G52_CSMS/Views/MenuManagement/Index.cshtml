@@ -50,7 +50,7 @@
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            string rowClass = item.IsActive ? "table-success" : "table-secondary";
+                            string rowClass = item.IsActive ? "table-success" : "";
 
                             <tr class="@rowClass" onclick="selectRow(this, @item.MenuId)" style="cursor: pointer;">
                                 <td class="ps-3 fw-semibold text-dark">@item.MenuName</td>
@@ -66,8 +66,8 @@
                                     }
                                 </td>
                                 <td class="text-center pe-3">
-                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0 me-2" onclick="openMenuDetailModal(@item.MenuId)">
-                                        [Xem chi tiết]
+                                    <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0 me-2" onclick="openMenuDetailModal(@item.MenuId)">
+                                        Chi tiết
                                     </button>
                                     <form asp-action="ToggleStatus" asp-route-id="@item.MenuId" method="post" class="d-inline">
                                         @if (item.IsActive)

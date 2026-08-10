@@ -1,4 +1,4 @@
-@model SEP490_G52_CSMS.Controllers.WarehouseIndexViewModel
+    @model SEP490_G52_CSMS.Controllers.WarehouseIndexViewModel
 
 @{
     ViewData["Title"] = "Danh Sách Nguyên Vật Liệu";
@@ -84,13 +84,13 @@
                             <thead class="table-light">
                                 <tr>
                                     <th style="width: 8%;" class="ps-3">STT</th>
-                                    <th style="width: 15%;">Mã NgL</th>
-                                    <th style="width: 25%;">Tên nguyên liệu</th>
-                                    <th style="width: 15%;">Kiểu NgL</th>
-                                    <th style="width: 15%;">Loại NgL</th>
-                                    <th style="width: 10%;">Đơn vị</th>
-                                    <th style="width: 12%;">Tồn kho</th>
-                                    <th style="width: 10%;" class="text-center pe-3">Hành động</th>
+                                    <th style="width: 15%;">Mã nguyên liệu</th>
+                                    <th style="width: 21%;">Tên nguyên liệu</th>
+                                    <th style="width: 15%;">Kiểu nguyên liệu</th>
+                                    <th style="width: 15%;">Loại nguyên liệu</th>
+                                    <th style="width: 7%;">Đơn vị</th>
+                                    <th style="width: 10%;">Tồn kho</th>
+                                    <th style="width: 19%;" class="text-center pe-3">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -110,7 +110,7 @@
                                             <td class="fw-semibold">@m.StockQuantity.ToString("G29") @m.StorageUnit</td>
                                             <td class="text-center pe-3">
                                                 <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none" onclick="loadMaterialDetails(@m.MaterialId)">
-                                                    [Chi tiết]
+                                                    Chi tiết
                                                 </button>
                                             </td>
                                         </tr>

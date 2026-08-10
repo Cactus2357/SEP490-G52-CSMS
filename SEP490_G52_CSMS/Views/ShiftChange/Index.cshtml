@@ -73,7 +73,7 @@
                     {
                         string rowStyle = req.Status == "Pending" ? "table-warning" :
                                            req.Status == "Approved" ? "table-success" :
-                                           req.Status == "Rejected" ? "table-danger" : "table-secondary";
+                                           req.Status == "Rejected" ? "table-danger" : "";
 
                         <tr class="@rowStyle">
                             <td class="fw-semibold">@(req.RequestingEmployee?.FullName ?? $"NV#{req.RequestingEmployeeId}")</td>
@@ -81,8 +81,8 @@
                             <td>@req.SubmittedAt.ToString("dd/MM/yyyy")</td>
                             <td><span class="badge @GetStatusBadgeClass(req.Status) rounded-pill px-3 py-1.5">@GetStatusLabel(req.Status)</span></td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-link text-primary fw-bold p-0 text-decoration-none" onclick="showShiftChangeDetail(@req.RequestId)">
-                                    [Xem chi tiết]
+                                <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="showShiftChangeDetail(@req.RequestId)">
+                                    Chi tiết
                                 </button>
                             </td>
                         </tr>

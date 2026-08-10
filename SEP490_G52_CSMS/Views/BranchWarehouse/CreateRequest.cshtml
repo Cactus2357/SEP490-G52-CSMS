@@ -260,11 +260,15 @@
 
             let exists = requestItems.find(item => item.materialId === selectedMatId);
             if (exists) {
-                if (confirm('Nguyên liệu này đã có trong đơn. Cập nhật số lượng thay vì thêm dòng mới?')) {
-                    exists.quantity += qty;
-                    renderRequestTable();
-                    resetForm();
-                }
+                showConfirmModal(
+                    'Cập nhật số lượng',
+                    'Nguyên liệu này đã có trong đơn. Cập nhật số lượng thay vì thêm dòng mới?',
+                    function() {
+                        exists.quantity += qty;
+                        renderRequestTable();
+                        resetForm();
+                    }
+                );
                 return;
             }
 
@@ -368,9 +372,13 @@
         }
 
         function cancelRequestDraft() {
-            if (confirm('Lưu ý: Tất cả các dòng yêu cầu đang lập sẽ bị xóa bỏ. Bạn có chắc chắn muốn hủy?')) {
-                window.location.href = '/BranchWarehouse/Index';
-            }
+            showConfirmModal(
+                'Hủy đơn yêu cầu',
+                'Tất cả các dòng yêu cầu đang lập sẽ bị xóa bỏ. Bạn có chắc chắn muốn hủy?',
+                function() {
+                    window.location.href = '/BranchWarehouse/Index';
+                }
+            );
         }
 
         function submitSupplyRequest() {

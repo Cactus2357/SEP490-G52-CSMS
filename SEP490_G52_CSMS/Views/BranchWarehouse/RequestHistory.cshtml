@@ -91,7 +91,7 @@
                                                    item.Status == "Đang chuẩn bị xuất" ? "table-primary" :
                                                    item.Status == "Đã xuất kho" ? "table-info" :
                                                    item.Status == "Đã hoàn thành" ? "table-success" :
-                                                   item.Status == "Từ chối" ? "table-danger" : "table-secondary";
+                                                   item.Status == "Từ chối" ? "table-danger" : "";
 
                                 <tr class="@rowStyle">
                                     <td class="ps-3 fw-bold text-dark">@item.RequestCode</td>
@@ -99,8 +99,8 @@
                                     <td><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
                                     <td class="text-secondary small">@item.WarehouseNote</td>
                                     <td class="text-center pe-3">
-                                        <button type="button" class="btn btn-sm btn-link text-decoration-none fw-bold" onclick="viewRequestDetails('@item.RequestCode')">
-                                            [Xem chi tiết]
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="viewRequestDetails('@item.RequestCode')">
+                                            Chi tiết
                                         </button>
                                     </td>
                                 </tr>
@@ -354,27 +354,31 @@
         // --- 2. CANCEL REQUEST ---
         function submitCancelRequest() {
             if (!activeRequestCode) return;
-            if (!confirm('Bạn có chắc chắn muốn hủy đơn yêu cầu nhập kho này?')) return;
-
-            $.ajax({
-                url: '/BranchWarehouse/CancelRequest',
-                type: 'POST',
-                data: { code: activeRequestCode },
-                success: function(res) {
-                    if (res.success) {
-                        $('#requestDetailModal').modal('hide');
-                        showToast(res.message, 'success');
-                        setTimeout(function() {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        showToast(res.message, 'danger');
-                    }
-                },
-                error: function() {
-                    showToast('Lỗi kết nối máy chủ khi hủy đơn.', 'danger');
+            showConfirmModal(
+                'Hủy đơn yêu cầu',
+                'Bạn có chắc chắn muốn hủy đơn yêu cầu nhập kho này?',
+                function() {
+                    $.ajax({
+                        url: '/BranchWarehouse/CancelRequest',
+                        type: 'POST',
+                        data: { code: activeRequestCode },
+                        success: function(res) {
+                            if (res.success) {
+                                $('#requestDetailModal').modal('hide');
+                                showToast(res.message, 'success');
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1000);
+                            } else {
+                                showToast(res.message, 'danger');
+                            }
+                        },
+                        error: function() {
+                            showToast('Lỗi kết nối máy chủ khi hủy đơn.', 'danger');
+                        }
+                    });
                 }
-            });
+            );
         }
 
         // --- 3. CONFIRM RECEIPT ---

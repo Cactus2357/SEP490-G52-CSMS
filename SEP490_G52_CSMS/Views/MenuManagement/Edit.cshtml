@@ -4,74 +4,102 @@
     ViewData["Title"] = "Chỉnh sửa thực đơn";
 }
 
-<div class="container-fluid mt-4">
-    <div class="d-flex align-items-center mb-4">
-        <a asp-action="Index" class="text-dark mr-3" style="font-size: 1.5rem; text-decoration: none;">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        <h3 class="mb-0 fw-bold ms-2">Chỉnh sửa thực đơn</h3>
+<div class="container-fluid mt-3 px-4 pb-5">
+    <!-- Header Section -->
+    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
+        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <a asp-action="Index" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0" style="width: 38px; height: 38px;">
+                    <i class="bi bi-arrow-left fs-5"></i>
+                </a>
+                <div>
+                    <span class="text-muted small">Chi nhánh / Thực đơn / Chỉnh sửa</span>
+                    <h4 class="fw-bold m-0 text-dark">CHỈNH SỬA THỰC ĐƠN: @Model.MenuName</h4>
+                </div>
+            </div>
+        </div>
     </div>
 
     <form asp-action="Edit" method="post" id="editForm">
         <input type="hidden" asp-for="MenuId" />
         <input type="hidden" asp-for="MenuName" />
 
-        <div class="row" style="border: 1px solid #000; padding: 15px; margin: 0 5px;">
-            <!-- Cột trái: Thông tin sản phẩm -->
-            <div class="col-md-6 border-end border-dark">
-                <h4 class="fw-bold mb-4">Thông tin sản phẩm</h4>
-                
-                <div class="d-flex align-items-center mb-3">
-                    <label class="me-3 mb-0">Thể loại</label>
-                    <select id="categoryFilter" class="form-select w-auto border-dark rounded-0" onchange="loadProducts()">
-                        <option value="">chọn thể loại sản phẩm</option>
-                        @if (ViewBag.Categories != null)
-                        {
-                            foreach (var cat in ViewBag.Categories)
-                            {
-                                <option value="@cat.CategoryId">@cat.CategoryName</option>
-                            }
-                        }
-                    </select>
-                </div>
+        <!-- 2 Columns Product Selection Grid -->
+        <div class="row g-4 mb-4">
+            <!-- Left Column: Available Products -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 rounded-3 h-100">
+                    <div class="card-header bg-body-tertiary py-3 border-0 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold m-0 text-dark"><i class="bi bi-grid-fill me-2 text-primary"></i>Danh sách sản phẩm</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Lọc theo thể loại</label>
+                            <select id="categoryFilter" class="form-select rounded-3" onchange="loadProducts()">
+                                <option value="">Tất cả thể loại sản phẩm</option>
+                                @if (ViewBag.Categories != null)
+                                {
+                                    foreach (var cat in ViewBag.Categories)
+                                    {
+                                        <option value="@cat.CategoryId">@cat.CategoryName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
 
-                <div class="mb-2">Sản phẩm</div>
-                <div id="productsContainer" style="max-height: 400px; overflow-y: auto;">
-                    <!-- Sẽ load từ AJAX -->
+                        <!-- Products Table Container -->
+                        <div id="productsContainer" style="max-height: 440px; overflow-y: auto;">
+                            <!-- Loaded via AJAX -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Cột phải: Sản phẩm đã chọn -->
-            <div class="col-md-6 position-relative">
-                <h4 class="fw-bold mb-4">Sản phẩm đã chọn</h4>
-                
-                <div id="stagingContainer" style="max-height: 400px; overflow-y: auto;">
-                    @foreach (var item in Model.Products)
-                    {
-                        <div class="border border-dark p-2 mb-2 d-flex justify-content-between align-items-center" id="staged_@item.ProductId">
-                            <span>@item.ProductName - @item.CategoryName</span>
-                            <button type="button" class="btn btn-sm btn-outline-dark rounded-0" onclick="removeStaging(@item.ProductId)">Loại bỏ</button>
-                            <input type="hidden" name="SelectedProductIds" value="@item.ProductId" />
+            <!-- Right Column: Staging Selected Products -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 rounded-3 h-100 bg-body-tertiary">
+                    <div class="card-header bg-secondary-subtle py-3 border-0 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold m-0 text-dark"><i class="bi bi-check-circle-fill me-2 text-success"></i>Sản phẩm đã chọn vào thực đơn</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="stagingContainer" style="max-height: 440px; overflow-y: auto;">
+                            @foreach (var item in Model.Products)
+                            {
+                                <div class="card border-0 shadow-sm rounded-3 mb-2 p-3 d-flex flex-row justify-content-between align-items-center bg-white" id="staged_@item.ProductId">
+                                    <div>
+                                        <div class="fw-bold text-dark">@item.ProductName</div>
+                                        <span class="badge bg-secondary-subtle text-dark border mt-1">@item.CategoryName</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="removeStaging(@item.ProductId)">
+                                        <i class="bi bi-trash me-1"></i>Loại bỏ
+                                    </button>
+                                    <input type="hidden" name="SelectedProductIds" value="@item.ProductId" />
+                                </div>
+                            }
                         </div>
-                    }
-                </div>
-                
-                <div class="d-flex justify-content-end mt-4 position-absolute bottom-0 end-0 me-3 mb-3">
-                    <a asp-action="Index" class="btn btn-outline-dark rounded-0 me-3 px-4">Hủy</a>
-                    <button type="submit" class="btn btn-outline-dark rounded-0 px-4 fw-bold">Lưu sản phẩm</button>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Form Actions Bottom Bar -->
+        <div class="d-flex justify-content-end gap-3 pt-2">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">Hủy</a>
+            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bi bi-save me-1"></i>Lưu thay đổi
+            </button>
+        </div>
+
     </form>
 </div>
 
 @section Scripts {
     <script>
-        // Mảng chứa các product id đã chọn để tiện kiểm tra
         var selectedProductIds = [];
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Lấy danh sách ID đã có sẵn
             document.querySelectorAll('input[name="SelectedProductIds"]').forEach(function(input) {
                 selectedProductIds.push(input.value.toString());
             });
@@ -90,7 +118,6 @@
                 });
         }
 
-        // Được gọi từ nút "Thêm sản phẩm" trong partial view
         function addProductToStaging(btn) {
             var tr = btn.closest('tr');
             var pId = tr.getAttribute('data-product-id');
@@ -98,26 +125,32 @@
             var cName = tr.getAttribute('data-category-name');
 
             if (selectedProductIds.includes(pId.toString())) {
-                alert('Sản phẩm này đã được chọn!');
+                showToast('Sản phẩm này đã có trong thực đơn!', 'warning');
                 return;
             }
 
             selectedProductIds.push(pId.toString());
 
-            var container = document.getElementById('stagingContainer');
             var div = document.createElement('div');
-            div.className = "border border-dark p-2 mb-2 d-flex justify-content-between align-items-center";
-            div.id = "staged_" + pId;
+            div.className = 'card border-0 shadow-sm rounded-3 mb-2 p-3 d-flex flex-row justify-content-between align-items-center bg-white';
+            div.id = 'staged_' + pId;
             div.innerHTML = `
-                <span>${pName} - ${cName}</span>
-                <button type="button" class="btn btn-sm btn-outline-dark rounded-0" onclick="removeStaging(${pId})">Loại bỏ</button>
+                <div>
+                    <div class="fw-bold text-dark">${pName}</div>
+                    <span class="badge bg-secondary-subtle text-dark border mt-1">${cName}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="removeStaging('${pId}')">
+                    <i class="bi bi-trash me-1"></i>Loại bỏ
+                </button>
                 <input type="hidden" name="SelectedProductIds" value="${pId}" />
             `;
-            container.appendChild(div);
+
+            document.getElementById('stagingContainer').appendChild(div);
+            showToast(`Đã thêm "${pName}" vào thực đơn.`, 'success');
         }
 
         function removeStaging(pId) {
-            var el = document.getElementById("staged_" + pId);
+            var el = document.getElementById('staged_' + pId);
             if (el) {
                 el.remove();
                 selectedProductIds = selectedProductIds.filter(id => id !== pId.toString());

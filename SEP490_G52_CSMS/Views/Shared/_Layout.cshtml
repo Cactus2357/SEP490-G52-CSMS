@@ -236,8 +236,8 @@
                                                     <p class="m-0 mt-1 text-secondary text-wrap" style="font-size: 0.78rem; line-height: 1.35;">@n.Message</p>
                                                     @if (!string.IsNullOrEmpty(n.ResourceUrl))
                                                     {
-                                                        <span class="small text-primary" style="font-size: 0.72rem;">
-                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết
+                                                        <span class="small text-primary fw-bold text-decoration-none" style="font-size: 0.72rem;">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Chi tiết
                                                         </span>
                                                     }
                                                 </div>
@@ -544,34 +544,6 @@
         }
 
         const currentUserRole = '@(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")';
-        const allPages = [
-            { name: "Quản lý - quản lý chi nhánh", url: "/BranchManager" },
-            { name: "Quản lý chi nhánh", url: "/Branch" },
-            { name: "Quản lý danh mục", url: "/ProductCategories" },
-            { name: "Quản lý sản phẩm", url: "/Product" },
-            { name: "Báo cáo doanh thu", url: "/Reporting/Revenue" },
-            { name: "Xuất file báo cáo", url: "/Reporting/Export" },
-            { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
-            { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
-            { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
-            { name: "Quản lý nhân viên", url: "/Employee" },
-            { name: "Quản lý lịch làm việc", url: "/WorkSchedule" },
-            { name: "Quản lý thực đơn", url: "/MenuManagement" },
-            { name: "Quản lý đổi ca", url: "/ShiftChange" },
-            { name: "Bàn giao ca", url: "/ShiftHandover" },
-            { name: "Quản lý đơn đặt hàng", url: "/OrderManagement" },
-            { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
-            { name: "Đặt hàng kho", url: "/BranchWarehouse/CreateRequest" },
-            { name: "Lịch sử đặt", url: "/BranchWarehouse/RequestHistory" },
-            { name: "Bán hàng POS (Tạo đơn)", url: "/SaleManagement/CreateOrder" },
-            { name: "Lịch sử đơn hàng", url: "/SaleManagement/OrderHistory" },
-            { name: "Kết ca & Kiểm đếm tiền", url: "/CashHandover/SubmitHandover" },
-            { name: "Danh sách đơn pha chế", url: "/Brewing" },
-            { name: "Xin nghỉ phép", url: "/LeaveRequest" },
-            { name: "Yêu cầu đổi ca", url: "/ShiftChange/EmployeeIndex" },
-            { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
-        ];
-
         const rolePages = {
             "RManager": [
                 { name: "Quản lý - quản lý chi nhánh", url: "/BranchManager" },
@@ -597,6 +569,7 @@
             "BranchManager": [
                 { name: "Quản lý nhân viên", url: "/Employee" },
                 { name: "Quản lý lịch làm việc", url: "/WorkSchedule" },
+                { name: "Quản lý nghỉ phép", url: "/LeaveRequest/ManagerIndex" },
                 { name: "Quản lý thực đơn", url: "/MenuManagement" },
                 { name: "Quản lý đổi ca", url: "/ShiftChange" },
                 { name: "Bàn giao ca", url: "/ShiftHandover" },
@@ -651,21 +624,12 @@
             }
 
             const cleanVal = removeVietnameseDiacritics(val);
-            const roleSpecific = rolePages[currentUserRole] || [];
-            const pages = roleSpecific.length > 0 ? roleSpecific : allPages;
+            const pages = rolePages[currentUserRole] || [];
             
             filteredSuggestions = pages.filter(p => 
                 removeVietnameseDiacritics(p.name).includes(cleanVal) || 
                 removeVietnameseDiacritics(p.url).includes(cleanVal)
             );
-
-            if (filteredSuggestions.length === 0) {
-                // If role specific had no match, fallback to allPages
-                filteredSuggestions = allPages.filter(p => 
-                    removeVietnameseDiacritics(p.name).includes(cleanVal) || 
-                    removeVietnameseDiacritics(p.url).includes(cleanVal)
-                );
-            }
 
             if (filteredSuggestions.length === 0) {
                 listEl.classList.add('d-none');

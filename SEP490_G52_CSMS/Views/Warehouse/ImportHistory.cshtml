@@ -59,10 +59,10 @@
                             <th style="width: 15%;" class="ps-3">Mã phiếu</th>
                             <th style="width: 15%;">Ngày nhập</th>
                             <th style="width: 25%;">Nhà cung cấp</th>
-                            <th style="width: 20%;">Nguyên liệu</th>
-                            <th style="width: 12%;">Số lượng nhập</th>
+                            <th style="width: 17%;">Nguyên liệu</th>
+                            <th style="width: 10%;">Số lượng nhập</th>
                             <th style="width: 13%;">Thành tiền</th>
-                            <th style="width: 10%;" class="text-center pe-3">Hành động</th>
+                            <th style="width: 15%;" class="text-center pe-3">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,8 +78,8 @@
                                     <td>@item.Quantity.ToString("G29") @item.Material?.StorageUnit</td>
                                     <td class="fw-bold text-success">@item.Amount.ToString("N0") đ</td>
                                     <td class="text-center pe-3">
-                                        <button type="button" class="btn btn-sm btn-link text-decoration-none fw-bold" onclick="viewReceiptDetails('@item.WarehouseReceipt?.ReceiptCode')">
-                                            [Chi tiết]
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="viewReceiptDetails('@item.WarehouseReceipt?.ReceiptCode')">
+                                            Chi tiết
                                         </button>
                                     </td>
                                 </tr>
@@ -241,7 +241,7 @@
                     $('#receiptDetailModal').modal('show');
                 },
                 error: function() {
-                    alert('Không thể tải chi tiết phiếu nhập. Vui lòng thử lại.');
+                    showToast('Không thể tải chi tiết phiếu nhập. Vui lòng thử lại.', 'danger');
                 }
             });
         }

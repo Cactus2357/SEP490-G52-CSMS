@@ -29,7 +29,7 @@
             @foreach (var item in Model.Products)
             {
                 bool isActive = item.Status == "Active" || item.Status == "Hoạt động";
-                string rowClass = isActive ? "" : "table-secondary text-muted";
+                string rowClass = isActive ? "" : "text-muted";
 
                 <tr class="@rowClass">
                     <td class="fw-semibold">
