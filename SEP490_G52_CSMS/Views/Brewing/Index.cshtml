@@ -47,16 +47,19 @@
                         }
                         else
                         {
+                            int orderIdx = 0;
                             foreach (var o in Model)
                             {
                                 bool isBrewing = o.BrewingStatus == "Brewing in Progress";
                                 string rowClass = isBrewing ? "table-primary fw-semibold" : "table-warning fw-semibold";
                                 string badgeClass = isBrewing ? "bg-primary text-white" : "bg-warning text-dark";
+                                bool isExpanded = (orderIdx == 0);
+                                orderIdx++;
 
                                 <tr class="brewing-row @rowClass" data-name="@o.RecipientName.ToLower()" data-id="@o.OrderId.ToLower()" data-code="@o.OrderId">
                                     <td class="ps-3">
                                         <button type="button" class="btn btn-sm btn-link text-dark p-0 toggle-nested-btn" onclick="toggleNestedItems('@o.OrderId')">
-                                            <i class="bi bi-chevron-down" id="chevron-@o.OrderId"></i>
+                                            <i class="bi @(isExpanded ? "bi-chevron-up" : "bi-chevron-down")" id="chevron-@o.OrderId"></i>
                                         </button>
                                     </td>
                                     <td class="fw-bold text-primary">@o.OrderId</td>
@@ -84,7 +87,7 @@
                                 </tr>
 
                                 <!-- Nested Table Row -->
-                                <tr class="nested-items-row" id="nested-row-@o.OrderId" style="display: none;">
+                                <tr class="nested-items-row" id="nested-row-@o.OrderId" style="@(isExpanded ? "" : "display: none;")">
                                     <td colspan="6" class="p-0 border-0">
                                         <div class="bg-body-tertiary p-3 border-bottom shadow-inner">
                                             <div class="table-responsive bg-white rounded border">
@@ -135,6 +138,10 @@
 @section Scripts {
     <script>
         const expandedOrderIds = new Set();
+        @if (Model.Any())
+        {
+            @:expandedOrderIds.add('@Model.First().OrderId');
+        }
 
         function toggleNestedItems(orderId) {
             let row = $(`#nested-row-${orderId}`);
@@ -222,6 +229,7 @@
                 type: 'GET',
                 success: function(orders) {
                     if (!orders || orders.length === 0) {
+                        expandedOrderIds.clear();
                         $('#brewingTableBody').html(`
                             <tr>
                                 <td colspan="6" class="text-center text-muted py-5">
@@ -231,6 +239,12 @@
                             </tr>
                         `);
                         return;
+                    }
+
+                    // Auto-expand the top order in the queue if no active order is currently expanded
+                    let hasExpandedActiveOrder = orders.some(o => expandedOrderIds.has(o.orderId));
+                    if (!hasExpandedActiveOrder && orders.length > 0) {
+                        expandedOrderIds.add(orders[0].orderId);
                     }
 
                     let search = $('#brewingSearch').val().toLowerCase().trim();
