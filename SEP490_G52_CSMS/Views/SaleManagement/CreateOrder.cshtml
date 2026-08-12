@@ -94,7 +94,8 @@
                             <thead>
                                 <tr class="border-bottom text-muted small">
                                     <th>Tên</th>
-                                    <th>Giá Tiền</th>
+                                    <th>Đơn Giá</th>
+                                    <th class="text-end">Thành Tiền</th>
                                     <th class="text-end">Hành Động</th>
                                 </tr>
                             </thead>
@@ -291,12 +292,13 @@
                 html += `
                     <tr>
                         <td class="align-middle border-0 py-3 fw-semibold text-dark">${item.name}</td>
-                        <td class="align-middle border-0 py-3 text-secondary">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td class="align-middle border-0 py-3 text-secondary text-nowrap">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td class="align-middle border-0 py-3 text-end fw-bold text-success text-nowrap">${itemTotal.toLocaleString('vi-VN')} đ</td>
                         <td class="align-middle border-0 py-3 text-end">
                             <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
                                 <div>${sizeOptions}</div>
                                 <div>
-                                    <input type="number" class="form-control form-control-sm text-center" style="width: 75px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
+                                    <input type="number" class="form-control form-control-sm text-center" style="width: 70px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger px-2" onclick="removeFromCart('${item.cartId}')">
                                     <i class="bi bi-trash"></i>
