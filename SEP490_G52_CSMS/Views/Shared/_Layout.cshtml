@@ -12,27 +12,36 @@
         return (controllerMatch && actionMatch) ? "active" : "";
     }
 
+    Func<string?, string> translateRole = role => role switch
+    {
+        "RManager" => "Tổng công ty",
+        "WarehouseManager" or "WManager" => "Quản lý kho",
+        "BranchManager" => "Quản lý chi nhánh",
+        "Cashier" => "Thu ngân",
+        "Bartender" or "Barista" => "Pha chế",
+        "Busser" => "Phục vụ",
+        "Staff" or "Employee" => "Nhân viên",
+        _ => role ?? "Nhân viên"
+    };
+
+    string? userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
     var displayTitle = "Khách";
     if (User.Identity != null && User.Identity.IsAuthenticated)
     {
-        var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
         if (userRole == "RManager")
         {
             displayTitle = "Tổng công ty";
         }
-        else if (userRole == "WarehouseManager")
+        else if (userRole == "WarehouseManager" || userRole == "WManager")
         {
             displayTitle = "Kho tổng";
         }
-        else if (userRole == "BranchManager")
+        else
         {
             var branchId = User.FindFirst("BranchId")?.Value;
             var branch = !string.IsNullOrEmpty(branchId) ? DbContext.Branches.FirstOrDefault(b => b.BranchId == branchId) : null;
-            displayTitle = branch?.BranchName ?? "Chi nhánh";
-        }
-        else
-        {
-            displayTitle = userRole ?? "Nhân viên";
+            displayTitle = branch?.BranchName ?? translateRole(userRole);
         }
     }
 
@@ -42,7 +51,6 @@
     {
         int userId = 0;
         int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out userId);
-        var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
         notificationsList = DbContext.Notifications
             .Where(n => !n.IsRead && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)))
@@ -170,27 +178,26 @@
             <header class="top-header">
                 <div class="header-left position-relative" style="width: 320px;">
                     <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0 rounded-start-pill text-secondary py-1.5 px-3">
+                        <span class="input-group-text border-end-0 rounded-start-pill header-search-icon py-1.5 px-3">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" id="navbarSearchInput" class="form-control bg-light border-start-0 rounded-end-pill py-1.5" placeholder="Tìm kiếm trang..." autocomplete="off" oninput="handleNavbarSearch(this.value)" style="font-size: 0.9rem;">
+                        <input type="text" id="navbarSearchInput" class="form-control border-start-0 rounded-end-pill header-search-input py-1.5" placeholder="Tìm kiếm trang..." autocomplete="off" oninput="handleNavbarSearch(this.value)" style="font-size: 0.9rem;">
                     </div>
                     <div id="navbarSearchSuggestions" class="list-group position-absolute w-100 mt-1 shadow-lg d-none" style="top: 100%; left: 0; z-index: 2000; max-height: 250px; overflow-y: auto; border-radius: 8px;">
                         <!-- Suggestions will render here -->
                     </div>
                 </div>
                 <div class="header-branch">
-                    <span class="h5 fw-bold text-dark mb-0">@displayTitle</span>
+                    <span class="h5 fw-bold mb-0 header-title-text">@displayTitle</span>
                 </div>
                 <div class="header-right">
                     <!-- =========================================================
                          NOTIFICATION BELL DROPDOWN
                     ========================================================== -->
                     <div class="dropdown me-2" id="notificationDropdownWrapper">
-                        <button class="btn btn-link text-dark position-relative p-0 header-icon-btn border-0 text-decoration-none dropdown-toggle no-caret rounded-circle d-flex align-items-center justify-content-center"
-                                type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationBellBtn"
-                                style="width: 40px; height: 40px; background-color: #f8f9fa;">
-                            <i class="bi bi-bell fs-5 text-secondary"></i>
+                        <button class="btn btn-link position-relative p-0 header-icon-btn border-0 text-decoration-none dropdown-toggle no-caret rounded-circle d-flex align-items-center justify-content-center"
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationBellBtn">
+                            <i class="bi bi-bell fs-5"></i>
                             @if (unreadCount > 0)
                             {
                                 <span class="position-absolute badge rounded-pill bg-danger"
@@ -201,7 +208,7 @@
                             }
                         </button>
 
-                        <div class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3"
+                        <div class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3 navbar-dropdown-menu"
                              style="width: 390px; z-index: 1060;"
                              id="notificationDropdownMenu">
 
@@ -231,7 +238,7 @@
                                                             <span class="d-inline-block rounded-circle bg-primary flex-shrink-0"
                                                                   style="width: 8px; height: 8px;"></span>
                                                         }
-                                                        <strong class="text-dark" style="font-size: 0.82rem;">@n.Title</strong>
+                                                        <strong class="notif-item-title" style="font-size: 0.82rem;">@n.Title</strong>
                                                     </div>
                                                     <p class="m-0 mt-1 text-secondary text-wrap" style="font-size: 0.78rem; line-height: 1.35;">@n.Message</p>
                                                     @if (!string.IsNullOrEmpty(n.ResourceUrl))
@@ -253,7 +260,7 @@
                             </ul>
 
                             <!-- Footer -->
-                            <div class="border-top px-3 py-2 d-flex justify-content-between align-items-center bg-light rounded-bottom-3">
+                            <div class="border-top px-3 py-2 d-flex justify-content-between align-items-center notif-footer rounded-bottom-3">
                                 <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary"
                                         onclick="openAllNotificationsModal(); event.stopPropagation();">
                                     <i class="bi bi-list-ul me-1"></i>Xem tất cả
@@ -273,12 +280,12 @@
                                 <i class="bi bi-person-fill"></i>
                             </div>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end navbar-dropdown-menu">
                             @if (User.Identity != null && User.Identity.IsAuthenticated)
                             {
-                                <li class="dropdown-header text-dark">
-                                    <div class="fw-bold">@User.Identity.Name</div>
-                                    <small class="text-muted">Vai trò: @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</small>
+                                <li class="dropdown-header">
+                                    <div class="fw-bold user-name-text">@User.Identity.Name</div>
+                                    <small class="user-role-text text-muted">Vai trò: @translateRole(userRole)</small>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
@@ -289,7 +296,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <div class="px-3 py-2 d-flex align-items-center justify-content-between">
-                                        <div class="small text-muted fw-semibold m-0"><i class="bi bi-moon-stars me-1.5"></i>Giao diện</div>
+                                        <div class="small user-theme-text text-muted fw-semibold m-0"><i class="bi bi-moon-stars me-1.5"></i>Giao diện</div>
                                         <div class="form-check form-switch m-0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="themeToggleSwitch" onclick="toggleTheme()" style="cursor: pointer;">
                                         </div>
@@ -642,7 +649,7 @@
             filteredSuggestions.forEach((item, index) => {
                 itemsHtml += `
                     <a href="${item.url}" class="list-group-item list-group-item-action py-2 px-3 small border-0 d-flex justify-content-between align-items-center" id="nav-sugg-${index}">
-                        <span class="fw-semibold text-dark">${item.name}</span>
+                        <span class="fw-semibold nav-sugg-title">${item.name}</span>
                         <span class="text-muted" style="font-size: 0.75rem;">${item.url}</span>
                     </a>
                 `;

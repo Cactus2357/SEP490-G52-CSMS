@@ -19,6 +19,13 @@
         vertical-align: stretch !important;
         padding: 0 !important;
     }
+    .today-cell {
+        background-color: rgba(13, 110, 253, 0.08) !important;
+    }
+    .today-header {
+        background-color: rgba(13, 110, 253, 0.15) !important;
+        border-bottom: 3px solid #0d6efd !important;
+    }
 
     .cell-container {
         display: flex;
@@ -121,7 +128,7 @@
                             var dayDate = Model.WeekStartDate.AddDays(d);
                             bool isToday = dayDate.Date == DateTime.Today;
 
-                            <th style="width: 12.14%;" class="py-2 @(isToday ? "bg-primary-subtle border-primary" : "")">
+                            <th style="width: 12.14%;" class="py-2 @(isToday ? "today-header" : "")">
                                 <div class="fw-bold @(isToday ? "text-primary" : "text-dark")">
                                     @dayNames[d]
                                     @* @if (isToday)
@@ -147,7 +154,7 @@
                                 var dayDate = Model.WeekStartDate.AddDays(d);
                                 bool isToday = dayDate.Date == DateTime.Today;
 
-                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break @(isToday ? "bg-primary-subtle bg-opacity-10" : "")"></td>
+                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break @(isToday ? "today-cell" : "")"></td>
                             }
                         </tr>
                     }
@@ -444,7 +451,7 @@
                 if (!id || Number.isNaN(id)) return;
 
                 if (list.some(x => x.id === id)) {
-                    alert('Nhân viên này đã có trong danh sách.');
+                    showToast('Nhân viên này đã có trong danh sách.', 'warning');
                     return;
                 }
 
@@ -463,7 +470,7 @@
                     const cashierId = cashierSelect ? parseInt(cashierSelect.value, 10) : NaN;
 
                     if (!cashierId || Number.isNaN(cashierId)) {
-                        alert('Vui lòng chọn Nhân viên thu ngân cho ca này.');
+                        showToast('Vui lòng chọn Nhân viên thu ngân cho ca này.', 'warning');
                         return;
                     }
 
@@ -487,9 +494,13 @@
             const btnCancelAll = document.getElementById('btnCancelAll');
             if (btnCancelAll) {
                 btnCancelAll.addEventListener('click', () => {
-                    if (confirm('Bạn có chắc muốn hủy? Toàn bộ dữ liệu chưa lưu sẽ bị mất.')) {
-                        window.location.href = '/WorkSchedule/Index?weekStart=' + weekStartDate;
-                    }
+                    showConfirmModal(
+                        'Hủy thay đổi',
+                        'Bạn có chắc muốn hủy? Toàn bộ dữ liệu chưa lưu sẽ bị mất.',
+                        function() {
+                            window.location.href = '/WorkSchedule/Index?weekStart=' + weekStartDate;
+                        }
+                    );
                 });
             }
 
@@ -498,13 +509,13 @@
             if (btnConfirmAll) {
                 btnConfirmAll.addEventListener('click', async () => {
                     if (!branchId) {
-                        alert('Không xác định được chi nhánh. Không thể lưu lịch làm việc.');
+                        showToast('Không xác định được chi nhánh. Không thể lưu lịch làm việc.', 'danger');
                         return;
                     }
 
                     const cellKeys = Array.from(modifiedCells);
                     if (cellKeys.length === 0) {
-                        alert('Không có thay đổi nào để lưu.');
+                        showToast('Không có thay đổi nào để lưu.', 'warning');
                         return;
                     }
 
@@ -572,10 +583,10 @@
                     }
 
                     if (errors.length > 0) {
-                        alert('Một số ca không thể lưu:\n' + errors.join('\n'));
+                        showToast('Một số ca không thể lưu: ' + errors.join('; '), 'danger');
                     } else {
-                        alert('Lưu lịch làm việc theo tuần thành công!');
-                        window.location.reload();
+                        showToast('Lưu lịch làm việc theo tuần thành công!', 'success');
+                        setTimeout(() => window.location.reload(), 1000);
                     }
                 });
             }

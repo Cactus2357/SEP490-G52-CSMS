@@ -672,7 +672,7 @@
             try {
                 const response = await fetch(`/BranchManager/DetailPartial/${employeeId}`);
                 if (!response.ok) {
-                    alert('Lỗi tải thông tin chi tiết.');
+                    showToast('Lỗi tải thông tin chi tiết.', 'danger');
                     return;
                 }
                 const html = await response.text();
@@ -682,7 +682,7 @@
                 detailModalInstance.show();
             } catch (err) {
                 console.error(err);
-                alert('Không thể kết nối máy chủ.');
+                showToast('Không thể kết nối máy chủ.', 'danger');
             }
         }
 
@@ -696,7 +696,7 @@
             try {
                 const response = await fetch(`/BranchManager/UpdatePartial/${employeeId}`);
                 if (!response.ok) {
-                    alert('Lỗi tải form cập nhật.');
+                    showToast('Lỗi tải form cập nhật.', 'danger');
                     return;
                 }
                 const html = await response.text();
@@ -706,7 +706,7 @@
                 updateModalInstance.show();
             } catch (err) {
                 console.error(err);
-                alert('Không thể kết nối máy chủ.');
+                showToast('Không thể kết nối máy chủ.', 'danger');
             }
         }
 
@@ -741,12 +741,12 @@
             const ext  = file.name.split('.').pop().toLowerCase();
 
             if (!UPD_ALLOWED.includes(ext)) {
-                alert('❌ File phải có định dạng .pdf hoặc .jpg');
+                showToast('File phải có định dạng .pdf hoặc .jpg', 'warning');
                 input.value = '';
                 return;
             }
             if (file.size > UPD_MAX_SIZE) {
-                alert('❌ Dung lượng file không được vượt quá 5 MB');
+                showToast('Dung lượng file không được vượt quá 5 MB', 'warning');
                 input.value = '';
                 return;
             }
@@ -946,13 +946,13 @@
             try {
                 const response = await fetch(`/BranchManager/CheckDeactivation/${employeeId}`);
                 if (!response.ok) {
-                    alert('Lỗi tải dữ liệu kiểm tra.');
+                    showToast('Lỗi tải dữ liệu kiểm tra.', 'danger');
                     return;
                 }
                 
                 const result = await response.json();
                 if (!result.success) {
-                    alert(result.errorMessage);
+                    showToast(result.errorMessage, 'danger');
                     return;
                 }
                 
@@ -1012,7 +1012,7 @@
                 
             } catch(err) {
                 console.error(err);
-                alert('Không thể kết nối máy chủ.');
+                showToast('Không thể kết nối máy chủ.', 'danger');
             }
         }
 
@@ -1023,7 +1023,7 @@
             const notes = document.getElementById('deactNotes').value.trim();
             
             if (!reason) {
-                alert('Vui lòng chọn lý do ngừng hoạt động.');
+                showToast('Vui lòng chọn lý do ngừng hoạt động.', 'warning');
                 return;
             }
             
@@ -1043,12 +1043,12 @@
                     showSuccessToast('Đã chuyển tài khoản sang trạng thái ngừng hoạt động.');
                     setTimeout(() => window.location.reload(), 1200);
                 } else {
-                    alert(result.errorMessage || 'Lỗi vô hiệu hóa tài khoản.');
+                    showToast(result.errorMessage || 'Lỗi vô hiệu hóa tài khoản.', 'danger');
                     btn.disabled = false;
                 }
             } catch(err) {
                 console.error(err);
-                alert('Không thể kết nối máy chủ.');
+                showToast('Không thể kết nối máy chủ.', 'danger');
                 btn.disabled = false;
             }
         }

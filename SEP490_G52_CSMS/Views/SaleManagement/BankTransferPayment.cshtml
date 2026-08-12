@@ -154,30 +154,34 @@
             .then(res => res.json())
             .then(data => {
                 if (!data.success) {
-                    alert("Giả lập lỗi: " + data.message);
+                    showToast("Giả lập lỗi: " + data.message, "danger");
                 }
             })
             .catch(err => console.error("Failed to request bank simulation:", err));
         }
 
         function cancelPayment() {
-            if (confirm("Xác nhận hủy giao dịch chuyển khoản này và quay lại màn hình chọn phương thức thanh toán?")) {
-                clearInterval(pollInterval);
-                fetch('@Url.Action("CancelBankTransfer", "SaleManagement")?orderId=' + orderId, {
-                    method: 'POST'
-                })
-                .then(() => {
-                    // Reset Customer Monitor
-                    localStorage.setItem('customer_display_state', JSON.stringify({
-                        mode: 'Idle'
-                    }));
-                    window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
-                })
-                .catch(err => {
-                    console.error(err);
-                    window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
-                });
-            }
+            showConfirmModal(
+                'Hủy giao dịch',
+                'Xác nhận hủy giao dịch chuyển khoản này và quay lại màn hình chọn phương thức thanh toán?',
+                function() {
+                    clearInterval(pollInterval);
+                    fetch('@Url.Action("CancelBankTransfer", "SaleManagement")?orderId=' + orderId, {
+                        method: 'POST'
+                    })
+                    .then(() => {
+                        // Reset Customer Monitor
+                        localStorage.setItem('customer_display_state', JSON.stringify({
+                            mode: 'Idle'
+                        }));
+                        window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
+                    });
+                }
+            );
         }
 
         function confirmPaymentReceived() {
@@ -201,12 +205,12 @@
                     // Redirect back to main POS
                     window.location.href = '@Url.Action("CreateOrder", "SaleManagement")';
                 } else {
-                    alert("Lỗi hoàn tất thanh toán: " + data.message);
+                    showToast("Lỗi hoàn tất thanh toán: " + data.message, "danger");
                 }
             })
             .catch(err => {
                 console.error("Failed to complete payment receipt:", err);
-                alert("Lỗi kết nối máy chủ.");
+                showToast("Lỗi kết nối máy chủ.", "danger");
             });
         }
     </script>

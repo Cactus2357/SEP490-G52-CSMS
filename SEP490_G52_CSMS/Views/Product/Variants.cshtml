@@ -72,13 +72,13 @@
                                             onclick="openEditModal(@item.VariantId, '@item.SizeVariant', @item.SellingPrice)">
                                         <i class="bi bi-pencil-square fs-5"></i>
                                     </button>
-                                    <form asp-action="DeleteVariant" method="post" class="d-inline ms-2" onsubmit="return confirm('Bạn có chắc chắn muốn xóa biến thể này?');">
-                                        <input type="hidden" name="variantId" value="@item.VariantId" />
-                                        <input type="hidden" name="productId" value="@Model.ProductId" />
-                                        <button type="submit" class="action-btn text-danger border-danger" title="Xóa">
-                                            <i class="bi bi-trash-fill fs-5"></i>
-                                        </button>
-                                    </form>
+                                     <form asp-action="DeleteVariant" method="post" class="d-inline ms-2" onsubmit="return confirmDeleteVariantForm(this);">
+                                         <input type="hidden" name="variantId" value="@item.VariantId" />
+                                         <input type="hidden" name="productId" value="@Model.ProductId" />
+                                         <button type="submit" class="action-btn text-danger border-danger" title="Xóa">
+                                             <i class="bi bi-trash-fill fs-5"></i>
+                                         </button>
+                                     </form>
                                 </td>
                             </tr>
                         }
@@ -330,7 +330,7 @@
                     modal.show();
                 },
                 error: function() {
-                    alert('Lỗi tải công thức pha chế.');
+                    showToast('Lỗi tải công thức pha chế.', 'danger');
                 }
             });
         }
@@ -435,27 +435,30 @@
 
             // AT2: Validate material matching suggestion
             if (isNaN(materialId) || !selectedMaterial || selectedMaterial.materialName !== materialName) {
-                alert('Không tìm thấy nguyên liệu này trong hệ thống. Vui lòng chọn từ gợi ý.');
+                showToast('Không tìm thấy nguyên liệu này trong hệ thống. Vui lòng chọn từ gợi ý.', 'warning');
                 return;
             }
 
             // AT1: Validate positive quantity
             const quantity = parseFloat(qtyStr);
             if (isNaN(quantity) || quantity <= 0) {
-                alert('Số lượng phải là số dương.');
+                showToast('Số lượng phải là số dương.', 'warning');
                 return;
             }
 
             // AT3: Check duplicates
             const existingIndex = recipeLines.findIndex(line => line.materialId === materialId);
             if (existingIndex !== -1) {
-                const confirmUpdate = confirm('Nguyên liệu này đã có trong công thức. Cập nhật số lượng thay vì thêm dòng mới?');
-                if (confirmUpdate) {
-                    recipeLines[existingIndex].quantity = quantity;
-                    recipeLines[existingIndex].unit = unit;
-                    renderRecipeTable();
-                    clearRecipeInputs();
-                }
+                showConfirmModal(
+                    'Cập nhật số lượng',
+                    'Nguyên liệu này đã có trong công thức. Cập nhật số lượng thay vì thêm dòng mới?',
+                    function() {
+                        recipeLines[existingIndex].quantity = quantity;
+                        recipeLines[existingIndex].unit = unit;
+                        renderRecipeTable();
+                        clearRecipeInputs();
+                    }
+                );
             } else {
                 recipeLines.push({
                     materialId: materialId,
@@ -519,16 +522,7 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // Save entire recipe (bottom click)
-        $('#btnSaveRecipe').on('click', function() {
-            // AT4: Empty warning soft check
-            if (recipeLines.length === 0) {
-                const confirmEmptySave = confirm('Biến thể chưa có công thức pha chế, hệ thống sẽ không thể tự động trừ kho khi bán. Bạn vẫn muốn lưu?');
-                if (!confirmEmptySave) {
-                    return;
-                }
-            }
-
+        function executeSaveRecipe() {
             const payload = {
                 variantId: currentVariantId,
                 items: recipeLines.map(line => ({
@@ -544,17 +538,31 @@
                 data: JSON.stringify(payload),
                 success: function(response) {
                     if (response.success) {
-                        alert(response.message);
+                        showToast(response.message, 'success');
                         $('#recipeModal').modal('hide');
-                        window.location.reload();
+                        setTimeout(() => window.location.reload(), 1000);
                     } else {
-                        alert(response.message);
+                        showToast(response.message, 'danger');
                     }
                 },
                 error: function() {
-                    alert('Đã xảy ra lỗi khi lưu công thức.');
+                    showToast('Đã xảy ra lỗi khi lưu công thức.', 'danger');
                 }
             });
+        }
+
+        // Save entire recipe (bottom click)
+        $('#btnSaveRecipe').on('click', function() {
+            // AT4: Empty warning soft check
+            if (recipeLines.length === 0) {
+                showConfirmModal(
+                    'Chưa có công thức',
+                    'Biến thể chưa có công thức pha chế, hệ thống sẽ không thể tự động trừ kho khi bán. Bạn vẫn muốn lưu?',
+                    function() { executeSaveRecipe(); }
+                );
+            } else {
+                executeSaveRecipe();
+            }
         });
     </script>
 }

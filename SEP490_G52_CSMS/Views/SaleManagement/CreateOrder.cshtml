@@ -17,7 +17,7 @@
     .cart-card-footer { padding-top: 1rem; border-top: 1px solid var(--border-color); }
 </style>
 
-<div class="create-order-container">
+<div class="create-order-container pt-2">
     <!-- Main Two Columns -->
     <div class="create-order-row">
         <!-- Left Column: Product Catalog -->
@@ -51,10 +51,16 @@
                     {
                         <div class="col-xl-6 col-12 mb-2 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
                             <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white" style="min-height: 90px; height: auto;">
-                                <!-- Placeholder for image -->
-                                <div class="border rounded bg-light me-3 d-flex justify-content-center align-items-center text-muted" style="width: 50px; height: 50px; font-size: 1.5rem; flex-shrink: 0;">
-                                    <i class="bi bi-image"></i>
-                                </div>
+                                @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                                {
+                                    <img src="@product.ImageUrl" alt="@product.ProductName" class="border rounded me-3 object-fit-cover" style="width: 50px; height: 50px; flex-shrink: 0;" />
+                                }
+                                else
+                                {
+                                    <div class="border rounded bg-light me-3 d-flex justify-content-center align-items-center text-muted" style="width: 50px; height: 50px; font-size: 1.5rem; flex-shrink: 0;">
+                                        <i class="bi bi-image"></i>
+                                    </div>
+                                }
                                 <div class="flex-grow-1 min-width-0 me-2">
                                     <div class="fw-bold text-dark text-truncate small" title="@product.ProductName">@product.ProductName</div>
                                     <div class="text-secondary small mt-1">@product.DefaultPrice.ToString("N0") đ</div>
@@ -343,12 +349,16 @@
 
         function cancelOrder() {
             if (cart.length > 0) {
-                if (confirm("Bạn có chắc muốn hủy đơn hàng này không?")) {
-                    cart = [];
-                    document.getElementById("recipientName").value = "";
-                    renderCart();
-                    localStorage.removeItem('csms_cart');
-                }
+                showConfirmModal(
+                    'Hủy đơn hàng',
+                    'Bạn có chắc muốn hủy đơn hàng này không?',
+                    function() {
+                        cart = [];
+                        document.getElementById("recipientName").value = "";
+                        renderCart();
+                        localStorage.removeItem('csms_cart');
+                    }
+                );
             }
         }
 

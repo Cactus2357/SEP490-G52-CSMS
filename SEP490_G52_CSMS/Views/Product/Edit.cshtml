@@ -218,7 +218,7 @@
             ];
 
             if (!allowedTypes.includes(file.type)) {
-                alert("Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.");
+                showToast("Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.", "warning");
                 input.value = "";
                 return;
             }

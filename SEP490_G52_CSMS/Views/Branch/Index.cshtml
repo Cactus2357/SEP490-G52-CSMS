@@ -103,7 +103,7 @@
                                         }
                                         else
                                         {
-                                            <form asp-action="ActivateConfirmed" method="post" class="d-inline" onsubmit="return confirm('Kích hoạt chi nhánh này?');">
+                                            <form asp-action="ActivateConfirmed" method="post" class="d-inline" onsubmit="return confirmActivateBranch(this);">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="branchId" value="@branch.BranchId" />
                                                 <button type="submit" class="btn btn-sm btn-outline-success" title="Kích hoạt">
@@ -149,3 +149,16 @@
 
     </section>
 </div>
+
+@section Scripts {
+    <script>
+        function confirmActivateBranch(form) {
+            showConfirmModal(
+                'Kích hoạt chi nhánh',
+                'Kích hoạt chi nhánh này?',
+                function() { form.submit(); }
+            );
+            return false;
+        }
+    </script>
+}

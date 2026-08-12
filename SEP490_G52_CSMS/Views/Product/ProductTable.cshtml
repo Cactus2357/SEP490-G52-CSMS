@@ -33,6 +33,14 @@
 
                 <tr class="@rowClass">
                     <td class="fw-semibold">
+                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                        {
+                            <img src="@item.ImageUrl" alt="@item.ProductName" class="rounded me-2 align-middle object-fit-cover" style="width: 36px; height: 36px;" />
+                        }
+                        else
+                        {
+                            <div class="d-inline-flex justify-content-center align-items-center rounded bg-light border me-2 align-middle text-muted" style="width: 36px; height: 36px;"><i class="bi bi-image"></i></div>
+                        }
                         @item.ProductName
                     </td>
 

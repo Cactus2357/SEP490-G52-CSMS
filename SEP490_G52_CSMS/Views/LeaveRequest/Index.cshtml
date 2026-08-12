@@ -87,7 +87,7 @@
                                 <td class="pe-4">
                                     @if (item.CanCancel)
                                     {
-                                        <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn này?');">
+                                        <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirmCancelLeaveForm(this);">
                                             <input type="hidden" name="applicationId" value="@item.ApplicationId" />
                                             <button type="submit" class="btn btn-outline-danger btn-sm">
                                                 <i class="bi bi-x-circle me-1"></i>Hủy đơn
@@ -211,12 +211,21 @@
 
 @section Scripts {
     <script>
+        function confirmCancelLeaveForm(form) {
+            showConfirmModal(
+                'Hủy đơn xin nghỉ',
+                'Bạn có chắc chắn muốn hủy đơn này?',
+                function() { form.submit(); }
+            );
+            return false;
+        }
+
         function validateFilterDates() {
             const fromDate = document.getElementById('filterFromDate').value;
             const textToDate = document.getElementById('filterToDate').value;
 
             if (fromDate && textToDate && fromDate > textToDate) {
-                alert('Từ ngày không được lớn hơn Đến ngày!');
+                showToast('Từ ngày không được lớn hơn Đến ngày!', 'warning');
                 return;
             }
             document.getElementById('filterForm').submit();

@@ -87,12 +87,12 @@
                                 <td class="pe-4">
                                     @if (item.CanCancel)
                                     {
-                                        <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn này?');">
-                                            <input type="hidden" name="requestId" value="@item.RequestId" />
-                                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                <i class="bi bi-x-circle me-1"></i>Hủy đơn
-                                            </button>
-                                        </form>
+                                         <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirmCancelShiftForm(this);">
+                                             <input type="hidden" name="requestId" value="@item.RequestId" />
+                                             <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                 <i class="bi bi-x-circle me-1"></i>Hủy đơn
+                                             </button>
+                                         </form>
                                     }
                                     else
                                     {
@@ -187,11 +187,20 @@
 
 @section Scripts {
     <script>
+        function confirmCancelShiftForm(form) {
+            showConfirmModal(
+                'Hủy đơn đổi ca',
+                'Bạn có chắc chắn muốn hủy đơn này?',
+                function() { form.submit(); }
+            );
+            return false;
+        }
+
         function validateFilterDates() {
             const fromDate = document.getElementById('filterFromDate').value;
             const toDate = document.getElementById('filterToDate').value;
             if (fromDate && toDate && fromDate > toDate) {
-                alert('Từ ngày không được lớn hơn Đến ngày!');
+                showToast('Từ ngày không được lớn hơn Đến ngày!', 'warning');
                 return;
             }
             document.getElementById('filterForm').submit();

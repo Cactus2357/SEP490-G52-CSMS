@@ -400,14 +400,14 @@
                 data: JSON.stringify(payload),
                 success: function(res) {
                     if (res.success) {
-                        alert(`Nhập kho thành công! Phiếu nhập ${res.receiptCode} đã được lưu.`);
-                        window.location.href = '/Warehouse/ImportHistory';
+                        showToast(`Nhập kho thành công! Phiếu nhập ${res.receiptCode} đã được lưu.`, 'success');
+                        setTimeout(() => { window.location.href = '/Warehouse/ImportHistory'; }, 1000);
                     } else {
-                        alert(res.message);
+                        showToast(res.message, 'danger');
                     }
                 },
                 error: function() {
-                    alert('Lỗi kết nối máy chủ khi lập phiếu nhập kho.');
+                    showToast('Lỗi kết nối máy chủ khi lập phiếu nhập kho.', 'danger');
                 }
             });
         }
