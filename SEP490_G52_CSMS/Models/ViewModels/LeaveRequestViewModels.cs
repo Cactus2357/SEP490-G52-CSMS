@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace SEP490_G52_CSMS.Models.ViewModels
@@ -16,7 +14,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string Status { get; set; } = string.Empty;
 
         public List<LeaveRequestItemViewModel> Items { get; set; } = new List<LeaveRequestItemViewModel>();
-        
+
         // Paging (if needed later)
         public int TotalCount { get; set; }
     }

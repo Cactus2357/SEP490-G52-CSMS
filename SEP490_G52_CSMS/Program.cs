@@ -22,8 +22,8 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Add services to the container.
 builder.Services.AddScoped<SEP490_G52_CSMS.Commons.IDAT_EmailHelper, SEP490_G52_CSMS.Commons.DAT_EmailHelper>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IEmployeeRepository, SEP490_G52_CSMS.Repositories.EmployeeRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IEmployeeService, SEP490_G52_CSMS.Services.EmployeeService>();
+builder.Services.AddScoped<IEmployeeRepository, SEP490_G52_CSMS.Repositories.EmployeeRepository>();
+builder.Services.AddScoped<IEmployeeService, SEP490_G52_CSMS.Services.EmployeeService>();
 builder.Services.AddControllersWithViews();
 
 // =========================
@@ -52,35 +52,35 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
 builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IOrderRepository, SEP490_G52_CSMS.Reponsitories.OrderRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IOrderService, SEP490_G52_CSMS.Services.OrderService>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderService, SEP490_G52_CSMS.Services.OrderService>();
 
 // Menu Management
-builder.Services.AddScoped<SEP490_G52_CSMS.Reponsitories.IMenuRepository, SEP490_G52_CSMS.Reponsitories.MenuRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IMenuService, SEP490_G52_CSMS.Services.MenuService>();
+builder.Services.AddScoped<IMenuRepository, MenuRepository>();
+builder.Services.AddScoped<IMenuService, SEP490_G52_CSMS.Services.MenuService>();
 
 // ShiftChange
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IShiftChangeRepository, SEP490_G52_CSMS.Repositories.ShiftChangeRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IShiftChangeService, SEP490_G52_CSMS.Services.ShiftChangeService>();
+builder.Services.AddScoped<IShiftChangeRepository, SEP490_G52_CSMS.Repositories.ShiftChangeRepository>();
+builder.Services.AddScoped<IShiftChangeService, SEP490_G52_CSMS.Services.ShiftChangeService>();
 
 // Branch
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IBranchRepository, SEP490_G52_CSMS.Repositories.BranchRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IBranchService, SEP490_G52_CSMS.Services.BranchService>();
+builder.Services.AddScoped<IBranchRepository, SEP490_G52_CSMS.Repositories.BranchRepository>();
+builder.Services.AddScoped<IBranchService, SEP490_G52_CSMS.Services.BranchService>();
 
 // CashHandover
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.ICashHandoverRepository, SEP490_G52_CSMS.Repositories.CashHandoverRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.ICashHandoverService, SEP490_G52_CSMS.Services.CashHandoverService>();
+builder.Services.AddScoped<ICashHandoverRepository, SEP490_G52_CSMS.Repositories.CashHandoverRepository>();
+builder.Services.AddScoped<ICashHandoverService, SEP490_G52_CSMS.Services.CashHandoverService>();
 
 // OrderManagement
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.IOrderManagementRepository, SEP490_G52_CSMS.Repositories.OrderManagementRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.IOrderManagementService, SEP490_G52_CSMS.Services.OrderManagementService>();
+builder.Services.AddScoped<IOrderManagementRepository, SEP490_G52_CSMS.Repositories.OrderManagementRepository>();
+builder.Services.AddScoped<IOrderManagementService, SEP490_G52_CSMS.Services.OrderManagementService>();
 
 // LeaveRequest
-builder.Services.AddScoped<SEP490_G52_CSMS.Repositories.ILeaveRequestRepository, SEP490_G52_CSMS.Repositories.LeaveRequestRepository>();
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.ILeaveRequestService, SEP490_G52_CSMS.Services.LeaveRequestService>();
+builder.Services.AddScoped<ILeaveRequestRepository, SEP490_G52_CSMS.Repositories.LeaveRequestRepository>();
+builder.Services.AddScoped<ILeaveRequestService, SEP490_G52_CSMS.Services.LeaveRequestService>();
 
 // Notification (event-driven service)
-builder.Services.AddScoped<SEP490_G52_CSMS.Services.INotificationService, SEP490_G52_CSMS.Services.NotificationService>();
+builder.Services.AddScoped<INotificationService, SEP490_G52_CSMS.Services.NotificationService>();
 
 var app = builder.Build();
 

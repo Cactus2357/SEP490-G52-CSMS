@@ -1,9 +1,7 @@
-using System;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Commons.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
 
-namespace SEP490_G52_CSMS.Services
+namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public interface ILeaveRequestService
     {

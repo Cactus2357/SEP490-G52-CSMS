@@ -1,8 +1,7 @@
-using System.Security.Claims;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {

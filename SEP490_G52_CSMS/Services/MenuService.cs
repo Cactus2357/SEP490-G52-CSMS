@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Reponsitories;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {
@@ -53,7 +50,7 @@ namespace SEP490_G52_CSMS.Services
                 {
                     var firstVariant = group.First().ProductVariant!;
                     var sizesAndPrices = string.Join(" ", group.Select(md => $"{md.ProductVariant!.SizeVariant}-{md.ProductVariant.SellingPrice / 1000}K"));
-                    
+
                     model.Products.Add(new MenuProductViewModel
                     {
                         ProductId = firstVariant.ProductId,
@@ -147,7 +144,7 @@ namespace SEP490_G52_CSMS.Services
             }
 
             await _menuRepository.UpdateMenuProductsAsync(menuId, variantIds);
-            
+
             var menu = await _menuRepository.GetMenuByIdAsync(menuId);
             if (menu != null)
             {

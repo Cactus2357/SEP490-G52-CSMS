@@ -3,11 +3,8 @@ using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Models.Attendance;
-using System.Collections.Generic;
-using System.Linq;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Repositories
 {

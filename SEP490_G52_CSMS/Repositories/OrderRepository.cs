@@ -1,11 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 
-namespace SEP490_G52_CSMS.Reponsitories
+namespace SEP490_G52_CSMS.Repositories
 {
     public class OrderRepository : IOrderRepository
     {
@@ -48,7 +46,7 @@ namespace SEP490_G52_CSMS.Reponsitories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<int> GetOrdersCountByDateAsync(System.DateTime date)
+        public async Task<int> GetOrdersCountByDateAsync(DateTime date)
         {
             return await _context.Orders
                 .Where(o => o.CreatedAt.Date == date.Date)

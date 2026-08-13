@@ -1,7 +1,7 @@
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
 
-namespace SEP490_G52_CSMS.Services
+namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public class EmployeeCreationDto
     {
@@ -30,8 +30,8 @@ namespace SEP490_G52_CSMS.Services
         public DateTime DateOfBirth { get; set; }
         public string Address { get; set; } = null!;
         public string CitizenId { get; set; } = null!;
-        public Microsoft.AspNetCore.Http.IFormFile? CccdFile { get; set; }
-        public Microsoft.AspNetCore.Http.IFormFile? ContractFile { get; set; }
+        public IFormFile? CccdFile { get; set; }
+        public IFormFile? ContractFile { get; set; }
     }
 
     public class EmployeeUpdateResult

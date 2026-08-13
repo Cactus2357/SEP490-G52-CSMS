@@ -1,14 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Services;
-using SEP490_G52_CSMS.Reponsitories;
-using SEP490_G52_CSMS.Models;
-using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -18,7 +14,7 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly IOrderService _orderService;
         private readonly IMenuRepository _menuRepo;
         private readonly CSMSAppDbContext _context;
-        
+
         public SaleManagementController(IOrderService orderService, IMenuRepository menuRepo, CSMSAppDbContext context)
         {
             _orderService = orderService;
@@ -60,9 +56,9 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 menu = await _menuRepo.GetMenuByIdAsync(activeMenu.MenuId);
             }
-            
+
             var vm = new CreateOrderViewModel();
-            
+
             var allCategories = await _menuRepo.GetProductCategoriesAsync();
             var allMasterProducts = await _menuRepo.GetMasterProductsAsync();
 
@@ -132,7 +128,7 @@ namespace SEP490_G52_CSMS.Controllers
             }).ToList();
 
             var order = await _orderService.CreateOrderAsync(recipient, branchId, cashierId, orderItems);
-            
+
             return Json(new { success = true, orderId = order.OrderId });
         }
 
@@ -220,7 +216,7 @@ namespace SEP490_G52_CSMS.Controllers
         {
             var details = await _orderService.GetOrderDetailsAsync(orderId);
             if (details == null) return NotFound();
-            
+
             return PartialView("_OrderDetailPartial", details);
         }
     }

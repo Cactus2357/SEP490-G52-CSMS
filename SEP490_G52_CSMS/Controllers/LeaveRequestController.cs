@@ -1,13 +1,11 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
-using SEP490_G52_CSMS.Commons;
 
 namespace SEP490_G52_CSMS.Controllers
 {

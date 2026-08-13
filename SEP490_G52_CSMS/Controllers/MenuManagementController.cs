@@ -1,9 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Services;
-using System.Security.Claims;
-using System.Threading.Tasks;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -21,7 +17,7 @@ namespace SEP490_G52_CSMS.Controllers
         {
             // In a real application, you might get this from the logged-in user's claims or DB
             // We use a dummy branch "CB004" (Chi nhánh 1) for the mock-up
-            return "CB004"; 
+            return "CB004";
         }
 
         [HttpGet]

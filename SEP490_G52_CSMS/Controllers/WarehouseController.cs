@@ -4,8 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Services;
-using System;
-using System.Threading.Tasks;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -239,9 +238,9 @@ namespace SEP490_G52_CSMS.Controllers
             var trimmedName = name.Trim();
             var trimmedSupplier = supplier?.Trim() ?? string.Empty;
 
-            var exists = await _context.Materials.AnyAsync(m => 
-                m.MaterialName.ToLower() == trimmedName.ToLower() && 
-                m.Supplier.ToLower() == trimmedSupplier.ToLower() && 
+            var exists = await _context.Materials.AnyAsync(m =>
+                m.MaterialName.ToLower() == trimmedName.ToLower() &&
+                m.Supplier.ToLower() == trimmedSupplier.ToLower() &&
                 m.MaterialId != id);
 
             if (exists)
@@ -285,8 +284,8 @@ namespace SEP490_G52_CSMS.Controllers
             if (filterTo >= filterFrom)
             {
                 var toDateEnd = filterTo.AddDays(1).AddTicks(-1);
-                query = query.Where(i => i.WarehouseReceipt != null && 
-                                         i.WarehouseReceipt.ImportDate >= filterFrom && 
+                query = query.Where(i => i.WarehouseReceipt != null &&
+                                         i.WarehouseReceipt.ImportDate >= filterFrom &&
                                          i.WarehouseReceipt.ImportDate <= toDateEnd);
             }
 
@@ -333,8 +332,8 @@ namespace SEP490_G52_CSMS.Controllers
             var items = await _context.WarehouseReceiptItems
                 .Include(i => i.WarehouseReceipt)
                 .Include(i => i.Material)
-                .Where(i => i.WarehouseReceipt != null && 
-                             i.WarehouseReceipt.ImportDate >= filterFrom && 
+                .Where(i => i.WarehouseReceipt != null &&
+                             i.WarehouseReceipt.ImportDate >= filterFrom &&
                              i.WarehouseReceipt.ImportDate <= toDateEnd)
                 .OrderByDescending(i => i.WarehouseReceipt!.ImportDate)
                 .ToListAsync();
@@ -619,7 +618,7 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> UpdateReleasedQuantities([FromBody] UpdateReleasedQuantitiesModel model)
         {
             if (model == null) return Json(new { success = false, message = "Dữ liệu trống." });
-            
+
             var req = await _context.BranchSupplyRequests
                 .Include(r => r.Items)
                 .ThenInclude(i => i.Material)

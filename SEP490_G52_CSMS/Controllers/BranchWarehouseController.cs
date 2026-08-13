@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -175,7 +172,8 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (centralMaterial == null)
             {
-                return Json(new {
+                return Json(new
+                {
                     success = false,
                     message = "Tên nguyên liệu không khớp với danh mục kho tổng. Vui lòng chọn từ gợi ý hoặc liên hệ Quản lý kho."
                 });
@@ -427,7 +425,7 @@ namespace SEP490_G52_CSMS.Controllers
                 .FirstOrDefaultAsync(r => r.RequestCode == code && r.BranchId == branchId);
 
             if (req == null) return Json(new { success = false, message = "Đơn yêu cầu không tồn tại." });
-            
+
             // BR01: Can only cancel if status is "Chờ duyệt"
             if (req.Status != "Chờ duyệt")
             {
@@ -457,7 +455,7 @@ namespace SEP490_G52_CSMS.Controllers
                     .FirstOrDefaultAsync(r => r.RequestCode == code && r.BranchId == branchId);
 
                 if (req == null) return Json(new { success = false, message = "Đơn yêu cầu không tồn tại." });
-                
+
                 if (req.Status != "Đã xuất kho")
                 {
                     return Json(new { success = false, message = "Trạng thái đơn hàng không hợp lệ để xác nhận nhận hàng." });

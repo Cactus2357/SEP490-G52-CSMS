@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
 
-namespace SEP490_G52_CSMS.Services
+namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public interface IMenuService
     {

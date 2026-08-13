@@ -1,11 +1,8 @@
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Commons;
-using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -101,7 +98,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (cashierId <= 0)
                 return RedirectToAction(nameof(Index));
 
-            try 
+            try
             {
                 var model = await _cashHandoverService.GetOpenShiftModelAsync(cashierId);
                 if (model == null)

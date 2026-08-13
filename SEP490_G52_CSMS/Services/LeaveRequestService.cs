@@ -1,10 +1,8 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Commons.Models;
+using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Repositories;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {

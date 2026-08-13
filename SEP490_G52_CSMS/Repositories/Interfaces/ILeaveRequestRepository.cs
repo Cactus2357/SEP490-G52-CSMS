@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models.Attendance;
 
-namespace SEP490_G52_CSMS.Repositories
+namespace SEP490_G52_CSMS.Repositories.Interfaces
 {
     public interface ILeaveRequestRepository
     {

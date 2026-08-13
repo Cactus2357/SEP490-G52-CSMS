@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models;
 
-namespace SEP490_G52_CSMS.Services
+namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public interface INotificationService
     {

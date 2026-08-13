@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace SEP490_G52_CSMS.Models.ViewModels
 {
     public class MenuListViewModel

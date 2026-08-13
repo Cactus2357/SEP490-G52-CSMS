@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models.Sales;
 
-namespace SEP490_G52_CSMS.Reponsitories
+namespace SEP490_G52_CSMS.Repositories.Interfaces
 {
     public interface IOrderRepository
     {
@@ -10,7 +8,7 @@ namespace SEP490_G52_CSMS.Reponsitories
         Task<Order?> GetOrderByIdAsync(string orderId);
         Task<IEnumerable<Order>> GetAllOrdersAsync();
         Task UpdateOrderAsync(Order order);
-        Task<int> GetOrdersCountByDateAsync(System.DateTime date);
+        Task<int> GetOrdersCountByDateAsync(DateTime date);
         Task<IEnumerable<Order>> GetOrdersByStatusAsync(string paymentStatus, string brewingStatus);
     }
 }

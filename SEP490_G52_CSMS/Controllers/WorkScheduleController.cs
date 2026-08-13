@@ -5,12 +5,10 @@ using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Services;
-using System.Security.Claims;
 using SEP490_G52_CSMS.Models.ViewModels;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {

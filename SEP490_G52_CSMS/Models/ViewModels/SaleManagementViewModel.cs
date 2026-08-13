@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace SEP490_G52_CSMS.Models.ViewModels
 {
     public class CreateOrderViewModel
@@ -22,11 +19,11 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int CategoryId { get; set; }
         public string CategoryName { get; set; } = null!;
         public string ImageUrl { get; set; } = "";
-        
+
         // The default variant (usually Size S)
         public int DefaultVariantId { get; set; }
         public decimal DefaultPrice { get; set; }
-        
+
         // All variants for this product
         public List<SaleVariantViewModel> Variants { get; set; } = new List<SaleVariantViewModel>();
     }
@@ -44,7 +41,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
         public string SearchKeyword { get; set; } = "";
-        
+
         // Pagination
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;

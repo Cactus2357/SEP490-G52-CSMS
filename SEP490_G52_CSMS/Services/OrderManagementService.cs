@@ -1,9 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Repositories;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {
@@ -26,11 +24,11 @@ namespace SEP490_G52_CSMS.Services
         }
 
         public async Task<OrderManagementListViewModel> GetOrderManagementListAsync(
-            string branchId, 
-            string branchName, 
-            string searchCashier, 
-            string status, 
-            DateTime? fromDate = null, 
+            string branchId,
+            string branchName,
+            string searchCashier,
+            string status,
+            DateTime? fromDate = null,
             DateTime? toDate = null,
             string? cursor = null,
             string direction = "next",
@@ -127,7 +125,7 @@ namespace SEP490_G52_CSMS.Services
             {
                 string pName = item.ProductVariant?.MasterProduct?.ProductName ?? "Sản phẩm";
                 string size = item.ProductVariant?.SizeVariant ?? "M";
-                
+
                 model.Items.Add(new OrderDetailItemViewModel
                 {
                     ProductName = pName,

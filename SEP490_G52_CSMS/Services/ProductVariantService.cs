@@ -56,7 +56,7 @@ namespace SEP490_G52_CSMS.Services
             // Validate name uniqueness
             if (string.IsNullOrWhiteSpace(model.SizeVariant))
             {
-                 return (false, "Tên biến thể không được để trống.");
+                return (false, "Tên biến thể không được để trống.");
             }
 
             bool exists = await _variantRepository.IsVariantNameExistsAsync(model.ProductId, model.SizeVariant.Trim());
@@ -103,7 +103,7 @@ namespace SEP490_G52_CSMS.Services
 
             if (string.IsNullOrWhiteSpace(model.SizeVariant))
             {
-                 return (false, "Tên biến thể không được để trống.");
+                return (false, "Tên biến thể không được để trống.");
             }
 
             // Validate name uniqueness excluding itself

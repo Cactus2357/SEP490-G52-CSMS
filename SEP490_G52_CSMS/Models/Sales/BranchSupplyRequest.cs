@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
+using SEP490_G52_CSMS.Models.Core;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using SEP490_G52_CSMS.Models.Core;
 
 namespace SEP490_G52_CSMS.Models.Sales
 {

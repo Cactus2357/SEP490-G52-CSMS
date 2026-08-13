@@ -1,7 +1,8 @@
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Repositories;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {

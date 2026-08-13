@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.Text;
 
@@ -9,7 +8,7 @@ namespace SEP490_G52_CSMS.Commons
         public static string RemoveDiacritics(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return string.Empty;
-            
+
             var normalizedString = text.Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
 

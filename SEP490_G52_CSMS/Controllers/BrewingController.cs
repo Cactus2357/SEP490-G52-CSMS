@@ -1,13 +1,12 @@
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
     public class BrewingController : Controller
     {
         private readonly IOrderService _orderService;
-        
+
         public BrewingController(IOrderService orderService)
         {
             _orderService = orderService;
@@ -24,7 +23,7 @@ namespace SEP490_G52_CSMS.Controllers
         {
             var details = await _orderService.GetOrderDetailsAsync(orderId);
             if (details == null) return NotFound();
-            
+
             return PartialView("_BrewingOrderDetailPartial", details);
         }
 

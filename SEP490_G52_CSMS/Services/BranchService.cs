@@ -2,11 +2,8 @@ using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Commons.Models;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {

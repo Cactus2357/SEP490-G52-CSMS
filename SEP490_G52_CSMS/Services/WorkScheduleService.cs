@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Repositories;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {
@@ -64,7 +61,7 @@ namespace SEP490_G52_CSMS.Services
                 {
                     var currentDate = startOfWeek.AddDays(i);
                     var roster = rosters.FirstOrDefault(r => r.AssignmentDate.Date == currentDate.Date && r.ShiftId == shift.ShiftId);
-                    
+
                     var cell = new WorkScheduleCellViewModel
                     {
                         Date = currentDate,

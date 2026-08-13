@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Commons.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Repositories;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {
@@ -38,7 +35,7 @@ namespace SEP490_G52_CSMS.Services
 
             // Lấy lịch trực hôm nay của thu ngân (trả về ca hiện tại hoặc ca sắp tới trong ngày)
             var roster = await _cashHandoverRepository.GetCurrentRosterAsync(cashierId, today);
-            
+
             // Lấy tên thu ngân thực hiện mở ca
             var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(cashierId);
 
@@ -54,7 +51,7 @@ namespace SEP490_G52_CSMS.Services
                 // Kiểm tra xem đã đến giờ mở ca chưa (cho phép mở sớm 30 phút và không cho mở nếu đã hết ca)
                 var currentTime = DateTime.Now.TimeOfDay;
                 var thirtyMinutes = TimeSpan.FromMinutes(30);
-                isTimeToOpen = currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes) && 
+                isTimeToOpen = currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes) &&
                                currentTime <= roster.FixedShift.EndTime;
             }
 
@@ -110,7 +107,7 @@ namespace SEP490_G52_CSMS.Services
             {
                 return OperationResult.Fail("Bạn không có lịch trực vào thời gian này.");
             }
-            
+
             var currentTime = DateTime.Now.TimeOfDay;
             var thirtyMinutes = TimeSpan.FromMinutes(30);
             if (currentTime < roster.FixedShift.StartTime.Subtract(thirtyMinutes))
@@ -305,10 +302,10 @@ namespace SEP490_G52_CSMS.Services
                 var active = await _cashHandoverRepository.GetActiveHandoverAsync(emp.EmployeeId, today);
                 result.Add(new CashierSelectItemViewModel
                 {
-                    CashierId      = emp.EmployeeId,
-                    CashierName    = emp.FullName ?? emp.Username ?? "–",
-                    Username       = emp.Username ?? "–",
-                    BranchId       = branchId,
+                    CashierId = emp.EmployeeId,
+                    CashierName = emp.FullName ?? emp.Username ?? "–",
+                    Username = emp.Username ?? "–",
+                    BranchId = branchId,
                     HasActiveShift = active != null,
                     ActiveShiftName = active?.FixedShift?.ShiftName ?? string.Empty,
                 });

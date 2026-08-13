@@ -597,7 +597,7 @@ namespace SEP490_G52_CSMS.Models
             {
                 var materials = context.Materials.ToList();
                 var branchIds = new[] { "CB004", "CB005" };
-                
+
                 foreach (var branchId in branchIds)
                 {
                     foreach (var m in materials)
@@ -605,7 +605,7 @@ namespace SEP490_G52_CSMS.Models
                         decimal stock = m.MaterialCode == "NL001" ? 500m :
                                         m.MaterialCode == "NL002" ? 200m :
                                         m.MaterialCode == "NL003" ? 150m : 50m;
-                        
+
                         context.BranchInventories.Add(new BranchInventory
                         {
                             BranchId = branchId,

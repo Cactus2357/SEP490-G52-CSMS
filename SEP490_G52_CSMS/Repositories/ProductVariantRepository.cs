@@ -69,7 +69,7 @@ namespace SEP490_G52_CSMS.Repositories
         {
             // Check if variant is used in OrderItems
             bool usedInOrders = await _context.OrderItems.AnyAsync(oi => oi.VariantId == variantId);
-            
+
             // Check if variant is used in MenuDetails
             bool usedInMenus = await _context.MenuDetails.AnyAsync(md => md.VariantId == variantId);
 

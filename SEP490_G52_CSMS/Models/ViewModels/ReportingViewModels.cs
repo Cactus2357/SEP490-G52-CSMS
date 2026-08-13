@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace SEP490_G52_CSMS.Models.ViewModels

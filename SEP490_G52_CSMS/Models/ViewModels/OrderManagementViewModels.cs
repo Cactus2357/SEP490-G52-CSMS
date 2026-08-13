@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace SEP490_G52_CSMS.Models.ViewModels
 {
     public class OrderManagementListViewModel
@@ -34,10 +31,10 @@ namespace SEP490_G52_CSMS.Models.ViewModels
     {
         public string OrderId { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
-        
+
         public string CashierName { get; set; } = string.Empty;
         public string ShiftInfo { get; set; } = string.Empty; // "Ca sáng - CN Q1"
-        
+
         public string PaymentMethod { get; set; } = string.Empty;
         public string TransactionId { get; set; } = string.Empty;
 

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Commons;
-using SEP490_G52_CSMS.Repositories;
-using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -162,9 +162,9 @@ namespace SEP490_G52_CSMS.Controllers
             else
             {
                 // Fallback: exact string check
-                isDuplicate = System.Linq.Enumerable.Any(allEmployees, emp => 
-                    emp.EmployeeId != employee.EmployeeId && 
-                    emp.FaceData != null && 
+                isDuplicate = System.Linq.Enumerable.Any(allEmployees, emp =>
+                    emp.EmployeeId != employee.EmployeeId &&
+                    emp.FaceData != null &&
                     emp.FaceData.Trim() == faceData);
             }
 

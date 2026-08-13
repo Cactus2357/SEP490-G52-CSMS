@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using SEP490_G52_CSMS.Commons.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
 
-namespace SEP490_G52_CSMS.Services
+namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public interface ICashHandoverService
     {
@@ -24,7 +22,7 @@ namespace SEP490_G52_CSMS.Services
 
         /// <summary> Lấy danh sách thu ngân Active của chi nhánh để chọn </summary>
         Task<List<CashierSelectItemViewModel>> GetCashiersAsync(string branchId);
-        
+
         /// <summary>
         /// Tìm ID thu ngân đang trực hoặc sắp trực ở hiện tại
         /// </summary>

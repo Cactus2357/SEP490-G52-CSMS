@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Reponsitories;
-using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Repositories.Interfaces;
+using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
 {
@@ -53,8 +50,8 @@ namespace SEP490_G52_CSMS.Services
             order.PaymentMethod = paymentMethod;
             order.PaymentStatus = "Paid";
             // Once paid, it is ready for brewing
-            order.BrewingStatus = "Waiting for Brewing"; 
-            
+            order.BrewingStatus = "Waiting for Brewing";
+
             await _orderRepo.UpdateOrderAsync(order);
             return true;
         }
@@ -141,7 +138,7 @@ namespace SEP490_G52_CSMS.Services
             if (!string.IsNullOrEmpty(search))
             {
                 search = search.ToLower();
-                orders = orders.Where(o => o.OrderId.ToLower().Contains(search) || 
+                orders = orders.Where(o => o.OrderId.ToLower().Contains(search) ||
                                            (o.RecipientName != null && o.RecipientName.ToLower().Contains(search)));
             }
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")
@@ -217,7 +214,7 @@ namespace SEP490_G52_CSMS.Services
                 OrderId = order.OrderId,
                 RecipientName = order.RecipientName ?? "",
                 OrderTime = order.CreatedAt,
-                DisplayStatus = order.BrewingStatus == "Completed" ? "đã hoàn thành" : 
+                DisplayStatus = order.BrewingStatus == "Completed" ? "đã hoàn thành" :
                                 (order.BrewingStatus == "Waiting for Brewing" ? "đang chờ pha chế" : "đang trong quá trình pha chế"),
                 TotalAmount = order.TotalAmount,
                 Items = order.OrderItems.Select(oi => new OrderItemViewModel

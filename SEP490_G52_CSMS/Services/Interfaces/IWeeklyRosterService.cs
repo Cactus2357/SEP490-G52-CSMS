@@ -1,6 +1,4 @@
-
-
-namespace SEP490_G52_CSMS.Services
+namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public interface IWeeklyRosterService
     {

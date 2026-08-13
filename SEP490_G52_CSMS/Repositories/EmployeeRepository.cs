@@ -3,6 +3,7 @@ using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 
 namespace SEP490_G52_CSMS.Repositories
 {

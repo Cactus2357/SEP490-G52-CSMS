@@ -7,7 +7,7 @@ using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -202,9 +202,9 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> EmployeeIndex(DateTime? fromDate, DateTime? toDate, string? status)
         {
-            var empId    = GetCurrentEmployeeId();
-            var empName  = GetCurrentFullName();
-            var empRole  = GetCurrentRole();
+            var empId = GetCurrentEmployeeId();
+            var empName = GetCurrentFullName();
+            var empRole = GetCurrentRole();
 
             // Mặc định load đơn tuần hiện tại
             if (!fromDate.HasValue && !toDate.HasValue)
@@ -212,7 +212,7 @@ namespace SEP490_G52_CSMS.Controllers
                 var today = DateTime.Today;
                 int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
                 fromDate = today.AddDays(-diff).Date;
-                toDate   = fromDate.Value.AddDays(6).Date;
+                toDate = fromDate.Value.AddDays(6).Date;
             }
 
             var model = await _shiftChangeService.GetShiftChangeListAsync(
@@ -225,9 +225,9 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ShiftChangeCreateViewModel model)
         {
-            model.EmployeeId   = GetCurrentEmployeeId();
+            model.EmployeeId = GetCurrentEmployeeId();
             model.EmployeeName = GetCurrentFullName();
-            model.RoleName     = GetCurrentRole();
+            model.RoleName = GetCurrentRole();
 
             if (!ModelState.IsValid)
             {
@@ -245,7 +245,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> Cancel(int requestId)
         {
-            var empId  = GetCurrentEmployeeId();
+            var empId = GetCurrentEmployeeId();
             var result = await _shiftChangeService.CancelShiftChangeAsync(requestId, empId);
 
             TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;

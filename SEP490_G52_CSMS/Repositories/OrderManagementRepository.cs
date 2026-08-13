@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 
 namespace SEP490_G52_CSMS.Repositories
 {
@@ -18,10 +15,10 @@ namespace SEP490_G52_CSMS.Repositories
         }
 
         public async Task<List<Order>> GetOrdersAsync(
-            string branchId, 
-            string searchCashier, 
-            string status, 
-            DateTime? fromDate = null, 
+            string branchId,
+            string searchCashier,
+            string status,
+            DateTime? fromDate = null,
             DateTime? toDate = null,
             DateTime? cursor = null,
             string direction = "next",
@@ -72,10 +69,10 @@ namespace SEP490_G52_CSMS.Repositories
                 }
                 else if (status == "Đang xử lý")
                 {
-                    query = query.Where(o => o.PaymentStatus == "Unpaid" || 
-                                           o.BrewingStatus == "Waiting" || 
-                                           o.BrewingStatus == "Brewing" || 
-                                           o.BrewingStatus == "Waiting for Brewing" || 
+                    query = query.Where(o => o.PaymentStatus == "Unpaid" ||
+                                           o.BrewingStatus == "Waiting" ||
+                                           o.BrewingStatus == "Brewing" ||
+                                           o.BrewingStatus == "Waiting for Brewing" ||
                                            o.BrewingStatus == "Brewing in Progress");
                 }
                 else if (status == "Đã hủy")

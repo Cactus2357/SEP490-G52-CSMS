@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace SEP490_G52_CSMS.Models.ViewModels
 {
     public class ShiftChangeListViewModel
@@ -8,7 +5,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int EmployeeId { get; set; }
         public string EmployeeName { get; set; } = string.Empty;
         public string RoleName { get; set; } = string.Empty;
-        
+
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
         public string Status { get; set; } = "Tất cả";

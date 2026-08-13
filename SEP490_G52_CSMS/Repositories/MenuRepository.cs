@@ -1,11 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 
-namespace SEP490_G52_CSMS.Reponsitories
+namespace SEP490_G52_CSMS.Repositories
 {
     public class MenuRepository : IMenuRepository
     {
@@ -51,13 +49,13 @@ namespace SEP490_G52_CSMS.Reponsitories
         {
             var existingDetails = await _context.MenuDetails.Where(md => md.MenuId == menuId).ToListAsync();
             _context.MenuDetails.RemoveRange(existingDetails);
-            
+
             var newDetails = variantIds.Select(vid => new MenuDetail
             {
                 MenuId = menuId,
                 VariantId = vid
             }).ToList();
-            
+
             _context.MenuDetails.AddRange(newDetails);
             await _context.SaveChangesAsync();
         }
@@ -87,7 +85,7 @@ namespace SEP490_G52_CSMS.Reponsitories
             var branchMenus = await _context.BranchMenus.Where(m => m.BranchId == branchId).ToListAsync();
             foreach (var menu in branchMenus)
             {
-                menu.IsActive = (menu.MenuId == activeMenuId);
+                menu.IsActive = menu.MenuId == activeMenuId;
             }
             await _context.SaveChangesAsync();
         }

@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Employees;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 
 namespace SEP490_G52_CSMS.Repositories
 {
@@ -65,8 +63,8 @@ namespace SEP490_G52_CSMS.Repositories
                 .AsNoTracking()
                 .Where(w => w.BranchId == branchId && w.AssignmentDate.Date == date.Date)
                 .OrderBy(w => w.FixedShift.StartTime)
-                .FirstOrDefaultAsync(w => 
-                    time >= w.FixedShift.StartTime && 
+                .FirstOrDefaultAsync(w =>
+                    time >= w.FixedShift.StartTime &&
                     time <= w.FixedShift.EndTime);
 
             // Nếu không có ai trực ngay lúc này, tìm ca tiếp theo trong ngày
@@ -79,7 +77,7 @@ namespace SEP490_G52_CSMS.Repositories
                     .OrderBy(w => w.FixedShift.StartTime)
                     .FirstOrDefaultAsync();
             }
-            
+
             // Nếu vẫn không có ca tiếp theo, có thể lấy ca cuối cùng của ngày
             if (roster == null)
             {

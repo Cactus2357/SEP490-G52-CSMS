@@ -1,10 +1,9 @@
-using System.Security.Claims;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
-using SEP490_G52_CSMS.Services;
+using SEP490_G52_CSMS.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -37,7 +36,7 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> Index(DateTime? fromDate, DateTime? toDate, string searchCashier = "", string status = "Tất cả", string? cursor = null, string direction = "next")
         {
             var (branchId, branchName) = await GetUserBranchAsync();
-            if (string.IsNullOrEmpty(branchId) && !User.IsInRole("RManager")) 
+            if (string.IsNullOrEmpty(branchId) && !User.IsInRole("RManager"))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 return Content($"Không thể xác định được chi nhánh của bạn. UserIdStr: {userIdStr}");
@@ -57,7 +56,7 @@ namespace SEP490_G52_CSMS.Controllers
         {
             var (branchId, _) = await GetUserBranchAsync();
             var model = await _orderManagementService.GetOrderDetailAsync(orderId, branchId);
-            
+
             if (model == null)
             {
                 return NotFound("Không tìm thấy đơn hàng.");

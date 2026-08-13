@@ -1,7 +1,7 @@
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
 
-namespace SEP490_G52_CSMS.Repositories
+namespace SEP490_G52_CSMS.Repositories.Interfaces
 {
     public interface IEmployeeRepository
     {
