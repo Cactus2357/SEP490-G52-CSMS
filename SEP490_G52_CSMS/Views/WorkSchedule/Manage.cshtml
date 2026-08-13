@@ -19,9 +19,11 @@
         vertical-align: stretch !important;
         padding: 0 !important;
     }
+
     .today-cell {
         background-color: rgba(13, 110, 253, 0.08) !important;
     }
+
     .today-header {
         background-color: rgba(13, 110, 253, 0.15) !important;
         border-bottom: 3px solid #0d6efd !important;
@@ -54,7 +56,7 @@
     }
 </style>
 
-<div class="page-header">
+<div class="page-header mt-3">
     <h1 class="page-title">THÊM LỊCH LÀM VIỆC THEO TUẦN</h1>
 </div>
 
@@ -184,420 +186,425 @@
     }
 </div>
 
-    <!-- Staff Assignment Modal -->
-    <div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Thứ 7 - Ca 1</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<!-- Staff Assignment Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Thứ 7 - Ca 1</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Cashier: mandatory single select (BR01) -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên thu ngân</label>
+                    <select class="form-select" id="cashierSelect" @(cashiers.Count == 0 ? "disabled" : "")>
+                        <option value="">-- Chọn nhân viên --</option>
+                        @foreach (var e in cashiers)
+                        {
+                            <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
+                        }
+                    </select>
+                    @if (cashiers.Count == 0)
+                    {
+                        <div class="form-text text-danger">Không có nhân viên thu ngân khả dụng.</div>
+                    }
                 </div>
-                <div class="modal-body">
-                    <!-- Cashier: mandatory single select (BR01) -->
-                    <div class="mb-3">
-                        <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên thu ngân</label>
-                        <select class="form-select" id="cashierSelect" @(cashiers.Count == 0 ? "disabled" : "")>
+
+                <!-- Bartender: multi-add list (BR02) -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên pha chế</label>
+                    <div class="d-flex gap-2">
+                        <select class="form-select" id="bartenderSelect" @(bartenders.Count == 0 ? "disabled" : "")>
                             <option value="">-- Chọn nhân viên --</option>
-                            @foreach (var e in cashiers)
+                            @foreach (var e in bartenders)
                             {
                                 <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
                             }
                         </select>
-                        @if (cashiers.Count == 0)
-                        {
-                            <div class="form-text text-danger">Không có nhân viên thu ngân khả dụng.</div>
-                        }
+                        <button type="button" class="btn btn-outline-primary text-nowrap" id="btnAddBartender" @(bartenders.Count == 0 ? "disabled" : "")>Thêm Vào DS</button>
                     </div>
-
-                    <!-- Bartender: multi-add list (BR02) -->
-                    <div class="mb-3">
-                        <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên pha chế</label>
-                        <div class="d-flex gap-2">
-                            <select class="form-select" id="bartenderSelect" @(bartenders.Count == 0 ? "disabled" : "")>
-                                <option value="">-- Chọn nhân viên --</option>
-                                @foreach (var e in bartenders)
-                                {
-                                    <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
-                                }
-                            </select>
-                            <button type="button" class="btn btn-outline-primary text-nowrap" id="btnAddBartender" @(bartenders.Count == 0 ? "disabled" : "")>Thêm Vào DS</button>
-                        </div>
-                        @if (bartenders.Count == 0)
-                        {
-                            <div class="form-text text-muted">Không có nhân viên pha chế khả dụng.</div>
-                        }
-                        <ul class="list-group mt-2" id="bartenderList"></ul>
-                    </div>
-
-                    <!-- Busser: multi-add list (BR02) -->
-                    <div class="mb-3">
-                        <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên vệ sinh</label>
-                        <div class="d-flex gap-2">
-                            <select class="form-select" id="busserSelect" @(bussers.Count == 0 ? "disabled" : "")>
-                                <option value="">-- Chọn nhân viên --</option>
-                                @foreach (var e in bussers)
-                                {
-                                    <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
-                                }
-                            </select>
-                            <button type="button" class="btn btn-outline-primary text-nowrap" id="btnAddBusser" @(bussers.Count == 0 ? "disabled" : "")>Thêm Vào DS</button>
-                        </div>
-                        @if (bussers.Count == 0)
-                        {
-                            <div class="form-text text-muted">Không có nhân viên vệ sinh khả dụng.</div>
-                        }
-                        <ul class="list-group mt-2" id="busserList"></ul>
-                    </div>
+                    @if (bartenders.Count == 0)
+                    {
+                        <div class="form-text text-muted">Không có nhân viên pha chế khả dụng.</div>
+                    }
+                    <ul class="list-group mt-2" id="bartenderList"></ul>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" id="btnConfirmCell">Xác nhận</button>
+
+                <!-- Busser: multi-add list (BR02) -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-person-fill"></i> Nhân viên vệ sinh</label>
+                    <div class="d-flex gap-2">
+                        <select class="form-select" id="busserSelect" @(bussers.Count == 0 ? "disabled" : "")>
+                            <option value="">-- Chọn nhân viên --</option>
+                            @foreach (var e in bussers)
+                            {
+                                <option value="@e.EmployeeId">@(e.FullName ?? $"NV#{e.EmployeeId}")</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-outline-primary text-nowrap" id="btnAddBusser" @(bussers.Count == 0 ? "disabled" : "")>Thêm Vào DS</button>
+                    </div>
+                    @if (bussers.Count == 0)
+                    {
+                        <div class="form-text text-muted">Không có nhân viên vệ sinh khả dụng.</div>
+                    }
+                    <ul class="list-group mt-2" id="busserList"></ul>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmCell">Xác nhận</button>
             </div>
         </div>
     </div>
-}
+</div>
 
 @section Scripts {
     <script>
-            const branchId = '@branchId';
-            const weekStartDate = '@Model.WeekStartDate.ToString("yyyy-MM-dd")';
-            const dayNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(dayNames));
+                const branchId = '@branchId';
+                const weekStartDate = '@Model.WeekStartDate.ToString("yyyy-MM-dd")';
+                const dayNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(dayNames));
 
-            // Map of shiftId -> display name (e.g. 1 -> "Ca 1").
-            const shiftNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                                            shifts.ToDictionary(s => s.ShiftId.ToString(), s => s.ShiftName ?? ("Ca " + s.ShiftId))));
+                // Map of shiftId -> display name (e.g. 1 -> "Ca 1").
+                const shiftNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                                                                            shifts.ToDictionary(s => s.ShiftId.ToString(), s => s.ShiftName ?? ("Ca " + s.ShiftId))));
 
     // Raw existing rows from the DB for this branch/week, sent down as-is;
     // grouped into scheduleData below. camelCase so property names line up
     // with the JS below (row.dayOffset, row.employeeId, ...).
     const existingAssignments = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                                existingAssignments,
-                                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+                                                                existingAssignments,
+                                                                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
 
     // In-memory state for the whole week grid.
     // key = "{dayOffset}_{shiftId}" -> { cashier: {id,name}|null, bartenders: [{id,name}], bussers: [{id,name}] }
     const scheduleData = {};
 
-            // Track which cells already existed when the page loaded.
-            const initiallyExistingCells = new Set();
-            // Track which cells have been modified or added during this session.
-            const modifiedCells = new Set();
+                // Track which cells already existed when the page loaded.
+                const initiallyExistingCells = new Set();
+                // Track which cells have been modified or added during this session.
+                const modifiedCells = new Set();
 
-            function cellKey(day, shiftId) {
-                return day + '_' + shiftId;
-            }
+                function cellKey(day, shiftId) {
+                    return day + '_' + shiftId;
+                }
 
-            // Build scheduleData + initiallyExistingCells from what the server already has.
-            (function seedExistingAssignments() {
-                (existingAssignments || []).forEach(row => {
-                    if (!row) return;
+                // Build scheduleData + initiallyExistingCells from what the server already has.
+                (function seedExistingAssignments() {
+                    (existingAssignments || []).forEach(row => {
+                        if (!row) return;
 
-                    const key = cellKey(row.dayOffset, row.shiftId);
-                    initiallyExistingCells.add(key);
+                        const key = cellKey(row.dayOffset, row.shiftId);
+                        initiallyExistingCells.add(key);
 
-                    if (!scheduleData[key]) {
-                        scheduleData[key] = { cashier: null, bartenders: [], bussers: [] };
-                    }
+                        if (!scheduleData[key]) {
+                            scheduleData[key] = { cashier: null, bartenders: [], bussers: [] };
+                        }
 
-                    const entry = { id: row.employeeId, name: row.employeeName || ('NV#' + row.employeeId) };
+                        const entry = { id: row.employeeId, name: row.employeeName || ('NV#' + row.employeeId) };
 
-                    if (row.role === 'Cashier') {
-                        scheduleData[key].cashier = entry;
-                    } else if (row.role === 'Bartender') {
-                        scheduleData[key].bartenders.push(entry);
-                    } else if (row.role === 'Busser') {
-                        scheduleData[key].bussers.push(entry);
-                    }
-                });
-            })();
-
-            let currentDay = null;
-            let currentShiftId = null;
-            let tempBartenders = [];
-            let tempBussers = [];
-
-            const assignModalEl = document.getElementById('assignModal');
-            const assignModal = assignModalEl ? new bootstrap.Modal(assignModalEl) : null;
-
-            function formatDateOnly(date) {
-                const y = date.getFullYear();
-                const m = String(date.getMonth() + 1).padStart(2, '0');
-                const d = String(date.getDate()).padStart(2, '0');
-                return y + '-' + m + '-' + d;
-            }
-
-            // Renders one grid cell: assigned staff (if any) + the "+ Thêm nhân viên" button.
-            function renderCell(day, shiftId) {
-                const cell = document.getElementById('cell_' + day + '_' + shiftId);
-                if (!cell) return;
-
-                const key = cellKey(day, shiftId);
-                const data = scheduleData[key];
-                const hasData = !!(data && (data.cashier || (data.bartenders && data.bartenders.length > 0) || (data.bussers && data.bussers.length > 0)));
-
-                let html = '<div class="cell-container ' + (hasData ? 'has-data' : 'no-data') + '">';
-                html += '<div class="small">';
-
-                if (data) {
-                    if (data.cashier) {
-                        html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + data.cashier.name + '</div>';
-                    }
-                    (data.bartenders || []).forEach(b => {
-                        if (b) html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + b.name + '</div>';
+                        if (row.role === 'Cashier') {
+                            scheduleData[key].cashier = entry;
+                        } else if (row.role === 'Bartender') {
+                            scheduleData[key].bartenders.push(entry);
+                        } else if (row.role === 'Busser') {
+                            scheduleData[key].bussers.push(entry);
+                        }
                     });
-                    (data.bussers || []).forEach(b => {
-                        if (b) html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + b.name + '</div>';
+                })();
+
+                let currentDay = null;
+                let currentShiftId = null;
+                let tempBartenders = [];
+                let tempBussers = [];
+
+                const assignModalEl = document.getElementById('assignModal');
+                const assignModal = assignModalEl ? new bootstrap.Modal(assignModalEl) : null;
+
+                function formatDateOnly(date) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    return y + '-' + m + '-' + d;
+                }
+
+                // Renders one grid cell: assigned staff (if any) + the "+ Thêm nhân viên" button.
+                function renderCell(day, shiftId) {
+                    const cell = document.getElementById('cell_' + day + '_' + shiftId);
+                    if (!cell) return;
+
+                    const key = cellKey(day, shiftId);
+                    const data = scheduleData[key];
+                    const hasData = !!(data && (data.cashier || (data.bartenders && data.bartenders.length > 0) || (data.bussers && data.bussers.length > 0)));
+
+                    let html = '<div class="cell-container ' + (hasData ? 'has-data' : 'no-data') + '">';
+                    html += '<div class="small">';
+
+                    if (data) {
+                        if (data.cashier) {
+                            html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + data.cashier.name + '</div>';
+                        }
+                        (data.bartenders || []).forEach(b => {
+                            if (b) html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + b.name + '</div>';
+                        });
+                        (data.bussers || []).forEach(b => {
+                            if (b) html += '<div class="employee-entry"><i class="bi bi-person-fill"></i> ' + b.name + '</div>';
+                        });
+                    }
+
+                    html += '</div>';
+                    html += '<button type="button" class="btn btn-link btn-sm text-decoration-none p-0 add-employee-link" ' +
+                            'data-day="' + day + '" data-shift="' + shiftId + '">+ Thêm nhân viên</button>';
+                    html += '</div>';
+
+                    cell.innerHTML = html;
+                }
+
+                function renderSubList(listElId, items, onRemove) {
+                    const ul = document.getElementById(listElId);
+                    if (!ul) return;
+
+                    ul.innerHTML = '';
+                    (items || []).forEach((item, index) => {
+                        if (!item) return;
+
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center py-1';
+                        li.textContent = item.name || ('NV#' + item.id);
+
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn btn-sm btn-outline-danger';
+                        btn.textContent = 'Xóa';
+                        btn.addEventListener('click', () => onRemove(index));
+
+                        li.appendChild(btn);
+                        ul.appendChild(li);
                     });
                 }
 
-                html += '</div>';
-                html += '<button type="button" class="btn btn-link btn-sm text-decoration-none p-0 add-employee-link" ' +
-                        'data-day="' + day + '" data-shift="' + shiftId + '">+ Thêm nhân viên</button>';
-                html += '</div>';
-
-                cell.innerHTML = html;
-            }
-
-            function renderSubList(listElId, items, onRemove) {
-                const ul = document.getElementById(listElId);
-                if (!ul) return;
-
-                ul.innerHTML = '';
-                (items || []).forEach((item, index) => {
-                    if (!item) return;
-
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex justify-content-between align-items-center py-1';
-                    li.textContent = item.name || ('NV#' + item.id);
-
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'btn btn-sm btn-outline-danger';
-                    btn.textContent = 'Xóa';
-                    btn.addEventListener('click', () => onRemove(index));
-
-                    li.appendChild(btn);
-                    ul.appendChild(li);
-                });
-            }
-
-            function renderTempLists() {
-                renderSubList('bartenderList', tempBartenders, (i) => {
-                    tempBartenders.splice(i, 1);
-                    renderTempLists();
-                });
-                renderSubList('busserList', tempBussers, (i) => {
-                    tempBussers.splice(i, 1);
-                    renderTempLists();
-                });
-            }
-
-            // Opens the modal for a given (day, shift) cell.
-            function openAssignModal(day, shiftId) {
-                if (!assignModal) return;
-
-                currentDay = day;
-                currentShiftId = shiftId;
-
-                const shiftName = shiftNames[shiftId] || ('Ca ' + shiftId);
-                const titleEl = document.getElementById('modalTitle');
-                if (titleEl) titleEl.textContent = (dayNames[day] || ('Ngày ' + day)) + ' - ' + shiftName;
-
-                const existing = scheduleData[cellKey(day, shiftId)];
-                const cashierSelect = document.getElementById('cashierSelect');
-                if (cashierSelect) {
-                    cashierSelect.value = existing && existing.cashier ? existing.cashier.id : '';
+                function renderTempLists() {
+                    renderSubList('bartenderList', tempBartenders, (i) => {
+                        tempBartenders.splice(i, 1);
+                        renderTempLists();
+                    });
+                    renderSubList('busserList', tempBussers, (i) => {
+                        tempBussers.splice(i, 1);
+                        renderTempLists();
+                    });
                 }
 
-                tempBartenders = existing && Array.isArray(existing.bartenders) ? existing.bartenders.slice() : [];
-                tempBussers = existing && Array.isArray(existing.bussers) ? existing.bussers.slice() : [];
-                renderTempLists();
+                // Opens the modal for a given (day, shift) cell.
+                function openAssignModal(day, shiftId) {
+                    if (!assignModal) return;
 
-                assignModal.show();
-            }
+                    currentDay = day;
+                    currentShiftId = shiftId;
 
-            // Clicking any "+ Thêm nhân viên" link opens the modal for that cell.
-            const scheduleTableEl = document.getElementById('scheduleTable');
-            if (scheduleTableEl) {
-                scheduleTableEl.addEventListener('click', (e) => {
-                    const link = e.target.closest('.add-employee-link');
-                    if (!link) return;
-                    const day = parseInt(link.dataset.day, 10);
-                    const shiftId = parseInt(link.dataset.shift, 10);
-                    if (Number.isNaN(day) || Number.isNaN(shiftId)) return;
-                    openAssignModal(day, shiftId);
-                });
-            }
+                    const shiftName = shiftNames[shiftId] || ('Ca ' + shiftId);
+                    const titleEl = document.getElementById('modalTitle');
+                    if (titleEl) titleEl.textContent = (dayNames[day] || ('Ngày ' + day)) + ' - ' + shiftName;
 
-            const btnAddBartender = document.getElementById('btnAddBartender');
-            if (btnAddBartender) {
-                btnAddBartender.addEventListener('click', () => {
-                    addToTempList(document.getElementById('bartenderSelect'), tempBartenders);
-                });
-            }
-
-            const btnAddBusser = document.getElementById('btnAddBusser');
-            if (btnAddBusser) {
-                btnAddBusser.addEventListener('click', () => {
-                    addToTempList(document.getElementById('busserSelect'), tempBussers);
-                });
-            }
-
-            function addToTempList(selectEl, list) {
-                if (!selectEl || !selectEl.value) return;
-
-                const id = parseInt(selectEl.value, 10);
-                if (!id || Number.isNaN(id)) return;
-
-                if (list.some(x => x.id === id)) {
-                    showToast('Nhân viên này đã có trong danh sách.', 'warning');
-                    return;
-                }
-
-                const selectedOption = selectEl.options[selectEl.selectedIndex];
-                const name = selectedOption ? selectedOption.text : ('NV#' + id);
-                list.push({ id, name });
-                selectEl.value = '';
-                renderTempLists();
-            }
-
-            // Modal "Xác nhận": BR01 requires a Cashier before saving the cell.
-            const btnConfirmCell = document.getElementById('btnConfirmCell');
-            if (btnConfirmCell) {
-                btnConfirmCell.addEventListener('click', () => {
+                    const existing = scheduleData[cellKey(day, shiftId)];
                     const cashierSelect = document.getElementById('cashierSelect');
-                    const cashierId = cashierSelect ? parseInt(cashierSelect.value, 10) : NaN;
+                    if (cashierSelect) {
+                        cashierSelect.value = existing && existing.cashier ? existing.cashier.id : '';
+                    }
 
-                    if (!cashierId || Number.isNaN(cashierId)) {
-                        showToast('Vui lòng chọn Nhân viên thu ngân cho ca này.', 'warning');
+                    tempBartenders = existing && Array.isArray(existing.bartenders) ? existing.bartenders.slice() : [];
+                    tempBussers = existing && Array.isArray(existing.bussers) ? existing.bussers.slice() : [];
+                    renderTempLists();
+
+                    assignModal.show();
+                }
+
+                // Clicking any "+ Thêm nhân viên" link opens the modal for that cell.
+                const scheduleTableEl = document.getElementById('scheduleTable');
+                if (scheduleTableEl) {
+                    scheduleTableEl.addEventListener('click', (e) => {
+                        const link = e.target.closest('.add-employee-link');
+                        if (!link) return;
+                        const day = parseInt(link.dataset.day, 10);
+                        const shiftId = parseInt(link.dataset.shift, 10);
+                        if (Number.isNaN(day) || Number.isNaN(shiftId)) return;
+                        openAssignModal(day, shiftId);
+                    });
+                }
+
+                const btnAddBartender = document.getElementById('btnAddBartender');
+                if (btnAddBartender) {
+                    btnAddBartender.addEventListener('click', () => {
+                        addToTempList(document.getElementById('bartenderSelect'), tempBartenders);
+                    });
+                }
+
+                const btnAddBusser = document.getElementById('btnAddBusser');
+                if (btnAddBusser) {
+                    btnAddBusser.addEventListener('click', () => {
+                        addToTempList(document.getElementById('busserSelect'), tempBussers);
+                    });
+                }
+
+                function addToTempList(selectEl, list) {
+                    if (!selectEl || !selectEl.value) return;
+
+                    const id = parseInt(selectEl.value, 10);
+                    if (!id || Number.isNaN(id)) return;
+
+                    if (list.some(x => x.id === id)) {
+                        showToast('Nhân viên này đã có trong danh sách.', 'warning');
                         return;
                     }
 
-                    const cashierName = cashierSelect.options[cashierSelect.selectedIndex].text;
+                    const selectedOption = selectEl.options[selectEl.selectedIndex];
+                    const name = selectedOption ? selectedOption.text : ('NV#' + id);
+                    list.push({ id, name });
+                    selectEl.value = '';
+                    renderTempLists();
+                }
 
-                    const key = cellKey(currentDay, currentShiftId);
-                    scheduleData[key] = {
-                        cashier: { id: cashierId, name: cashierName },
-                        bartenders: tempBartenders.slice(),
-                        bussers: tempBussers.slice()
-                    };
+                // Modal "Xác nhận": BR01 requires a Cashier before saving the cell.
+                const btnConfirmCell = document.getElementById('btnConfirmCell');
+                if (btnConfirmCell) {
+                    btnConfirmCell.addEventListener('click', () => {
+                        const cashierSelect = document.getElementById('cashierSelect');
+                        const cashierId = cashierSelect ? parseInt(cashierSelect.value, 10) : NaN;
 
-                    modifiedCells.add(key);
-
-                    renderCell(currentDay, currentShiftId);
-                    if (assignModal) assignModal.hide();
-                });
-            }
-
-            // Main "Hủy": discard the whole in-progress week assembly (AT3).
-            const btnCancelAll = document.getElementById('btnCancelAll');
-            if (btnCancelAll) {
-                btnCancelAll.addEventListener('click', () => {
-                    showConfirmModal(
-                        'Hủy thay đổi',
-                        'Bạn có chắc muốn hủy? Toàn bộ dữ liệu chưa lưu sẽ bị mất.',
-                        function() {
-                            window.location.href = '/WorkSchedule/Index?weekStart=' + weekStartDate;
+                        if (!cashierId || Number.isNaN(cashierId)) {
+                            showToast('Vui lòng chọn Nhân viên thu ngân cho ca này.', 'warning');
+                            return;
                         }
-                    );
-                });
-            }
 
-            // Main "Xác nhận": submit every populated, modified/added cell.
-            const btnConfirmAll = document.getElementById('btnConfirmAll');
-            if (btnConfirmAll) {
-                btnConfirmAll.addEventListener('click', async () => {
-                    if (!branchId) {
-                        showToast('Không xác định được chi nhánh. Không thể lưu lịch làm việc.', 'danger');
-                        return;
-                    }
+                        const cashierName = cashierSelect.options[cashierSelect.selectedIndex].text;
 
-                    const cellKeys = Array.from(modifiedCells);
-                    if (cellKeys.length === 0) {
-                        showToast('Không có thay đổi nào để lưu.', 'warning');
-                        return;
-                    }
+                        const key = cellKey(currentDay, currentShiftId);
+                        scheduleData[key] = {
+                            cashier: { id: cashierId, name: cashierName },
+                            bartenders: tempBartenders.slice(),
+                            bussers: tempBussers.slice()
+                        };
 
-                    const scopeUpcomingEl = document.getElementById('scopeUpcoming');
-                    const applyUpcoming = !!(scopeUpcomingEl && scopeUpcomingEl.checked);
-                    const weeksToApply = [new Date(weekStartDate)];
+                        modifiedCells.add(key);
 
-                    if (applyUpcoming) {
-                        for (let i = 1; i <= 4; i++) {
-                            const d = new Date(weekStartDate);
-                            d.setDate(d.getDate() + 7 * i);
-                            weeksToApply.push(d);
-                        }
-                    }
+                        renderCell(currentDay, currentShiftId);
+                        if (assignModal) assignModal.hide();
+                    });
+                }
 
-                    const errors = [];
-
-                    for (const week of weeksToApply) {
-                        for (const key of cellKeys) {
-                            const [dayStr, shiftIdStr] = key.split('_');
-                            const day = parseInt(dayStr, 10);
-                            const shiftId = parseInt(shiftIdStr, 10);
-                            const cell = scheduleData[key];
-
-                            if (!cell || !cell.cashier || !cell.cashier.id) {
-                                errors.push('Ca (' + (shiftNames[shiftId] || shiftId) + ') thiếu Nhân viên thu ngân, đã bỏ qua.');
-                                continue;
+                // Main "Hủy": discard the whole in-progress week assembly (AT3).
+                const btnCancelAll = document.getElementById('btnCancelAll');
+                if (btnCancelAll) {
+                    btnCancelAll.addEventListener('click', () => {
+                        showConfirmModal(
+                            'Hủy thay đổi',
+                            'Bạn có chắc muốn hủy? Toàn bộ dữ liệu chưa lưu sẽ bị mất.',
+                            function() {
+                                window.location.href = '/WorkSchedule/Index?weekStart=' + weekStartDate;
                             }
+                        );
+                    });
+                }
 
-                            const assignmentDate = new Date(week);
-                            assignmentDate.setDate(assignmentDate.getDate() + day);
+                // Main "Xác nhận": submit every populated, modified/added cell.
+                const btnConfirmAll = document.getElementById('btnConfirmAll');
+                if (btnConfirmAll) {
+                    btnConfirmAll.addEventListener('click', async () => {
+                        if (!branchId) {
+                            showToast('Không xác định được chi nhánh. Không thể lưu lịch làm việc.', 'danger');
+                            return;
+                        }
 
-                            const employeeIds = [
-                                cell.cashier.id,
-                                ...(cell.bartenders || []).map(b => b && b.id).filter(id => !!id),
-                                ...(cell.bussers || []).map(b => b && b.id).filter(id => !!id)
-                            ];
+                        const cellKeys = Array.from(modifiedCells);
+                        if (cellKeys.length === 0) {
+                            showToast('Không có thay đổi nào để lưu.', 'warning');
+                            return;
+                        }
 
-                            const payload = {
-                                branchId: branchId,
-                                assignmentDate: formatDateOnly(assignmentDate),
-                                shiftId: shiftId,
-                                employeeIds: employeeIds
-                            };
+                        showConfirmModal(
+                            'Xác nhận cập nhật lịch làm việc',
+                            `Xác nhận lưu cập nhật lịch làm việc cho ${cellKeys.length} ô phân ca?`,
+                            async function() {
+                                const scopeUpcomingEl = document.getElementById('scopeUpcoming');
+                                const applyUpcoming = !!(scopeUpcomingEl && scopeUpcomingEl.checked);
+                                const weeksToApply = [new Date(weekStartDate)];
 
-                            // Route to AddWorkSchedule for brand new rosters, or UpdateWorkSchedule for existing ones
-                            const isUpdate = initiallyExistingCells.has(key);
-                            const url = isUpdate ? '/WorkSchedule/UpdateWorkSchedule' : '/WorkSchedule/AddWorkSchedule';
-
-                            try {
-                                const res = await fetch(url, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(payload)
-                                });
-
-                                if (!res.ok) {
-                                    const msg = await res.text();
-                                    errors.push(assignmentDate.toLocaleDateString('vi-VN') + ' - ' + (shiftNames[shiftId] || shiftId) + ': ' + (msg || 'Lỗi không xác định'));
+                                if (applyUpcoming) {
+                                    for (let i = 1; i <= 4; i++) {
+                                        const d = new Date(weekStartDate);
+                                        d.setDate(d.getDate() + 7 * i);
+                                        weeksToApply.push(d);
+                                    }
                                 }
-                            } catch (err) {
-                                errors.push(assignmentDate.toLocaleDateString('vi-VN') + ' - ' + (shiftNames[shiftId] || shiftId) + ': ' + err);
+
+                                const errors = [];
+
+                                for (const week of weeksToApply) {
+                                    for (const key of cellKeys) {
+                                        const [dayStr, shiftIdStr] = key.split('_');
+                                        const day = parseInt(dayStr, 10);
+                                        const shiftId = parseInt(shiftIdStr, 10);
+                                        const cell = scheduleData[key];
+
+                                        if (!cell || !cell.cashier || !cell.cashier.id) {
+                                            errors.push('Ca (' + (shiftNames[shiftId] || shiftId) + ') thiếu Nhân viên thu ngân, đã bỏ qua.');
+                                            continue;
+                                        }
+
+                                        const assignmentDate = new Date(week);
+                                        assignmentDate.setDate(assignmentDate.getDate() + day);
+
+                                        const employeeIds = [
+                                            cell.cashier.id,
+                                            ...(cell.bartenders || []).map(b => b && b.id).filter(id => !!id),
+                                            ...(cell.bussers || []).map(b => b && b.id).filter(id => !!id)
+                                        ];
+
+                                        const payload = {
+                                            branchId: branchId,
+                                            assignmentDate: formatDateOnly(assignmentDate),
+                                            shiftId: shiftId,
+                                            employeeIds: employeeIds
+                                        };
+
+                                        // Route to AddWorkSchedule for brand new rosters, or UpdateWorkSchedule for existing ones
+                                        const isUpdate = initiallyExistingCells.has(key);
+                                        const url = isUpdate ? '/WorkSchedule/UpdateWorkSchedule' : '/WorkSchedule/AddWorkSchedule';
+
+                                        try {
+                                            const res = await fetch(url, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(payload)
+                                            });
+
+                                            if (!res.ok) {
+                                                const msg = await res.text();
+                                                errors.push(assignmentDate.toLocaleDateString('vi-VN') + ' - ' + (shiftNames[shiftId] || shiftId) + ': ' + (msg || 'Lỗi không xác định'));
+                                            }
+                                        } catch (err) {
+                                            errors.push(assignmentDate.toLocaleDateString('vi-VN') + ' - ' + (shiftNames[shiftId] || shiftId) + ': ' + err);
+                                        }
+                                    }
+                                }
+
+                                if (errors.length > 0) {
+                                    showToast('Một số ca không thể lưu: ' + errors.join('; '), 'danger');
+                                } else {
+                                    showToast('Lưu lịch làm việc theo tuần thành công!', 'success');
+                                    setTimeout(() => window.location.reload(), 1000);
+                                }
                             }
-                        }
-                    }
+                        );
+                    });
+                }
 
-                    if (errors.length > 0) {
-                        showToast('Một số ca không thể lưu: ' + errors.join('; '), 'danger');
-                    } else {
-                        showToast('Lưu lịch làm việc theo tuần thành công!', 'success');
-                        setTimeout(() => window.location.reload(), 1000);
-                    }
-                });
-            }
-
-            // Initial render: draws every cell, including those seeded from existingAssignments above.
+                // Initial render: draws every cell, including those seeded from existingAssignments above.
     @foreach (var shift in shifts)
-            {
-                        for (var d = 0; d < 7; d++)
-                        {
-                                    @: renderCell(@d, @shift.ShiftId);
-                        }
-            }
+                {
+                                for (var d = 0; d < 7; d++)
+                                {
+                                                @: renderCell(@d, @shift.ShiftId);
+                                }
+                }
     </script>
 }

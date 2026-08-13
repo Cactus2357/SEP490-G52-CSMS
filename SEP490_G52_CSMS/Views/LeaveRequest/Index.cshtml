@@ -220,6 +220,20 @@
             return false;
         }
 
+        $('#createLeaveForm').on('submit', function(e) {
+            if ($(this).data('confirmed')) return true;
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận gửi đơn xin nghỉ',
+                'Bạn có chắc chắn muốn gửi đơn xin nghỉ phép này đến quản lý?',
+                function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                }
+            );
+        });
+
         function validateFilterDates() {
             const fromDate = document.getElementById('filterFromDate').value;
             const textToDate = document.getElementById('filterToDate').value;

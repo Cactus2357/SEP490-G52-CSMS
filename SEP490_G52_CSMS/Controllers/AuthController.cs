@@ -28,6 +28,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -36,12 +37,14 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Login(string username, string password)
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
@@ -92,6 +95,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> FaceLogin([FromBody] FaceLoginRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.FacialId))
@@ -417,12 +421,14 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ForgotPassword()
         {
             return View(new ForgotPasswordViewModel());
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.UsernameOrEmail))
@@ -474,6 +480,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
         {

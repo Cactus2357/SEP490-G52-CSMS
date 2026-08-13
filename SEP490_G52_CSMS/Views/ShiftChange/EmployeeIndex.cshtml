@@ -196,6 +196,20 @@
             return false;
         }
 
+        $('#createShiftChangeForm').on('submit', function(e) {
+            if ($(this).data('confirmed')) return true;
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận gửi đơn đổi ca',
+                'Bạn có chắc chắn muốn gửi đơn xin đổi ca làm việc này không?',
+                function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                }
+            );
+        });
+
         function validateFilterDates() {
             const fromDate = document.getElementById('filterFromDate').value;
             const toDate = document.getElementById('filterToDate').value;

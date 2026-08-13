@@ -394,25 +394,31 @@
                 return;
             }
 
-            $.ajax({
-                url: '/BranchWarehouse/ConfirmReceipt',
-                type: 'POST',
-                data: { code: activeRequestCode, delivererName: name, delivererPhone: phone },
-                success: function(res) {
-                    if (res.success) {
-                        $('#requestDetailModal').modal('hide');
-                        showToast(res.message, 'success');
-                        setTimeout(function() {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        showToast(res.message, 'danger');
-                    }
-                },
-                error: function() {
-                    showToast('Lỗi kết nối máy chủ khi xác nhận nhận hàng.', 'danger');
+            showConfirmModal(
+                'Xác nhận nhập hàng',
+                'Xác nhận chi nhánh đã nhận đủ hàng và cập nhật số lượng tồn kho?',
+                function() {
+                    $.ajax({
+                        url: '/BranchWarehouse/ConfirmReceipt',
+                        type: 'POST',
+                        data: { code: activeRequestCode, delivererName: name, delivererPhone: phone },
+                        success: function(res) {
+                            if (res.success) {
+                                $('#requestDetailModal').modal('hide');
+                                showToast(res.message, 'success');
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                showToast(res.message, 'danger');
+                            }
+                        },
+                        error: function() {
+                            showToast('Lỗi kết nối máy chủ khi xác nhận nhận hàng.', 'danger');
+                        }
+                    });
                 }
-            });
+            );
         }
     </script>
 }

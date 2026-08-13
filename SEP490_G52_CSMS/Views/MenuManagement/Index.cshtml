@@ -69,7 +69,7 @@
                                     <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0 me-2" onclick="openMenuDetailModal(@item.MenuId)">
                                         Chi tiết
                                     </button>
-                                    <form asp-action="ToggleStatus" asp-route-id="@item.MenuId" method="post" class="d-inline">
+                                    <form asp-action="ToggleStatus" asp-route-id="@item.MenuId" method="post" class="d-inline" onsubmit="return confirmToggleMenu(this, @item.IsActive.ToString().ToLower());">
                                         @if (item.IsActive)
                                         {
                                             <button type="submit" class="btn btn-sm btn-link text-danger fw-bold text-decoration-none p-0">Ngừng hoạt động</button>
@@ -170,6 +170,16 @@
                     tr[i].style.display = (txtValue.toUpperCase().indexOf(filter) > -1) ? "" : "none";
                 }
             }
+        }
+
+        function confirmToggleMenu(form, isActive) {
+            const actionText = isActive ? 'ngừng hoạt động' : 'kích hoạt';
+            showConfirmModal(
+                'Xác nhận ' + actionText + ' thực đơn',
+                'Bạn có chắc chắn muốn ' + actionText + ' thực đơn này không?',
+                function() { form.submit(); }
+            );
+            return false;
         }
     </script>
 }

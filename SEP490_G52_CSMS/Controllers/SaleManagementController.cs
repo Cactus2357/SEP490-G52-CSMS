@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
@@ -9,6 +10,7 @@ using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize]
     public class SaleManagementController : Controller
     {
         private readonly IOrderService _orderService;
@@ -153,6 +155,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult CustomerMonitor()
         {
             return View();

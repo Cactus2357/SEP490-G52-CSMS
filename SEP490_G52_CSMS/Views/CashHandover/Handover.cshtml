@@ -235,5 +235,19 @@
                 icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
         }
+
+        $('#handoverForm').on('submit', function(e) {
+            if ($(this).data('confirmed')) return true;
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận bàn giao ca',
+                'Bạn có chắc chắn muốn xác nhận hoàn tất bàn giao ca làm việc này không?',
+                function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                }
+            );
+        });
     </script>
 }

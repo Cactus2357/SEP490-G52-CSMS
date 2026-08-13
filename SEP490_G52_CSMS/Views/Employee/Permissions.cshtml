@@ -250,38 +250,45 @@
 
     async function savePermissions() {
         const empId = document.getElementById('editEmpId').value;
+        const fullName = document.getElementById('editEmpName').value;
         const role = document.getElementById('editRoleSelect').value;
         const type = document.getElementById('editTypeSelect').value;
         
         const btnSave = document.getElementById('btnSavePermissions');
         const alertEl = document.getElementById('modalErrorAlert');
         
-        alertEl.classList.add('d-none');
-        btnSave.disabled = true;
-        
-        try {
-            const response = await fetch('/Employee/UpdatePermissions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employeeId: parseInt(empId), role: role, employmentType: type })
-            });
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                editModal.hide();
-                showToast('Cập nhật phân quyền thành công!', 'success');
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                alertEl.textContent = result.errorMessage || 'Lỗi khi cập nhật phân quyền.';
-                alertEl.classList.remove('d-none');
+        showConfirmModal(
+            'Xác nhận phân quyền',
+            `Xác nhận thay đổi vai trò và loại hợp đồng cho nhân viên "${fullName}"?`,
+            async function() {
+                alertEl.classList.add('d-none');
+                btnSave.disabled = true;
+                
+                try {
+                    const response = await fetch('/Employee/UpdatePermissions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ employeeId: parseInt(empId), role: role, employmentType: type })
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        editModal.hide();
+                        showToast('Cập nhật phân quyền thành công!', 'success');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        alertEl.textContent = result.errorMessage || 'Lỗi khi cập nhật phân quyền.';
+                        alertEl.classList.remove('d-none');
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alertEl.textContent = 'Không thể kết nối máy chủ.';
+                    alertEl.classList.remove('d-none');
+                } finally {
+                    btnSave.disabled = false;
+                }
             }
-        } catch(err) {
-            console.error(err);
-            alertEl.textContent = 'Không thể kết nối máy chủ.';
-            alertEl.classList.remove('d-none');
-        } finally {
-            btnSave.disabled = false;
-        }
+        );
     }
 
     function revokePermission(empId, fullName) {

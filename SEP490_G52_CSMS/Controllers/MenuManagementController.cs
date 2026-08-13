@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
+    [Authorize(Roles = "BranchManager,RManager")]
     public class MenuManagementController : Controller
     {
         private readonly IMenuService _menuService;

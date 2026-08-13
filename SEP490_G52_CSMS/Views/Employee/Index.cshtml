@@ -538,43 +538,48 @@
                 BranchId: document.getElementById('branchId').value
             };
 
-            var btnSubmit = document.getElementById('btnSubmitForm');
-            var spinner = document.getElementById('submitSpinner');
-            btnSubmit.disabled = true;
-            spinner.classList.remove('d-none');
+            showConfirmModal(
+                'Xác nhận tạo tài khoản',
+                'Bạn có chắc chắn muốn tạo tài khoản nhân viên mới này không?',
+                function() {
+                    var btnSubmit = document.getElementById('btnSubmitForm');
+                    var spinner = document.getElementById('submitSpinner');
+                    btnSubmit.disabled = true;
+                    spinner.classList.remove('d-none');
 
-            // Original server endpoint: /Employee/CreateAccount
-            fetch('/Employee/CreateAccount', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(data => {
-                btnSubmit.disabled = false;
-                spinner.classList.add('d-none');
+                    fetch('/Employee/CreateAccount', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        btnSubmit.disabled = false;
+                        spinner.classList.add('d-none');
 
-                if (data.success) {
-                    createdEmpId = data.employeeId;
-                    document.getElementById('displayUsername').value = data.username;
-                    document.getElementById('displayPassword').value = data.password || data.generatedPassword;
+                        if (data.success) {
+                            createdEmpId = data.employeeId;
+                            document.getElementById('displayUsername').value = data.username;
+                            document.getElementById('displayPassword').value = data.password || data.generatedPassword;
 
-                    var createModal = bootstrap.Modal.getInstance(document.getElementById('createEmployeeModal'));
-                    if (createModal) createModal.hide();
+                            var createModal = bootstrap.Modal.getInstance(document.getElementById('createEmployeeModal'));
+                            if (createModal) createModal.hide();
 
-                    var credentialsModal = new bootstrap.Modal(document.getElementById('credentialsModal'));
-                    credentialsModal.show();
-                } else {
-                    alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Tạo thất bại.');
-                    alertBox.classList.remove('d-none');
+                            var credentialsModal = new bootstrap.Modal(document.getElementById('credentialsModal'));
+                            credentialsModal.show();
+                        } else {
+                            alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Tạo thất bại.');
+                            alertBox.classList.remove('d-none');
+                        }
+                    })
+                    .catch(err => {
+                        btnSubmit.disabled = false;
+                        spinner.classList.add('d-none');
+                        alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi tạo tài khoản.';
+                        alertBox.classList.remove('d-none');
+                    });
                 }
-            })
-            .catch(err => {
-                btnSubmit.disabled = false;
-                spinner.classList.add('d-none');
-                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi tạo tài khoản.';
-                alertBox.classList.remove('d-none');
-            });
+            );
         }
 
         function togglePasswordVisibility() {
@@ -720,19 +725,22 @@
             }
 
             var notes = document.getElementById('deactNotes').value;
-            var btn = document.getElementById('deactConfirmBtn');
-            btn.disabled = true;
+            showConfirmModal(
+                'Xác nhận ngừng hoạt động',
+                'Bạn có chắc chắn muốn ngừng hoạt động tài khoản nhân viên này không?',
+                function() {
+                    var btn = document.getElementById('deactConfirmBtn');
+                    btn.disabled = true;
 
-            // Original server endpoint: /Employee/Deactivate
-            fetch('/Employee/Deactivate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    EmployeeId: pendingDeactEmpId,
-                    Reason: reason,
-                    Notes: notes
-                })
-            })
+                    fetch('/Employee/Deactivate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            EmployeeId: pendingDeactEmpId,
+                            Reason: reason,
+                            Notes: notes
+                        })
+                    })
             .then(r => r.json())
             .then(data => {
                 btn.disabled = false;
@@ -749,6 +757,7 @@
             .catch(err => {
                 btn.disabled = false;
                 showToast('Lỗi hệ thống khi ngừng hoạt động nhân viên.', 'danger');
+            });
             });
         }
     </script>

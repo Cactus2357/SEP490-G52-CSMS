@@ -9,7 +9,8 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content product-modal">
 
-            <form asp-controller="Product"
+            <form id="createProductForm"
+                  asp-controller="Product"
                   asp-action="Create"
                   method="post"
                   enctype="multipart/form-data">
@@ -130,3 +131,19 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('createProductForm').addEventListener('submit', function (e) {
+        if ($(this).data('confirmed')) return true;
+        e.preventDefault();
+        const form = this;
+        showConfirmModal(
+            'Xác nhận thêm sản phẩm',
+            'Bạn có chắc chắn muốn thêm sản phẩm mới này không?',
+            function () {
+                $(form).data('confirmed', true);
+                form.submit();
+            }
+        );
+    });
+</script>

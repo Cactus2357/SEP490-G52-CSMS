@@ -32,7 +32,8 @@
 
         </div>
 
-        <form asp-controller="Product"
+        <form id="editProductForm"
+              asp-controller="Product"
               asp-action="Edit"
               method="post"
               enctype="multipart/form-data">
@@ -226,6 +227,20 @@
             image.src = URL.createObjectURL(file);
             image.classList.remove("d-none");
         }
+
+        $('#editProductForm').on('submit', function(e) {
+            if ($(this).data('confirmed')) return true;
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận sửa sản phẩm',
+                'Bạn có chắc chắn muốn lưu cập nhật thông tin sản phẩm này?',
+                function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                }
+            );
+        });
     </script>
 
 }

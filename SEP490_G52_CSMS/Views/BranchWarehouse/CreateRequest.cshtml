@@ -394,25 +394,31 @@
                 }))
             };
 
-            $.ajax({
-                url: '/BranchWarehouse/SubmitSupplyRequest',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function(res) {
-                    if (res.success) {
-                        showToast(`Tạo đơn yêu cầu thành công! Mã đơn: ${res.requestCode}`, 'success');
-                        setTimeout(function() {
-                            window.location.href = '/BranchWarehouse/RequestHistory';
-                        }, 1500);
-                    } else {
-                        showToast(res.message, 'danger');
-                    }
-                },
-                error: function() {
-                    showToast('Lỗi kết nối máy chủ khi tạo đơn đặt hàng.', 'danger');
+            showConfirmModal(
+                'Xác nhận tạo đơn yêu cầu nhập',
+                'Bạn có chắc chắn muốn gửi đơn yêu cầu nhập nguyên liệu này lên Tổng kho không?',
+                function() {
+                    $.ajax({
+                        url: '/BranchWarehouse/SubmitSupplyRequest',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(payload),
+                        success: function(res) {
+                            if (res.success) {
+                                showToast(`Tạo đơn yêu cầu thành công! Mã đơn: ${res.requestCode}`, 'success');
+                                setTimeout(function() {
+                                    window.location.href = '/BranchWarehouse/RequestHistory';
+                                }, 1500);
+                            } else {
+                                showToast(res.message, 'danger');
+                            }
+                        },
+                        error: function() {
+                            showToast('Lỗi kết nối máy chủ khi tạo đơn đặt hàng.', 'danger');
+                        }
+                    });
                 }
-            });
+            );
         }
 
         function toggleRowCheckbox(event, row) {

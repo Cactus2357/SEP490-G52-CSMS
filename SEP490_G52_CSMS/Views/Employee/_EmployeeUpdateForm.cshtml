@@ -156,35 +156,40 @@
 
         var btn = document.getElementById('btnSaveUpdate');
         var spinner = document.getElementById('saveUpdateSpinner');
-
         var formData = new FormData(form);
 
-        btn.disabled = true;
-        spinner.classList.remove('d-none');
+        showConfirmModal(
+            'Xác nhận cập nhật',
+            'Bạn có chắc chắn muốn lưu cập nhật thông tin nhân viên này không?',
+            function() {
+                btn.disabled = true;
+                spinner.classList.remove('d-none');
 
-        fetch('/Employee/Update/@Model.EmployeeId', {
-            method: 'POST',
-            body: formData
-        })
-        .then(r => r.json())
-        .then(data => {
-            btn.disabled = false;
-            spinner.classList.add('d-none');
+                fetch('/Employee/Update/@Model.EmployeeId', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(data => {
+                    btn.disabled = false;
+                    spinner.classList.add('d-none');
 
-            if (data.success) {
-                closeEmployeeUpdate();
-                showToast('Cập nhật thông tin nhân viên thành công!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Cập nhật thất bại.');
-                errBox.classList.remove('d-none');
+                    if (data.success) {
+                        closeEmployeeUpdate();
+                        showToast('Cập nhật thông tin nhân viên thành công!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Cập nhật thất bại.');
+                        errBox.classList.remove('d-none');
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    spinner.classList.add('d-none');
+                    errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi cập nhật.';
+                    errBox.classList.remove('d-none');
+                });
             }
-        })
-        .catch(err => {
-            btn.disabled = false;
-            spinner.classList.add('d-none');
-            errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi cập nhật.';
-            errBox.classList.remove('d-none');
-        });
+        );
     }
 </script>

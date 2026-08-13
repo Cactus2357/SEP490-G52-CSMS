@@ -674,33 +674,39 @@
 
             if (!isValid) return;
 
-            $.ajax({
-                url: '/Warehouse/CreateMaterial',
-                type: 'POST',
-                data: {
-                    name: name,
-                    physicalState: physicalState,
-                    materialKind: kind,
-                    category: category,
-                    price: price,
-                    supplier: supplier,
-                    origin: origin
-                },
-                success: function(res) {
-                    if (res.success) {
-                        $('#createMaterialModal').modal('hide');
-                        showToast('Tạo nguyên liệu mới thành công!', 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        if (res.message.includes('trùng')) {
-                            $('#createMatName').addClass('is-invalid');
-                            $('#valCreateMatName').text(res.message);
-                        } else {
-                            showToast(res.message, 'danger');
+            showConfirmModal(
+                'Xác nhận thêm mới nguyên liệu',
+                'Bạn có chắc chắn muốn thêm nguyên liệu mới này vào kho không?',
+                function() {
+                    $.ajax({
+                        url: '/Warehouse/CreateMaterial',
+                        type: 'POST',
+                        data: {
+                            name: name,
+                            physicalState: physicalState,
+                            materialKind: kind,
+                            category: category,
+                            price: price,
+                            supplier: supplier,
+                            origin: origin
+                        },
+                        success: function(res) {
+                            if (res.success) {
+                                $('#createMaterialModal').modal('hide');
+                                showToast('Tạo nguyên liệu mới thành công!', 'success');
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                if (res.message.includes('trùng')) {
+                                    $('#createMatName').addClass('is-invalid');
+                                    $('#valCreateMatName').text(res.message);
+                                } else {
+                                    showToast(res.message, 'danger');
+                                }
+                            }
                         }
-                    }
+                    });
                 }
-            });
+            );
         }
 
         // --- 4. UPDATE MATERIAL DIALOG (UC57) ---

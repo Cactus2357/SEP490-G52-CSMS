@@ -561,7 +561,11 @@
                     function() { executeSaveRecipe(); }
                 );
             } else {
-                executeSaveRecipe();
+                showConfirmModal(
+                    'Xác nhận lưu công thức',
+                    'Bạn có chắc chắn muốn lưu công thức pha chế cho biến thể sản phẩm này không?',
+                    function() { executeSaveRecipe(); }
+                );
             }
         });
     </script>

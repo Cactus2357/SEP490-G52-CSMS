@@ -604,66 +604,78 @@
                 items: itemsPayload
             };
 
-            // Save values then transition
-            $.ajax({
-                url: '/Warehouse/UpdateReleasedQuantities',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function(res) {
-                    if (res.success) {
-                        // Trigger Approve transition
-                        $.ajax({
-                            url: '/Warehouse/ApproveRequestAndPrepare',
-                            type: 'POST',
-                            data: { code: currentRequestCode },
-                            success: function(approveRes) {
-                                if (approveRes.success) {
-                                    showToast(approveRes.message, 'success');
-                                    // Update table row in main table DOM immediately
-                                    let targetRow = $(`tr[data-code='${currentRequestCode}']`);
-                                    if (targetRow.length) {
-                                        targetRow.find('.status-cell').html(getStatusBadgeHtml('Đang chuẩn bị xuất'));
-                                        targetRow.removeClass('table-warning fw-bold border-warning-subtle');
-                                    }
+            showConfirmModal(
+                'Xác nhận phê duyệt đơn',
+                'Xác nhận duyệt đơn xuất kho và chuyển sang trạng thái Đang chuẩn bị xuất?',
+                function() {
+                    // Save values then transition
+                    $.ajax({
+                        url: '/Warehouse/UpdateReleasedQuantities',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(payload),
+                        success: function(res) {
+                            if (res.success) {
+                                // Trigger Approve transition
+                                $.ajax({
+                                    url: '/Warehouse/ApproveRequestAndPrepare',
+                                    type: 'POST',
+                                    data: { code: currentRequestCode },
+                                    success: function(approveRes) {
+                                        if (approveRes.success) {
+                                            showToast(approveRes.message, 'success');
+                                            // Update table row in main table DOM immediately
+                                            let targetRow = $(`tr[data-code='${currentRequestCode}']`);
+                                            if (targetRow.length) {
+                                                targetRow.find('.status-cell').html(getStatusBadgeHtml('Đang chuẩn bị xuất'));
+                                                targetRow.removeClass('table-warning fw-bold border-warning-subtle');
+                                            }
 
-                                    // Re-fetch details to cleanly populate Screen B
-                                    viewExportRequestDetails(currentRequestCode);
-                                } else {
-                                    showToast(approveRes.message, 'danger');
-                                }
+                                            // Re-fetch details to cleanly populate Screen B
+                                            viewExportRequestDetails(currentRequestCode);
+                                        } else {
+                                            showToast(approveRes.message, 'danger');
+                                        }
+                                    }
+                                });
+                            } else {
+                                showToast(res.message, 'danger');
                             }
-                        });
-                    } else {
-                        showToast(res.message, 'danger');
-                    }
+                        }
+                    });
                 }
-            });
+            );
         }
 
         // --- 6. CONFIRM SHIPMENT ---
         function confirmShipment() {
             if (!currentRequestCode) return;
 
-            $.ajax({
-                url: '/Warehouse/ConfirmShipment',
-                type: 'POST',
-                data: { code: currentRequestCode },
-                success: function(res) {
-                    if (res.success) {
-                        $('#requestProcessModal').modal('hide');
-                        showToast(res.message, 'success');
-                        setTimeout(function() {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        showToast(res.message, 'danger');
-                    }
-                },
-                error: function() {
-                    showToast('Lỗi kết nối máy chủ khi xuất kho.', 'danger');
+            showConfirmModal(
+                'Xác nhận đã xuất kho',
+                'Xác nhận toàn bộ nguyên liệu đã được xuất kho và giao cho bộ phận vận chuyển?',
+                function() {
+                    $.ajax({
+                        url: '/Warehouse/ConfirmShipment',
+                        type: 'POST',
+                        data: { code: currentRequestCode },
+                        success: function(res) {
+                            if (res.success) {
+                                $('#requestProcessModal').modal('hide');
+                                showToast(res.message, 'success');
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                showToast(res.message, 'danger');
+                            }
+                        },
+                        error: function() {
+                            showToast('Lỗi kết nối máy chủ khi xuất kho.', 'danger');
+                        }
+                    });
                 }
-            });
+            );
         }
     </script>
 }

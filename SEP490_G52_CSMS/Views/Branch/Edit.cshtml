@@ -97,6 +97,21 @@
 
         @section Scripts {
             <partial name="_ValidationScriptsPartial" />
+            <script>
+                $('#editForm').on('submit', function(e) {
+                    if ($(this).data('confirmed')) return true;
+                    e.preventDefault();
+                    const form = this;
+                    showConfirmModal(
+                        'Xác nhận lưu chi nhánh',
+                        'Bạn có chắc chắn muốn lưu cập nhật thông tin chi nhánh này không?',
+                        function() {
+                            $(form).data('confirmed', true);
+                            form.submit();
+                        }
+                    );
+                });
+            </script>
         }
     </section>
 </div>

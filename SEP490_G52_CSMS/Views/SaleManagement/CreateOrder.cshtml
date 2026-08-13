@@ -431,7 +431,13 @@
         }
 
         function processCashPayment() {
-            processPayment('Cash');
+            showConfirmModal(
+                'Xác nhận thanh toán tiền mặt',
+                'Xác nhận khách hàng đã thanh toán bằng tiền mặt cho đơn hàng này?',
+                function() {
+                    processPayment('Cash');
+                }
+            );
         }
 
         function initiateBankTransfer() {

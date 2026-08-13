@@ -156,5 +156,19 @@
                 selectedProductIds = selectedProductIds.filter(id => id !== pId.toString());
             }
         }
+
+        $('#editForm').on('submit', function(e) {
+            if ($(this).data('confirmed')) return true;
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận lưu thực đơn',
+                'Xác nhận lưu các thay đổi cho thực đơn này?',
+                function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                }
+            );
+        });
     </script>
 }

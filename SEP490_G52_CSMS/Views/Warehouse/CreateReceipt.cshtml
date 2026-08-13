@@ -393,23 +393,29 @@
                 }))
             };
 
-            $.ajax({
-                url: '/Warehouse/SubmitReceipt',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(payload),
-                success: function(res) {
-                    if (res.success) {
-                        showToast(`Nhập kho thành công! Phiếu nhập ${res.receiptCode} đã được lưu.`, 'success');
-                        setTimeout(() => { window.location.href = '/Warehouse/ImportHistory'; }, 1000);
-                    } else {
-                        showToast(res.message, 'danger');
-                    }
-                },
-                error: function() {
-                    showToast('Lỗi kết nối máy chủ khi lập phiếu nhập kho.', 'danger');
+            showConfirmModal(
+                'Xác nhận tạo phiếu nhập kho',
+                'Bạn có chắc chắn muốn hoàn tất tạo và lưu phiếu nhập kho này không?',
+                function() {
+                    $.ajax({
+                        url: '/Warehouse/SubmitReceipt',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(payload),
+                        success: function(res) {
+                            if (res.success) {
+                                showToast(`Nhập kho thành công! Phiếu nhập ${res.receiptCode} đã được lưu.`, 'success');
+                                setTimeout(() => { window.location.href = '/Warehouse/ImportHistory'; }, 1000);
+                            } else {
+                                showToast(res.message, 'danger');
+                            }
+                        },
+                        error: function() {
+                            showToast('Lỗi kết nối máy chủ khi lập phiếu nhập kho.', 'danger');
+                        }
+                    });
                 }
-            });
+            );
         }
     </script>
 }

@@ -295,9 +295,11 @@
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <div class="px-3 py-2 d-flex align-items-center justify-content-between">
-                                        <div class="small user-theme-text text-muted fw-semibold m-0"><i class="bi bi-moon-stars me-1.5"></i>Giao diện</div>
-                                        <div class="form-check form-switch m-0">
+                                    <div class="px-3 d-flex align-items-center justify-content-between">
+                                        <div class="small user-theme-text text-muted fw-semibold m-0">
+                                            <i class="bi bi-moon-stars me-2"></i> Giao diện
+                                        </div>
+                                        <div class="form-check form-switch m-0 p-0">
                                             <input class="form-check-input" type="checkbox" role="switch" id="themeToggleSwitch" onclick="toggleTheme()" style="cursor: pointer;">
                                         </div>
                                     </div>
@@ -731,20 +733,20 @@
     </div>
 </div>
 
-<!-- Reusable Bootstrap Confirm Modal -->
-<div class="modal fade" id="bsConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+<!-- Reusable Bootstrap Dynamic Confirm Modal -->
+<div class="modal fade" id="bsConfirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-3">
             <div class="modal-header bg-dark text-white py-3">
                 <h5 class="modal-title fw-bold" id="bsConfirmTitle">Xác nhận</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 fs-6" id="bsConfirmMessage">
                 Bạn có chắc chắn muốn thực hiện thao tác này?
             </div>
             <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill fw-semibold" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary px-4 rounded-pill fw-semibold" id="bsConfirmSubmitBtn">Đồng ý</button>
+                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill fw-semibold" id="bsConfirmCancelBtn" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary px-4 rounded-pill fw-semibold" id="bsConfirmSubmitBtn">Xác nhận</button>
             </div>
         </div>
     </div>
@@ -754,16 +756,38 @@
     let confirmModalInstance = null;
     let confirmCallback = null;
 
-    function showConfirmModal(title, message, onConfirm) {
+    function showConfirmModal(title, message, onConfirm, confirmText, cancelText) {
+        if (typeof message === 'function' && onConfirm === undefined) {
+            onConfirm = message;
+            message = title;
+            title = 'Xác nhận';
+        }
         $('#bsConfirmTitle').text(title || 'Xác nhận');
         $('#bsConfirmMessage').html(message || 'Bạn có chắc chắn muốn thực hiện thao tác này?');
+        $('#bsConfirmCancelBtn').text(cancelText || 'Hủy');
+        $('#bsConfirmSubmitBtn').text(confirmText || 'Xác nhận');
         confirmCallback = onConfirm;
 
-        if (!confirmModalInstance) {
-            confirmModalInstance = new bootstrap.Modal(document.getElementById('bsConfirmModal'));
+        const modalEl = document.getElementById('bsConfirmModal');
+        if (!confirmModalInstance && modalEl) {
+            confirmModalInstance = new bootstrap.Modal(modalEl);
         }
-        confirmModalInstance.show();
+        if (confirmModalInstance) {
+            confirmModalInstance.show();
+        }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalEl = document.getElementById('bsConfirmModal');
+        if (modalEl) {
+            modalEl.addEventListener('shown.bs.modal', function () {
+                const cancelBtn = document.getElementById('bsConfirmCancelBtn');
+                if (cancelBtn) {
+                    cancelBtn.focus();
+                }
+            });
+        }
+    });
 
     $(document).on('click', '#bsConfirmSubmitBtn', function() {
         if (confirmModalInstance) {
