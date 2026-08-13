@@ -229,6 +229,13 @@ namespace SEP490_G52_CSMS.Controllers
                 model.BranchId = User.GetBranchId() ?? model.BranchId;
             }
 
+            decimal theoretical = model.InitialCash + model.MachineCashRevenue;
+            decimal discrepancy = model.ActualCash - theoretical;
+            if (discrepancy != 0 && string.IsNullOrWhiteSpace(model.Notes))
+            {
+                ModelState.AddModelError("Notes", "Tiền kết ca bị chênh lệch so với hệ thống. Vui lòng nhập lý do chênh lệch!");
+            }
+
             if (!ModelState.IsValid)
             {
                 // Reload danh sách thu ngân khi model invalid

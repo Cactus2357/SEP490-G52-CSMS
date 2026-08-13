@@ -109,15 +109,17 @@
                     </div>
                 }
 
-                <form method="post" action="/Auth/Login" class="needs-validation" novalidate>
+                <form method="post" action="/Auth/Login" class="needs-validation" novalidate id="credsLoginForm">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Nhập Email/Username</label>
                         <input type="text" name="username" class="form-control" placeholder="Nhập Email hoặc Tên tài khoản" required />
+                        <div class="invalid-feedback">Vui lòng nhập Email hoặc Tên tài khoản.</div>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label fw-bold">Nhập Mật khẩu</label>
                         <input type="password" name="password" class="form-control" placeholder="Nhập Mật khẩu" required />
+                        <div class="invalid-feedback">Vui lòng nhập mật khẩu.</div>
                     </div>
 
                     <div class="d-grid mb-3">
@@ -354,9 +356,20 @@
             initWebcam();
         });
 
-        window.addEventListener('beforeunload', () => {
-            stopWebcam();
-        });
+        // Bootstrap Form Validation Script
+        (function () {
+            'use strict'
+            const forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })()
     </script>
 </body>
 </html>

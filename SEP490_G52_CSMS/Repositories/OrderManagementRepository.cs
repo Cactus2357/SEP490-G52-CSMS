@@ -43,18 +43,6 @@ namespace SEP490_G52_CSMS.Repositories
                 query = query.Where(o => o.CreatedAt.Date <= toDate.Value.Date);
             }
 
-            // Default business rule BR03: display current day if no date is specified
-            if (!fromDate.HasValue && !toDate.HasValue)
-            {
-                var today = DateTime.Today;
-                var hasOrdersToday = await _context.Orders
-                    .AnyAsync(o => (string.IsNullOrEmpty(branchId) || o.BranchId == branchId) && o.CreatedAt.Date == today);
-                if (hasOrdersToday)
-                {
-                    query = query.Where(o => o.CreatedAt.Date == today);
-                }
-            }
-
             if (!string.IsNullOrEmpty(searchCashier))
             {
                 // Find cashiers matching name
@@ -65,19 +53,21 @@ namespace SEP490_G52_CSMS.Repositories
             {
                 if (status == "Hoàn thành")
                 {
-                    query = query.Where(o => o.PaymentStatus == "Paid" && (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed"));
-                }
-                else if (status == "Đang xử lý")
-                {
-                    query = query.Where(o => o.PaymentStatus == "Unpaid" ||
-                                           o.BrewingStatus == "Waiting" ||
-                                           o.BrewingStatus == "Brewing" ||
-                                           o.BrewingStatus == "Waiting for Brewing" ||
-                                           o.BrewingStatus == "Brewing in Progress");
+                    query = query.Where(o => o.PaymentStatus == "Paid" || o.BrewingStatus == "Done" || o.BrewingStatus == "Completed");
                 }
                 else if (status == "Đã hủy")
                 {
-                    query = query.Where(o => o.PaymentStatus == "Canceled" || o.BrewingStatus == "Canceled");
+                    query = query.Where(o => o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled");
+                }
+                else if (status == "Đang xử lý")
+                {
+                    query = query.Where(o => o.PaymentStatus != "Paid" &&
+                                           o.PaymentStatus != "Canceled" &&
+                                           o.PaymentStatus != "Cancelled" &&
+                                           o.BrewingStatus != "Done" &&
+                                           o.BrewingStatus != "Completed" &&
+                                           o.BrewingStatus != "Canceled" &&
+                                           o.BrewingStatus != "Cancelled");
                 }
             }
 

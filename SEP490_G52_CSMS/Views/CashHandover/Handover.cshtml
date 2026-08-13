@@ -110,10 +110,10 @@
 
                         @* Lý do chênh lệch *@
                         <div class="mb-0">
-                            <label asp-for="Notes" class="form-label small text-muted mb-1">
-                                - Lý do (nếu có):
+                            <label asp-for="Notes" class="form-label small text-muted mb-1" id="notesLabel">
+                                - Lý do (không bắt buộc nếu không lệch tiền):
                             </label>
-                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="3"
+                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="3" id="notesInput"
                                       placeholder="Nhập lý do nếu có chênh lệch..."></textarea>
                             <span asp-validation-for="Notes" class="text-danger small"></span>
                         </div>
@@ -203,23 +203,33 @@
 
         const actualInput  = document.getElementById('actualCashInput');
         const discDisplay  = document.getElementById('discrepancyDisplay');
+        const notesLabel   = document.getElementById('notesLabel');
+        const notesInput   = document.getElementById('notesInput');
+
+        let currentDiff = 0;
 
         actualInput.addEventListener('input', function () {
             const actual = parseFloat(this.value) || 0;
-            const diff   = actual - theoretical;
-            const fmt    = new Intl.NumberFormat('vi-VN').format(Math.abs(diff));
+            currentDiff  = actual - theoretical;
+            const fmt    = new Intl.NumberFormat('vi-VN').format(Math.abs(currentDiff));
 
-            if (diff > 0) {
+            if (currentDiff > 0) {
                 discDisplay.value = '+' + fmt;
                 discDisplay.classList.remove('text-danger');
                 discDisplay.classList.add('text-success');
-            } else if (diff < 0) {
+                notesLabel.innerHTML = '- Lý do chênh lệch <span class="text-danger fw-bold">* (Bắt buộc vì chênh lệch +' + fmt + 'đ)</span>:';
+                notesInput.required = true;
+            } else if (currentDiff < 0) {
                 discDisplay.value = '-' + fmt;
                 discDisplay.classList.remove('text-success');
                 discDisplay.classList.add('text-danger');
+                notesLabel.innerHTML = '- Lý do chênh lệch <span class="text-danger fw-bold">* (Bắt buộc vì chênh lệch -' + fmt + 'đ)</span>:';
+                notesInput.required = true;
             } else {
                 discDisplay.value = '0';
                 discDisplay.classList.remove('text-success', 'text-danger');
+                notesLabel.innerHTML = '- Lý do (không bắt buộc nếu không lệch tiền):';
+                notesInput.required = false;
             }
         });
 
@@ -239,6 +249,13 @@
         $('#handoverForm').on('submit', function(e) {
             if ($(this).data('confirmed')) return true;
             e.preventDefault();
+
+            if (currentDiff !== 0 && !notesInput.value.trim()) {
+                showToast('Tiền mặt thực tế bị chênh lệch so với hệ thống. Vui lòng nhập lý do chênh lệch!', 'warning');
+                notesInput.focus();
+                return false;
+            }
+
             const form = this;
             showConfirmModal(
                 'Xác nhận bàn giao ca',

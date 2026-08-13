@@ -13,6 +13,7 @@ namespace SEP490_G52_CSMS.Controllers
     [Authorize]
     public class SaleManagementController : Controller
     {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (string OrderId, DateTime CreatedAt)> _idempotencyStore = new();
         private readonly IOrderService _orderService;
         private readonly IMenuRepository _menuRepo;
         private readonly CSMSAppDbContext _context;
@@ -48,9 +49,41 @@ namespace SEP490_G52_CSMS.Controllers
             return 5; // Default fallback (cashier is 5)
         }
 
+        private async Task<bool> IsEmployeeInActiveShiftAsync(int employeeId, string branchId)
+        {
+            if (User.IsInRole("RManager") || User.IsInRole("BranchManager"))
+            {
+                return true;
+            }
+
+            var today = DateTime.Today;
+            var nowTime = DateTime.Now.TimeOfDay;
+
+            var rosterShifts = await _context.WeeklyRosterGrids
+                .Include(r => r.FixedShift)
+                .Where(r => r.EmployeeId == employeeId && r.AssignmentDate.Date == today)
+                .ToListAsync();
+
+            bool inScheduledShift = rosterShifts.Any(r => r.FixedShift != null && 
+                nowTime >= r.FixedShift.StartTime && nowTime <= r.FixedShift.EndTime);
+
+            bool hasOpenShift = await _context.CashHandovers
+                .AnyAsync(ch => ch.BranchId == branchId && (ch.OutgoingCashierId == employeeId || ch.IncomingCashierId == employeeId) && (ch.ClosedAt == null || ch.Status == "Active"));
+
+            return inScheduledShift || hasOpenShift;
+        }
+
         public async Task<IActionResult> CreateOrder()
         {
             var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            bool isInShift = await IsEmployeeInActiveShiftAsync(cashierId, branchId);
+            if (!isInShift)
+            {
+                ViewBag.NotInShift = true;
+                ViewBag.NotInShiftMessage = "Bạn hiện không ở trong ca làm việc (hoặc chưa mở ca). Vui lòng mở ca hoặc kiểm tra phân công lịch làm việc để thực hiện bán hàng.";
+            }
+
             var menus = await _menuRepo.GetMenusByBranchAsync(branchId);
             var activeMenu = menus?.FirstOrDefault(m => m.IsActive);
             BranchMenu? menu = null;
@@ -117,10 +150,21 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest(new { success = false, message = "Invalid order data" });
             }
 
-            var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
-
             var branchId = await GetUserBranchIdAsync();
             var cashierId = await GetUserCashierIdAsync();
+
+            if (!await IsEmployeeInActiveShiftAsync(cashierId, branchId))
+            {
+                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể bán hàng." });
+            }
+
+            // Order Idempotency check
+            if (!string.IsNullOrEmpty(model.IdempotencyKey) && _idempotencyStore.TryGetValue(model.IdempotencyKey, out var existing))
+            {
+                return Json(new { success = true, orderId = existing.OrderId, isDuplicate = true });
+            }
+
+            var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
 
             var orderItems = model.Items.Select(i => new OrderItem
             {
@@ -131,13 +175,34 @@ namespace SEP490_G52_CSMS.Controllers
 
             var order = await _orderService.CreateOrderAsync(recipient, branchId, cashierId, orderItems);
 
-            return Json(new { success = true, orderId = order.OrderId });
+            if (!string.IsNullOrEmpty(model.IdempotencyKey) && order != null && !string.IsNullOrEmpty(order.OrderId))
+            {
+                _idempotencyStore[model.IdempotencyKey] = (order.OrderId, DateTime.Now);
+                // Clean up store entries older than 30 minutes
+                var cutoff = DateTime.Now.AddMinutes(-30);
+                foreach (var k in _idempotencyStore.Keys)
+                {
+                    if (_idempotencyStore.TryGetValue(k, out var val) && val.CreatedAt < cutoff)
+                    {
+                        _idempotencyStore.TryRemove(k, out _);
+                    }
+                }
+            }
+
+            return Json(new { success = true, orderId = order?.OrderId });
         }
 
         [HttpPost]
-        public async Task<IActionResult> ProcessPayment(string orderId, string paymentMethod)
+        public async Task<IActionResult> ProcessPayment(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null)
         {
-            bool result = await _orderService.ProcessPaymentAsync(orderId, paymentMethod);
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            if (!await IsEmployeeInActiveShiftAsync(cashierId, branchId))
+            {
+                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể thực hiện thanh toán." });
+            }
+
+            bool result = await _orderService.ProcessPaymentAsync(orderId, paymentMethod, customerCash, changeAmount);
             if (result) return Json(new { success = true });
             return BadRequest(new { success = false, message = "Payment failed" });
         }
@@ -227,6 +292,7 @@ namespace SEP490_G52_CSMS.Controllers
     public class OrderSubmissionModel
     {
         public string RecipientName { get; set; } = "";
+        public string? IdempotencyKey { get; set; }
         public List<OrderItemSubmission> Items { get; set; } = new List<OrderItemSubmission>();
     }
 

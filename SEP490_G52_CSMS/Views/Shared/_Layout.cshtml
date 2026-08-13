@@ -1,3 +1,5 @@
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @inject SEP490_G52_CSMS.Models.CSMSAppDbContext DbContext
 @{
     string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
@@ -60,6 +62,68 @@
 
         unreadCount = DbContext.Notifications
             .Count(n => !n.IsRead && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)));
+    }
+
+    string shiftDisplayInfo = "";
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdStr, out int empId))
+        {
+            var today = DateTime.Today;
+            var rostersToday = DbContext.WeeklyRosterGrids
+                .Include(r => r.FixedShift)
+                .Where(r => r.EmployeeId == empId && r.AssignmentDate.Date == today)
+                .OrderBy(r => r.FixedShift.StartTime)
+                .ToList();
+
+            if (rostersToday.Any())
+            {
+                var mergedShifts = new List<string>();
+                int i = 0;
+                while (i < rostersToday.Count)
+                {
+                    var current = rostersToday[i];
+                    var startShiftName = current.FixedShift?.ShiftName ?? "Ca";
+                    var startTime = current.FixedShift?.StartTime ?? TimeSpan.Zero;
+                    var endTime = current.FixedShift?.EndTime ?? TimeSpan.Zero;
+                    var endShiftName = startShiftName;
+
+                    int j = i + 1;
+                    while (j < rostersToday.Count)
+                    {
+                        var next = rostersToday[j];
+                        if (next.FixedShift != null && Math.Abs((next.FixedShift.StartTime - endTime).TotalMinutes) <= 5)
+                        {
+                            endTime = next.FixedShift.EndTime;
+                            endShiftName = next.FixedShift.ShiftName;
+                            j++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    string timeRange = $"{startTime:hh\\:mm}-{endTime:hh\\:mm}";
+                    if (i == j - 1)
+                    {
+                        mergedShifts.Add($"{startShiftName} ({timeRange})");
+                    }
+                    else
+                    {
+                        mergedShifts.Add($"{startShiftName} + {endShiftName} ({timeRange})");
+                    }
+
+                    i = j;
+                }
+                shiftDisplayInfo = string.Join(", ", mergedShifts);
+            }
+            else
+            {
+                shiftDisplayInfo = "Không trong ca";
+            }
+        }
     }
 }
 <!DOCTYPE html>
@@ -176,16 +240,31 @@
 
         <div class="main-wrapper">
             <header class="top-header">
-                <div class="header-left position-relative" style="width: 320px;">
-                    <div class="input-group">
-                        <span class="input-group-text border-end-0 rounded-start-pill header-search-icon py-1.5 px-3">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" id="navbarSearchInput" class="form-control border-start-0 rounded-end-pill header-search-input py-1.5" placeholder="Tìm kiếm trang..." autocomplete="off" oninput="handleNavbarSearch(this.value)" style="font-size: 0.9rem;">
+                <div class="header-left d-flex align-items-center gap-3">
+                    <!-- Search Input Box Container -->
+                    <div class="position-relative" style="width: 220px; flex-shrink: 0;">
+                        <div class="input-group">
+                            <span class="input-group-text border-end-0 rounded-start-pill header-search-icon py-1.5 px-3">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" id="navbarSearchInput" class="form-control border-start-0 rounded-end-pill header-search-input py-1.5" placeholder="Tìm kiếm..." autocomplete="off" oninput="handleNavbarSearch(this.value)" style="font-size: 0.85rem;">
+                        </div>
+                        <div id="navbarSearchSuggestions" class="list-group position-absolute w-100 mt-1 shadow-lg d-none" style="top: 100%; left: 0; z-index: 2000; max-height: 250px; overflow-y: auto; border-radius: 8px;">
+                            <!-- Suggestions will render here -->
+                        </div>
                     </div>
-                    <div id="navbarSearchSuggestions" class="list-group position-absolute w-100 mt-1 shadow-lg d-none" style="top: 100%; left: 0; z-index: 2000; max-height: 250px; overflow-y: auto; border-radius: 8px;">
-                        <!-- Suggestions will render here -->
-                    </div>
+
+                    <!-- Pure Plain Text: Live Clock (No seconds) & Shift Info (No icons, No badges) -->
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    {
+                        <div class="text-nowrap text-secondary fw-medium" style="font-size: 0.88rem;">
+                            <span id="navLiveDateTime">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                            @if (!string.IsNullOrEmpty(shiftDisplayInfo))
+                            {
+                                <span> - @shiftDisplayInfo</span>
+                            }
+                        </div>
+                    }
                 </div>
                 <div class="header-branch">
                     <span class="h5 fw-bold mb-0 header-title-text">@displayTitle</span>
@@ -733,6 +812,15 @@
     </div>
 </div>
 
+<style>
+    #bsConfirmModal {
+        z-index: 10999 !important;
+    }
+    .confirm-modal-backdrop {
+        z-index: 10990 !important;
+    }
+</style>
+
 <!-- Reusable Bootstrap Dynamic Confirm Modal -->
 <div class="modal fade" id="bsConfirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -779,7 +867,27 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const modalEl = document.getElementById('bsConfirmModal');
+               // Live clock update (no seconds)
+        setInterval(function() {
+            const el = document.getElementById('navLiveDateTime');
+            if (el) {
+                const now = new Date();
+                const d = String(now.getDate()).padStart(2, '0');
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                el.textContent = `${d}/${m}/${y} ${hh}:${mm}`;
+            }
+        }, 1000);
+        
         if (modalEl) {
+            modalEl.addEventListener('show.bs.modal', function () {
+                modalEl.style.zIndex = '10999';
+                setTimeout(function() {
+                    $('.modal-backdrop').not('.confirm-modal-backdrop').last().addClass('confirm-modal-backdrop').css('z-index', '10990');
+                }, 10);
+            });
             modalEl.addEventListener('shown.bs.modal', function () {
                 const cancelBtn = document.getElementById('bsConfirmCancelBtn');
                 if (cancelBtn) {

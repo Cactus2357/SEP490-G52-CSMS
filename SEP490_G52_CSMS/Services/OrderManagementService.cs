@@ -16,9 +16,9 @@ namespace SEP490_G52_CSMS.Services
 
         private string MapStatus(Order o)
         {
-            if (o.PaymentStatus == "Paid" && o.BrewingStatus == "Done")
+            if (o.PaymentStatus == "Paid" || o.BrewingStatus == "Done" || o.BrewingStatus == "Completed")
                 return "Hoàn thành";
-            if (o.PaymentStatus == "Canceled" || o.BrewingStatus == "Canceled")
+            if (o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled")
                 return "Đã hủy";
             return "Đang xử lý";
         }

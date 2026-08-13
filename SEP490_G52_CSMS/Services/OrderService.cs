@@ -42,12 +42,21 @@ namespace SEP490_G52_CSMS.Services
             return await _orderRepo.CreateOrderAsync(order);
         }
 
-        public async Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod)
+        public async Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null)
         {
             var order = await _orderRepo.GetOrderByIdAsync(orderId);
             if (order == null || order.PaymentStatus == "Paid") return false;
 
-            order.PaymentMethod = paymentMethod;
+            if (paymentMethod == "Cash" && customerCash.HasValue && customerCash > 0)
+            {
+                decimal change = changeAmount ?? Math.Max(0, customerCash.Value - order.TotalAmount);
+                order.PaymentMethod = $"Cash (Đưa:{customerCash.Value:N0}đ - Thừa:{change:N0}đ)";
+            }
+            else
+            {
+                order.PaymentMethod = paymentMethod;
+            }
+
             order.PaymentStatus = "Paid";
             // Once paid, it is ready for brewing
             order.BrewingStatus = "Waiting for Brewing";

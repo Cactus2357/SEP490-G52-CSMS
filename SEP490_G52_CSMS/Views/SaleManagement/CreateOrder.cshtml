@@ -18,6 +18,16 @@
 </style>
 
 <div class="create-order-container pt-2">
+    @if (ViewBag.NotInShift == true)
+    {
+        <div class="alert alert-danger d-flex align-items-center shadow-sm mb-3 border-2 border-danger rounded-3 p-3" role="alert">
+            <i class="bi bi-exclamation-octagon-fill fs-2 me-3 text-danger"></i>
+            <div>
+                <h5 class="fw-bold mb-1 text-danger">BẠN HỆN KHÔNG TRONG CA LÀM VIỆC</h5>
+                <div class="fw-semibold">@ViewBag.NotInShiftMessage</div>
+            </div>
+        </div>
+    }
     <!-- Main Two Columns -->
     <div class="create-order-row">
         <!-- Left Column: Product Catalog -->
@@ -29,12 +39,12 @@
                 </button>
             </div>
             
-            <div class="catalog-search-bar d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <div class="position-relative" style="width: 250px; min-width: 200px;">
-                    <i class="bi bi-search position-absolute" style="left: 12px; top: 8px; color: #6c757d;"></i>
+            <div class="catalog-search-bar d-flex align-items-center gap-2 mb-3 w-100">
+                <div class="position-relative flex-grow-1">
+                    <i class="bi bi-search position-absolute" style="left: 12px; top: 10px; color: #6c757d;"></i>
                     <input type="text" id="productSearch" class="form-control ps-5" placeholder="Tìm kiếm sản phẩm..." onkeyup="filterProducts()">
                 </div>
-                <div style="width: 140px;">
+                <div style="width: 160px; flex-shrink: 0;">
                     <select id="categoryFilter" class="form-select fw-semibold" onchange="filterProducts()">
                         <option value="">Tất cả loại</option>
                         @foreach (var cat in Model.Categories)
@@ -49,11 +59,13 @@
                 <div class="row g-2" id="productGrid">
                     @foreach (var product in Model.MenuProducts)
                     {
-                        <div class="col-xl-6 col-12 mb-2 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
+                        <div class="col-xl-6 col-12 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
                             <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white" style="min-height: 90px; height: auto;">
                                 @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
                                 {
-                                    <img src="@product.ImageUrl" alt="@product.ProductName" class="border rounded me-3 object-fit-cover" style="width: 50px; height: 50px; flex-shrink: 0;" />
+                                    <img src="@product.ImageUrl" alt="@product.ProductName"
+                                         class="border rounded me-3"
+                                         style="width: 50px !important; height: 50px !important; object-fit: cover; flex-shrink: 0; display: block;" />
                                 }
                                 else
                                 {
@@ -127,37 +139,77 @@
 
 <!-- Modal 1: Payment Method Selection -->
 <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-bottom">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h5>
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom py-3 bg-light">
+                <h4 class="modal-title fw-extrabold text-dark fs-3"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h4>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="table-responsive mb-4">
+                <div class="table-responsive mb-4" style="max-height: 320px; overflow-y: auto;">
                     <table class="table table-hover align-middle mb-0" id="reviewCartTable">
                         <thead class="table-light">
                             <tr>
-                                <th>Tên</th>
-                                <th>Size</th>
-                                <th>SL</th>
-                                <th class="text-end">Giá</th>
+                                <th class="fs-4 fw-bold">Tên sản phẩm</th>
+                                <th class="fs-4 fw-bold">Size</th>
+                                <th class="text-center fs-4 fw-bold">Số lượng</th>
+                                <th class="text-end fs-4 fw-bold">Đơn giá</th>
+                                <th class="text-end pe-3 fs-4 fw-bold">Thành tiền</th>
                             </tr>
                         </thead>
-                        <tbody id="reviewCartBody">
+                        <tbody id="reviewCartBody" class="fs-4">
                             <!-- Filled by JS -->
                         </tbody>
                     </table>
                 </div>
-                <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded mb-4">
-                    <h5 class="fw-semibold mb-0 text-secondary">Tổng tiền</h5>
-                    <h4 class="fw-bold text-success mb-0" id="reviewTotalAmount">0 đ</h4>
+
+                <div class="d-flex align-items-center justify-content-between bg-light-subtle p-3 rounded-3 mb-4 border">
+                    <h4 class="fw-bold mb-0 text-secondary fs-3">TỔNG TIỀN ĐƠN HÀNG:</h4>
+                    <div class="display-5 fw-bold text-success mb-0" id="reviewTotalAmount">0 đ</div>
                 </div>
-                <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Quay lại</button>
-                    <div>
-                        <button type="button" class="btn btn-success px-4 py-2 me-2" onclick="processCashPayment()">Tiền mặt</button>
-                        <button type="button" class="btn btn-primary px-4 py-2" onclick="initiateBankTransfer()">Chuyển khoản</button>
+
+                <!-- Cash Payment Details Section (Hidden until "Tiền mặt" is clicked) -->
+                <div id="cashPaymentSection" class="d-none border border-primary border-2 rounded-3 p-4 bg-white mb-4 shadow">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h5 class="fw-bold text-primary mb-0 fs-3"><i class="bi bi-cash-stack me-2"></i>Chi tiết thanh toán tiền mặt</h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm fs-5 fw-bold px-3" id="btnShowTransferAgain" onclick="resetCashPaymentMode()">
+                            <i class="bi bi-arrow-left-right me-1"></i>Đổi sang Chuyển khoản
+                        </button>
+                    </div>
+                    <div class="row g-4 align-items-center mb-3">
+                        <div class="col-md-6">
+                            <label for="customerCashInput" class="form-label fw-bold text-dark fs-4">Tiền khách đưa (VNĐ): <span class="text-danger">*</span></label>
+                            <input type="number" id="customerCashInput" class="form-control form-control-lg fs-2 fw-bold text-primary py-2" placeholder="Nhập số tiền..." oninput="calculateCashChange()" step="1000" min="0" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark fs-4">Tiền thừa trả khách:</label>
+                            <div class="form-control form-control-lg fs-2 fw-bold bg-light py-2" id="changeAmountDisplay">0 đ</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Cash Entry Shortcuts -->
+                    <div class="d-flex flex-wrap gap-2 align-items-center pt-2">
+                        <span class="fs-5 fw-bold text-muted me-2">Gợi ý nhanh:</span>
+                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash('exact')">Vừa đủ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(50000)">50.000đ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(100000)">100.000đ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(200000)">200.000đ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(500000)">500.000đ</button>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-3 fs-4 fw-bold" data-bs-dismiss="modal">Quay lại</button>
+                    <div class="d-flex gap-3" id="paymentOptionsContainer">
+                        <button type="button" class="btn btn-success px-5 py-3 fs-3 fw-bold shadow-sm" id="btnChooseCash" onclick="selectCashPaymentMode()">
+                            <i class="bi bi-cash me-2"></i>Tiền mặt
+                        </button>
+                        <button type="button" class="btn btn-primary px-5 py-3 fs-3 fw-bold shadow-sm" id="btnChooseBankTransfer" onclick="initiateBankTransfer()">
+                            <i class="bi bi-qr-code-scan me-2"></i>Chuyển khoản
+                        </button>
+                        <button type="button" class="btn btn-success px-5 py-3 fs-3 fw-bold shadow-sm d-none" id="btnConfirmCashSubmit" onclick="confirmCashPaymentSubmit()">
+                            <i class="bi bi-check-circle me-2"></i>Xác nhận thanh toán tiền mặt
+                        </button>
                     </div>
                 </div>
             </div>
@@ -364,7 +416,30 @@
             }
         }
 
+        var cartIdempotencyKey = null;
+
+        function generateIdempotencyKey() {
+            return 'IDEM-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+        }
+
+        function syncCustomerMonitor(mode = 'Cart', extraData = {}) {
+            var total = cart.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+            var payload = {
+                mode: mode,
+                cart: cart,
+                total: total,
+                timestamp: new Date().getTime(),
+                ...extraData
+            };
+            localStorage.setItem('customer_display_state', JSON.stringify(payload));
+        }
+
         function showPaymentModal() {
+            if (@(ViewBag.NotInShift == true ? "true" : "false")) {
+                showToast("Bạn hiện không ở trong ca làm việc nên không thể bán hàng.", "warning");
+                return;
+            }
+
             if (cart.length === 0) {
                 showToast("Vui lòng thêm ít nhất 1 sản phẩm vào đơn hàng.", true);
                 return;
@@ -384,8 +459,13 @@
             cart = mergedCart;
             renderCart(); // Cập nhật lại giao diện giỏ hàng ngoài màn hình chính
 
+            if (!cartIdempotencyKey) {
+                cartIdempotencyKey = generateIdempotencyKey();
+            }
+
             var orderData = {
                 recipientName: recipient,
+                idempotencyKey: cartIdempotencyKey,
                 items: cart.map(i => ({ variantId: i.selectedVariantId, quantity: i.quantity, unitPrice: i.unitPrice }))
             };
 
@@ -407,6 +487,8 @@
             });
         }
 
+        var currentOrderTotalAmount = 0;
+
         function renderReviewCarts() {
             var html = '';
             var total = 0;
@@ -417,23 +499,80 @@
 
                 html += `
                     <tr>
-                        <td>${item.name}</td>
-                        <td>${selectedSize}</td>
-                        <td>${item.quantity}</td>
-                        <td class="text-end">${itemTotal.toLocaleString('vi-VN')} đ</td>
+                        <td class="fw-bold text-dark fs-4">${item.name}</td>
+                        <td><span class="badge bg-secondary-subtle text-dark fs-5">${selectedSize}</span></td>
+                        <td class="text-center fw-bold fs-4">${item.quantity}</td>
+                        <td class="text-end fs-4">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td class="text-end pe-3 fw-bold text-success fs-4">${itemTotal.toLocaleString('vi-VN')} đ</td>
                     </tr>
                 `;
             });
+            currentOrderTotalAmount = total;
             document.getElementById("reviewCartBody").innerHTML = html;
             
             var tStr = total.toLocaleString('vi-VN') + " đ";
             document.getElementById("reviewTotalAmount").innerText = tStr;
+
+            // Reset cash payment mode options
+            resetCashPaymentMode();
         }
 
-        function processCashPayment() {
+        function resetCashPaymentMode() {
+            $('#cashPaymentSection').addClass('d-none');
+            $('#btnChooseBankTransfer').removeClass('d-none');
+            $('#btnChooseCash').removeClass('d-none');
+            $('#btnConfirmCashSubmit').addClass('d-none');
+            $('#customerCashInput').val('');
+            $('#changeAmountDisplay').text('0 đ').removeClass('text-danger text-success').addClass('text-dark');
+        }
+
+        function selectCashPaymentMode() {
+            // Hide transfer button and show cash input section
+            $('#btnChooseBankTransfer').addClass('d-none');
+            $('#btnChooseCash').addClass('d-none');
+            $('#cashPaymentSection').removeClass('d-none');
+            $('#btnConfirmCashSubmit').removeClass('d-none');
+            $('#customerCashInput').focus();
+            calculateCashChange();
+        }
+
+        function setQuickCash(val) {
+            if (val === 'exact') {
+                $('#customerCashInput').val(currentOrderTotalAmount);
+            } else {
+                $('#customerCashInput').val(val);
+            }
+            calculateCashChange();
+        }
+
+        function calculateCashChange() {
+            var given = parseFloat($('#customerCashInput').val()) || 0;
+            var change = given - currentOrderTotalAmount;
+            var changeEl = $('#changeAmountDisplay');
+
+            if (given <= 0) {
+                changeEl.text('0 đ').removeClass('text-danger text-success').addClass('text-dark');
+            } else if (change < 0) {
+                changeEl.text('Còn thiếu ' + Math.abs(change).toLocaleString('vi-VN') + ' đ')
+                        .removeClass('text-dark text-success').addClass('text-danger');
+            } else {
+                changeEl.text(change.toLocaleString('vi-VN') + ' đ')
+                        .removeClass('text-dark text-danger').addClass('text-success');
+            }
+        }
+
+        function confirmCashPaymentSubmit() {
+            var given = parseFloat($('#customerCashInput').val()) || 0;
+            if (given < currentOrderTotalAmount) {
+                var missing = currentOrderTotalAmount - given;
+                showToast('Tiền khách đưa chưa đủ để thanh toán (còn thiếu ' + missing.toLocaleString('vi-VN') + ' đ)!', 'warning');
+                $('#customerCashInput').focus();
+                return;
+            }
+
             showConfirmModal(
                 'Xác nhận thanh toán tiền mặt',
-                'Xác nhận khách hàng đã thanh toán bằng tiền mặt cho đơn hàng này?',
+                'Xác nhận khách hàng đã thanh toán ' + given.toLocaleString('vi-VN') + ' đ bằng tiền mặt?',
                 function() {
                     processPayment('Cash');
                 }
@@ -475,6 +614,13 @@
             formData.append('orderId', currentOrderId);
             formData.append('paymentMethod', method);
 
+            if (method === 'Cash') {
+                var given = parseFloat($('#customerCashInput').val()) || 0;
+                var change = Math.max(0, given - currentOrderTotalAmount);
+                formData.append('customerCash', given);
+                formData.append('changeAmount', change);
+            }
+
             fetch('@Url.Action("ProcessPayment", "SaleManagement")', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -488,7 +634,10 @@
                     
                     showToast("Thanh toán thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
                     
+                    syncCustomerMonitor('PaidSuccess');
+
                     cart = [];
+                    cartIdempotencyKey = null;
                     document.getElementById("recipientName").value = "";
                     currentOrderId = null;
                     localStorage.removeItem('csms_cart');
