@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
@@ -688,6 +689,132 @@ namespace SEP490_G52_CSMS.Models
 
                     context.SaveChanges();
                 }
+            }
+
+            SeedRecipes(context);
+        }
+
+        private static void SeedRecipes(CSMSAppDbContext context)
+        {
+            if (context.Recipes.Any()) return;
+
+            var materials = context.Materials.ToDictionary(m => m.MaterialCode, m => m.MaterialId);
+            if (!materials.ContainsKey("NL001")) return;
+
+            int capheId = materials["NL001"];      // Cà phê hạt (g)
+            int suaDacId = materials["NL002"];     // Sữa đặc (ml)
+            int duongId = materials["NL003"];      // Đường cát trắng (g)
+            int suaTuoiId = materials["NL004"];    // Sữa tươi ít đường (ml)
+            int senId = materials.GetValueOrDefault("NL005");        // Hạt sen tươi (g)
+            int daoId = materials.GetValueOrDefault("NL006");        // Đào ngâm (g)
+            int traOolongId = materials.GetValueOrDefault("NL007");  // Trà Oolong túi lọc (g)
+            int siroBacHaId = materials.GetValueOrDefault("NL008");  // Siro Bạc hà (ml)
+
+            var products = context.MasterProducts
+                .Include(p => p.ProductVariants)
+                .Include(p => p.ProductCategory)
+                .ToList();
+
+            var newRecipes = new List<Recipe>();
+
+            foreach (var product in products)
+            {
+                if (product.ProductCategory != null && product.ProductCategory.CategoryName == "Bánh ngọt")
+                {
+                    continue; // Bánh ngọt không dùng công thức pha chế
+                }
+
+                foreach (var variant in product.ProductVariants)
+                {
+                    string size = variant.SizeVariant?.ToUpper() ?? "M";
+                    decimal sizeMultiplier = size switch
+                    {
+                        "S" => 0.8m,
+                        "L" => 1.25m,
+                        _ => 1.0m
+                    };
+
+                    switch (product.ProductName)
+                    {
+                        case "Cà phê đen":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = capheId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Cà phê sữa":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = capheId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = suaDacId, Quantity = Math.Round(35m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Bạc xỉu":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = capheId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = suaDacId, Quantity = Math.Round(40m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = suaTuoiId, Quantity = Math.Round(80m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Espresso":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = capheId, Quantity = Math.Round(18m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Trà đào cam sả":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = traOolongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = daoId, Quantity = Math.Round(40m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Trà oolong":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = traOolongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Trà sen vàng":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = traOolongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = senId, Quantity = Math.Round(40m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Trà vải":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = traOolongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Frappuccino cà phê":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = capheId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = suaTuoiId, Quantity = Math.Round(80m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = suaDacId, Quantity = Math.Round(30m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            break;
+
+                        case "Matcha đá xay":
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = suaTuoiId, Quantity = Math.Round(100m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = siroBacHaId, Quantity = Math.Round(30m * sizeMultiplier, 1) });
+                            newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            break;
+
+                        default:
+                            if (product.ProductCategory?.CategoryName == "Cà phê")
+                            {
+                                newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = capheId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                                newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            }
+                            else if (product.ProductCategory?.CategoryName == "Trà")
+                            {
+                                newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = traOolongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                                newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(15m * sizeMultiplier, 1) });
+                            }
+                            else
+                            {
+                                newRecipes.Add(new Recipe { VariantId = variant.VariantId, MaterialId = duongId, Quantity = Math.Round(20m * sizeMultiplier, 1) });
+                            }
+                            break;
+                    }
+                }
+            }
+
+            if (newRecipes.Any())
+            {
+                context.Recipes.AddRange(newRecipes);
+                context.SaveChanges();
             }
         }
     }
