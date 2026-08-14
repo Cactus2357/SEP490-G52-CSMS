@@ -60,20 +60,46 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             var today = DateTime.Today;
+            var yesterday = today.AddDays(-1);
             var nowTime = DateTime.Now.TimeOfDay;
 
+            // Query rosters assigned for today OR assigned for yesterday (if overnight shift spilled into early morning today)
             var rosterShifts = await _context.WeeklyRosterGrids
                 .Include(r => r.FixedShift)
-                .Where(r => r.EmployeeId == employeeId && r.AssignmentDate.Date == today)
+                .Where(r => r.EmployeeId == employeeId && (r.AssignmentDate.Date == today || r.AssignmentDate.Date == yesterday))
                 .ToListAsync();
 
-            bool inScheduledShift = rosterShifts.Any(r => r.FixedShift != null && 
-                nowTime >= r.FixedShift.StartTime && nowTime <= r.FixedShift.EndTime);
+            bool inScheduledShift = rosterShifts.Any(r => {
+                if (r.FixedShift == null) return false;
+                var start = r.FixedShift.StartTime;
+                var end = r.FixedShift.EndTime;
+
+                if (start <= end)
+                {
+                    // Normal daytime shift
+                    return r.AssignmentDate.Date == today && nowTime >= start && nowTime <= end;
+                }
+                else
+                {
+                    // Overnight shift (e.g., 22:00 - 06:00)
+                    if (r.AssignmentDate.Date == today)
+                    {
+                        // Assigned today, current time is in evening (>= 22:00)
+                        return nowTime >= start;
+                    }
+                    else if (r.AssignmentDate.Date == yesterday)
+                    {
+                        // Assigned yesterday, current time is early morning today (<= 06:00)
+                        return nowTime <= end;
+                    }
+                    return false;
+                }
+            });
 
             bool hasOpenShift = await _context.CashHandovers
                 .AnyAsync(ch => ch.BranchId == branchId 
                              && (ch.OutgoingCashierId == employeeId || ch.IncomingCashierId == employeeId) 
-                             && ch.HandoverDate.Date == today 
+                             && (ch.HandoverDate.Date == today || ch.HandoverDate.Date == yesterday)
                              && (ch.ClosedAt == null || ch.Status == "Active"));
 
             return inScheduledShift || hasOpenShift;

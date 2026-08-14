@@ -57,36 +57,44 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<int?> GetCurrentCashierIdAsync(string branchId, DateTime date, TimeSpan time)
         {
-            // Tìm nhân viên có lịch trực trong khoảng thời gian hiện tại
-            var roster = await _context.WeeklyRosterGrids
+            var yesterday = date.Date.AddDays(-1);
+            var rosters = await _context.WeeklyRosterGrids
                 .Include(w => w.FixedShift)
                 .AsNoTracking()
-                .Where(w => w.BranchId == branchId && w.AssignmentDate.Date == date.Date)
-                .OrderBy(w => w.FixedShift.StartTime)
-                .FirstOrDefaultAsync(w =>
-                    time >= w.FixedShift.StartTime &&
-                    time <= w.FixedShift.EndTime);
+                .Where(w => w.BranchId == branchId && (w.AssignmentDate.Date == date.Date || w.AssignmentDate.Date == yesterday))
+                .ToListAsync();
 
-            // Nếu không có ai trực ngay lúc này, tìm ca tiếp theo trong ngày
+            var roster = rosters.FirstOrDefault(w => {
+                if (w.FixedShift == null) return false;
+                var start = w.FixedShift.StartTime;
+                var end = w.FixedShift.EndTime;
+
+                if (start <= end)
+                {
+                    return w.AssignmentDate.Date == date.Date && time >= start && time <= end;
+                }
+                else
+                {
+                    if (w.AssignmentDate.Date == date.Date) return time >= start;
+                    else if (w.AssignmentDate.Date == yesterday) return time <= end;
+                    return false;
+                }
+            });
+
             if (roster == null)
             {
-                roster = await _context.WeeklyRosterGrids
-                    .Include(w => w.FixedShift)
-                    .AsNoTracking()
-                    .Where(w => w.BranchId == branchId && w.AssignmentDate.Date == date.Date && w.FixedShift.StartTime > time)
+                roster = rosters
+                    .Where(w => w.AssignmentDate.Date == date.Date && w.FixedShift.StartTime > time)
                     .OrderBy(w => w.FixedShift.StartTime)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefault();
             }
 
-            // Nếu vẫn không có ca tiếp theo, có thể lấy ca cuối cùng của ngày
             if (roster == null)
             {
-                roster = await _context.WeeklyRosterGrids
-                    .Include(w => w.FixedShift)
-                    .AsNoTracking()
-                    .Where(w => w.BranchId == branchId && w.AssignmentDate.Date == date.Date)
+                roster = rosters
+                    .Where(w => w.AssignmentDate.Date == date.Date)
                     .OrderByDescending(w => w.FixedShift.StartTime)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefault();
             }
 
             return roster?.EmployeeId;
