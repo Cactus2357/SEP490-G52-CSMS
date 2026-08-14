@@ -34,6 +34,7 @@ namespace SEP490_G52_CSMS.Models
         public DbSet<BranchSupplyRequest> BranchSupplyRequests { get; set; }
         public DbSet<BranchSupplyRequestItem> BranchSupplyRequestItems { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<BranchSetting> BranchSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

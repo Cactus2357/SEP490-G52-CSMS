@@ -24,6 +24,7 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddScoped<SEP490_G52_CSMS.Commons.IDAT_EmailHelper, SEP490_G52_CSMS.Commons.DAT_EmailHelper>();
 builder.Services.AddScoped<IEmployeeRepository, SEP490_G52_CSMS.Repositories.EmployeeRepository>();
 builder.Services.AddScoped<IEmployeeService, SEP490_G52_CSMS.Services.EmployeeService>();
+builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews();
 
 // =========================

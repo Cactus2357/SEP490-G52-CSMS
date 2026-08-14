@@ -68,7 +68,7 @@ namespace SEP490_G52_CSMS.Services
         public async Task<bool> StartBrewingAsync(string orderId)
         {
             var order = await _orderRepo.GetOrderByIdAsync(orderId);
-            if (order == null || order.BrewingStatus != "Waiting for Brewing") return false;
+            if (order == null) return false;
 
             order.BrewingStatus = "Brewing in Progress";
             await _orderRepo.UpdateOrderAsync(order);
@@ -78,7 +78,12 @@ namespace SEP490_G52_CSMS.Services
         public async Task<bool> CompleteBrewingAsync(string orderId)
         {
             var order = await _orderRepo.GetOrderByIdAsync(orderId);
-            if (order == null || order.BrewingStatus != "Brewing in Progress") return false;
+            if (order == null) return false;
+
+            if (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done")
+            {
+                return true;
+            }
 
             order.BrewingStatus = "Completed";
             await _orderRepo.UpdateOrderAsync(order);

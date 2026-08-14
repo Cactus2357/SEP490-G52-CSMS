@@ -7,6 +7,7 @@ using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Repositories.Interfaces;
 using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -17,12 +18,14 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly IOrderService _orderService;
         private readonly IMenuRepository _menuRepo;
         private readonly CSMSAppDbContext _context;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public SaleManagementController(IOrderService orderService, IMenuRepository menuRepo, CSMSAppDbContext context)
+        public SaleManagementController(IOrderService orderService, IMenuRepository menuRepo, CSMSAppDbContext context, IHttpClientFactory httpClientFactory)
         {
             _orderService = orderService;
             _menuRepo = menuRepo;
             _context = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         private async Task<string> GetUserBranchIdAsync()
@@ -219,6 +222,22 @@ namespace SEP490_G52_CSMS.Controllers
                 TempData["ErrorMessage"] = "Không tìm thấy đơn hàng.";
                 return RedirectToAction("CreateOrder");
             }
+
+            DbInitializer.EnsureTablesCreated(_context);
+            var branchId = await GetUserBranchIdAsync();
+            var branchSetting = await _context.BranchSettings.FirstOrDefaultAsync(s => s.BranchId == branchId && s.IsSePayActive);
+            if (branchSetting == null)
+            {
+                branchSetting = new Models.Core.BranchSetting
+                {
+                    BankCode = "MBBank",
+                    AccountNumber = "0333333333",
+                    AccountName = "CSMS CAFE",
+                    TransferPrefix = "CSMS"
+                };
+            }
+
+            ViewBag.BranchSetting = branchSetting;
             return View(details);
         }
 
@@ -249,6 +268,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
             order.PaymentStatus = "TransferSuccessPending";
+            order.PaymentMethod = $"Bank Transfer (SePay Sim - Đã nhận:{order.TotalAmount:N0}đ)";
             await _context.SaveChangesAsync();
 
             return Json(new { success = true });
@@ -257,10 +277,29 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> CheckPaymentStatus(string orderId)
         {
-            var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderId == orderId);
+            DbInitializer.EnsureTablesCreated(_context);
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
-            return Json(new { success = true, paymentStatus = order.PaymentStatus });
+            decimal receivedAmount = order.TotalAmount;
+            if (!string.IsNullOrEmpty(order.PaymentMethod) && order.PaymentMethod.Contains("Đã nhận:"))
+            {
+                var match = Regex.Match(order.PaymentMethod, @"Đã nhận:([\d\.,]+)đ?");
+                if (match.Success)
+                {
+                    string numStr = match.Groups[1].Value.Replace(".", "").Replace(",", "");
+                    if (decimal.TryParse(numStr, out decimal parsed))
+                    {
+                        receivedAmount = parsed;
+                    }
+                }
+            }
+
+            return Json(new { 
+                success = true, 
+                paymentStatus = order.PaymentStatus,
+                receivedAmount = receivedAmount
+            });
         }
 
         [HttpPost]

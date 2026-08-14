@@ -26,7 +26,7 @@ namespace SEP490_G52_CSMS.Models.Sales
         public decimal TotalAmount { get; set; }
 
         [Column("payment_method")]
-        [StringLength(50)]
+        [StringLength(200)]
         public string? PaymentMethod { get; set; }
 
         [Column("payment_status")]

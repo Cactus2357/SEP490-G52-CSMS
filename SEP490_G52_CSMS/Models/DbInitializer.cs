@@ -22,6 +22,8 @@ namespace SEP490_G52_CSMS.Models
             var context = serviceProvider.GetRequiredService<CSMSAppDbContext>();
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
+            EnsureTablesCreated(context);
+
             try
             {
                 // Seed RManager if it doesn't exist
@@ -830,6 +832,71 @@ namespace SEP490_G52_CSMS.Models
                 context.Recipes.AddRange(newRecipes);
                 context.SaveChanges();
             }
+
+            // ---------- 14. BRANCH SETTINGS ----------
+            if (!context.BranchSettings.Any())
+            {
+                var branchSettings = new List<BranchSetting>();
+                var branches = context.Branches.ToList();
+                foreach (var b in branches)
+                {
+                    branchSettings.Add(new BranchSetting
+                    {
+                        BranchId = b.BranchId,
+                        BranchDisplayName = b.BranchName ?? "CSMS Coffee",
+                        ContactPhone = b.PhoneNumber ?? "0988888888",
+                        Address = b.Address ?? "",
+                        OpeningHours = "06:30 - 22:30",
+                        AutoPrintReceipt = true,
+                        EnableSoundNotification = true,
+                        BankCode = "MBBank",
+                        AccountNumber = "0333333333",
+                        AccountName = "CSMS CAFE",
+                        TransferPrefix = "CSMS",
+                        AutoConfirmOrder = true,
+                        IsSePayActive = true
+                    });
+                }
+                context.BranchSettings.AddRange(branchSettings);
+                context.SaveChanges();
+            }
+        }
+
+        public static void EnsureTablesCreated(CSMSAppDbContext context)
+        {
+            try
+            {
+                context.Database.ExecuteSqlRaw(@"
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'branch_settings')
+                    BEGIN
+                        CREATE TABLE [branch_settings] (
+                            [setting_id] int IDENTITY(1,1) NOT NULL,
+                            [branch_id] nvarchar(50) NOT NULL,
+                            [branch_display_name] nvarchar(100) NOT NULL DEFAULT 'CSMS Coffee',
+                            [contact_phone] nvarchar(20) NOT NULL DEFAULT '0988888888',
+                            [address] nvarchar(255) NOT NULL DEFAULT '',
+                            [opening_hours] nvarchar(100) NOT NULL DEFAULT '06:30 - 22:30',
+                            [auto_print_receipt] bit NOT NULL DEFAULT 1,
+                            [enable_sound_notification] bit NOT NULL DEFAULT 1,
+                            [bank_code] nvarchar(20) NOT NULL DEFAULT 'MBBank',
+                            [account_number] nvarchar(50) NOT NULL DEFAULT '0333333333',
+                            [account_name] nvarchar(100) NOT NULL DEFAULT 'CSMS CAFE',
+                            [sepay_api_key] nvarchar(200) NULL DEFAULT '',
+                            [webhook_secret_token] nvarchar(200) NULL DEFAULT '',
+                            [transfer_prefix] nvarchar(50) NOT NULL DEFAULT 'CSMS',
+                            [auto_confirm_order] bit NOT NULL DEFAULT 1,
+                            [is_sepay_active] bit NOT NULL DEFAULT 1,
+                            [updated_at] datetime2 NOT NULL DEFAULT GETDATE(),
+                            CONSTRAINT [PK_branch_settings] PRIMARY KEY ([setting_id])
+                        );
+                    END
+
+                    IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'payment_method' AND max_length < 200)
+                    BEGIN
+                        ALTER TABLE [orders] ALTER COLUMN [payment_method] nvarchar(200) NULL;
+                    END");
+            }
+            catch { }
         }
     }
 }

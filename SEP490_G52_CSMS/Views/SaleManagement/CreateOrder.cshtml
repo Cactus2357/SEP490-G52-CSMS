@@ -169,75 +169,75 @@
 
 <!-- Modal 1: Payment Method Selection -->
 <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom py-3 bg-light">
-                <h4 class="modal-title fw-extrabold text-dark fs-3"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h4>
+                <h4 class="modal-title fw-extrabold text-dark fs-4"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h4>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="table-responsive mb-4" style="max-height: 320px; overflow-y: auto;">
+                <div class="table-responsive mb-3" style="max-height: 280px; overflow-y: auto;">
                     <table class="table table-hover align-middle mb-0" id="reviewCartTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="fs-4 fw-bold">Tên sản phẩm</th>
-                                <th class="fs-4 fw-bold">Size</th>
-                                <th class="text-center fs-4 fw-bold">Số lượng</th>
-                                <th class="text-end fs-4 fw-bold">Đơn giá</th>
-                                <th class="text-end pe-3 fs-4 fw-bold">Thành tiền</th>
+                                <th class="fs-5 fw-bold">Tên sản phẩm</th>
+                                <th class="fs-5 fw-bold">Size</th>
+                                <th class="text-center fs-5 fw-bold">Số lượng</th>
+                                <th class="text-end fs-5 fw-bold">Đơn giá</th>
+                                <th class="text-end pe-3 fs-5 fw-bold">Thành tiền</th>
                             </tr>
                         </thead>
-                        <tbody id="reviewCartBody" class="fs-4">
+                        <tbody id="reviewCartBody" class="fs-5">
                             <!-- Filled by JS -->
                         </tbody>
                     </table>
                 </div>
 
                 <div class="d-flex align-items-center justify-content-between bg-light-subtle p-3 rounded-3 mb-4 border">
-                    <h4 class="fw-bold mb-0 text-secondary fs-3">TỔNG TIỀN ĐƠN HÀNG:</h4>
-                    <div class="display-5 fw-bold text-success mb-0" id="reviewTotalAmount">0 đ</div>
+                    <h5 class="fw-bold mb-0 text-secondary fs-4">TỔNG TIỀN ĐƠN HÀNG:</h5>
+                    <div class="fs-2 fw-bold text-success mb-0" id="reviewTotalAmount">0 đ</div>
                 </div>
 
                 <!-- Cash Payment Details Section (Hidden until "Tiền mặt" is clicked) -->
-                <div id="cashPaymentSection" class="d-none border border-primary border-2 rounded-3 p-4 bg-white mb-4 shadow">
+                <div id="cashPaymentSection" class="d-none border border-primary border-2 rounded-3 p-4 bg-white mb-4 shadow-sm">
                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                        <h5 class="fw-bold text-primary mb-0 fs-3"><i class="bi bi-cash-stack me-2"></i>Chi tiết thanh toán tiền mặt</h5>
-                        <button type="button" class="btn btn-outline-primary btn-sm fs-5 fw-bold px-3" id="btnShowTransferAgain" onclick="resetCashPaymentMode()">
+                        <h5 class="fw-bold text-primary mb-0 fs-4"><i class="bi bi-cash-stack me-2"></i>Chi tiết thanh toán tiền mặt</h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm fs-6 fw-bold px-3" id="btnShowTransferAgain" onclick="resetCashPaymentMode()">
                             <i class="bi bi-arrow-left-right me-1"></i>Đổi sang Chuyển khoản
                         </button>
                     </div>
-                    <div class="row g-4 align-items-center mb-3">
+                    <div class="row g-3 align-items-center mb-3">
                         <div class="col-md-6">
-                            <label for="customerCashInput" class="form-label fw-bold text-dark fs-4">Tiền khách đưa (VNĐ): <span class="text-danger">*</span></label>
-                            <input type="number" id="customerCashInput" class="form-control form-control-lg fs-2 fw-bold text-primary py-2" placeholder="Nhập số tiền..." oninput="calculateCashChange()" step="1000" min="0" />
+                            <label for="customerCashInput" class="form-label fw-bold text-dark fs-5">Tiền khách đưa (VNĐ): <span class="text-danger">*</span></label>
+                            <input type="number" id="customerCashInput" class="form-control form-control-lg fs-3 fw-bold text-primary py-2" placeholder="Nhập số tiền..." oninput="calculateCashChange()" step="1000" min="0" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark fs-4">Tiền thừa trả khách:</label>
-                            <div class="form-control form-control-lg fs-2 fw-bold bg-light py-2" id="changeAmountDisplay">0 đ</div>
+                            <label class="form-label fw-bold text-dark fs-5">Tiền thừa trả khách:</label>
+                            <div class="form-control form-control-lg fs-3 fw-bold bg-light py-2" id="changeAmountDisplay">0 đ</div>
                         </div>
                     </div>
 
                     <!-- Quick Cash Entry Shortcuts -->
                     <div class="d-flex flex-wrap gap-2 align-items-center pt-2">
-                        <span class="fs-5 fw-bold text-muted me-2">Gợi ý nhanh:</span>
-                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash('exact')">Vừa đủ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(50000)">50.000đ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(100000)">100.000đ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(200000)">200.000đ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-4 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(500000)">500.000đ</button>
+                        <span class="fs-6 fw-bold text-muted me-2">Gợi ý nhanh:</span>
+                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash('exact')">Vừa đủ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(50000)">50.000đ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(100000)">100.000đ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(200000)">200.000đ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(500000)">500.000đ</button>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                    <button type="button" class="btn btn-outline-secondary px-4 py-3 fs-4 fw-bold" data-bs-dismiss="modal">Quay lại</button>
-                    <div class="d-flex gap-3" id="paymentOptionsContainer">
-                        <button type="button" class="btn btn-success px-5 py-3 fs-3 fw-bold shadow-sm" id="btnChooseCash" onclick="selectCashPaymentMode()">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2 fs-5 fw-bold" data-bs-dismiss="modal">Quay lại</button>
+                    <div class="d-flex gap-2" id="paymentOptionsContainer">
+                        <button type="button" class="btn btn-success px-4 py-2 fs-4 fw-bold shadow-sm" id="btnChooseCash" onclick="selectCashPaymentMode()">
                             <i class="bi bi-cash me-2"></i>Tiền mặt
                         </button>
-                        <button type="button" class="btn btn-primary px-5 py-3 fs-3 fw-bold shadow-sm" id="btnChooseBankTransfer" onclick="initiateBankTransfer()">
+                        <button type="button" class="btn btn-primary px-4 py-2 fs-4 fw-bold shadow-sm" id="btnChooseBankTransfer" onclick="initiateBankTransfer()">
                             <i class="bi bi-qr-code-scan me-2"></i>Chuyển khoản
                         </button>
-                        <button type="button" class="btn btn-success px-5 py-3 fs-3 fw-bold shadow-sm d-none" id="btnConfirmCashSubmit" onclick="confirmCashPaymentSubmit()">
+                        <button type="button" class="btn btn-success px-4 py-2 fs-4 fw-bold shadow-sm d-none" id="btnConfirmCashSubmit" onclick="confirmCashPaymentSubmit()">
                             <i class="bi bi-check-circle me-2"></i>Xác nhận thanh toán tiền mặt
                         </button>
                     </div>
