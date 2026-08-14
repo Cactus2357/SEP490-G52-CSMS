@@ -293,9 +293,10 @@
             var html = '';
             var totalQty = 0;
             cartItems.forEach(function(item) {
-                var itemTotal = item.quantity * item.unitPrice;
+                var unitPrice = item.unitPrice || (item.quantity ? Math.round(item.amount / item.quantity) : 0);
+                var itemTotal = item.amount || (item.quantity * unitPrice);
                 totalQty += item.quantity;
-                var sizeText = 'Tiêu chuẩn';
+                var sizeText = item.size || 'Tiêu chuẩn';
                 if (item.variants && item.selectedVariantId) {
                     var v = item.variants.find(function(x) { return x.variantId === item.selectedVariantId; });
                     if (v) sizeText = v.sizeVariant;
@@ -305,7 +306,7 @@
                     '<td class="fs-2 fw-bold text-white">' + item.name + '</td>' +
                     '<td><span class="badge bg-warning text-dark fs-4 px-3 py-2 fw-bold">' + sizeText + '</span></td>' +
                     '<td class="text-center fs-2 fw-bold text-warning">' + item.quantity + '</td>' +
-                    '<td class="text-end fs-3 text-light">' + item.unitPrice.toLocaleString('vi-VN') + ' đ</td>' +
+                    '<td class="text-end fs-3 text-light">' + unitPrice.toLocaleString('vi-VN') + ' đ</td>' +
                     '<td class="text-end fs-2 fw-bold text-success">' + itemTotal.toLocaleString('vi-VN') + ' đ</td>' +
                     '</tr>';
             });
@@ -316,7 +317,9 @@
         }
 
         function updateState(state) {
-            if (!state || state.mode === 'Idle' || (!state.cart || state.cart.length === 0) && state.mode !== 'PaidSuccess') {
+            var itemsList = (state && (state.cart || state.items)) ? (state.cart || state.items) : [];
+
+            if (!state || state.mode === 'Idle' || (itemsList.length === 0 && state.mode !== 'PaidSuccess')) {
                 idleScreen.style.display = 'block';
                 activeCartScreen.style.display = 'none';
                 successScreen.style.display = 'none';
@@ -343,7 +346,7 @@
             successScreen.style.display = 'none';
             activeCartScreen.style.display = 'block';
 
-            renderCartMonitor(state.cart, state.total || 0);
+            renderCartMonitor(itemsList, state.total || 0);
 
             if (state.mode === 'BankTransfer' && state.qrCodeUrl) {
                 qrImage.src = state.qrCodeUrl;

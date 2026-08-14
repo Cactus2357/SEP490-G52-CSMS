@@ -234,39 +234,53 @@ namespace SEP490_G52_CSMS.Models
                 context.AttendanceLogs.AddRange(attendanceLogs);
                 context.SaveChanges();
 
-                // ---------- 6. CASH HANDOVERS ----------
+                // ---------- 6. CASH HANDOVERS (Unique per Branch, Shift, Date) ----------
                 var handovers = new List<CashHandover>();
-                foreach (var branchId in allBranchIds)
+                var seenHandovers = new HashSet<(string BranchId, int ShiftId, DateTime Date)>();
+
+                var pastRosters = context.WeeklyRosterGrids
+                    .Include(r => r.Employee)
+                    .Where(r => r.AssignmentDate < cutoff && r.Employee != null && r.Employee.Role == "Cashier")
+                    .OrderBy(r => r.AssignmentDate)
+                    .ThenBy(r => r.ShiftId)
+                    .ToList();
+
+                foreach (var roster in pastRosters)
                 {
-                    var staff = employeesByBranch[branchId].Where(e => e.Role == "Cashier").ToList();
-                    if (staff.Count < 2) staff = employeesByBranch[branchId].Take(2).ToList();
-                    if (staff.Count < 2) continue;
+                    var key = (roster.BranchId, roster.ShiftId, roster.AssignmentDate.Date);
+                    if (seenHandovers.Contains(key)) continue;
+                    seenHandovers.Add(key);
 
-                    for (int day = 0; day < 5; day++)
+                    var branchStaff = employeesByBranch.GetValueOrDefault(roster.BranchId)
+                        ?.Where(e => e.Role == "Cashier")
+                        .ToList() ?? new List<Employee>();
+
+                    var incoming = branchStaff.FirstOrDefault(e => e.EmployeeId != roster.EmployeeId) ?? roster.Employee!;
+
+                    decimal initial = 500000m;
+                    decimal totalRevenue = _rng.Next(1000000, 5000000);
+                    decimal cashlessRevenue = Math.Round(totalRevenue * 0.6m);
+                    decimal cashRevenue = totalRevenue - cashlessRevenue;
+                    decimal theoretical = initial + cashRevenue;
+                    decimal actual = theoretical + _rng.Next(-20000, 20000);
+
+                    handovers.Add(new CashHandover
                     {
-                        var outgoing = staff[_rng.Next(staff.Count)];
-                        var incoming = staff.First(e => e.EmployeeId != outgoing.EmployeeId);
-                        decimal initial = 500000m;
-                        decimal totalRevenue = _rng.Next(1000000, 5000000);
-                        decimal cashlessRevenue = Math.Round(totalRevenue * 0.6m);
-                        decimal cashRevenue = totalRevenue - cashlessRevenue;
-                        decimal theoretical = initial + cashRevenue;
-                        decimal actual = theoretical + _rng.Next(-20000, 20000);
-
-                        handovers.Add(new CashHandover
-                        {
-                            BranchId = branchId,
-                            HandoverDate = startDate.AddDays(day),
-                            ShiftId = shifts[_rng.Next(shifts.Count)].ShiftId,
-                            OutgoingCashierId = outgoing.EmployeeId,
-                            IncomingCashierId = incoming.EmployeeId,
-                            InitialCash = initial,
-                            MachineCashRevenue = cashlessRevenue,
-                            TheoreticalCash = theoretical,
-                            ActualCash = actual,
-                            IsPasswordConfirmed = true
-                        });
-                    }
+                        BranchId = roster.BranchId,
+                        HandoverDate = roster.AssignmentDate.Date,
+                        ShiftId = roster.ShiftId,
+                        OutgoingCashierId = roster.EmployeeId,
+                        IncomingCashierId = incoming.EmployeeId,
+                        InitialCash = initial,
+                        MachineCashRevenue = cashlessRevenue,
+                        BankTransferRevenue = cashlessRevenue,
+                        TheoreticalCash = theoretical,
+                        ActualCash = actual,
+                        IsPasswordConfirmed = true,
+                        Status = "Closed",
+                        OpenedAt = roster.AssignmentDate.Date.AddHours(6),
+                        ClosedAt = roster.AssignmentDate.Date.AddHours(12)
+                    });
                 }
                 context.CashHandovers.AddRange(handovers);
                 context.SaveChanges();

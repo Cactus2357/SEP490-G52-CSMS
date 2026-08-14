@@ -40,5 +40,14 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
 
         /// <summary> Lấy CashHandover theo ID </summary>
         Task<CashHandover?> GetHandoverByIdAsync(int handoverId);
+
+        /// <summary> Kiểm tra xem ca làm việc cụ thể tại chi nhánh đã được mở hôm nay chưa </summary>
+        Task<CashHandover?> GetActiveHandoverByShiftAsync(string branchId, int shiftId, DateTime date);
+
+        /// <summary> Đồng bộ dữ liệu chấm công khi mở ca </summary>
+        Task SyncAttendanceOnOpenShiftAsync(int employeeId, int shiftId, DateTime date);
+
+        /// <summary> Đồng bộ dữ liệu chấm công khi đóng/giao ca </summary>
+        Task SyncAttendanceOnCloseShiftAsync(int employeeId, int shiftId, DateTime date);
     }
 }

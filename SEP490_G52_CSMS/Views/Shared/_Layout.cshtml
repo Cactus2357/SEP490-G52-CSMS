@@ -821,20 +821,20 @@
     }
 </style>
 
-<!-- Reusable Bootstrap Dynamic Confirm Modal -->
+<!-- Reusable Bootstrap Dynamic Confirm Modal (1.5x Larger Scale & Font Size) -->
 <div class="modal fade" id="bsConfirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-dark text-white py-3">
-                <h5 class="modal-title fw-bold" id="bsConfirmTitle">Xác nhận</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 840px;">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white px-4 py-3.5">
+                <h3 class="modal-title fs-3 fw-bold mb-0" id="bsConfirmTitle">Xác nhận</h3>
+                <button type="button" class="btn-close btn-close-white p-3" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 fs-6" id="bsConfirmMessage">
+            <div class="modal-body p-5 fs-4 text-dark lh-base" id="bsConfirmMessage">
                 Bạn có chắc chắn muốn thực hiện thao tác này?
             </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill fw-semibold" id="bsConfirmCancelBtn" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary px-4 rounded-pill fw-semibold" id="bsConfirmSubmitBtn">Xác nhận</button>
+            <div class="modal-footer border-top-0 p-4 pt-0 gap-3 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary btn-lg fs-4 px-5 py-2.5 rounded-pill fw-bold" id="bsConfirmCancelBtn" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary btn-lg fs-4 px-5 py-2.5 rounded-pill fw-bold" id="bsConfirmSubmitBtn">Xác nhận</button>
             </div>
         </div>
     </div>
@@ -867,7 +867,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const modalEl = document.getElementById('bsConfirmModal');
-               // Live clock update (no seconds)
+        // Live clock update (no seconds)
         setInterval(function() {
             const el = document.getElementById('navLiveDateTime');
             if (el) {
@@ -892,6 +892,12 @@
                 const cancelBtn = document.getElementById('bsConfirmCancelBtn');
                 if (cancelBtn) {
                     cancelBtn.focus();
+                }
+            });
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                $('.confirm-modal-backdrop').remove();
+                if ($('.modal.show').length > 0) {
+                    document.body.classList.add('modal-open');
                 }
             });
         }

@@ -68,7 +68,10 @@ namespace SEP490_G52_CSMS.Controllers
                 nowTime >= r.FixedShift.StartTime && nowTime <= r.FixedShift.EndTime);
 
             bool hasOpenShift = await _context.CashHandovers
-                .AnyAsync(ch => ch.BranchId == branchId && (ch.OutgoingCashierId == employeeId || ch.IncomingCashierId == employeeId) && (ch.ClosedAt == null || ch.Status == "Active"));
+                .AnyAsync(ch => ch.BranchId == branchId 
+                             && (ch.OutgoingCashierId == employeeId || ch.IncomingCashierId == employeeId) 
+                             && ch.HandoverDate.Date == today 
+                             && (ch.ClosedAt == null || ch.Status == "Active"));
 
             return inScheduledShift || hasOpenShift;
         }

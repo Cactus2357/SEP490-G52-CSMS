@@ -3,6 +3,7 @@
     ViewData["Title"] = "Thêm lịch làm việc theo tuần";
     var dayNames = new[] { "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật" };
     var weekEnd = Model.WeekStartDate.AddDays(6);
+    var nowTime = DateTime.Now.TimeOfDay;
 
     // Defensive defaults: never let a null collection reach the markup/JS below.
     var shifts = Model.Shifts ?? new List<SEP490_G52_CSMS.Models.Attendance.FixedShift>();
@@ -156,7 +157,27 @@
                                 var dayDate = Model.WeekStartDate.AddDays(d);
                                 bool isToday = dayDate.Date == DateTime.Today;
 
-                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break @(isToday ? "today-cell" : "")"></td>
+                                bool isCurrentTimeInShift = isToday && (nowTime >= shift.StartTime && nowTime <= shift.EndTime);
+                                double progressPct = 0;
+                                if (isCurrentTimeInShift)
+                                {
+                                    double totalMins = (shift.EndTime - shift.StartTime).TotalMinutes;
+                                    if (totalMins <= 0) totalMins += 1440;
+                                    double elapsedMins = (nowTime - shift.StartTime).TotalMinutes;
+                                    progressPct = Math.Clamp((elapsedMins / totalMins) * 100.0, 5.0, 95.0);
+                                }
+
+                                <td id="cell_@(d)_@(shift.ShiftId)" class="schedule-cell text-break position-relative @(isToday ? "today-cell" : "")">
+                                    @if (isCurrentTimeInShift)
+                                    {
+                                        <div class="position-absolute w-100" style="top: @(progressPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; left: 0; right: 0; z-index: 10; pointer-events: none;" title="Thời gian hiện tại: @DateTime.Now.ToString("HH:mm")">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded-circle shadow-sm" style="width: 8px; height: 8px; margin-left: -4px; flex-shrink: 0;"></div>
+                                                <div class="bg-primary flex-grow-1" style="height: 2px; opacity: 0.85;"></div>
+                                            </div>
+                                        </div>
+                                    }
+                                </td>
                             }
                         </tr>
                     }

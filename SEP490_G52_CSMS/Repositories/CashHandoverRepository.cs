@@ -165,5 +165,69 @@ namespace SEP490_G52_CSMS.Repositories
                 .Include(ch => ch.Branch)
                 .FirstOrDefaultAsync(ch => ch.HandoverId == handoverId);
         }
+
+        public async Task<CashHandover?> GetActiveHandoverByShiftAsync(string branchId, int shiftId, DateTime date)
+        {
+            return await _context.CashHandovers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ch => ch.BranchId == branchId
+                                        && ch.ShiftId == shiftId
+                                        && ch.HandoverDate.Date == date.Date
+                                        && ch.Status == CashHandoverConstants.ActiveStatus);
+        }
+
+        public async Task SyncAttendanceOnOpenShiftAsync(int employeeId, int shiftId, DateTime date)
+        {
+            var roster = await _context.WeeklyRosterGrids
+                .FirstOrDefaultAsync(w => w.EmployeeId == employeeId && w.ShiftId == shiftId && w.AssignmentDate.Date == date.Date);
+
+            if (roster != null)
+            {
+                var log = await _context.AttendanceLogs
+                    .FirstOrDefaultAsync(a => a.RosterId == roster.RosterId && a.EmployeeId == employeeId);
+
+                if (log == null)
+                {
+                    log = new AttendanceLog
+                    {
+                        RosterId = roster.RosterId,
+                        EmployeeId = employeeId,
+                        CheckInTime = DateTime.Now,
+                        IsFaceCheckInValid = true,
+                        CheckInStatus = "OnTime",
+                        OverallStatus = "Present"
+                    };
+                    _context.AttendanceLogs.Add(log);
+                }
+                else
+                {
+                    if (log.CheckInTime == null) log.CheckInTime = DateTime.Now;
+                    log.CheckInStatus = "OnTime";
+                    log.OverallStatus = "Present";
+                    _context.AttendanceLogs.Update(log);
+                }
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task SyncAttendanceOnCloseShiftAsync(int employeeId, int shiftId, DateTime date)
+        {
+            var roster = await _context.WeeklyRosterGrids
+                .FirstOrDefaultAsync(w => w.EmployeeId == employeeId && w.ShiftId == shiftId && w.AssignmentDate.Date == date.Date);
+
+            if (roster != null)
+            {
+                var log = await _context.AttendanceLogs
+                    .FirstOrDefaultAsync(a => a.RosterId == roster.RosterId && a.EmployeeId == employeeId);
+
+                if (log != null)
+                {
+                    log.CheckOutTime = DateTime.Now;
+                    log.CheckOutStatus = "CheckedOut";
+                    _context.AttendanceLogs.Update(log);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
     }
 }

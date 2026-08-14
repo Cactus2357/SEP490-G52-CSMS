@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Lịch làm việc nhân viên";
+    var nowTime = DateTime.Now.TimeOfDay;
 }
 
 <style>
@@ -79,8 +80,28 @@
                             {
                                 bool isToday = day.Date == DateTime.Today;
                                 var hasShift = Model.ScheduleData.TryGetValue((shift.ShiftId, day.Date), out var detail);
+
+                                bool isCurrentTimeInShift = isToday && (nowTime >= shift.StartTime && nowTime <= shift.EndTime);
+                                double progressPct = 0;
+                                if (isCurrentTimeInShift)
+                                {
+                                    double totalMins = (shift.EndTime - shift.StartTime).TotalMinutes;
+                                    if (totalMins <= 0) totalMins += 1440;
+                                    double elapsedMins = (nowTime - shift.StartTime).TotalMinutes;
+                                    progressPct = Math.Clamp((elapsedMins / totalMins) * 100.0, 5.0, 95.0);
+                                }
                                 
-                                <td class="p-2 align-middle @(isToday ? "today-cell" : "")">
+                                <td class="p-2 align-middle position-relative @(isToday ? "today-cell" : "")">
+                                    @if (isCurrentTimeInShift)
+                                    {
+                                        <div class="position-absolute w-100" style="top: @(progressPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; left: 0; right: 0; z-index: 10; pointer-events: none;" title="Thời gian hiện tại: @DateTime.Now.ToString("HH:mm")">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded-circle shadow-sm" style="width: 8px; height: 8px; margin-left: -4px; flex-shrink: 0;"></div>
+                                                <div class="bg-primary flex-grow-1" style="height: 2px; opacity: 0.85;"></div>
+                                            </div>
+                                        </div>
+                                    }
+
                                     @if (hasShift && detail != null && detail.IsAssigned)
                                     {
                                         <div class="fw-bold text-success mb-1 small">
@@ -89,7 +110,7 @@
                                         
                                         @if (day.Date.Add(shift.StartTime) > DateTime.Now)
                                         {
-                                            <div class="small text-muted">
+                                            <div class="small text-primary fw-bold">
                                                 (Chưa tới giờ)
                                             </div>
                                         }
@@ -107,7 +128,7 @@
                                         }
                                         else
                                         {
-                                            <div class="small text-muted">
+                                            <div class="small text-danger fw-bold">
                                                 (Chưa điểm danh)
                                             </div>
                                         }

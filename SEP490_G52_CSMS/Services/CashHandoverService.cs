@@ -94,11 +94,18 @@ namespace SEP490_G52_CSMS.Services
         {
             var today = DateTime.Today;
 
-            // Kiểm tra đã mở ca hôm nay chưa (tránh duplicate)
+            // Kiểm tra ca làm việc tại chi nhánh đã được mở chưa (tránh trùng lặp ca)
+            var activeShiftHandover = await _cashHandoverRepository.GetActiveHandoverByShiftAsync(model.BranchId, model.ShiftId, today);
+            if (activeShiftHandover != null)
+            {
+                return OperationResult.Fail("Ca làm việc này tại chi nhánh đã được mở. Không thể tạo ca trùng lặp.");
+            }
+
+            // Kiểm tra thu ngân đã mở ca hôm nay chưa
             var existing = await _cashHandoverRepository.GetActiveHandoverAsync(model.CashierId, today);
             if (existing != null)
             {
-                return OperationResult.Fail("Ca làm việc hôm nay đã được mở. Vui lòng chuyển sang Giao ca.");
+                return OperationResult.Fail("Ca làm việc hôm nay của bạn đã được mở. Vui lòng chuyển sang Giao ca.");
             }
 
             // Kiểm tra lại trên server xem đã đúng giờ mở ca chưa
@@ -148,6 +155,10 @@ namespace SEP490_G52_CSMS.Services
             };
 
             await _cashHandoverRepository.AddHandoverAsync(handover);
+
+            // Đồng bộ dữ liệu Chấm công (AttendanceLog) cho thu ngân mở ca
+            await _cashHandoverRepository.SyncAttendanceOnOpenShiftAsync(model.CashierId, model.ShiftId, today);
+
             return OperationResult.Ok($"Đã mở ca thành công. Tiền đầu ca: {initialCash:N0} đ");
         }
 
@@ -235,6 +246,9 @@ namespace SEP490_G52_CSMS.Services
             handover.ClosedAt = DateTime.Now;
 
             await _cashHandoverRepository.UpdateHandoverAsync(handover);
+
+            // Đồng bộ dữ liệu Chấm công Check-out khi giao ca thành công
+            await _cashHandoverRepository.SyncAttendanceOnCloseShiftAsync(handover.OutgoingCashierId, handover.ShiftId, handover.HandoverDate);
 
             var discrepancy = model.ActualCash - theoretical;
             var discrepancyText = discrepancy >= 0
