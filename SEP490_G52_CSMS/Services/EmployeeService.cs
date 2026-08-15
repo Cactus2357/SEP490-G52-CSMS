@@ -86,6 +86,9 @@ namespace SEP490_G52_CSMS.Services
                 // 3. Hash password
                 string hashedPassword = DAT_PasswordHasher.HashPassword(plainPassword);
 
+                const long MaxFileSize = 10 * 1024 * 1024;
+                string[] allowedExtensions = { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
+
                 // 4. Create Employee object
                 var employee = new Employee
                 {
@@ -104,8 +107,57 @@ namespace SEP490_G52_CSMS.Services
                     FailedLoginAttempts = 0
                 };
 
-                // 5. Save
+                // 5. Save initial record to get EmployeeId
                 await _repository.AddAsync(employee);
+
+                // Handle optional file uploads during account creation
+                bool fileUpdated = false;
+                if (dto.CccdFile != null && dto.CccdFile.Length > 0)
+                {
+                    var fileExtension = System.IO.Path.GetExtension(dto.CccdFile.FileName).ToLower();
+                    if (System.Linq.Enumerable.Contains(allowedExtensions, fileExtension) && dto.CccdFile.Length <= MaxFileSize)
+                    {
+                        string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
+                        if (!System.IO.Directory.Exists(uploadsFolder))
+                        {
+                            System.IO.Directory.CreateDirectory(uploadsFolder);
+                        }
+                        string uniqueFileName = $"cccd_{employee.EmployeeId}_{Guid.NewGuid()}{fileExtension}";
+                        string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                        using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                        {
+                            await dto.CccdFile.CopyToAsync(fileStream);
+                        }
+                        employee.CccdFilePath = $"/uploads/employees/{uniqueFileName}";
+                        fileUpdated = true;
+                    }
+                }
+
+                if (dto.ContractFile != null && dto.ContractFile.Length > 0)
+                {
+                    var fileExtension = System.IO.Path.GetExtension(dto.ContractFile.FileName).ToLower();
+                    if (System.Linq.Enumerable.Contains(allowedExtensions, fileExtension) && dto.ContractFile.Length <= MaxFileSize)
+                    {
+                        string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
+                        if (!System.IO.Directory.Exists(uploadsFolder))
+                        {
+                            System.IO.Directory.CreateDirectory(uploadsFolder);
+                        }
+                        string uniqueFileName = $"contract_{employee.EmployeeId}_{Guid.NewGuid()}{fileExtension}";
+                        string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                        using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                        {
+                            await dto.ContractFile.CopyToAsync(fileStream);
+                        }
+                        employee.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
+                        fileUpdated = true;
+                    }
+                }
+
+                if (fileUpdated)
+                {
+                    await _repository.UpdateAsync(employee);
+                }
 
                 // 6. Send email
                 _emailHelper.SendAccountCredentials(employee.Email, employee.FullName, employee.Username, plainPassword);
@@ -149,40 +201,68 @@ namespace SEP490_G52_CSMS.Services
                     return new EmployeeUpdateResult { Success = false, ErrorMessage = "Không tìm thấy nhân viên." };
                 }
 
-                if (dto.DateOfBirth == default)
+                if (!string.IsNullOrWhiteSpace(dto.FullName))
                 {
-                    return new EmployeeUpdateResult { Success = false, ErrorMessage = "Ngày sinh là bắt buộc." };
+                    employee.FullName = dto.FullName.Trim();
                 }
 
-                if (string.IsNullOrWhiteSpace(dto.Address))
+                if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
                 {
-                    return new EmployeeUpdateResult { Success = false, ErrorMessage = "Địa chỉ là bắt buộc." };
+                    string phone = dto.PhoneNumber.Trim();
+                    if (await _repository.ExistsPhoneNumberExcludeSelfAsync(phone, employeeId))
+                    {
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Số điện thoại đã tồn tại trên hệ thống." };
+                    }
+                    employee.PhoneNumber = phone;
                 }
 
-                if (string.IsNullOrWhiteSpace(dto.CitizenId) || dto.CitizenId.Trim().Length != 12 || !System.Text.RegularExpressions.Regex.IsMatch(dto.CitizenId.Trim(), @"^\d{12}$"))
+                if (!string.IsNullOrWhiteSpace(dto.Email))
                 {
-                    return new EmployeeUpdateResult { Success = false, ErrorMessage = "Số CCCD phải chứa chính xác 12 chữ số." };
+                    string email = dto.Email.Trim();
+                    if (await _repository.ExistsEmailExcludeSelfAsync(email, employeeId))
+                    {
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Email đã tồn tại trên hệ thống." };
+                    }
+                    employee.Email = email;
                 }
 
-                bool citizenIdExists = await _repository.ExistsCitizenIdExcludeSelfAsync(dto.CitizenId.Trim(), employeeId);
-                if (citizenIdExists)
+                if (!string.IsNullOrWhiteSpace(dto.CitizenId))
                 {
-                    return new EmployeeUpdateResult { Success = false, ErrorMessage = "Số CCCD đã tồn tại trên hệ thống." };
+                    string citizenId = dto.CitizenId.Trim();
+                    if (citizenId.Length != 12 || !System.Text.RegularExpressions.Regex.IsMatch(citizenId, @"^\d{12}$"))
+                    {
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Số CCCD phải chứa chính xác 12 chữ số." };
+                    }
+                    if (await _repository.ExistsCitizenIdExcludeSelfAsync(citizenId, employeeId))
+                    {
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Số CCCD đã tồn tại trên hệ thống." };
+                    }
+                    employee.CitizenId = citizenId;
                 }
 
-                const long MaxFileSize = 5 * 1024 * 1024;
-                string[] allowedExtensions = { ".pdf", ".jpg", ".jpeg" };
+                if (dto.DateOfBirth.HasValue && dto.DateOfBirth.Value != default)
+                {
+                    employee.DateOfBirth = dto.DateOfBirth.Value;
+                }
+
+                if (!string.IsNullOrWhiteSpace(dto.Address))
+                {
+                    employee.Address = dto.Address.Trim();
+                }
+
+                const long MaxFileSize = 10 * 1024 * 1024;
+                string[] allowedExtensions = { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
 
                 if (dto.CccdFile != null && dto.CccdFile.Length > 0)
                 {
                     var fileExtension = System.IO.Path.GetExtension(dto.CccdFile.FileName).ToLower();
                     if (!System.Linq.Enumerable.Contains(allowedExtensions, fileExtension))
                     {
-                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "File ảnh CCCD phải có định dạng .pdf hoặc .jpg (.jpeg)." };
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "File ảnh CCCD phải có định dạng .pdf, .jpg, .png hoặc .webp." };
                     }
                     if (dto.CccdFile.Length > MaxFileSize)
                     {
-                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Dung lượng file ảnh CCCD không được vượt quá 5MB." };
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Dung lượng file ảnh CCCD không được vượt quá 10MB." };
                     }
 
                     string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
@@ -204,11 +284,11 @@ namespace SEP490_G52_CSMS.Services
                     var fileExtension = System.IO.Path.GetExtension(dto.ContractFile.FileName).ToLower();
                     if (!System.Linq.Enumerable.Contains(allowedExtensions, fileExtension))
                     {
-                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "File hợp đồng lao động phải có định dạng .pdf hoặc .jpg (.jpeg)." };
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "File hợp đồng lao động phải có định dạng .pdf, .jpg, .png hoặc .webp." };
                     }
                     if (dto.ContractFile.Length > MaxFileSize)
                     {
-                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Dung lượng file hợp đồng không được vượt quá 5MB." };
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Dung lượng file hợp đồng không được vượt quá 10MB." };
                     }
 
                     string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
@@ -224,10 +304,6 @@ namespace SEP490_G52_CSMS.Services
                     }
                     employee.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
                 }
-
-                employee.DateOfBirth = dto.DateOfBirth;
-                employee.Address = dto.Address.Trim();
-                employee.CitizenId = dto.CitizenId.Trim();
 
                 await _repository.UpdateAsync(employee);
 

@@ -87,6 +87,16 @@ namespace SEP490_G52_CSMS.Repositories
             return await _context.Employees.AnyAsync(e => e.CitizenId == citizenId && e.EmployeeId != excludeEmployeeId);
         }
 
+        public async Task<bool> ExistsEmailExcludeSelfAsync(string email, int excludeEmployeeId)
+        {
+            return await _context.Employees.AnyAsync(e => e.Email == email && e.EmployeeId != excludeEmployeeId);
+        }
+
+        public async Task<bool> ExistsPhoneNumberExcludeSelfAsync(string phoneNumber, int excludeEmployeeId)
+        {
+            return await _context.Employees.AnyAsync(e => e.PhoneNumber == phoneNumber && e.EmployeeId != excludeEmployeeId);
+        }
+
         public async Task<List<WeeklyRosterGrid>> GetRostersWithAttendanceAndHandoverAsync(int employeeId)
         {
             return await _context.WeeklyRosterGrids

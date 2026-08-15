@@ -281,8 +281,8 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             // Files upload
-            const long MaxFileSize = 5 * 1024 * 1024;
-            string[] allowedExtensions = { ".pdf", ".jpg", ".jpeg" };
+            const long MaxFileSize = 10 * 1024 * 1024;
+            string[] allowedExtensions = { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
             string uploadsFolder = Path.Combine("wwwroot", "uploads", "employees");
 
             if (!Directory.Exists(uploadsFolder))
@@ -295,11 +295,11 @@ namespace SEP490_G52_CSMS.Controllers
                 var fileExtension = Path.GetExtension(request.CccdFile.FileName).ToLower();
                 if (!allowedExtensions.Contains(fileExtension))
                 {
-                    return Json(new { success = false, errorMessage = "File ảnh CCCD phải có định dạng .pdf hoặc .jpg (.jpeg)." });
+                    return Json(new { success = false, errorMessage = "File ảnh CCCD phải có định dạng .pdf, .jpg, .png hoặc .webp." });
                 }
                 if (request.CccdFile.Length > MaxFileSize)
                 {
-                    return Json(new { success = false, errorMessage = "Dung lượng file ảnh CCCD không được vượt quá 5MB." });
+                    return Json(new { success = false, errorMessage = "Dung lượng file ảnh CCCD không được vượt quá 10MB." });
                 }
 
                 string uniqueFileName = $"cccd_{id}_{Guid.NewGuid()}{fileExtension}";
@@ -316,11 +316,11 @@ namespace SEP490_G52_CSMS.Controllers
                 var fileExtension = Path.GetExtension(request.ContractFile.FileName).ToLower();
                 if (!allowedExtensions.Contains(fileExtension))
                 {
-                    return Json(new { success = false, errorMessage = "File hợp đồng lao động phải có định dạng .pdf hoặc .jpg (.jpeg)." });
+                    return Json(new { success = false, errorMessage = "File hợp đồng lao động phải có định dạng .pdf, .jpg, .png hoặc .webp." });
                 }
                 if (request.ContractFile.Length > MaxFileSize)
                 {
-                    return Json(new { success = false, errorMessage = "Dung lượng file hợp đồng không được vượt quá 5MB." });
+                    return Json(new { success = false, errorMessage = "Dung lượng file hợp đồng không được vượt quá 10MB." });
                 }
 
                 string uniqueFileName = $"contract_{id}_{Guid.NewGuid()}{fileExtension}";

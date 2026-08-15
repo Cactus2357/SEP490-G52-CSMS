@@ -14,6 +14,8 @@ namespace SEP490_G52_CSMS.Services.Interfaces
         public string Role { get; set; } = null!;
         public string EmploymentType { get; set; } = null!;
         public string? BranchId { get; set; }
+        public IFormFile? CccdFile { get; set; }
+        public IFormFile? ContractFile { get; set; }
     }
 
     public class EmployeeCreationResult
@@ -27,9 +29,12 @@ namespace SEP490_G52_CSMS.Services.Interfaces
 
     public class UpdateEmployeeDto
     {
-        public DateTime DateOfBirth { get; set; }
-        public string Address { get; set; } = null!;
-        public string CitizenId { get; set; } = null!;
+        public string? FullName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Email { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string? Address { get; set; }
+        public string? CitizenId { get; set; }
         public IFormFile? CccdFile { get; set; }
         public IFormFile? ContractFile { get; set; }
     }

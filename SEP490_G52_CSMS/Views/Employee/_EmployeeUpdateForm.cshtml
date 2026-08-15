@@ -88,6 +88,14 @@
                             <label for="updCitizenId" class="form-label fw-bold">Số CCCD (12 số) *</label>
                             <input type="text" class="form-control rounded-3" id="updCitizenId" name="CitizenId" value="@Model.CitizenId" required />
                         </div>
+                        <div class="mb-3">
+                            <label for="updDateOfBirth" class="form-label fw-bold">Ngày sinh</label>
+                            <input type="date" class="form-control rounded-3" id="updDateOfBirth" name="DateOfBirth" value="@(Model.DateOfBirth.ToString("yyyy-MM-dd"))" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updAddress" class="form-label fw-bold">Địa chỉ</label>
+                            <input type="text" class="form-control rounded-3" id="updAddress" name="Address" value="@Model.Address" placeholder="Nhập địa chỉ..." />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -102,7 +110,7 @@
                         <div class="mb-4">
                             <label class="form-label fw-bold">Ảnh / Tệp CCCD</label>
                             <input type="file" class="form-control rounded-3" name="CccdFile" accept="image/*,.pdf" onchange="previewUploadFile(this, 'cccd')" />
-                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, PDF. Tối đa 5MB.</div>
+                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
                             <div id="cccdPreviewContainer" class="mt-2">
                                 @if (hasCccd)
                                 {
@@ -115,7 +123,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Tệp hợp đồng lao động</label>
                             <input type="file" class="form-control rounded-3" name="ContractFile" accept="image/*,.pdf" onchange="previewUploadFile(this, 'contract')" />
-                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, PDF. Tối đa 10MB.</div>
+                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
                             <div id="contractPreviewContainer" class="mt-2">
                                 @if (hasContract)
                                 {
@@ -138,58 +146,3 @@
         </div>
     </form>
 </div>
-
-<script>
-    function previewUploadFile(input, type) {
-        var container = document.getElementById(type + 'PreviewContainer');
-        if (input.files && input.files[0]) {
-            var file = input.files[0];
-            container.innerHTML = `<div class="small text-primary fw-bold"><i class="bi bi-file-earmark-check-fill me-1"></i>Đã chọn: ${file.name} (${(file.size/1024).toFixed(1)} KB)</div>`;
-        }
-    }
-
-    function submitEmployeeUpdate() {
-        var form = document.getElementById('updateEmployeeForm');
-        var errBox = document.getElementById('updErrorBox');
-        errBox.classList.add('d-none');
-        errBox.innerHTML = '';
-
-        var btn = document.getElementById('btnSaveUpdate');
-        var spinner = document.getElementById('saveUpdateSpinner');
-        var formData = new FormData(form);
-
-        showConfirmModal(
-            'Xác nhận cập nhật',
-            'Bạn có chắc chắn muốn lưu cập nhật thông tin nhân viên này không?',
-            function() {
-                btn.disabled = true;
-                spinner.classList.remove('d-none');
-
-                fetch('/Employee/Update/@Model.EmployeeId', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(r => r.json())
-                .then(data => {
-                    btn.disabled = false;
-                    spinner.classList.add('d-none');
-
-                    if (data.success) {
-                        closeEmployeeUpdate();
-                        showToast('Cập nhật thông tin nhân viên thành công!', 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Cập nhật thất bại.');
-                        errBox.classList.remove('d-none');
-                    }
-                })
-                .catch(err => {
-                    btn.disabled = false;
-                    spinner.classList.add('d-none');
-                    errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi cập nhật.';
-                    errBox.classList.remove('d-none');
-                });
-            }
-        );
-    }
-</script>

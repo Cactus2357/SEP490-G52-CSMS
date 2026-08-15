@@ -39,7 +39,7 @@ namespace SEP490_G52_CSMS.Controllers
 
         // POST: /Employee/CreateAccount
         [HttpPost]
-        public async Task<IActionResult> CreateAccount([FromBody] EmployeeCreationDto dto)
+        public async Task<IActionResult> CreateAccount([FromForm] EmployeeCreationDto dto)
         {
             if (dto == null)
             {

@@ -17,6 +17,8 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         Task<IEnumerable<Branch>> GetActiveBranchesAsync();
         Task<bool> IsManagerOfBranchAsync(int managerId, string branchId);
         Task<bool> ExistsCitizenIdExcludeSelfAsync(string citizenId, int excludeEmployeeId);
+        Task<bool> ExistsEmailExcludeSelfAsync(string email, int excludeEmployeeId);
+        Task<bool> ExistsPhoneNumberExcludeSelfAsync(string phoneNumber, int excludeEmployeeId);
         Task<List<Models.Attendance.WeeklyRosterGrid>> GetRostersWithAttendanceAndHandoverAsync(int employeeId);
         Task<bool> HasCashHandoverAsync(int employeeId, int shiftId, DateTime date);
     }

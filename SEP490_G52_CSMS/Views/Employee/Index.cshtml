@@ -223,23 +223,28 @@
                             <h6 class="fw-bold text-muted text-uppercase mb-3 small">Thông tin cá nhân</h6>
                             <div class="mb-3">
                                 <label for="fullName" class="form-label fw-bold">Họ và tên *</label>
-                                <input type="text" class="form-control rounded-3" id="fullName" placeholder="VD: Nguyễn Văn A" required>
+                                <input type="text" class="form-control rounded-3" id="fullName" name="FullName" placeholder="VD: Nguyễn Văn A" required>
                                 <div class="invalid-feedback">Vui lòng nhập họ và tên.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="phoneNumber" class="form-label fw-bold">Số điện thoại *</label>
-                                <input type="tel" class="form-control rounded-3" id="phoneNumber" placeholder="VD: 0912345678" required>
+                                <input type="tel" class="form-control rounded-3" id="phoneNumber" name="PhoneNumber" placeholder="VD: 0912345678" required>
                                 <div class="invalid-feedback">Vui lòng nhập số điện thoại.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label fw-bold">Email *</label>
-                                <input type="email" class="form-control rounded-3" id="email" placeholder="VD: nguyenvana@gmail.com" required>
+                                <input type="email" class="form-control rounded-3" id="email" name="Email" placeholder="VD: nguyenvana@gmail.com" required>
                                 <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="citizenId" class="form-label fw-bold">Số CCCD *</label>
-                                <input type="text" class="form-control rounded-3" id="citizenId" placeholder="VD: 012345678901" required>
+                                <input type="text" class="form-control rounded-3" id="citizenId" name="CitizenId" placeholder="VD: 012345678901" required>
                                 <div class="invalid-feedback">Vui lòng nhập số CCCD (12 chữ số).</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="createCccdFile" class="form-label fw-bold">Ảnh / Tệp CCCD (Tùy chọn)</label>
+                                <input type="file" class="form-control rounded-3" id="createCccdFile" name="CccdFile" accept="image/*,.pdf">
+                                <div class="form-text">Định dạng: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
                             </div>
                         </div>
 
@@ -247,7 +252,7 @@
                             <h6 class="fw-bold text-muted text-uppercase mb-3 small">Thông tin công việc</h6>
                             <div class="mb-3">
                                 <label for="role" class="form-label fw-bold">Vai trò / Vị trí *</label>
-                                <select class="form-select rounded-3" id="role" required>
+                                <select class="form-select rounded-3" id="role" name="Role" required>
                                     <option value="" disabled selected>Chọn vị trí làm việc...</option>
                                     <option value="Cashier">Thu ngân (Cashier)</option>
                                     <option value="Bartender">Pha chế (Bartender)</option>
@@ -261,12 +266,17 @@
                                     <button type="button" class="btn btn-primary active px-3" id="btnFullTime" onclick="setEmploymentType('Full-time')">Full-time</button>
                                     <button type="button" class="btn btn-outline-secondary px-3" id="btnPartTime" onclick="setEmploymentType('Part-time')">Part-time</button>
                                 </div>
-                                <input type="hidden" id="employmentType" value="Full-time">
+                                <input type="hidden" id="employmentType" name="EmploymentType" value="Full-time">
                             </div>
                             <div class="mb-3">
                                 <label for="branchDisplay" class="form-label fw-bold">Chi nhánh *</label>
                                 <input type="text" class="form-control bg-light rounded-3" id="branchDisplay" value="Chi nhánh Quận 1" readonly>
-                                <input type="hidden" id="branchId" value="CB001">
+                                <input type="hidden" id="branchId" name="BranchId" value="CB001">
+                            </div>
+                            <div class="mb-3">
+                                <label for="createContractFile" class="form-label fw-bold">Tệp hợp đồng lao động (Tùy chọn)</label>
+                                <input type="file" class="form-control rounded-3" id="createContractFile" name="ContractFile" accept="image/*,.pdf">
+                                <div class="form-text">Định dạng: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
                             </div>
                         </div>
                     </div>
@@ -572,15 +582,7 @@
                 return;
             }
 
-            var payload = {
-                FullName: fullName,
-                PhoneNumber: phoneNumber,
-                Email: email,
-                CitizenId: citizenId,
-                Role: role,
-                EmploymentType: employmentType,
-                BranchId: branchId
-            };
+            var formData = new FormData(form);
 
             showConfirmModal(
                 'Xác nhận tạo tài khoản',
@@ -593,8 +595,7 @@
 
                     fetch('/Employee/CreateAccount', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: formData
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -711,6 +712,75 @@
             var modalEl = document.getElementById('employeeUpdateModal');
             var modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
+        }
+
+        function previewUploadFile(input, type) {
+            var container = document.getElementById(type + 'PreviewContainer');
+            if (container && input.files && input.files[0]) {
+                var file = input.files[0];
+                container.innerHTML = `<div class="small text-primary fw-bold"><i class="bi bi-file-earmark-check-fill me-1"></i>Đã chọn: ${file.name} (${(file.size/1024).toFixed(1)} KB)</div>`;
+            }
+        }
+
+        function submitEmployeeUpdate() {
+            var form = document.getElementById('updateEmployeeForm');
+            if (!form) return;
+
+            var errBox = document.getElementById('updErrorBox');
+            if (errBox) {
+                errBox.classList.add('d-none');
+                errBox.innerHTML = '';
+            }
+
+            var empIdEl = form.querySelector('input[name="EmployeeId"]');
+            var empId = empIdEl ? empIdEl.value : '';
+
+            var btn = document.getElementById('btnSaveUpdate');
+            var spinner = document.getElementById('saveUpdateSpinner');
+            var formData = new FormData(form);
+
+            showConfirmModal(
+                'Xác nhận cập nhật',
+                'Bạn có chắc chắn muốn lưu cập nhật thông tin nhân viên này không?',
+                function() {
+                    if (btn) btn.disabled = true;
+                    if (spinner) spinner.classList.remove('d-none');
+
+                    fetch('/Employee/Update/' + empId, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (btn) btn.disabled = false;
+                        if (spinner) spinner.classList.add('d-none');
+
+                        if (data.success) {
+                            closeEmployeeUpdate();
+                            showToast('Cập nhật thông tin nhân viên thành công!', 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            if (errBox) {
+                                errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Cập nhật thất bại.');
+                                errBox.classList.remove('d-none');
+                            } else {
+                                showToast(data.errorMessage || 'Cập nhật thất bại.', 'danger');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        if (btn) btn.disabled = false;
+                        if (spinner) spinner.classList.add('d-none');
+                        if (errBox) {
+                            errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi cập nhật.';
+                            errBox.classList.remove('d-none');
+                        } else {
+                            showToast('Lỗi hệ thống khi cập nhật.', 'danger');
+                        }
+                    });
+                }
+            );
         }
 
         function triggerDeactivationCheck(empId) {
