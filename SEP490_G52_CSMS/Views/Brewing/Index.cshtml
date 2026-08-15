@@ -28,11 +28,11 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 5%;" class="ps-3"></th>
-                            <th style="width: 20%;">Mã Đơn Hàng</th>
-                            <th style="width: 25%;">Tên Khách Hàng</th>
-                            <th style="width: 20%;">Thời Gian</th>
+                            <th style="width: 18%;">Mã Đơn Hàng</th>
+                            <th style="width: 22%;">Tên Khách Hàng</th>
+                            <th style="width: 18%;">Thời Gian</th>
                             <th style="width: 15%;">Trạng Thái</th>
-                            <th style="width: 15%;" class="text-center pe-3">Hành Động</th>
+                            <th style="width: 22%;" class="text-center pe-3">Hành Động</th>
                         </tr>
                     </thead>
                     <tbody id="brewingTableBody">
@@ -71,18 +71,23 @@
                                         </span>
                                     </td>
                                     <td class="text-center pe-3">
-                                        @if (!isBrewing)
-                                        {
-                                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('@o.OrderId')">
-                                                <i class="bi bi-play-fill me-1"></i> Pha chế
+                                        <div class="d-flex align-items-center justify-content-center gap-2">
+                                            @if (!isBrewing)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('@o.OrderId')">
+                                                    <i class="bi bi-play-fill me-1"></i> Pha chế
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('@o.OrderId')">
+                                                    <i class="bi bi-check-lg me-1"></i> Hoàn thành
+                                                </button>
+                                            }
+                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fw-bold shadow-sm" onclick="openMissingModal('@o.OrderId')" title="Báo thiếu nguyên liệu cho đơn này">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Báo thiếu NL
                                             </button>
-                                        }
-                                        else
-                                        {
-                                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('@o.OrderId')">
-                                                <i class="bi bi-check-lg me-1"></i> Hoàn thành
-                                            </button>
-                                        }
+                                        </div>
                                     </td>
                                 </tr>
 
@@ -135,12 +140,70 @@
     </div>
 </div>
 
+<!-- Modal Báo Thiếu Nguyên Liệu -->
+<div class="modal fade" id="missingIngredientsModal" tabindex="-1" aria-labelledby="missingIngredientsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold" id="missingIngredientsModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>BÁO THIẾU NGUYÊN LIỆU PHA CHẾ
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-warning small mb-3">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Vui lòng chọn <strong>các món đồ uống bị thiếu nguyên liệu</strong>. Hệ thống sẽ chuyển đơn hàng về cho Thu ngân để xử lý hoàn tiền hoặc đổi món cho khách.
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Mã đơn hàng:</label>
+                    <input type="text" id="modalMissingOrderId" class="form-control form-control-sm bg-light fw-bold text-primary" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-dark small mb-2">
+                        Chọn món bị thiếu nguyên liệu: <span class="text-danger">*</span>
+                    </label>
+                    <div id="missingItemsListContainer" class="border rounded p-2.5 bg-light" style="max-height: 200px; overflow-y: auto;">
+                        <div class="text-center text-muted py-3">
+                            <span class="spinner-border spinner-border-sm me-1"></span> Đang tải danh sách món...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label fw-semibold text-secondary small mb-1">
+                        Ghi chú lý do thiếu nguyên liệu <span class="text-muted fw-normal">(Tùy chọn)</span>:
+                    </label>
+                    <textarea id="modalMissingReason" class="form-control form-control-sm" rows="3" placeholder="Ví dụ: Hết sữa tươi thanh trùng, hết trân châu đen, thiếu siro đào..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2.5">
+                <button type="button" class="btn btn-secondary btn-sm fw-semibold px-3" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-danger btn-sm fw-bold px-4 shadow-sm" onclick="submitMissingIngredientsReport()">
+                    <i class="bi bi-send-fill me-1"></i> Gửi báo cáo cho Thu ngân
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         const expandedOrderIds = new Set();
+        let cachedOrdersData = {};
+        let missingModalInstance = null;
+
         @if (Model.Any())
         {
             @:expandedOrderIds.add('@Model.First().OrderId');
+        }
+
+        // Cache initial Model items
+        @foreach (var o in Model)
+        {
+            @:cachedOrdersData['@o.OrderId'] = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(o.Items.Select(i => new { variantId = i.VariantId, productName = i.ProductName, size = i.Size, quantity = i.Quantity, unitPrice = i.UnitPrice, amount = i.Amount })));
         }
 
         function toggleNestedItems(orderId) {
@@ -222,6 +285,102 @@
             );
         }
 
+        function openMissingModal(orderId) {
+            $('#modalMissingOrderId').val(orderId);
+            $('#modalMissingReason').val('');
+
+            let items = cachedOrdersData[orderId];
+            if (!items || items.length === 0) {
+                // Fallback: fetch live details
+                $.ajax({
+                    url: '/Brewing/GetLiveOrders',
+                    type: 'GET',
+                    success: function(orders) {
+                        let ord = orders.find(o => o.orderId === orderId);
+                        if (ord && ord.items) {
+                            renderMissingItemsList(ord.items);
+                        } else {
+                            $('#missingItemsListContainer').html('<div class="text-danger small">Không tìm thấy danh sách món của đơn.</div>');
+                        }
+                    }
+                });
+            } else {
+                renderMissingItemsList(items);
+            }
+
+            if (!missingModalInstance) {
+                missingModalInstance = new bootstrap.Modal(document.getElementById('missingIngredientsModal'));
+            }
+            missingModalInstance.show();
+        }
+
+        function renderMissingItemsList(items) {
+            let html = '';
+            items.forEach((it, idx) => {
+                let vId = it.variantId || idx;
+                html += `
+                    <div class="form-check p-2 mb-1 border-bottom bg-white rounded">
+                        <input class="form-check-input missing-item-chk ms-0 me-2" type="checkbox" value="${vId}" id="chk_item_${vId}">
+                        <label class="form-check-label w-100 cursor-pointer d-flex justify-content-between align-items-center" for="chk_item_${vId}">
+                            <div>
+                                <span class="fw-bold text-dark">${it.productName}</span>
+                                <span class="badge bg-secondary-subtle text-dark ms-1">Size ${it.size}</span>
+                                <span class="text-muted ms-1">x${it.quantity}</span>
+                            </div>
+                            <span class="fw-bold text-primary">${(it.amount || (it.quantity * it.unitPrice) || 0).toLocaleString('vi-VN')} đ</span>
+                        </label>
+                    </div>
+                `;
+            });
+            $('#missingItemsListContainer').html(html);
+        }
+
+        function submitMissingIngredientsReport() {
+            let orderId = $('#modalMissingOrderId').val();
+            let reason = $('#modalMissingReason').val().trim();
+            let selectedVariantIds = [];
+
+            $('.missing-item-chk:checked').each(function() {
+                let val = parseInt($(this).val());
+                if (!isNaN(val)) {
+                    selectedVariantIds.push(val);
+                }
+            });
+
+            if (selectedVariantIds.length === 0) {
+                showToast('Vui lòng tích chọn ít nhất 1 món bị thiếu nguyên liệu!', 'warning');
+                return;
+            }
+
+            let confirmMsg = `Xác nhận gửi báo cáo <strong>thiếu nguyên liệu cho ${selectedVariantIds.length} món</strong> của đơn <strong>${orderId}</strong> tới Thu ngân để xử lý?`;
+
+            showConfirmModal(
+                'Xác nhận báo thiếu nguyên liệu',
+                confirmMsg,
+                function() {
+                    $.ajax({
+                        url: '/Brewing/ReportMissingIngredients',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            orderId: orderId,
+                            missingVariantIds: selectedVariantIds,
+                            reason: reason
+                        }),
+                        success: function(res) {
+                            if (missingModalInstance) missingModalInstance.hide();
+                            showToast(res.message || 'Đã gửi thông báo cho Thu ngân thành công.', 'success');
+                            fetchLiveOrders();
+                        },
+                        error: function(xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi gửi báo cáo thiếu nguyên liệu.';
+                            showToast(msg, 'danger');
+                        }
+                    });
+                }
+            );
+        }
+
         // Live Auto-Polling (every 5 seconds)
         function fetchLiveOrders() {
             $.ajax({
@@ -240,6 +399,11 @@
                         `);
                         return;
                     }
+
+                    // Update cached items
+                    orders.forEach(o => {
+                        cachedOrdersData[o.orderId] = o.items;
+                    });
 
                     // Auto-expand the top order in the queue if no active order is currently expanded
                     let hasExpandedActiveOrder = orders.some(o => expandedOrderIds.has(o.orderId));
@@ -277,15 +441,20 @@
                                     </span>
                                 </td>
                                 <td class="text-center pe-3">
-                                    ${!isBrewing ? `
-                                        <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('${o.orderId}')">
-                                            <i class="bi bi-play-fill me-1"></i> Pha chế
+                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                        ${!isBrewing ? `
+                                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('${o.orderId}')">
+                                                <i class="bi bi-play-fill me-1"></i> Pha chế
+                                            </button>
+                                        ` : `
+                                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('${o.orderId}')">
+                                                <i class="bi bi-check-lg me-1"></i> Hoàn thành
+                                            </button>
+                                        `}
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fw-bold shadow-sm" onclick="openMissingModal('${o.orderId}')" title="Báo thiếu nguyên liệu cho đơn này">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Báo thiếu NL
                                         </button>
-                                    ` : `
-                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('${o.orderId}')">
-                                            <i class="bi bi-check-lg me-1"></i> Hoàn thành
-                                        </button>
-                                    `}
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="nested-items-row ${hiddenCls}" id="nested-row-${o.orderId}" style="${displayStyle}">

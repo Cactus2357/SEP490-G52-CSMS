@@ -61,8 +61,9 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public decimal TotalAmount { get; set; }
         public decimal RefundAmount { get; set; }
         public string? RefundReason { get; set; }
-        // The display status logic can combine Payment/Brewing based on rules
         public string DisplayStatus { get; set; } = null!;
+        public bool IsMissingIngredients { get; set; }
+        public decimal MissingItemsAmount { get; set; }
         public List<OrderItemViewModel> Items { get; set; } = new List<OrderItemViewModel>();
     }
 
@@ -80,16 +81,53 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string? RefundReason { get; set; }
         public string? RefundMethod { get; set; }
         public DateTime? RefundedAt { get; set; }
+        public bool IsMissingIngredients { get; set; }
+        public decimal MissingItemsAmount { get; set; }
+        public string? MissingIngredientsDetail { get; set; }
 
         public List<OrderItemViewModel> Items { get; set; } = new List<OrderItemViewModel>();
     }
 
     public class OrderItemViewModel
     {
+        public int VariantId { get; set; }
         public string ProductName { get; set; } = null!;
         public string Size { get; set; } = null!;
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal Amount => Quantity * UnitPrice;
+        public bool IsMissing { get; set; }
+    }
+
+    /// <summary>
+    /// Model gửi từ Bartender khi báo thiếu nguyên liệu cho một hoặc nhiều món
+    /// </summary>
+    public class MissingIngredientsReportModel
+    {
+        public string OrderId { get; set; } = string.Empty;
+        public List<int> MissingVariantIds { get; set; } = new List<int>();
+        public string? Reason { get; set; }
+    }
+
+    /// <summary>
+    /// Model gửi từ Cashier khi thực hiện đổi món / sửa đơn
+    /// </summary>
+    public class ExchangeOrderModel
+    {
+        public string OrderId { get; set; } = string.Empty;
+        public List<OrderItemExchangeSubmission> Items { get; set; } = new List<OrderItemExchangeSubmission>();
+        public string? AdditionalPaymentMethod { get; set; } = "Cash";
+        public decimal? CustomerCash { get; set; }
+        public decimal? ChangeAmount { get; set; }
+        public string? Reason { get; set; }
+    }
+
+    public class OrderItemExchangeSubmission
+    {
+        public int VariantId { get; set; }
+        public string? ProductName { get; set; }
+        public string? Size { get; set; }
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
     }
 }

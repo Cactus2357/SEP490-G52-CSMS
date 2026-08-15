@@ -13,6 +13,9 @@
     .history-pagination-wrapper { flex-shrink: 0; margin-top: 10px; }
     .history-detail-column { flex: 0 0 40%; display: flex; flex-direction: column; overflow: hidden; }
     .history-detail-card { display: flex; flex-direction: column; height: 100%; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); background: var(--bg-card); overflow: hidden; }
+    .exchange-menu-card { max-height: 320px; overflow-y: auto; }
+    .exchange-item-row { transition: background-color 0.2s; }
+    .exchange-item-row:hover { background-color: #f8f9fa; }
 </style>
 
 <div class="order-history-container px-4 pt-3">
@@ -34,6 +37,7 @@
                             <label class="form-label fw-semibold text-secondary small mb-1">Trạng thái</label>
                             <select name="status" class="form-select form-select-sm" onchange="document.getElementById('filterForm').submit()">
                                 <option value="Tất cả" selected="@(Model.StatusFilter == "Tất cả")">Tất cả</option>
+                                <option value="Thiếu nguyên liệu / Chờ xử lý" selected="@(Model.StatusFilter == "Thiếu nguyên liệu / Chờ xử lý" || Model.StatusFilter == "Thiếu nguyên liệu")">Thiếu nguyên liệu (Chờ xử lý)</option>
                                 <option value="Đang xử lý" selected="@(Model.StatusFilter == "Đang xử lý")">Đang xử lý</option>
                                 <option value="Đã hoàn thành" selected="@(Model.StatusFilter == "Đã hoàn thành")">Đã hoàn thành</option>
                                 <option value="Đã hủy / Hoàn tiền" selected="@(Model.StatusFilter == "Đã hủy / Hoàn tiền" || Model.StatusFilter == "Đã hủy")">Đã hủy / Hoàn tiền</option>
@@ -95,9 +99,10 @@
                                 {
                                     var o = Model.Orders[i];
                                     var stt = (Model.CurrentPage - 1) * 10 + i + 1;
+                                    bool isMissing = o.IsMissingIngredients || o.BrewingStatus == "Missing Ingredients";
                                     bool isCancelled = (o.DisplayStatus.Contains("hủy") || o.DisplayStatus.Contains("Hoàn tiền") || o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount > 0);
-                                    bool isDone = !isCancelled && (o.DisplayStatus == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
-                                    string rowStyle = isCancelled ? "table-danger" : (isDone ? "table-success" : "table-warning");
+                                    bool isDone = !isCancelled && !isMissing && (o.DisplayStatus == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+                                    string rowStyle = isMissing ? "table-danger fw-semibold" : (isCancelled ? "table-light text-muted" : (isDone ? "table-success" : "table-warning"));
 
                                     <tr class="@rowStyle">
                                         <td class="ps-3 text-secondary">@stt</td>
@@ -105,21 +110,27 @@
                                         <td class="text-dark">@(string.IsNullOrEmpty(o.RecipientName) ? "Khách vãng lai" : o.RecipientName)</td>
                                         <td class="small text-muted">@o.OrderTime.ToString("dd/MM/yyyy HH:mm")</td>
                                         <td>
-                                            @if (isCancelled)
+                                            @if (isMissing)
                                             {
-                                                <span class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill">
+                                                <span class="badge bg-danger text-white px-2 py-1 rounded-pill">
+                                                    <i class="bi bi-exclamation-octagon-fill me-1"></i>Thiếu nguyên liệu
+                                                </span>
+                                            }
+                                            else if (isCancelled)
+                                            {
+                                                <span class="badge bg-secondary text-white px-2 py-1 rounded-pill">
                                                     <i class="bi bi-x-circle-fill me-1"></i>Đã hủy / Hoàn tiền
                                                 </span>
                                             }
                                             else if (isDone)
                                             {
-                                                <span class="badge bg-success text-white px-3 py-1.5 rounded-pill">
+                                                <span class="badge bg-success text-white px-2.5 py-1 rounded-pill">
                                                     <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
                                                 </span>
                                             }
                                             else
                                             {
-                                                <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill">
+                                                <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill">
                                                     <i class="bi bi-clock-history me-1"></i>Đang xử lý
                                                 </span>
                                             }
@@ -193,7 +204,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold small">Mã đơn hàng:</label>
-                    <input type="text" id="refundOrderId" class="form-control bg-light" readonly />
+                    <input type="text" id="refundOrderId" class="form-control bg-light fw-bold text-primary" readonly />
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold small">Số tiền hoàn (VNĐ): <span class="text-danger">*</span></label>
@@ -213,6 +224,97 @@
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 <button type="button" class="btn btn-danger fw-bold" onclick="submitRefund()">Xác nhận hoàn tiền</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Đổi Món / Sửa Đơn Hàng -->
+<div class="modal fade" id="exchangeOrderModal" tabindex="-1" aria-labelledby="exchangeOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold" id="exchangeOrderModalLabel">
+                    <i class="bi bi-arrow-repeat me-2"></i>ĐỔI MÓN / SỬA ĐƠN HÀNG - <span id="exchangeOrderIdDisplay"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-light">
+                <div class="row g-3">
+                    <!-- Left: Current order items -->
+                    <div class="col-lg-6">
+                        <div class="card h-100 border shadow-sm">
+                            <div class="card-header bg-white py-2.5 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-cart3 text-primary me-2"></i>Danh sách món mới</h6>
+                                <span class="badge bg-secondary-subtle text-dark" id="exchangeItemCountBadge">0 món</span>
+                            </div>
+                            <div class="card-body p-0 d-flex flex-column" style="min-height: 280px; max-height: 380px; overflow-y: auto;">
+                                <table class="table table-hover table-sm align-middle mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th style="width: 45%;">Tên món</th>
+                                            <th style="width: 15%;" class="text-center">Size</th>
+                                            <th style="width: 20%;" class="text-center">Số lượng</th>
+                                            <th style="width: 20%;" class="text-end pe-3">Thành tiền</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="exchangeItemsTableBody">
+                                        <!-- Rendered via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Menu Product Selector -->
+                    <div class="col-lg-6">
+                        <div class="card h-100 border shadow-sm">
+                            <div class="card-header bg-white py-2">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-6">
+                                        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-cup-straw text-primary me-2"></i>Thực đơn đổi món</h6>
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="text" id="exchangeMenuSearch" class="form-control form-control-sm" placeholder="Tìm tên món..." onkeyup="filterExchangeMenu()">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-2 exchange-menu-card" id="exchangeMenuContainer">
+                                <div class="text-center text-muted py-5">
+                                    <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+                                    <div>Đang tải thực đơn...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Summary Box -->
+                <div class="card border-0 shadow-sm mt-3 bg-white">
+                    <div class="card-body p-3">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-3 border-end">
+                                <div class="text-muted small">Tổng tiền đơn gốc:</div>
+                                <div class="fw-bold fs-5 text-secondary" id="exchangeOldTotalDisplay">0 đ</div>
+                            </div>
+                            <div class="col-md-3 border-end">
+                                <div class="text-muted small">Tổng tiền đơn mới:</div>
+                                <div class="fw-bold fs-5 text-primary" id="exchangeNewTotalDisplay">0 đ</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="exchangeDifferenceBox">
+                                    <!-- Dynamic calculation box rendered by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2.5">
+                <button type="button" class="btn btn-secondary fw-semibold px-3" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitExchangeOrder()">
+                    <i class="bi bi-check-circle-fill me-1"></i> Xác nhận sửa đơn & Đẩy lại pha chế
+                </button>
             </div>
         </div>
     </div>
@@ -248,12 +350,17 @@
 
         var refundModalInstance = null;
 
-        function openRefundModal(orderId, totalAmount) {
+        function openRefundModal(orderId, refundAmount, reasonDetail) {
             document.getElementById('refundOrderId').value = orderId;
-            document.getElementById('refundAmountInput').value = totalAmount;
-            document.getElementById('refundAmountInput').max = totalAmount;
+            document.getElementById('refundAmountInput').value = refundAmount || 0;
             
-            refundModalInstance = new bootstrap.Modal(document.getElementById('refundModal'));
+            if (reasonDetail) {
+                document.getElementById('refundReasonSelect').value = 'Hết nguyên liệu pha chế';
+            }
+            
+            if (!refundModalInstance) {
+                refundModalInstance = new bootstrap.Modal(document.getElementById('refundModal'));
+            }
             refundModalInstance.show();
         }
 
@@ -274,11 +381,7 @@
             var reason = reasonSelect === 'Khác' ? (customReason || 'Lý do khác') : reasonSelect;
 
             if (amount <= 0) {
-                if (typeof showToast === 'function') {
-                    showToast('Số tiền hoàn phải lớn hơn 0', 'warning');
-                } else {
-                    alert('Số tiền hoàn phải lớn hơn 0');
-                }
+                showToast('Số tiền hoàn phải lớn hơn 0', 'warning');
                 return;
             }
 
@@ -301,27 +404,303 @@
                     .then(res => {
                         if (res.body.success) {
                             if (refundModalInstance) refundModalInstance.hide();
-                            if (typeof showToast === 'function') {
-                                showToast(res.body.message, 'success');
-                            } else {
-                                alert(res.body.message);
-                            }
+                            showToast(res.body.message, 'success');
                             loadOrderDetails(orderId);
                         } else {
-                            if (typeof showToast === 'function') {
-                                showToast(res.body.message || 'Thất bại', 'danger');
-                            } else {
-                                alert('Lỗi: ' + res.body.message);
-                            }
+                            showToast(res.body.message || 'Thất bại', 'danger');
                         }
                     })
                     .catch(err => {
                         console.error(err);
-                        if (typeof showToast === 'function') {
-                            showToast('Lỗi khi gửi yêu cầu hoàn tiền.', 'danger');
+                        showToast('Lỗi khi gửi yêu cầu hoàn tiền.', 'danger');
+                    });
+                }
+            );
+        }
+
+        // ======================= EXCHANGE ORDER (ĐỔI MÓN) LOGIC =======================
+        let exchangeModalInstance = null;
+        let currentExchangeOrderId = '';
+        let exchangeOriginalTotal = 0;
+        let exchangeCurrentItems = [];
+        let cachedExchangeMenu = null;
+
+        function openExchangeModal(orderId, itemsJson) {
+            currentExchangeOrderId = orderId;
+            $('#exchangeOrderIdDisplay').text(orderId);
+
+            // Copy items to working array
+            exchangeCurrentItems = itemsJson.map(it => ({
+                variantId: it.variantId,
+                productName: it.productName,
+                size: it.size,
+                quantity: it.quantity,
+                unitPrice: it.unitPrice
+            }));
+
+            exchangeOriginalTotal = exchangeCurrentItems.reduce((sum, it) => sum + (it.quantity * it.unitPrice), 0);
+            $('#exchangeOldTotalDisplay').text(exchangeOriginalTotal.toLocaleString('vi-VN') + ' đ');
+
+            renderExchangeItems();
+            loadExchangeMenu();
+
+            if (!exchangeModalInstance) {
+                exchangeModalInstance = new bootstrap.Modal(document.getElementById('exchangeOrderModal'));
+            }
+            exchangeModalInstance.show();
+        }
+
+        function renderExchangeItems() {
+            let tbody = $('#exchangeItemsTableBody');
+            tbody.empty();
+
+            if (exchangeCurrentItems.length === 0) {
+                tbody.html('<tr><td colspan="4" class="text-center text-muted py-4">Chưa có món nào. Hãy chọn món từ thực đơn bên phải.</td></tr>');
+            } else {
+                exchangeCurrentItems.forEach((it, idx) => {
+                    let amount = it.quantity * it.unitPrice;
+                    let row = `
+                        <tr class="exchange-item-row">
+                            <td class="ps-2">
+                                <div class="fw-bold text-dark">${it.productName}</div>
+                                <div class="small text-muted">${it.unitPrice.toLocaleString('vi-VN')} đ/ly</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary-subtle text-dark border">Size ${it.size}</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-inline-flex align-items-center border rounded bg-white">
+                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 px-2" onclick="changeExchangeItemQty(${idx}, -1)">
+                                        <i class="bi bi-dash-lg"></i>
+                                    </button>
+                                    <span class="fw-bold px-1">${it.quantity}</span>
+                                    <button type="button" class="btn btn-sm btn-link text-success p-0 px-2" onclick="changeExchangeItemQty(${idx}, 1)">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="text-end pe-3">
+                                <span class="fw-bold text-primary">${amount.toLocaleString('vi-VN')} đ</span>
+                                <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="removeExchangeItem(${idx})" title="Xóa món">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }
+
+            $('#exchangeItemCountBadge').text(exchangeCurrentItems.length + ' món');
+            recalculateExchangeTotals();
+        }
+
+        function changeExchangeItemQty(index, delta) {
+            if (index >= 0 && index < exchangeCurrentItems.length) {
+                exchangeCurrentItems[index].quantity += delta;
+                if (exchangeCurrentItems[index].quantity <= 0) {
+                    exchangeCurrentItems.splice(index, 1);
+                }
+                renderExchangeItems();
+            }
+        }
+
+        function removeExchangeItem(index) {
+            if (index >= 0 && index < exchangeCurrentItems.length) {
+                exchangeCurrentItems.splice(index, 1);
+                renderExchangeItems();
+            }
+        }
+
+        function recalculateExchangeTotals() {
+            let newTotal = exchangeCurrentItems.reduce((sum, it) => sum + (it.quantity * it.unitPrice), 0);
+            $('#exchangeNewTotalDisplay').text(newTotal.toLocaleString('vi-VN') + ' đ');
+
+            let diff = newTotal - exchangeOriginalTotal;
+            let diffBox = $('#exchangeDifferenceBox');
+
+            if (diff < 0) {
+                let refund = Math.abs(diff);
+                diffBox.html(`
+                    <div class="alert alert-success border-success py-2 px-3 m-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold text-success"><i class="bi bi-arrow-down-circle-fill me-1"></i>HOÀN TIỀN THỪA CHO KHÁCH:</span>
+                            <div class="small text-muted">(Số tiền sẽ được tự động khấu trừ vào két tiền ca hiện tại)</div>
+                        </div>
+                        <h4 class="fw-bold text-success mb-0">-${refund.toLocaleString('vi-VN')} đ</h4>
+                    </div>
+                `);
+            } else if (diff > 0) {
+                diffBox.html(`
+                    <div class="alert alert-warning border-warning py-2 px-3 m-0">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark"><i class="bi bi-arrow-up-circle-fill text-warning me-1"></i>KHÁCH CẦN THANH TOÁN THÊM:</span>
+                            <h4 class="fw-bold text-danger mb-0">+${diff.toLocaleString('vi-VN')} đ</h4>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 mt-1">
+                            <label class="small fw-semibold text-secondary">Hình thức thu thêm:</label>
+                            <div class="form-check form-check-inline m-0">
+                                <input class="form-check-input" type="radio" name="addPayMethod" id="addPayCash" value="Cash" checked>
+                                <label class="form-check-label small" for="addPayCash">Tiền mặt</label>
+                            </div>
+                            <div class="form-check form-check-inline m-0">
+                                <input class="form-check-input" type="radio" name="addPayMethod" id="addPayBank" value="Bank Transfer">
+                                <label class="form-check-label small" for="addPayBank">Chuyển khoản</label>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            } else {
+                diffBox.html(`
+                    <div class="alert alert-info border-info py-2 px-3 m-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold text-info"><i class="bi bi-check-circle-fill me-1"></i>TỔNG TIỀN KHÔNG ĐỔI</span>
+                            <div class="small text-muted">Không phát sinh thu thêm hay hoàn tiền.</div>
+                        </div>
+                        <h4 class="fw-bold text-info mb-0">0 đ</h4>
+                    </div>
+                `);
+            }
+        }
+
+        function loadExchangeMenu() {
+            if (cachedExchangeMenu) {
+                renderExchangeMenu(cachedExchangeMenu);
+                return;
+            }
+
+            fetch('@Url.Action("GetMenuForExchange", "SaleManagement")')
+                .then(res => res.json())
+                .then(data => {
+                    cachedExchangeMenu = data;
+                    renderExchangeMenu(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    $('#exchangeMenuContainer').html('<div class="text-danger p-3">Không thể tải danh sách thực đơn.</div>');
+                });
+        }
+
+        function renderExchangeMenu(data) {
+            let container = $('#exchangeMenuContainer');
+            container.empty();
+
+            if (!data || !data.products || data.products.length === 0) {
+                container.html('<div class="text-muted p-3 text-center">Không có món nào trong thực đơn.</div>');
+                return;
+            }
+
+            let html = '<div class="row g-2">';
+            data.products.forEach(p => {
+                html += `
+                    <div class="col-12 exchange-product-card" data-name="${p.productName.toLowerCase()}">
+                        <div class="p-2 border rounded bg-white d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold text-dark">${p.productName}</span>
+                                <div class="d-flex gap-1 mt-1">
+                                    ${p.variants.map(v => `
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 small rounded-pill" onclick="addVariantToExchange(${v.variantId}, '${p.productName.replace("'", "\\'")}', '${v.size}', ${v.price})">
+                                            Size ${v.size}: <strong>${v.price.toLocaleString('vi-VN')}đ</strong> <i class="bi bi-plus"></i>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.html(html);
+        }
+
+        function filterExchangeMenu() {
+            let kw = $('#exchangeMenuSearch').val().toLowerCase().trim();
+            $('.exchange-product-card').each(function() {
+                let name = $(this).data('name') || '';
+                if (!kw || name.includes(kw)) {
+                    $(this).removeClass('d-none');
+                } else {
+                    $(this).addClass('d-none');
+                }
+            });
+        }
+
+        function addVariantToExchange(variantId, productName, size, unitPrice) {
+            let existing = exchangeCurrentItems.find(it => it.variantId === variantId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                exchangeCurrentItems.push({
+                    variantId: variantId,
+                    productName: productName,
+                    size: size,
+                    quantity: 1,
+                    unitPrice: unitPrice
+                });
+            }
+            renderExchangeItems();
+        }
+
+        function submitExchangeOrder() {
+            if (exchangeCurrentItems.length === 0) {
+                showToast('Đơn hàng mới không được để trống món!', 'warning');
+                return;
+            }
+
+            let newTotal = exchangeCurrentItems.reduce((sum, it) => sum + (it.quantity * it.unitPrice), 0);
+            let diff = newTotal - exchangeOriginalTotal;
+            let addPayMethod = $('input[name="addPayMethod"]:checked').val() || 'Cash';
+
+            let diffText = '';
+            if (diff < 0) {
+                diffText = `<span class="text-success fw-bold">Hoàn tiền mặt cho khách: ${Math.Abs(diff).toLocaleString('vi-VN')} đ</span> (Tự động trừ vào quỹ tiền mặt ca hiện tại)`;
+            } else if (diff > 0) {
+                diffText = `<span class="text-danger fw-bold">Thu thêm từ khách: ${diff.toLocaleString('vi-VN')} đ</span> qua hình thức <strong>${addPayMethod === 'Cash' ? 'Tiền mặt' : 'Chuyển khoản'}</strong>`;
+            } else {
+                diffText = `<span class="text-info fw-bold">Tổng tiền không đổi (0 đ)</span>`;
+            }
+
+            let confirmMsg = `
+                Xác nhận lưu thay đổi đơn hàng <strong>${currentExchangeOrderId}</strong>?<br><br>
+                - Tổng đơn cũ: <strong>${exchangeOriginalTotal.toLocaleString('vi-VN')} đ</strong><br>
+                - Tổng đơn mới: <strong>${newTotal.toLocaleString('vi-VN')} đ</strong><br>
+                - Chênh lệch: ${diffText}<br><br>
+                <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Đơn hàng sẽ được chuyển lại hàng đợi pha chế cho Bartender.</small>
+            `;
+
+            showConfirmModal(
+                'Xác nhận sửa đổi đơn hàng',
+                confirmMsg,
+                function() {
+                    fetch('@Url.Action("ExchangeOrder", "SaleManagement")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            orderId: currentExchangeOrderId,
+                            items: exchangeCurrentItems.map(it => ({
+                                variantId: it.variantId,
+                                productName: it.productName,
+                                size: it.size,
+                                quantity: it.quantity,
+                                unitPrice: it.unitPrice
+                            })),
+                            additionalPaymentMethod: addPayMethod,
+                            reason: 'Đổi món do Bartender báo thiếu nguyên liệu'
+                        })
+                    })
+                    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+                    .then(res => {
+                        if (res.body.success) {
+                            if (exchangeModalInstance) exchangeModalInstance.hide();
+                            showToast(res.body.message || 'Đã sửa đơn thành công!', 'success');
+                            loadOrderDetails(currentExchangeOrderId);
                         } else {
-                            alert('Lỗi khi gửi yêu cầu hoàn tiền.');
+                            showToast(res.body.message || 'Thất bại', 'danger');
                         }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Lỗi khi gửi yêu cầu đổi món.', 'danger');
                     });
                 }
             );

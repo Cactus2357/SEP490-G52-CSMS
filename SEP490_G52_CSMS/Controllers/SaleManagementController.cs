@@ -415,6 +415,71 @@ namespace SEP490_G52_CSMS.Controllers
 
             return PartialView("_OrderDetailPartial", details);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetMenuForExchange()
+        {
+            var allCategories = await _menuRepo.GetProductCategoriesAsync();
+            var allMasterProducts = await _menuRepo.GetMasterProductsAsync();
+
+            var result = new
+            {
+                categories = allCategories.Select(c => new { categoryId = c.CategoryId, categoryName = c.CategoryName }),
+                products = allMasterProducts.Where(m => m.ProductVariants != null && m.ProductVariants.Any()).Select(m => new
+                {
+                    productId = m.ProductId,
+                    productName = m.ProductName ?? "",
+                    categoryId = m.CategoryId,
+                    imageUrl = m.ImageUrl ?? "",
+                    variants = m.ProductVariants.Select(pv => new
+                    {
+                        variantId = pv.VariantId,
+                        size = pv.SizeVariant ?? "S",
+                        price = pv.SellingPrice
+                    }).ToList()
+                }).ToList()
+            };
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ExchangeOrder([FromBody] ExchangeOrderModel model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.OrderId) || model.Items == null || !model.Items.Any())
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu đổi món không hợp lệ." });
+            }
+
+            var cashierId = await GetUserCashierIdAsync();
+            var branchId = await GetUserBranchIdAsync();
+
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = $"Chỉ thu ngân đang trong ca làm việc chính thức mới được phép sửa đơn / đổi món! ({message})" });
+            }
+
+            var result = await _orderService.ExchangeOrderItemsAsync(
+                model.OrderId, 
+                model.Items, 
+                model.AdditionalPaymentMethod ?? "Cash", 
+                model.CustomerCash, 
+                model.ChangeAmount, 
+                model.Reason, 
+                cashierId);
+
+            if (result.success)
+            {
+                return Json(new { 
+                    success = true, 
+                    message = result.message, 
+                    refundDifference = result.refundDifference, 
+                    additionalAmount = result.additionalAmount 
+                });
+            }
+
+            return BadRequest(new { success = false, message = result.message });
+        }
     }
 
     public class RefundRequestModel

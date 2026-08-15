@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
+using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -40,6 +41,12 @@ namespace SEP490_G52_CSMS.Controllers
             return "";
         }
 
+        private int GetUserId()
+        {
+            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int id);
+            return id;
+        }
+
         public async Task<IActionResult> Index()
         {
             var branchId = await GetUserBranchIdAsync();
@@ -71,9 +78,12 @@ namespace SEP490_G52_CSMS.Controllers
                 items = o.Items.Select((item, index) => new
                 {
                     stt = index + 1,
+                    variantId = item.VariantId,
                     productName = item.ProductName,
                     size = item.Size,
-                    quantity = item.Quantity
+                    quantity = item.Quantity,
+                    unitPrice = item.UnitPrice,
+                    amount = item.Amount
                 })
             });
             return Json(result);
@@ -93,6 +103,33 @@ namespace SEP490_G52_CSMS.Controllers
             var result = await _orderService.CompleteBrewingAsync(orderId);
             if (result) return Json(new { success = true });
             return BadRequest(new { success = false, message = "Không thể hoàn thành đơn hàng này." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReportMissingIngredients([FromBody] MissingIngredientsReportModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.OrderId))
+            {
+                return BadRequest(new { success = false, message = "Mã đơn hàng không hợp lệ." });
+            }
+
+            if (model.MissingVariantIds == null || !model.MissingVariantIds.Any())
+            {
+                return BadRequest(new { success = false, message = "Vui lòng chọn ít nhất một món bị thiếu nguyên liệu." });
+            }
+
+            int userId = GetUserId();
+            var ok = await _orderService.ReportMissingIngredientsAsync(model.OrderId, model.MissingVariantIds, model.Reason, userId);
+
+            if (ok)
+            {
+                return Json(new { 
+                    success = true, 
+                    message = $"Đã ghi nhận báo thiếu nguyên liệu cho đơn {model.OrderId} và gửi thông báo tới Thu ngân." 
+                });
+            }
+
+            return BadRequest(new { success = false, message = "Không thể gửi báo cáo thiếu nguyên liệu cho đơn hàng này." });
         }
     }
 }
