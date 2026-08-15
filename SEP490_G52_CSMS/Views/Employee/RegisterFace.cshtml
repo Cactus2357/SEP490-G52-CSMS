@@ -5,8 +5,6 @@
 
 @section Styles {
     <style>
-
-
         .scanning-card {
             background: white;
             border-radius: 12px;
@@ -127,14 +125,6 @@
         .status-success { color: #064e3b; background-color: #d1fae5; }
         .status-error { color: #7f1d1d; background-color: #fee2e2; }
 
-        /* Configuration Panel */
-        .config-panel {
-            background-color: #fffbeb;
-            border: 1px solid #fef3c7;
-            border-radius: 8px;
-            padding: 16px;
-        }
-
         .btn-mockup-action-primary {
             background-color: #ffffff;
             color: #333333;
@@ -187,15 +177,20 @@
     </style>
 }
 
-<div class="card scanning-card mt-2">
+<div class="mb-4">
+    <a href="/Employee" class="text-decoration-none text-secondary" style="font-size: 0.95rem;">
+        <i class="bi bi-arrow-left-circle me-1"></i> Quay lại Danh sách nhân viên
+    </a>
+</div>
+
+<div class="card scanning-card">
     <div class="card-header-custom">
-        <h3 class="card-title-custom">ĐĂNG KÝ DỮ LIỆU KHUÔN MẶT</h3>
+        <h3 class="card-title-custom">ĐĂNG KÝ DỮ LIỆU KHUÔN MẶT (FACE ID)</h3>
         <div class="text-muted mt-1" style="font-size: 0.9rem;">
             Nhân viên: <strong>@Model.FullName</strong> &bull; Username: <code>@Model.Username</code>
         </div>
     </div>
     <div class="card-body p-4">
-        <!-- face-api.js is fully self-hosted, no config panel required -->
 
         <div class="row g-4">
             <!-- Left Panel: Instructions -->
@@ -206,7 +201,7 @@
                         <ul class="ps-3 text-secondary mb-4" style="line-height: 1.8; font-size: 0.9rem;">
                             <li class="mb-2">Nhìn thẳng trực tiếp vào camera.</li>
                             <li class="mb-2">Đảm bảo đủ ánh sáng, không đeo kính râm hoặc khẩu trang.</li>
-                            <li>Giữ camera ngang tầm mắt.</li>
+                            <li>Giữ camera ngang tầm mắt và di chuyển khuôn mặt vào đường viền tròn.</li>
                         </ul>
                     </div>
 
@@ -230,56 +225,59 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Camera Viewport -->
+            <!-- Right Panel: Camera View & Scan Area -->
             <div class="col-lg-7">
-                <div class="d-flex flex-column align-items-stretch">
-                    <h5 class="fw-bold mb-3" style="font-size: 1.1rem; border-bottom: 1.5px solid #d1d5db; padding-bottom: 8px;">Khung quét camera</h5>
-                    
-                    <div class="camera-frame w-100 mb-3" id="cameraFrame">
-                        <div class="scan-overlay">
-                            <div class="scan-circle" id="scanCircle">
-                                <div class="scan-line"></div>
-                            </div>
-                        </div>
+                <div class="camera-frame" id="cameraFrame">
+                    <!-- Webcam Stream Element -->
+                    <video id="webcamView" class="webcam-video d-none" autoplay playsinline muted></video>
 
-                        <video id="webcamView" class="webcam-video d-none" autoplay playsinline muted></video>
-
-                        <div class="camera-placeholder" id="cameraPlaceholder">
-                            <i class="bi bi-camera-video-fill fs-1 d-block mb-2"></i>
-                            <span class="d-block" style="font-size: 0.9rem;">Camera chưa được kích hoạt</span>
-                            <small class="text-secondary" style="font-size: 0.75rem;">(Hãy tích vào "Tôi đã đọc kỹ hướng dẫn" ở cột bên trái)</small>
-                        </div>
+                    <!-- Initial Placeholder -->
+                    <div id="cameraPlaceholder" class="camera-placeholder">
+                        <i class="bi bi-camera-fill display-4 mb-2 d-block"></i>
+                        <p class="mb-0 fw-semibold">Vui lòng tích chọn "Tôi đã đọc kỹ hướng dẫn" để bật camera</p>
                     </div>
 
-                    <div class="w-100 d-none mb-3" id="scanProgressContainer">
-                        <div class="progress" style="height: 8px; border-radius: 4px;">
-                            <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
-                        </div>
-                        <div class="text-center text-muted mt-1" style="font-size: 0.8rem;" id="scanProgressText">
-                            Đang phân tích các điểm đặc trưng khuôn mặt (0%)...
+                    <!-- Scanning Overlay Ellipse Guide -->
+                    <div class="scan-overlay">
+                        <div class="scan-circle">
+                            <div class="scan-line"></div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="w-100 text-center status-bar status-ready" id="statusMessage">
+                <!-- Progress Bar Section -->
+                <div id="scanProgressContainer" class="mt-3 d-none">
+                    <div class="progress" style="height: 10px; border-radius: 5px; background-color: #e5e7eb;">
+                        <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;"></div>
                     </div>
+                    <small id="scanProgressText" class="text-muted d-block text-center mt-1 fw-semibold">Đang phân tích các đặc điểm khuôn mặt (0%)...</small>
+                </div>
 
-<!-- MODAL: Xác nhận khuôn mặt đã quét -->
-<div class="modal fade" id="confirmFaceModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="confirmFaceModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content" style="border: 2px solid #111827; border-radius: 12px; overflow: hidden;">
-            <div class="modal-header bg-dark text-white border-0 py-3">
-                <h5 class="modal-title fw-bold" id="confirmFaceModalLabel">
-                    <i class="bi bi-camera-fill me-2"></i>Xác nhận khuôn mặt
-                </h5>
+                <!-- Real-time Status Message -->
+                <div class="mt-3">
+                    <div id="statusMessage" class="w-100 text-center status-bar status-ready">
+                        Trạng thái: Chờ kích hoạt camera...
+                    </div>
+                </div>
             </div>
-            <div class="modal-body text-center p-4">
-                <div class="mb-3">
-                    <span class="text-success fw-bold d-block mb-3 fs-5">
-                        <i class="bi bi-check-circle-fill me-1"></i> Quét khuôn mặt thành công!
-                    </span>
-                    <div style="border: 3px solid #10b981; border-radius: 12px; display: inline-block; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);">
-                        <img id="capturedFaceImg" src="" alt="Khuôn mặt đã quét" style="max-width: 100%; height: auto; display: block; max-height: 280px; object-fit: contain;">
-                    </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Confirm Captured Face -->
+<div class="modal fade" id="confirmFaceModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="confirmFaceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold" id="confirmFaceModalLabel">
+                    <i class="bi bi-person-bounding-box text-primary me-2"></i> Xác nhận Đăng ký Khuôn mặt
+                </h5>
+                <button type="button" class="btn-close" onclick="rescanFace()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3 d-inline-block border rounded p-2 bg-light shadow-sm">
+                    <img id="capturedFaceImg" src="" alt="Khuôn mặt đã quét" style="max-width: 100%; height: auto; display: block; max-height: 280px; object-fit: contain;">
                 </div>
                 <p class="text-muted mb-0" style="font-size: 0.85rem;">
                     Vui lòng xác nhận ảnh chụp rõ nét, đầy đủ đặc điểm khuôn mặt trước khi lưu.
@@ -297,16 +295,11 @@
     </div>
 </div>
 
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
 <!-- face-api.js Library loaded locally -->
 <script src="/lib/face-api/face-api.min.js"></script>
 <script src="~/js/faceid.js" asp-append-version="true"></script>
+
+@section Scripts {
 <script>
     const employeeId = @Model.EmployeeId;
     const employeeEmail = '@Model.Email';
@@ -317,7 +310,12 @@
     let capturedImageBase64 = null;
     let savedFacialId = null;
 
-    // Toggle scanning button and webcam feed based on checkbox
+    function notify(message, type = 'success') {
+        if (typeof showToast === 'function') {
+            showToast(message, type);
+        }
+    }
+
     function toggleScanButton() {
         const agreed = document.getElementById('chkAgreement').checked;
         const btnScan = document.getElementById('btnStartScan');
@@ -330,11 +328,12 @@
         }
     }
 
-    // Access laptop camera using HTML5 MediaDevices
     async function initWebcam() {
         const video = document.getElementById('webcamView');
         const placeholder = document.getElementById('cameraPlaceholder');
         const statusMsg = document.getElementById('statusMessage');
+
+        if (webcamStream) return;
 
         try {
             webcamStream = await navigator.mediaDevices.getUserMedia({
@@ -346,14 +345,15 @@
 
             statusMsg.textContent = "Trạng thái: Camera hoạt động. Sẵn sàng quét.";
             statusMsg.className = "w-100 text-center status-bar status-ready";
+            notify("Camera đã được kết nối và sẵn sàng quét.", "success");
         } catch (err) {
-            console.error("Lỗi khi mở camera:", err);
-            statusMsg.textContent = "Lỗi: Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.";
+            console.error("Lỗi mở camera:", err);
+            statusMsg.textContent = "Lỗi: Không thể truy cập camera. Vui lòng kiểm tra quyền camera.";
             statusMsg.className = "w-100 text-center status-bar status-error";
+            notify("Không thể truy cập camera. Vui lòng kiểm tra quyền webcam trên trình duyệt.", "danger");
         }
     }
 
-    // Stop webcam tracks
     function stopWebcam() {
         const video = document.getElementById('webcamView');
         const placeholder = document.getElementById('cameraPlaceholder');
@@ -372,18 +372,15 @@
         }
     }
 
-    // Stop tracks on page unload
     window.addEventListener('beforeunload', () => {
         stopWebcam();
     });
 
-    // Start scan flow
     function startBiometricScan() {
         if (isScanning) return;
         runRealScan();
     }
 
-    // Run real-time face validation via face-api.js
     async function runRealScan() {
         isScanning = true;
         const btnScan = document.getElementById('btnStartScan');
@@ -400,20 +397,22 @@
         cameraFrame.classList.add('scanning-active');
         progressContainer.classList.remove('d-none');
         
-        statusMsg.textContent = "Trạng thái: Đang khởi tạo mô hình nhận dạng khuôn mặt...";
+        statusMsg.textContent = "Trạng thái: Đang tải mô hình AI nhận diện...";
         statusMsg.className = "w-100 text-center status-bar status-scanning";
 
         try {
             await CSMSFaceAPI.loadModels();
         } catch (err) {
-            statusMsg.textContent = "Lỗi: Không thể tải mô hình nhận diện khuôn mặt.";
+            statusMsg.textContent = "Lỗi: Không thể tải mô hình AI nhận diện khuôn mặt.";
             statusMsg.className = "w-100 text-center status-bar status-error";
+            notify("Không thể tải mô hình AI nhận diện khuôn mặt.", "danger");
             resetUI();
             return;
         }
 
         statusMsg.textContent = "Trạng thái: Đang phân tích khuôn mặt... Hãy nhìn thẳng vào camera.";
         statusMsg.className = "w-100 text-center status-bar status-scanning";
+        notify("Bắt đầu quét khuôn mặt. Vui lòng nhìn thẳng vào camera...", "warning");
 
         let percent = 0;
         progressBar.style.width = `0%`;
@@ -433,11 +432,11 @@
                     statusMsg.textContent = "Trạng thái: " + validation.message;
 
                     if (validation.valid) {
-                        percent += 5;
+                        percent += 10;
                         if (percent > 100) percent = 100;
 
                         progressBar.style.width = `${percent}%`;
-                        progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
+                        progressText.textContent = `Đang phân tích đặc điểm khuôn mặt (${percent}%)...`;
                         statusMsg.className = "w-100 text-center status-bar status-scanning text-success fw-bold";
                         
                         lastDescriptor = Array.from(detection.descriptor);
@@ -449,61 +448,69 @@
                             cameraFrame.classList.remove('scanning-active');
                             statusMsg.textContent = "Trạng thái: Nhận diện thành công! Vui lòng xác nhận...";
                             statusMsg.className = "w-100 text-center status-bar status-success";
+                            notify("Phân tích khuôn mặt hoàn tất! Vui lòng kiểm tra ảnh chụp và bấm xác nhận.", "success");
 
                             capturedImageBase64 = CSMSFaceAPI.captureSnapshot(video);
                             document.getElementById('capturedFaceImg').src = capturedImageBase64;
                             savedFacialId = JSON.stringify(lastDescriptor);
 
-                            const confirmModal = new bootstrap.Modal(document.getElementById('confirmFaceModal'));
+                            const modalEl = document.getElementById('confirmFaceModal');
+                            const confirmModal = bootstrap.Modal.getOrCreateInstance(modalEl);
                             confirmModal.show();
                         }
                     } else {
-                        // Slowly decay progress if face is out of view or invalid
-                        percent = Math.max(0, percent - 2);
+                        percent = Math.max(0, percent - 5);
                         progressBar.style.width = `${percent}%`;
-                        progressText.textContent = `Đang phân tích các đặc điểm khuôn mặt (${percent}%)...`;
+                        progressText.textContent = `Đang phân tích đặc điểm khuôn mặt (${percent}%)...`;
                         statusMsg.className = "w-100 text-center status-bar status-error text-danger fw-bold";
                     }
                 } catch (detectErr) {
-                    console.error("Lỗi trong vòng lặp phát hiện:", detectErr);
+                    console.error("Lỗi nhận diện khuôn mặt:", detectErr);
                 }
             }
-        }, 200);
+        }, 180);
     }
 
-    // Confirm scan & Save Face ID to database
     async function confirmAndSaveFace() {
-        const btnSave = document.querySelector('#confirmFaceModal .btn-dark');
-        const btnCancel = document.querySelector('#confirmFaceModal .btn-outline-secondary');
-        if (btnSave) btnSave.disabled = true;
-        if (btnCancel) btnCancel.disabled = true;
-
         const modalEl = document.getElementById('confirmFaceModal');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) {
             modalInstance.hide();
         }
+        cleanupModalBackdrop();
 
         if (savedFacialId) {
             await saveFaceDataToServer(savedFacialId);
         }
     }
 
-    // Cancel scan and restart from scratch
     function rescanFace() {
         const modalEl = document.getElementById('confirmFaceModal');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         if (modalInstance) {
             modalInstance.hide();
         }
+        cleanupModalBackdrop();
 
         resetUI();
-        startBiometricScan();
+        initWebcam().then(() => {
+            startBiometricScan();
+        });
     }
 
-    // Save facialId to DB via API
+    function cleanupModalBackdrop() {
+        setTimeout(() => {
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style = '';
+        }, 200);
+    }
+
     async function saveFaceDataToServer(facialId) {
         const statusMsg = document.getElementById('statusMessage');
+        statusMsg.textContent = "Trạng thái: Đang lưu dữ liệu khuôn mặt...";
+        statusMsg.className = "w-100 text-center status-bar status-scanning";
+
         try {
             const response = await fetch('/Employee/SaveFaceData', {
                 method: 'POST',
@@ -520,19 +527,23 @@
             if (response.ok && result.success) {
                 statusMsg.textContent = "Đăng ký khuôn mặt thành công! Đang tự động chuyển hướng...";
                 statusMsg.className = "w-100 text-center status-bar status-success";
+                notify("Đăng ký FaceID thành công cho nhân viên! Đang tự động chuyển hướng...", "success");
                 
                 setTimeout(() => {
                     window.location.href = '/Employee';
-                }, 1500);
+                }, 1200);
             } else {
-                statusMsg.textContent = "Lỗi lưu dữ liệu: " + (result.errorMessage || "Không thể cập nhật database.");
+                var errText = result.errorMessage || "Không thể cập nhật CSDL.";
+                statusMsg.textContent = "Lỗi lưu dữ liệu: " + errText;
                 statusMsg.className = "w-100 text-center status-bar status-error";
+                notify("Đăng ký thất bại: " + errText, "danger");
                 resetUI();
             }
         } catch (err) {
             console.error("Lỗi kết nối lưu dữ liệu:", err);
             statusMsg.textContent = "Lỗi: Không kết nối được với máy chủ để cập nhật dữ liệu.";
             statusMsg.className = "w-100 text-center status-bar status-error";
+            notify("Lỗi kết nối máy chủ khi lưu dữ liệu khuôn mặt.", "danger");
             resetUI();
         }
     }
@@ -543,14 +554,23 @@
             clearInterval(scanInterval);
             scanInterval = null;
         }
-        document.getElementById('chkAgreement').disabled = false;
-        document.getElementById('chkAgreement').checked = false;
-        document.getElementById('btnStartScan').disabled = true;
+        cleanupModalBackdrop();
+
+        const chk = document.getElementById('chkAgreement');
+        const btn = document.getElementById('btnStartScan');
+
+        chk.disabled = false;
+        btn.disabled = !chk.checked;
+
         document.getElementById('scanProgressContainer').classList.add('d-none');
         document.getElementById('scanProgressBar').style.width = '0%';
+        document.getElementById('scanProgressText').textContent = 'Đang phân tích các đặc điểm khuôn mặt (0%)...';
         document.getElementById('cameraFrame').classList.remove('scanning-active');
-        document.getElementById('statusMessage').textContent = "Trạng thái: Camera hoạt động. Sẵn sàng quét.";
-        document.getElementById('statusMessage').className = "w-100 text-center status-bar status-ready";
+
+        if (webcamStream) {
+            document.getElementById('statusMessage').textContent = "Trạng thái: Camera hoạt động. Sẵn sàng quét.";
+            document.getElementById('statusMessage').className = "w-100 text-center status-bar status-ready";
+        }
     }
 </script>
 }

@@ -1,75 +1,118 @@
 @model SEP490_G52_CSMS.Models.ViewModels.HandoverHistoryViewModel
 @{
-    ViewData["Title"] = "Lịch Sử Giao Ca - Quản Lý Kết Tiền";
+    ViewData["Title"] = "Lịch Sử Đóng / Mở / Bàn Giao Ca";
     var today = DateTime.Today;
     var weekAgo = today.AddDays(-6);
 }
 
-<div class="container-fluid px-4">
-
-    @* Tiêu đề module *@
-    <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
-        <h1 class="h3 fw-bold text-dark mb-0">QUẢN LÝ KẾT TIỀN &amp; GIAO CA</h1>
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                <i class="bi bi-clock-history text-primary me-2"></i>LỊCH SỬ ĐÓNG / MỞ / BÀN GIAO CA
+            </h1>
+            <p class="text-muted small mb-0">Theo dõi chi tiết tất cả các phiên mở ca, bàn giao ca, chốt két cuối ngày và bàn giao đột xuất của chi nhánh.</p>
+        </div>
         <div class="d-flex gap-2">
-            <a asp-action="OpenShift" class="btn btn-outline-secondary btn-sm">Mở ca</a>
-            <a asp-action="Handover" class="btn btn-outline-secondary btn-sm">Giao &amp; Đóng ca</a>
-            <a asp-action="History" asp-route-branchId="@Model.BranchId"
-               class="btn btn-primary btn-sm">Lịch sử</a>
+            <a asp-action="OpenShift" class="btn btn-outline-primary btn-sm fw-semibold">
+                <i class="bi bi-door-open me-1"></i>Mở ca đầu ngày
+            </a>
+            <a asp-action="Handover" class="btn btn-outline-success btn-sm fw-semibold">
+                <i class="bi bi-arrow-left-right me-1"></i>Bàn giao ca
+            </a>
+            <a asp-action="CloseShift" class="btn btn-outline-danger btn-sm fw-semibold">
+                <i class="bi bi-door-closed me-1"></i>Đóng ca cuối ngày
+            </a>
         </div>
     </div>
 
-    @* Header biểu mẫu *@
-    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-dark pb-2">
-        <h4 class="fw-bold mb-0 text-uppercase">LỊCH SỬ ĐÓNG/ MỞ/ BÀN GIAO CA</h4>
-        <a asp-action="Index" class="btn btn-outline-dark fw-bold px-4" style="border-width: 2px;">Hủy</a>
-    </div>
-
-    @* Bộ lọc ngày và loại phiên *@
-    <div class="mb-3 d-flex align-items-center gap-3">
-        <div class="d-flex align-items-center border border-dark rounded px-2 bg-white" style="border-width: 2px !important; height: 38px;">
-            <input type="date" id="filterDateFrom" class="form-control border-0 shadow-none p-0 mx-2"
-                   value="@weekAgo.ToString("yyyy-MM-dd")" style="width: 110px;" />
-            <span>-</span>
-            <input type="date" id="filterDateTo" class="form-control border-0 shadow-none p-0 mx-2"
-                   value="@today.ToString("yyyy-MM-dd")" style="width: 110px;" />
-            <i class="bi bi-calendar-check ms-1 fs-5"></i>
-        </div>
-        <div class="border border-dark rounded bg-white" style="border-width: 2px !important; height: 38px;">
-            <select id="filterSessionType" class="form-select border-0 shadow-none h-100" style="min-width: 150px; background-color: transparent;">
-                <option value="">Loại phiên: Tất cả</option>
-                <option value="mở ca">Mở ca</option>
-                <option value="giao ca">Giao ca</option>
-            </select>
-        </div>
-        <button class="btn btn-dark fw-bold px-3" onclick="applyFilter()" style="height: 38px;">Lọc</button>
-        <span class="text-muted small ms-auto">Tổng: <strong>@Model.TotalCount</strong> bản ghi</span>
-    </div>
-
-    @if (!Model.Items.Any())
+    @if (TempData["SuccessMessage"] != null)
     {
-        <div class="text-center py-5">
-            <i class="bi bi-inbox display-1 text-muted opacity-50"></i>
-            <p class="text-muted mt-3">Chưa có dữ liệu lịch sử giao ca.</p>
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
-    else
+
+    @if (TempData["ErrorMessage"] != null)
     {
-        @* Bảng lịch sử dạng gọn theo wireframe *@
-        <div class="mb-3">
-            <div class="table-responsive border border-dark rounded" style="border-width: 2px !important; max-height: 400px; overflow-y: auto;">
-                <table class="table align-middle mb-0" id="historyTable" style="table-layout: fixed;">
-                    <thead style="background-color: #e9ecef; position: sticky; top: 0; z-index: 1;">
-                        <tr class="border-bottom border-dark">
-                            <th class="ps-3 border-end border-dark" style="width: 15%;">Ngày</th>
-                            <th class="border-end border-dark" style="width: 25%;">Loại Phiên</th>
-                            <th class="border-end border-dark" style="width: 25%;">Ca Làm</th>
-                            <th style="width: 35%;">Hành Động</th>
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filter Card -->
+    <div class="card border shadow-sm mb-3">
+        <div class="card-body py-2.5 px-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Loại phiên làm việc</label>
+                    <select id="filterSessionType" class="form-select form-select-sm" onchange="applyFilter()">
+                        <option value="">Tất cả các phiên</option>
+                        <option value="mở ca">Mở ca đầu ngày</option>
+                        <option value="bàn giao ca">Bàn giao ca giữa ngày</option>
+                        <option value="đóng ca">Đóng ca cuối ngày</option>
+                        <option value="đột xuất">Bàn giao đột xuất</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Khoảng thời gian</label>
+                    <div class="d-flex align-items-center gap-1.5">
+                        <input type="date" id="filterDateFrom" class="form-control form-control-sm" value="@weekAgo.ToString("yyyy-MM-dd")" onchange="applyFilter()" />
+                        <span class="text-muted small">đến</span>
+                        <input type="date" id="filterDateTo" class="form-control form-control-sm" value="@today.ToString("yyyy-MM-dd")" onchange="applyFilter()" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" id="filterSearch" class="form-control" placeholder="Tìm theo tên nhân viên, ca trực..." oninput="applyFilter()" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0" id="historyTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 5%;">STT</th>
+                        <th style="width: 14%;">Thời Gian Mở</th>
+                        <th style="width: 14%;">Loại Phiên</th>
+                        <th style="width: 10%;">Ca Làm</th>
+                        <th style="width: 16%;">Người Bàn Giao</th>
+                        <th style="width: 14%;" class="text-end">Tiền Thực Tế</th>
+                        <th style="width: 13%;" class="text-end">Chênh Lệch</th>
+                        <th style="width: 8%;">Trạng Thái</th>
+                        <th style="width: 6%;" class="text-center">Chi Tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                Chưa có dữ liệu lịch sử giao ca nào
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model.Items)
+                    }
+                    else
+                    {
+                        for (int i = 0; i < Model.Items.Count; i++)
                         {
-                            <tr class="history-row border-bottom border-dark"
+                            var item = Model.Items[i];
+                            var stt = (Model.PageIndex - 1) * Model.PageSize + i + 1;
+                            bool isNegative = item.Discrepancy.StartsWith("-");
+                            bool isPositive = item.Discrepancy.StartsWith("+");
+                            string discClass = isNegative ? "text-danger" : (isPositive ? "text-success" : "text-muted");
+
+                            <tr class="history-row"
                                 data-id="@item.HandoverId"
                                 data-date="@item.HandoverDate"
                                 data-shift="@item.ShiftName"
@@ -78,186 +121,309 @@
                                 data-incoming="@item.IncomingCashierName"
                                 data-initial="@item.InitialCash"
                                 data-revenue="@item.MachineCashRevenue"
+                                data-bank="@item.BankTransferRevenue"
+                                data-refund="@item.CashRefundAmount"
                                 data-theoretical="@item.TheoreticalCash"
                                 data-actual="@item.ActualCash"
                                 data-discrepancy="@item.Discrepancy"
                                 data-deliverer="@(item.DelivererName ?? "")"
-                                data-notes="@(item.Notes ?? "")">
-                                <td class="ps-3 border-end border-dark">
-                                    @{
-                                        DateTime.TryParse(item.HandoverDate, out DateTime parsedDate);
-                                        var displayDate = parsedDate != DateTime.MinValue ? parsedDate.ToString("dd-MM") : item.HandoverDate;
-                                    }
-                                    @displayDate
-                                </td>
-                                <td class="border-end border-dark">
-                                    @item.SessionType
-                                </td>
-                                <td class="border-end border-dark">
-                                    @item.ShiftName
+                                data-emergency-reason="@(item.EmergencyReason ?? "")"
+                                data-notes="@(item.Notes ?? "")"
+                                data-opened-at="@item.OpenedAt"
+                                data-closed-at="@item.ClosedAt"
+                                data-status="@item.Status">
+                                <td class="ps-3 text-secondary">@stt</td>
+                                <td>
+                                    <span class="fw-semibold text-dark">@item.OpenedAt</span>
                                 </td>
                                 <td>
-                                    <a href="#detailPanel"
-                                       class="text-primary fw-bold text-decoration-none view-btn"
-                                       onclick="showDetail(this); return false;">
+                                    @if (item.SessionType.Contains("Mở ca"))
+                                    {
+                                        <span class="badge bg-primary px-2.5 py-1 rounded-pill">
+                                            <i class="bi bi-door-open me-1"></i>@item.SessionType
+                                        </span>
+                                    }
+                                    else if (item.SessionType.Contains("Đóng ca"))
+                                    {
+                                        <span class="badge bg-danger px-2.5 py-1 rounded-pill">
+                                            <i class="bi bi-door-closed me-1"></i>@item.SessionType
+                                        </span>
+                                    }
+                                    else if (item.SessionType.Contains("đột xuất"))
+                                    {
+                                        <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>@item.SessionType
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success px-2.5 py-1 rounded-pill">
+                                            <i class="bi bi-arrow-left-right me-1"></i>@item.SessionType
+                                        </span>
+                                    }
+                                </td>
+                                <td class="fw-semibold text-dark">@item.ShiftName</td>
+                                <td>
+                                    <span class="fw-semibold text-primary">@item.OutgoingCashierName</span>
+                                    @if (!string.IsNullOrEmpty(item.IncomingCashierName) && item.IncomingCashierName != "–" && item.IncomingCashierName != item.OutgoingCashierName)
+                                    {
+                                        <small class="text-muted d-block">&rarr; Nhận: @item.IncomingCashierName</small>
+                                    }
+                                </td>
+                                <td class="text-end fw-bold text-dark font-monospace">@item.ActualCash</td>
+                                <td class="text-end fw-bold font-monospace @discClass">@item.Discrepancy</td>
+                                <td>
+                                    @if (item.Status == "Active")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded">Đang mở</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 rounded">Đã chốt</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="showDetailModal(this)">
                                         Chi tiết
-                                    </a>
+                                    </button>
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
+    </div>
 
-        @* Panel chi tiết phiên (ẩn mặc định, hiện khi click "Xem") *@
-        <div id="detailPanel" class="d-none mb-4 border border-dark rounded" style="border-width: 2px !important;">
-            <div class="border-bottom border-dark p-2">
-                <span class="fw-bold fs-5 text-uppercase" id="detailTitle">CHI TIẾT PHIÊN</span>
-                <button type="button" class="btn-close float-end" onclick="hideDetail()"></button>
-            </div>
-            <div class="p-3">
-                <div class="mb-3 d-flex flex-wrap gap-4">
-                    <div>
-                        <span class="text-muted">- Nhân viên bàn giao:</span>
-                        <span class="fw-semibold ms-1" id="detailOutgoing">–</span>
-                    </div>
-                    <div>
-                        <span class="text-muted">- Nhân viên nhận ca:</span>
-                        <span class="fw-semibold ms-1" id="detailIncoming">–</span>
-                    </div>
-                    <div>
-                        <span class="text-muted">- Người giao tiền:</span>
-                        <span class="fw-semibold ms-1 text-primary" id="detailDeliverer">–</span>
-                    </div>
-                </div>
-                <div class="row m-0 border border-dark" style="border-width: 2px !important;">
-                    <div class="col-md-5 p-3 border-end border-dark" style="border-width: 2px !important;">
-                        <div class="mb-2">
-                            <span>- Tiền mặt đầu ca:</span>
-                            <span id="detailInitial" class="fw-semibold text-dark">–</span>
-                        </div>
-                        <div class="mb-2">
-                            <span>- Tiền mặt phát sinh trong ca:</span>
-                            <span id="detailRevenue" class="fw-semibold text-dark">–</span>
-                        </div>
-                        <div class="mb-2">
-                            <span>- Tổng lý thuyết:</span>
-                            <span id="detailTheoretical" class="fw-semibold text-dark">–</span>
-                        </div>
-                        <div class="mb-2">
-                            <span>- Tiền mặt thực tế cuối ca:</span>
-                            <span id="detailActual" class="fw-semibold text-success">–</span>
-                        </div>
-                        <div>
-                            <span>- Chênh lệch kết ca:</span>
-                            <span id="detailDiscrepancy" class="fw-semibold">–</span>
-                        </div>
-                    </div>
-                    <div class="col-md-7 p-3">
-                        <label class="form-label">- Lý do nếu có:</label>
-                        <div class="border border-dark p-2 h-75" id="detailNotes" style="min-height: 80px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        @* Phân trang *@
-        @if (Model.TotalPages > 1)
-        {
-            <nav aria-label="Phân trang lịch sử giao ca">
-                <ul class="pagination justify-content-center">
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="mt-3">
+            <nav aria-label="Phân trang">
+                <ul class="pagination pagination-sm justify-content-center m-0">
                     <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                        <a class="page-link"
-                           asp-action="History"
-                           asp-route-branchId="@Model.BranchId"
-                           asp-route-page="@(Model.PageIndex - 1)">&laquo; Trước</a>
+                        <a class="page-link" asp-action="History" asp-route-branchId="@Model.BranchId" asp-route-page="@(Model.PageIndex - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
                     </li>
                     @for (int i = 1; i <= Model.TotalPages; i++)
                     {
                         <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                            <a class="page-link"
-                               asp-action="History"
-                               asp-route-branchId="@Model.BranchId"
-                               asp-route-page="@i">@i</a>
+                            <a class="page-link @(i == Model.PageIndex ? "fw-bold" : "")" asp-action="History" asp-route-branchId="@Model.BranchId" asp-route-page="@i">@i</a>
                         </li>
                     }
                     <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                        <a class="page-link"
-                           asp-action="History"
-                           asp-route-branchId="@Model.BranchId"
-                           asp-route-page="@(Model.PageIndex + 1)">Sau &raquo;</a>
+                        <a class="page-link" asp-action="History" asp-route-branchId="@Model.BranchId" asp-route-page="@(Model.PageIndex + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
                     </li>
                 </ul>
             </nav>
-        }
+        </div>
     }
+</div>
+
+<!-- Modal Chi Tiết Phiên Giao Ca -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-text text-primary fs-4"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="detailModalLabel">CHI TIẾT PHIÊN ĐỐI SOÁT &amp; BÀN GIAO CA</h5>
+                        <small class="text-muted" id="detailSubTitle">–</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Thông tin nhân sự -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded bg-light h-100">
+                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-badge me-1"></i>Thu ngân bàn giao / mở ca:</span>
+                            <strong id="modalOutgoing" class="fs-6 text-dark">–</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded bg-light h-100">
+                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-check me-1"></i>Thu ngân nhận ca / duyệt:</span>
+                            <strong id="modalIncoming" class="fs-6 text-success">–</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded bg-light h-100">
+                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-lines-fill me-1"></i>Người giao tiền đại diện:</span>
+                            <strong id="modalDeliverer" class="fs-6 text-primary">–</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Cột Trái: Bảng Dòng Tiền & Đối Soát -->
+                    <div class="col-lg-7">
+                        <div class="card border h-100">
+                            <div class="card-header bg-white py-2.5">
+                                <h6 class="fw-bold text-primary mb-0">
+                                    <i class="bi bi-calculator me-1"></i>DÒNG TIỀN VÀ ĐỐI SOÁT KÉT THỰC TẾ
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-borderless align-middle mb-0">
+                                    <tbody>
+                                        <tr class="border-bottom">
+                                            <td class="ps-3 py-2 text-muted fw-semibold">Tiền mặt đầu ca:</td>
+                                            <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" id="modalInitial">–</td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu tiền mặt từ POS:</td>
+                                            <td class="pe-3 py-2 text-end fw-bold text-success fs-6" id="modalRevenue">–</td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu chuyển khoản (CK - Không vào két):</td>
+                                            <td class="pe-3 py-2 text-end fw-bold text-secondary fs-6" id="modalBank">–</td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="ps-3 py-2 text-muted fw-semibold">Hoàn tiền mặt (Hủy món / Thiếu NL):</td>
+                                            <td class="pe-3 py-2 text-end fw-bold text-danger fs-6" id="modalRefund">–</td>
+                                        </tr>
+                                        <tr class="table-primary border-bottom">
+                                            <td class="ps-3 py-2.5 text-primary fw-bold">Tổng tiền mặt lý thuyết trong két:</td>
+                                            <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="modalTheoretical">–</td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="ps-3 py-2.5 text-dark fw-bold">Tiền mặt thực tế đếm được trong két:</td>
+                                            <td class="pe-3 py-2.5 text-end fw-bold text-dark fs-5" id="modalActual">–</td>
+                                        </tr>
+                                        <tr class="bg-light">
+                                            <td class="ps-3 py-2.5 fw-bold">Chênh lệch két (Thực tế - Lý thuyết):</td>
+                                            <td class="pe-3 py-2.5 text-end fw-bold fs-5" id="modalDiscrepancy">–</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cột Phải: Ghi Chú, Lý Do Đột Xuất, Thời Gian -->
+                    <div class="col-lg-5">
+                        <div class="card border h-100 d-flex flex-column">
+                            <div class="card-header bg-white py-2.5">
+                                <h6 class="fw-bold text-dark mb-0">
+                                    <i class="bi bi-chat-left-text me-1"></i>GHI CHÚ &amp; GIẢI TRÌNH PHIÊN
+                                </h6>
+                            </div>
+                            <div class="card-body d-flex flex-column gap-3">
+                                <div class="d-flex justify-content-between small text-muted border-bottom pb-2">
+                                    <span>Thời điểm mở ca:</span>
+                                    <strong class="text-dark" id="modalOpenedAt">–</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted border-bottom pb-2">
+                                    <span>Thời điểm chốt ca:</span>
+                                    <strong class="text-dark" id="modalClosedAt">–</strong>
+                                </div>
+
+                                <div id="modalEmergencyWrapper" class="d-none">
+                                    <label class="fw-semibold text-danger small mb-1">
+                                        <i class="bi bi-exclamation-octagon-fill me-1"></i>Lý do bàn giao đột xuất:
+                                    </label>
+                                    <div class="p-2 border border-danger-subtle bg-danger-subtle text-danger rounded small fw-semibold" id="modalEmergencyReason">
+                                        –
+                                    </div>
+                                </div>
+
+                                <div class="flex-grow-1">
+                                    <label class="fw-semibold text-muted small mb-1">Nội dung ghi chú / Giải trình chênh lệch:</label>
+                                    <div class="p-3 border rounded bg-light small" id="modalNotes" style="min-height: 100px; white-space: pre-wrap;">
+                                        –
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2.5">
+                <button type="button" class="btn btn-secondary btn-sm fw-semibold px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
-        // ── Hiển thị panel chi tiết khi click "Xem" ──
-        function showDetail(btn) {
+        var detailModalInstance = null;
+
+        function showDetailModal(btn) {
             const row = btn.closest('tr');
-            const panel = document.getElementById('detailPanel');
+            if (!row) return;
 
-            const sessionType = row.dataset.sessionType;  // vd: "mở ca"
-            const date        = row.dataset.date;
-            const shift       = row.dataset.shift;
-            const outgoing    = row.dataset.outgoing;
-            const incoming    = row.dataset.incoming;
-            const initial     = row.dataset.initial;
-            const revenue     = row.dataset.revenue;
-            const theoretical = row.dataset.theoretical;
-            const actual      = row.dataset.actual;
-            const discrepancy = row.dataset.discrepancy;
-            const deliverer   = row.dataset.deliverer;
-            const notes       = row.dataset.notes;
+            const sessionType = row.dataset.sessionType || '';
+            const date        = row.dataset.date || '';
+            const shift       = row.dataset.shift || '';
+            const outgoing    = row.dataset.outgoing || '–';
+            const incoming    = row.dataset.incoming || '–';
+            const initial     = row.dataset.initial || '0 đ';
+            const revenue     = row.dataset.revenue || '0 đ';
+            const bank        = row.dataset.bank || '0 đ';
+            const refund      = row.dataset.refund || '0 đ';
+            const theoretical = row.dataset.theoretical || '0 đ';
+            const actual      = row.dataset.actual || '0 đ';
+            const discrepancy = row.dataset.discrepancy || '0 đ';
+            const deliverer   = row.dataset.deliverer || '–';
+            const emergency   = row.dataset.emergencyReason || '';
+            const notes       = row.dataset.notes || '(Không có ghi chú)';
+            const openedAt    = row.dataset.openedAt || '–';
+            const closedAt    = row.dataset.closedAt || '–';
 
-            // Tiêu đề panel: "CHI TIẾT PHIÊN: GIAO CA - CA 2 - 15/06"
-            document.getElementById('detailTitle').textContent =
-                `CHI TIẾT PHIÊN: ${sessionType.toUpperCase()} - ${shift} - ${date}`;
+            document.getElementById('detailSubTitle').textContent = `Ca làm: ${shift} • Ngày: ${date}`;
+            document.getElementById('modalOutgoing').textContent = outgoing;
+            document.getElementById('modalIncoming').textContent = incoming;
+            document.getElementById('modalDeliverer').textContent = deliverer || '–';
+            document.getElementById('modalInitial').textContent = initial;
+            document.getElementById('modalRevenue').textContent = '+' + revenue;
+            document.getElementById('modalBank').textContent = bank;
+            document.getElementById('modalRefund').textContent = '-' + refund;
+            document.getElementById('modalTheoretical').textContent = theoretical;
+            document.getElementById('modalActual').textContent = actual;
+            document.getElementById('modalOpenedAt').textContent = openedAt;
+            document.getElementById('modalClosedAt').textContent = closedAt;
 
-            document.getElementById('detailOutgoing').textContent    = outgoing;
-            document.getElementById('detailIncoming').textContent    = incoming;
-            document.getElementById('detailDeliverer').textContent   = deliverer || '–';
-            document.getElementById('detailInitial').textContent     = initial;
-            document.getElementById('detailRevenue').textContent     = revenue;
-            document.getElementById('detailTheoretical').textContent = theoretical;
-            document.getElementById('detailActual').textContent      = actual;
-
-            // Màu chênh lệch
-            const discEl = document.getElementById('detailDiscrepancy');
+            const discEl = document.getElementById('modalDiscrepancy');
             discEl.textContent = discrepancy;
-            discEl.className = discrepancy.startsWith('-') ? 'text-danger' : 'text-success';
+            discEl.className = discrepancy.startsWith('-') ? 'pe-3 py-2.5 text-end fw-bold fs-5 text-danger' : 
+                               (discrepancy.startsWith('+') ? 'pe-3 py-2.5 text-end fw-bold fs-5 text-success' : 'pe-3 py-2.5 text-end fw-bold fs-5 text-muted');
 
-            document.getElementById('detailNotes').textContent = notes || '(không có lý do)';
+            const emergencyWrapper = document.getElementById('modalEmergencyWrapper');
+            if (emergency && emergency.trim() !== '') {
+                emergencyWrapper.classList.remove('d-none');
+                document.getElementById('modalEmergencyReason').textContent = emergency;
+            } else {
+                emergencyWrapper.classList.add('d-none');
+            }
 
-            // Highlight dòng đang chọn
-            document.querySelectorAll('.history-row').forEach(r => r.classList.remove('table-active'));
-            row.classList.add('table-active');
+            document.getElementById('modalNotes').textContent = notes;
 
-            // Hiện panel và scroll đến
-            panel.classList.remove('d-none');
-            setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+            if (!detailModalInstance) {
+                detailModalInstance = new bootstrap.Modal(document.getElementById('detailModal'));
+            }
+            detailModalInstance.show();
         }
 
-        function hideDetail() {
-            document.getElementById('detailPanel').classList.add('d-none');
-            document.querySelectorAll('.history-row').forEach(r => r.classList.remove('table-active'));
-        }
-
-        // ── Lọc client-side theo loại phiên và khoảng ngày ──
         function applyFilter() {
             const sessionFilter = document.getElementById('filterSessionType').value.toLowerCase();
-            const dateFrom = document.getElementById('filterDateFrom').value;   // yyyy-MM-dd
+            const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo   = document.getElementById('filterDateTo').value;
+            const searchKeyword = (document.getElementById('filterSearch').value || '').toLowerCase();
 
             document.querySelectorAll('.history-row').forEach(row => {
-                const rowType    = (row.dataset.sessionType || '').toLowerCase();
-                const rawDate    = row.dataset.date;  // dd/MM/yyyy
+                const rowType = (row.dataset.sessionType || '').toLowerCase();
+                const rawDate = row.dataset.date;
+                const outgoing = (row.dataset.outgoing || '').toLowerCase();
+                const incoming = (row.dataset.incoming || '').toLowerCase();
+                const shift = (row.dataset.shift || '').toLowerCase();
 
-                // Chuyển dd/MM/yyyy → Date
                 let rowDate = null;
                 if (rawDate) {
                     const parts = rawDate.split('/');
@@ -265,15 +431,13 @@
                         rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
                 }
 
-                const typeOk = !sessionFilter || rowType === sessionFilter;
+                const typeOk = !sessionFilter || rowType.includes(sessionFilter);
                 const fromOk = !dateFrom || !rowDate || rowDate >= new Date(dateFrom);
                 const toOk   = !dateTo   || !rowDate || rowDate <= new Date(dateTo);
+                const searchOk = !searchKeyword || outgoing.includes(searchKeyword) || incoming.includes(searchKeyword) || shift.includes(searchKeyword);
 
-                row.style.display = (typeOk && fromOk && toOk) ? '' : 'none';
+                row.style.display = (typeOk && fromOk && toOk && searchOk) ? '' : 'none';
             });
-
-            // Ẩn detail panel khi lọc lại
-            hideDetail();
         }
     </script>
 }

@@ -6,7 +6,8 @@ namespace SEP490_G52_CSMS.Services.Interfaces
     public interface IOrderService
     {
         Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items);
-        Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null);
+        Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null);
+        Task<bool> ProcessRefundCashAsync(string orderId, decimal refundAmount, string reason, int cashierId);
         Task<bool> StartBrewingAsync(string orderId);
         Task<bool> CompleteBrewingAsync(string orderId);
         Task<OrderHistoryViewModel> GetOrderHistoryAsync(string branchId, string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1);

@@ -38,11 +38,26 @@ namespace SEP490_G52_CSMS.Models.Attendance
         [Column("bank_transfer_revenue")]
         public decimal BankTransferRevenue { get; set; }
 
+        /// <summary> Tiền mặt đã hoàn trong ca (thiếu nguyên liệu / hủy món) </summary>
+        [Column("cash_refund_amount")]
+        public decimal CashRefundAmount { get; set; } = 0;
+
+        /// <summary> Tiền mặt lý thuyết két = InitialCash + MachineCashRevenue - CashRefundAmount </summary>
         [Column("theoretical_cash")]
         public decimal TheoreticalCash { get; set; }
 
         [Column("actual_cash")]
         public decimal ActualCash { get; set; }
+
+        /// <summary> Loại giao ca: FirstShift / MidShift / LastShift / Emergency </summary>
+        [Column("handover_type")]
+        [StringLength(50)]
+        public string HandoverType { get; set; } = "Normal";
+
+        /// <summary> Lý do bàn giao đột xuất (nếu có) </summary>
+        [Column("emergency_reason")]
+        [StringLength(255)]
+        public string? EmergencyReason { get; set; }
 
         [Column("notes")]
         public string? Notes { get; set; } = null;

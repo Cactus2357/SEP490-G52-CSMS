@@ -26,7 +26,7 @@
                 <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                     <div class="modal-header bg-danger text-white py-3 border-0">
                         <h4 class="modal-title fw-bold">
-                            <i class="bi bi-exclamation-octagon-fill me-2"></i>BẠN HỆN KHÔNG TRONG CA LÀM VIỆC
+                            <i class="bi bi-exclamation-octagon-fill me-2"></i>CHƯA ĐỦ ĐIỀU KIỆN MỞ BÁN HÀNG
                         </h4>
                     </div>
                     <div class="modal-body p-4 p-md-5 text-center">
@@ -34,7 +34,9 @@
                             <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 100px; height: 100px;">
                                 <i class="bi bi-clock-history display-4"></i>
                             </div>
-                            <h4 class="fw-bold text-dark mb-2">Chưa Đến Ca Làm Hoặc Chưa Mở Ca</h4>
+                            <h4 class="fw-bold text-dark mb-2">
+                                @(ViewBag.ReasonCode == "NotScheduled" ? "Chưa Có Lịch Ca Trực Hiện Tại" : (ViewBag.ReasonCode == "FirstShiftNotOpened" ? "Ca Đầu Ngày Chưa Được Mở Ca" : "Chưa Nhận Bàn Giao Ca"))
+                            </h4>
                             <p class="text-muted fs-5 mb-0">
                                 @ViewBag.NotInShiftMessage
                             </p>
@@ -42,13 +44,20 @@
 
                         <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-dark py-3 px-4 rounded-3 text-start small mb-4">
                             <i class="bi bi-info-circle-fill me-2 text-warning"></i>
-                            <strong>Lưu ý:</strong> Để đảm bảo tính chính xác về doanh thu và kiểm kê két tiền hàng ca, hệ thống yêu cầu nhân viên thu ngân phải ở trong ca làm việc được phân công hoặc hoàn tất mở bàn giao ca trước khi thực hiện bán hàng.
+                            <strong>Quy định bán hàng cho Thu ngân:</strong> Bạn chỉ được phép mở màn hình bán hàng khi thỏa mãn đồng thời:
+                            <ul class="mb-0 mt-1">
+                                <li>Có ca làm việc trong lịch phân công tại thời điểm hiện tại.</li>
+                                <li>Đã thực hiện <strong>Mở ca đầu ngày</strong> (nếu ca 1) hoặc <strong>Nhận bàn giao ca</strong> (nếu ca 2, 3...).</li>
+                            </ul>
                         </div>
 
                         <div class="d-flex justify-content-center gap-3 flex-wrap">
-                            <a href="/CashHandover/Handover" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Mở Ca / Bàn Giao Ca Ngay
-                            </a>
+                            @if (!string.IsNullOrEmpty(ViewBag.RedirectAction))
+                            {
+                                <a asp-action="@ViewBag.RedirectAction" asp-controller="@ViewBag.RedirectController" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>@ViewBag.RedirectButtonText
+                                </a>
+                            }
                             <a href="/Home/Index" class="btn btn-outline-secondary btn-lg px-4 py-2.5 rounded-pill fw-semibold">
                                 <i class="bi bi-house me-2"></i>Về Trang Chủ
                             </a>
@@ -158,7 +167,18 @@
                         </div>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-outline-secondary w-50 fw-semibold" onclick="cancelOrder()">Hủy</button>
-                            <button type="button" class="btn btn-primary w-50 fw-semibold" onclick="showPaymentModal()">Thanh toán</button>
+                            @if (ViewBag.NotInShift == true)
+                            {
+                                <span class="d-inline-block w-50" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-lock-fill me-1 text-danger'></i> Chưa đủ điều kiện bán hàng" data-bs-content="@ViewBag.NotInShiftMessage">
+                                    <button type="button" class="btn btn-primary w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
+                                        <i class="bi bi-lock-fill me-1"></i>Thanh toán
+                                    </button>
+                                </span>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-primary w-50 fw-semibold" onclick="showPaymentModal()">Thanh toán</button>
+                            }
                         </div>
                     </div>
                 </div>

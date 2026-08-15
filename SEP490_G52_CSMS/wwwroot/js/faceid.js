@@ -75,32 +75,32 @@ const CSMSFaceAPI = {
         const height = videoEl.videoHeight || 480;
 
         // Margin constraints to ensure face is not cut off
-        const edgeMargin = 30; // pixels
+        const edgeMargin = 15; // pixels
         const isNearEdge = box.x <= edgeMargin ||
                            box.y <= edgeMargin ||
                            (box.x + box.width) >= (width - edgeMargin) ||
                            (box.y + box.height) >= (height - edgeMargin);
 
-        // Size constraint: Face must cover at least 20% of webcam frame width
-        const isTooSmall = box.width < (width * 0.20);
+        // Size constraint: Face must cover at least 15% of webcam frame width
+        const isTooSmall = box.width < (width * 0.15);
 
         if (isNearEdge) {
             return {
                 valid: false,
-                message: "CẢNH BÁO: Khuôn mặt bị lệch hoặc bị khuất! Hãy căn giữa khung hình."
+                message: "Hãy di chuyển khuôn mặt vào giữa khung hình."
             };
         }
 
         if (isTooSmall) {
             return {
                 valid: false,
-                message: "CẢNH BÁO: Quá xa! Di chuyển khuôn mặt lại gần camera hơn."
+                message: "Di chuyển khuôn mặt lại gần camera hơn."
             };
         }
 
         return {
             valid: true,
-            message: "Điểm đặc điểm đầy đủ. Giữ yên vị trí..."
+            message: "Khuôn mặt hợp lệ! Giữ yên vị trí..."
         };
     },
 

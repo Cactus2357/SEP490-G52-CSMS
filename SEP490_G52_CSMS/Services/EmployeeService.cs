@@ -36,26 +36,36 @@ namespace SEP490_G52_CSMS.Services
         {
             try
             {
+                var fullName = dto.FullName?.Trim() ?? "";
+                var email = dto.Email?.Trim() ?? "";
+                var phoneNumber = dto.PhoneNumber?.Trim() ?? "";
+                var citizenId = dto.CitizenId?.Trim() ?? "";
+                var role = dto.Role?.Trim() ?? "Cashier";
+                var employmentType = dto.EmploymentType?.Trim() ?? "Full-time";
+                var branchId = dto.BranchId?.Trim() ?? "";
+                var address = !string.IsNullOrWhiteSpace(dto.Address) ? dto.Address.Trim() : "Chưa cập nhật";
+                var dob = dto.DateOfBirth ?? DateTime.Today.AddYears(-20);
+
                 // Basic validations
-                if (string.IsNullOrWhiteSpace(dto.FullName))
+                if (string.IsNullOrWhiteSpace(fullName))
                     return new EmployeeCreationResult { Success = false, ErrorMessage = "Họ và tên không được để trống." };
-                if (string.IsNullOrWhiteSpace(dto.Email))
+                if (string.IsNullOrWhiteSpace(email))
                     return new EmployeeCreationResult { Success = false, ErrorMessage = "Email không được để trống." };
-                if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                if (string.IsNullOrWhiteSpace(phoneNumber))
                     return new EmployeeCreationResult { Success = false, ErrorMessage = "Số điện thoại không được để trống." };
-                if (string.IsNullOrWhiteSpace(dto.CitizenId) || dto.CitizenId.Length != 12)
+                if (string.IsNullOrWhiteSpace(citizenId) || citizenId.Length != 12)
                     return new EmployeeCreationResult { Success = false, ErrorMessage = "Số CCCD phải đúng 12 chữ số." };
 
                 // Business validations - Unique check
-                if (await _repository.ExistsEmailAsync(dto.Email.Trim()))
-                    return new EmployeeCreationResult { Success = false, ErrorMessage = "Email đã tồn tại trên hệ thống." };
-                if (await _repository.ExistsCitizenIdAsync(dto.CitizenId.Trim()))
-                    return new EmployeeCreationResult { Success = false, ErrorMessage = "Số CCCD đã tồn tại trên hệ thống." };
-                if (await _repository.ExistsPhoneNumberAsync(dto.PhoneNumber.Trim()))
-                    return new EmployeeCreationResult { Success = false, ErrorMessage = "Số điện thoại đã tồn tại trên hệ thống." };
+                if (await _repository.ExistsEmailAsync(email))
+                    return new EmployeeCreationResult { Success = false, ErrorMessage = "Email này đã tồn tại trên hệ thống." };
+                if (await _repository.ExistsCitizenIdAsync(citizenId))
+                    return new EmployeeCreationResult { Success = false, ErrorMessage = "Số CCCD này đã tồn tại trên hệ thống." };
+                if (await _repository.ExistsPhoneNumberAsync(phoneNumber))
+                    return new EmployeeCreationResult { Success = false, ErrorMessage = "Số điện thoại này đã tồn tại trên hệ thống." };
 
                 // 1. Generate formatted username
-                string baseUsername = DAT_UsernameFormatter.Format(dto.FullName);
+                string baseUsername = DAT_UsernameFormatter.Format(fullName);
                 if (string.IsNullOrEmpty(baseUsername))
                 {
                     baseUsername = "employee";
@@ -79,17 +89,17 @@ namespace SEP490_G52_CSMS.Services
                 // 4. Create Employee object
                 var employee = new Employee
                 {
-                    FullName = dto.FullName.Trim(),
+                    FullName = fullName,
                     Username = finalUsername,
                     Password = hashedPassword,
-                    Email = dto.Email.Trim(),
-                    PhoneNumber = dto.PhoneNumber.Trim(),
-                    CitizenId = dto.CitizenId.Trim(),
-                    DateOfBirth = dto.DateOfBirth,
-                    Address = dto.Address.Trim(),
-                    Role = dto.Role,
-                    EmploymentType = dto.EmploymentType,
-                    BranchId = dto.BranchId,
+                    Email = email,
+                    PhoneNumber = phoneNumber,
+                    CitizenId = citizenId,
+                    DateOfBirth = dob,
+                    Address = address,
+                    Role = role,
+                    EmploymentType = employmentType,
+                    BranchId = branchId,
                     Status = "Active",
                     FailedLoginAttempts = 0
                 };

@@ -894,6 +894,46 @@ namespace SEP490_G52_CSMS.Models
                     IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'payment_method' AND max_length < 200)
                     BEGIN
                         ALTER TABLE [orders] ALTER COLUMN [payment_method] nvarchar(200) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'bank_transaction_code')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [bank_transaction_code] nvarchar(100) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refund_amount')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [refund_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refund_reason')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [refund_reason] nvarchar(255) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refund_method')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [refund_method] nvarchar(50) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refunded_at')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [refunded_at] datetime2 NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('cash_handovers') AND name = 'cash_refund_amount')
+                    BEGIN
+                        ALTER TABLE [cash_handovers] ADD [cash_refund_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('cash_handovers') AND name = 'handover_type')
+                    BEGIN
+                        ALTER TABLE [cash_handovers] ADD [handover_type] nvarchar(50) NOT NULL DEFAULT 'Normal';
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('cash_handovers') AND name = 'emergency_reason')
+                    BEGIN
+                        ALTER TABLE [cash_handovers] ADD [emergency_reason] nvarchar(255) NULL;
                     END");
             }
             catch { }

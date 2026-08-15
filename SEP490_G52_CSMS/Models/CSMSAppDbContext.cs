@@ -130,6 +130,7 @@ namespace SEP490_G52_CSMS.Models
             {
                 entity.Property(e => e.ActualCash).HasColumnType("decimal(18, 2)");
                 entity.Property(e => e.BankTransferRevenue).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.CashRefundAmount).HasColumnType("decimal(18, 2)");
                 entity.Property(e => e.InitialCash).HasColumnType("decimal(18, 2)");
                 entity.Property(e => e.MachineCashRevenue).HasColumnType("decimal(18, 2)");
                 entity.Property(e => e.TheoreticalCash).HasColumnType("decimal(18, 2)");
@@ -138,6 +139,7 @@ namespace SEP490_G52_CSMS.Models
             modelBuilder.Entity<Order>(entity =>
             {
                 entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.RefundAmount).HasColumnType("decimal(18, 2)");
             });
 
             modelBuilder.Entity<OrderItem>(entity =>

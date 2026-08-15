@@ -264,6 +264,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             var faceData = request.FaceData.Trim();
             bool isDuplicate = false;
+            string duplicateOwnerInfo = "";
 
             // Check duplicate using vector distance if incoming data is a face descriptor
             float[]? newDescriptor = null;
@@ -279,7 +280,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (newDescriptor != null && newDescriptor.Length == 128)
             {
                 var otherEmployees = await _context.Employees
-                    .Where(e => e.EmployeeId != employee.EmployeeId && e.FaceData != null)
+                    .Where(e => e.EmployeeId != employee.EmployeeId && e.FaceData != null && e.FaceData != "")
                     .ToListAsync();
 
                 foreach (var emp in otherEmployees)
@@ -290,7 +291,7 @@ namespace SEP490_G52_CSMS.Controllers
                         try
                         {
                             var dbDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(dbFaceData);
-                            if (dbDescriptor != null && dbDescriptor.Length == 128)
+                            if (dbDescriptor != null && dbDescriptor.Length == 128 && dbDescriptor.Any(v => v != 0))
                             {
                                 double distance = 0;
                                 for (int i = 0; i < 128; i++)
@@ -300,26 +301,37 @@ namespace SEP490_G52_CSMS.Controllers
                                 }
                                 distance = Math.Sqrt(distance);
 
-                                if (distance < 0.55) // Duplicate if too close
+                                if (distance < 0.38) // Strict threshold for face-api.js duplicate detection (same person < 0.38)
                                 {
                                     isDuplicate = true;
+                                    duplicateOwnerInfo = $"{emp.FullName} (Mã NV: {emp.EmployeeId})";
                                     break;
                                 }
                             }
                         }
                         catch { }
                     }
+                    else if (dbFaceData == faceData && !string.IsNullOrWhiteSpace(dbFaceData))
+                    {
+                        isDuplicate = true;
+                        duplicateOwnerInfo = $"{emp.FullName} (Mã NV: {emp.EmployeeId})";
+                        break;
+                    }
                 }
             }
             else
             {
-                // Fallback: exact string check
-                isDuplicate = await _context.Employees
-                    .AnyAsync(e => e.FaceData != null && e.FaceData.Trim() == faceData && e.EmployeeId != employee.EmployeeId);
+                var dupEmp = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.FaceData != null && e.FaceData.Trim() == faceData && e.EmployeeId != employee.EmployeeId);
+                if (dupEmp != null)
+                {
+                    isDuplicate = true;
+                    duplicateOwnerInfo = $"{dupEmp.FullName} (Mã NV: {dupEmp.EmployeeId})";
+                }
             }
 
             if (isDuplicate)
-                return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt này đã được liên kết với tài khoản khác." });
+                return Json(new { success = false, errorMessage = $"Khuôn mặt này đã được đăng ký cho nhân viên {duplicateOwnerInfo}. Mỗi khuôn mặt chỉ được liên kết với 1 tài khoản duy nhất!" });
 
             employee.FaceData = faceData;
             await _context.SaveChangesAsync();

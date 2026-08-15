@@ -16,6 +16,12 @@ namespace SEP490_G52_CSMS.Commons.Constants
         // Default shift
         public const int DefaultShiftId = 1;
 
+        // Loại bàn giao ca
+        public const string HandoverTypeFirstShift = "FirstShift";
+        public const string HandoverTypeMidShift = "MidShift";
+        public const string HandoverTypeLastShift = "LastShift";
+        public const string HandoverTypeEmergency = "Emergency";
+
         // Số bản ghi mỗi trang lịch sử
         public const int HistoryPageSize = 10;
     }

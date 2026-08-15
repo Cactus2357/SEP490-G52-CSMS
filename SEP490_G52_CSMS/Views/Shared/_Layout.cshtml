@@ -881,6 +881,17 @@
             }
         }, 1000);
         
+        // Initialize Bootstrap Popovers and Tooltips globally
+        window.initAppTooltipsAndPopovers = function() {
+            const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+            [...popoverTriggerList].map(el => bootstrap.Popover.getOrCreateInstance(el, { trigger: 'hover focus', html: true }));
+
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(el => bootstrap.Tooltip.getOrCreateInstance(el, { trigger: 'hover focus', html: true }));
+        };
+
+        window.initAppTooltipsAndPopovers();
+
         if (modalEl) {
             modalEl.addEventListener('show.bs.modal', function () {
                 modalEl.style.zIndex = '10999';

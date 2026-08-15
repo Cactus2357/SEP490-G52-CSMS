@@ -41,6 +41,29 @@ namespace SEP490_G52_CSMS.Models.Sales
         [StringLength(100)]
         public string? RecipientName { get; set; }
 
+        /// <summary> Mã giao dịch ngân hàng (đối soát chuyển khoản) </summary>
+        [Column("bank_transaction_code")]
+        [StringLength(100)]
+        public string? BankTransactionCode { get; set; }
+
+        /// <summary> Số tiền đã hoàn (nếu phát sinh hủy/thiếu nguyên liệu) </summary>
+        [Column("refund_amount")]
+        public decimal RefundAmount { get; set; } = 0;
+
+        /// <summary> Lý do hoàn tiền </summary>
+        [Column("refund_reason")]
+        [StringLength(255)]
+        public string? RefundReason { get; set; }
+
+        /// <summary> Phương thức hoàn tiền: Cash / BankTransfer </summary>
+        [Column("refund_method")]
+        [StringLength(50)]
+        public string? RefundMethod { get; set; }
+
+        /// <summary> Thời điểm hoàn tiền </summary>
+        [Column("refunded_at")]
+        public DateTime? RefundedAt { get; set; }
+
         [ForeignKey("BranchId")]
         public virtual Core.Branch? Branch { get; set; }
 

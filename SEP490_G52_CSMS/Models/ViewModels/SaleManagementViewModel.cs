@@ -54,8 +54,13 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string OrderId { get; set; } = null!;
         public string RecipientName { get; set; } = null!;
         public DateTime OrderTime { get; set; }
+        public string PaymentMethod { get; set; } = "";
+        public string? BankTransactionCode { get; set; }
         public string PaymentStatus { get; set; } = null!;
         public string BrewingStatus { get; set; } = null!;
+        public decimal TotalAmount { get; set; }
+        public decimal RefundAmount { get; set; }
+        public string? RefundReason { get; set; }
         // The display status logic can combine Payment/Brewing based on rules
         public string DisplayStatus { get; set; } = null!;
         public List<OrderItemViewModel> Items { get; set; } = new List<OrderItemViewModel>();
@@ -66,8 +71,15 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string OrderId { get; set; } = null!;
         public string RecipientName { get; set; } = null!;
         public DateTime OrderTime { get; set; }
+        public string PaymentMethod { get; set; } = "";
+        public string? BankTransactionCode { get; set; }
+        public string PaymentStatus { get; set; } = "";
         public string DisplayStatus { get; set; } = null!;
         public decimal TotalAmount { get; set; }
+        public decimal RefundAmount { get; set; }
+        public string? RefundReason { get; set; }
+        public string? RefundMethod { get; set; }
+        public DateTime? RefundedAt { get; set; }
 
         public List<OrderItemViewModel> Items { get; set; } = new List<OrderItemViewModel>();
     }

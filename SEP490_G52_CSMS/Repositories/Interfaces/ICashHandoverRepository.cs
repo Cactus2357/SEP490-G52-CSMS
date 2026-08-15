@@ -41,6 +41,27 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         /// <summary> Lấy CashHandover theo ID </summary>
         Task<CashHandover?> GetHandoverByIdAsync(int handoverId);
 
+        /// <summary> Lấy toàn bộ danh sách ca cố định </summary>
+        Task<List<FixedShift>> GetAllFixedShiftsAsync();
+
+        /// <summary> Xác định giai đoạn của ca: FirstShift (Đầu ngày), MidShift (Giữa ngày), LastShift (Cuối ngày) </summary>
+        Task<string> GetShiftPhaseAsync(int shiftId);
+
+        /// <summary> Lấy ca cố định tiếp theo </summary>
+        Task<FixedShift?> GetNextFixedShiftAsync(int currentShiftId);
+
+        /// <summary> Tính doanh thu tiền mặt, CK và hoàn tiền mặt phát sinh trong ca </summary>
+        Task<(decimal cashRevenue, decimal bankRevenue, decimal cashRefunds)> GetShiftSalesStatsAsync(string branchId, int? cashierId, DateTime openedAt, DateTime? closedAt);
+
+        /// <summary> Kiểm tra điều kiện mở bán hàng cho Thu ngân (2 điều kiện) </summary>
+        Task<(bool isEligible, string reasonCode, string message, int? activeShiftId, string? shiftPhase)> CheckCashierSaleEligibilityAsync(int cashierId, string branchId);
+
+        /// <summary> Lấy phân công trực cho ca cụ thể </summary>
+        Task<WeeklyRosterGrid?> GetRosterForShiftAsync(string branchId, int shiftId, DateTime date);
+
+        /// <summary> Lấy ca Active hiện tại của chi nhánh </summary>
+        Task<CashHandover?> GetCurrentActiveHandoverForBranchAsync(string branchId, DateTime date);
+
         /// <summary> Kiểm tra xem ca làm việc cụ thể tại chi nhánh đã được mở hôm nay chưa </summary>
         Task<CashHandover?> GetActiveHandoverByShiftAsync(string branchId, int shiftId, DateTime date);
 

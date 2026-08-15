@@ -1,14 +1,14 @@
-@model SEP490_G52_CSMS.Models.ViewModels.HandoverViewModel
+@model SEP490_G52_CSMS.Models.ViewModels.CloseShiftViewModel
 @{
-    ViewData["Title"] = "Bàn Giao Ca - Quản Lý Kết Tiền";
+    ViewData["Title"] = "Đóng Ca Cuối Ngày - Quản Lý Kết Tiền";
 }
 
 <div class="container-fluid px-4">
     @* Tiêu đề module *@
     <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
         <div>
-            <h1 class="h3 fw-bold text-dark mb-0">BÀN GIAO CA LÀM VIỆC</h1>
-            <p class="text-muted small mb-0">Ca hiện tại: <strong>@Model.ShiftName</strong> &bull; Chuyển giao sang: <strong>@Model.TargetShiftName (@Model.TargetShiftTimeRange)</strong></p>
+            <h1 class="h3 fw-bold text-dark mb-0">ĐÓNG CA CUỐI NGÀY</h1>
+            <p class="text-muted small mb-0">Ca làm việc: <strong>@Model.ShiftName (@Model.ShiftTimeRange)</strong> &bull; Chốt sổ doanh thu ngày: <strong>@Model.HandoverDate.ToString("dd/MM/yyyy")</strong></p>
         </div>
         <div class="d-flex gap-2">
             <a asp-action="EmergencyHandover" asp-route-cashierId="@Model.OutgoingCashierId"
@@ -30,17 +30,6 @@
         </div>
     }
 
-    @if (Model.IsSelfHandover)
-    {
-        <div class="alert alert-warning d-flex align-items-center mb-3">
-            <i class="bi bi-person-check-fill fs-4 me-3 text-warning"></i>
-            <div>
-                <strong>Lưu ý: Bạn được phân công làm 2 ca liên tiếp!</strong><br />
-                <span class="small">Hệ thống yêu cầu thực hiện bước bàn giao chốt két giữa 2 ca để tách bạch doanh thu và báo cáo đối soát riêng cho từng ca làm việc. Sau khi xác nhận, ca tiếp theo sẽ tự động được mở với số tiền thực tế vừa bàn giao.</span>
-            </div>
-        </div>
-    }
-
     @if (!ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger alert-dismissible fade show">
@@ -51,11 +40,11 @@
 
     <!-- Header biểu mẫu -->
     <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
-        <span class="fw-semibold text-uppercase text-secondary small">Biểu mẫu đối soát &amp; Bàn giao ca giữa ngày</span>
+        <span class="fw-semibold text-uppercase text-secondary small">Biểu mẫu tổng kết két &amp; Đóng ca kết thúc ngày</span>
         <a asp-action="Index" class="btn btn-outline-danger btn-sm">Hủy</a>
     </div>
 
-    <form asp-action="Handover" method="post" id="handoverForm">
+    <form asp-action="CloseShift" method="post" id="closeShiftForm">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="HandoverId" />
         <input type="hidden" asp-for="OutgoingCashierId" />
@@ -63,15 +52,14 @@
         <input type="hidden" asp-for="InitialCash" id="initialCashHidden" />
         <input type="hidden" asp-for="MachineCashRevenue" id="machineRevenueHidden" />
         <input type="hidden" asp-for="CashRefundAmount" id="cashRefundHidden" />
-        <input type="hidden" asp-for="IsSelfHandover" />
 
         <div class="row g-3">
-            <!-- CỘT TRÁI: DOANH THU & ĐỐI SOÁT -->
+            <!-- CỘT TRÁI: DOANH THU & ĐỐI SOÁT CUỐI NGÀY -->
             <div class="col-md-6">
                 <div class="card border shadow-sm h-100">
                     <div class="card-body">
                         <h6 class="fw-bold mb-3 text-primary">
-                            <i class="bi bi-calculator me-1"></i>DOANH THU HỆ THỐNG GHI NHẬN
+                            <i class="bi bi-calculator me-1"></i>DOANH THU CA CUỐI NGÀY
                         </h6>
 
                         <!-- Bảng chi tiết doanh thu đối soát -->
@@ -110,24 +98,24 @@
                         <hr class="my-3" />
 
                         <h6 class="fw-bold mb-3 text-dark">
-                            <i class="bi bi-cash-stack me-1"></i>ĐỐI SOÁT TIỀN THỰC TẾ
+                            <i class="bi bi-cash-stack me-1"></i>KIỂM KÊ VÀ ĐỐI SOÁT CUỐI NGÀY
                         </h6>
 
                         <div class="mb-3">
                             <label asp-for="ActualCash" class="form-label fw-semibold small text-dark mb-1">
-                                Tiền mặt thực tế đếm được trong két: <span class="text-danger">*</span>
+                                Tổng tiền mặt thực tế đếm trong két: <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
                                 <input asp-for="ActualCash" type="number" step="1000" min="0"
                                        class="form-control form-control-lg fw-bold" id="actualCashInput"
-                                       placeholder="VD: 4500000" required />
+                                       placeholder="Nhập tổng số tiền thực tế" required />
                                 <span class="input-group-text bg-light fw-bold">đ</span>
                             </div>
                             <span asp-validation-for="ActualCash" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small text-muted mb-1">Chênh lệch kết tiền (Thực tế - Lý thuyết):</label>
+                            <label class="form-label small text-muted mb-1">Chênh lệch kết tiền cuối ngày:</label>
                             <div class="input-group input-group-sm">
                                 <input type="text" class="form-control bg-light fw-bold"
                                        id="discrepancyDisplay" readonly value="0 đ" />
@@ -137,32 +125,32 @@
 
                         <div class="mb-0">
                             <label asp-for="Notes" class="form-label small text-muted mb-1" id="notesLabel">
-                                Lý do giải trình chênh lệch:
+                                Giải trình chênh lệch (nếu có):
                             </label>
                             <textarea asp-for="Notes" class="form-control form-control-sm" rows="3" id="notesInput"
-                                      placeholder="Bắt buộc nhập nếu có chênh lệch tiền..."></textarea>
+                                      placeholder="Bắt buộc nhập nếu có chênh lệch tiền cuối ngày..."></textarea>
                             <span asp-validation-for="Notes" class="text-danger small"></span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- CỘT PHẢI: XÁC NHẬN VÀ BÀN GIAO -->
+            <!-- CỘT PHẢI: PHÂN BỔ TIỀN VÀ XÁC NHẬN ĐÓNG CA -->
             <div class="col-md-6">
                 <div class="card border shadow-sm h-100">
                     <div class="card-body">
-                        <h6 class="fw-bold mb-3 text-success">
-                            <i class="bi bi-shield-lock me-1"></i>XÁC NHẬN VÀ BÀN GIAO CA
+                        <h6 class="fw-bold mb-3 text-danger">
+                            <i class="bi bi-door-closed me-1"></i>PHÂN BỔ TIỀN VÀ ĐÓNG CA CUỐI NGÀY
                         </h6>
 
                         <div class="mb-3 p-3 bg-light rounded border">
                             <div class="row mb-2">
-                                <div class="col-5 text-muted small">Người giao ca:</div>
-                                <div class="col-7 fw-bold text-dark">@Model.OutgoingCashierName</div>
+                                <div class="col-5 text-muted small">Thu ngân đóng ca:</div>
+                                <div class="col-7 fw-bold text-dark">@Model.CashierName</div>
                             </div>
                             <div class="row mb-2">
-                                <div class="col-5 text-muted small">Ca bàn giao:</div>
-                                <div class="col-7"><span class="badge bg-primary">@Model.ShiftName</span></div>
+                                <div class="col-5 text-muted small">Ca trực:</div>
+                                <div class="col-7"><span class="badge bg-dark">@Model.ShiftName (Ca cuối ngày)</span></div>
                             </div>
                             <div class="row">
                                 <div class="col-5 text-muted small">Thời điểm mở ca:</div>
@@ -171,48 +159,44 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="DelivererName" class="form-label small text-muted mb-1">
-                                Người giao tiền (nếu có người đại diện bàn giao):
+                            <label asp-for="RetainedCashForTomorrow" class="form-label small fw-semibold text-dark mb-1">
+                                Số tiền giữ lại trong két cho ca sáng mai:
                             </label>
-                            <input asp-for="DelivererName" type="text" class="form-control form-control-sm"
-                                   placeholder="VD: @Model.OutgoingCashierName" />
-                            <span asp-validation-for="DelivererName" class="text-danger small"></span>
+                            <div class="input-group">
+                                <input asp-for="RetainedCashForTomorrow" type="number" step="1000" min="0"
+                                       class="form-control" id="retainedCashInput"
+                                       placeholder="Số tiền để lại két..." />
+                                <span class="input-group-text bg-light">đ</span>
+                            </div>
+                            <span asp-validation-for="RetainedCashForTomorrow" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="IncomingCashierId" class="form-label small fw-semibold text-dark mb-1">
-                                Nhân viên nhận bàn giao ca kế tiếp: <span class="text-danger">*</span>
-                            </label>
-                            <select asp-for="IncomingCashierId" class="form-select" id="incomingCashierSelect" required>
-                                <option value="">-- Chọn nhân viên nhận ca --</option>
-                                @foreach (var cashier in Model.IncomingCashiers)
-                                {
-                                    <option value="@cashier.CashierId">@cashier.CashierName @(cashier.CashierId == Model.OutgoingCashierId ? " (Chính mình - 2 ca liên tiếp)" : "")</option>
-                                }
-                            </select>
-                            <span asp-validation-for="IncomingCashierId" class="text-danger small"></span>
+                        <div class="mb-3 p-3 bg-warning-subtle border border-warning rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small fw-semibold text-dark">Số tiền nộp về két tổng / Chủ quán:</span>
+                                <strong class="text-danger fs-6" id="depositedCashDisplay">0 đ</strong>
+                            </div>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="IncomingPassword" class="form-label small fw-semibold text-dark mb-1">
-                                Mật khẩu xác nhận của người nhận ca: <span class="text-danger">*</span>
+                            <label asp-for="Password" class="form-label small fw-semibold text-dark mb-1">
+                                Mật khẩu của bạn để xác nhận đóng ca: <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input asp-for="IncomingPassword" type="password"
+                                <input asp-for="Password" type="password"
                                        class="form-control" id="passwordInput"
-                                       placeholder="Nhập mật khẩu để ký xác nhận" required />
+                                       placeholder="Nhập mật khẩu để ký xác nhận đóng ca" required />
                                 <button class="btn btn-outline-secondary" type="button"
                                         onclick="togglePassword()" title="Hiện/Ẩn mật khẩu">
                                     <i class="bi bi-eye" id="eyeIcon"></i>
                                 </button>
                             </div>
-                            <span asp-validation-for="IncomingPassword" class="text-danger small"></span>
-                            <small class="text-muted d-block mt-1">Người nhận ca nhập mật khẩu đăng nhập cá nhân để xác thực nhận bàn giao.</small>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
 
                         <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-success btn-lg" id="submitHandoverBtn">
-                                <i class="bi bi-send-check me-2"></i>Ký Xác Nhận Bàn Giao Ca
+                            <button type="submit" class="btn btn-danger btn-lg" id="submitCloseShiftBtn">
+                                <i class="bi bi-lock-fill me-2"></i>Xác Nhận Đóng Ca Cuối Ngày
                             </button>
                         </div>
                     </div>
@@ -230,42 +214,51 @@
         const cashRefund    = @Model.CashRefundAmount;
         const theoretical   = initialCash + machineRevenue - cashRefund;
 
-        const actualInput  = document.getElementById('actualCashInput');
-        const discDisplay  = document.getElementById('discrepancyDisplay');
-        const notesLabel   = document.getElementById('notesLabel');
-        const notesInput   = document.getElementById('notesInput');
+        const actualInput     = document.getElementById('actualCashInput');
+        const retainedInput   = document.getElementById('retainedCashInput');
+        const depositedDisplay= document.getElementById('depositedCashDisplay');
+        const discDisplay     = document.getElementById('discrepancyDisplay');
+        const notesLabel      = document.getElementById('notesLabel');
+        const notesInput      = document.getElementById('notesInput');
 
         let currentDiff = 0;
 
         function updateCalculations() {
             const actual = parseFloat(actualInput.value) || 0;
-            currentDiff  = actual - theoretical;
-            const fmt    = new Intl.NumberFormat('vi-VN').format(Math.abs(currentDiff));
+            const retained = parseFloat(retainedInput.value) || 0;
+            const deposited = Math.max(0, actual - retained);
+
+            depositedDisplay.innerText = new Intl.NumberFormat('vi-VN').format(deposited) + ' đ';
+
+            currentDiff = actual - theoretical;
+            const fmt = new Intl.NumberFormat('vi-VN').format(Math.abs(currentDiff));
 
             if (currentDiff > 0) {
                 discDisplay.value = '+' + fmt + ' đ';
                 discDisplay.classList.remove('text-danger');
                 discDisplay.classList.add('text-success');
-                notesLabel.innerHTML = 'Lý do chênh lệch <span class="text-danger fw-bold">* (Dư +' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
+                notesLabel.innerHTML = 'Giải trình chênh lệch <span class="text-danger fw-bold">* (Dư +' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
                 notesInput.required = true;
             } else if (currentDiff < 0) {
                 discDisplay.value = '-' + fmt + ' đ';
                 discDisplay.classList.remove('text-success');
                 discDisplay.classList.add('text-danger');
-                notesLabel.innerHTML = 'Lý do chênh lệch <span class="text-danger fw-bold">* (Thiếu -' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
+                notesLabel.innerHTML = 'Giải trình chênh lệch <span class="text-danger fw-bold">* (Thiếu -' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
                 notesInput.required = true;
             } else {
                 discDisplay.value = '0 đ';
                 discDisplay.classList.remove('text-success', 'text-danger');
-                notesLabel.innerHTML = 'Lý do giải trình chênh lệch (không bắt buộc nếu khớp):';
+                notesLabel.innerHTML = 'Giải trình chênh lệch (không bắt buộc nếu khớp):';
                 notesInput.required = false;
             }
         }
 
         actualInput.addEventListener('input', updateCalculations);
         actualInput.addEventListener('change', updateCalculations);
+        retainedInput.addEventListener('input', updateCalculations);
+        retainedInput.addEventListener('change', updateCalculations);
         document.addEventListener('DOMContentLoaded', updateCalculations);
-        updateCalculations(); // Chạy ngay lập tức khi load trang
+        updateCalculations();
 
         function togglePassword() {
             const input = document.getElementById('passwordInput');

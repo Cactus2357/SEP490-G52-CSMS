@@ -19,13 +19,20 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly IMenuRepository _menuRepo;
         private readonly CSMSAppDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ICashHandoverService _cashHandoverService;
 
-        public SaleManagementController(IOrderService orderService, IMenuRepository menuRepo, CSMSAppDbContext context, IHttpClientFactory httpClientFactory)
+        public SaleManagementController(
+            IOrderService orderService,
+            IMenuRepository menuRepo,
+            CSMSAppDbContext context,
+            IHttpClientFactory httpClientFactory,
+            ICashHandoverService cashHandoverService)
         {
             _orderService = orderService;
             _menuRepo = menuRepo;
             _context = context;
             _httpClientFactory = httpClientFactory;
+            _cashHandoverService = cashHandoverService;
         }
 
         private async Task<string> GetUserBranchIdAsync()
@@ -39,7 +46,7 @@ namespace SEP490_G52_CSMS.Controllers
                     return employee.BranchId;
                 }
             }
-            return "CB004"; // Default fallback
+            return "CN001"; // Default fallback
         }
 
         private async Task<int> GetUserCashierIdAsync()
@@ -52,68 +59,30 @@ namespace SEP490_G52_CSMS.Controllers
             return 5; // Default fallback (cashier is 5)
         }
 
-        private async Task<bool> IsEmployeeInActiveShiftAsync(int employeeId, string branchId)
+        private async Task<(bool isEligible, string reasonCode, string message)> CheckCashierEligibilityAsync(int employeeId, string branchId)
         {
             if (User.IsInRole("RManager") || User.IsInRole("BranchManager"))
             {
-                return true;
+                return (true, "Eligible", "Hợp lệ");
             }
 
-            var today = DateTime.Today;
-            var yesterday = today.AddDays(-1);
-            var nowTime = DateTime.Now.TimeOfDay;
-
-            // Query rosters assigned for today OR assigned for yesterday (if overnight shift spilled into early morning today)
-            var rosterShifts = await _context.WeeklyRosterGrids
-                .Include(r => r.FixedShift)
-                .Where(r => r.EmployeeId == employeeId && (r.AssignmentDate.Date == today || r.AssignmentDate.Date == yesterday))
-                .ToListAsync();
-
-            bool inScheduledShift = rosterShifts.Any(r => {
-                if (r.FixedShift == null) return false;
-                var start = r.FixedShift.StartTime;
-                var end = r.FixedShift.EndTime;
-
-                if (start <= end)
-                {
-                    // Normal daytime shift
-                    return r.AssignmentDate.Date == today && nowTime >= start && nowTime <= end;
-                }
-                else
-                {
-                    // Overnight shift (e.g., 22:00 - 06:00)
-                    if (r.AssignmentDate.Date == today)
-                    {
-                        // Assigned today, current time is in evening (>= 22:00)
-                        return nowTime >= start;
-                    }
-                    else if (r.AssignmentDate.Date == yesterday)
-                    {
-                        // Assigned yesterday, current time is early morning today (<= 06:00)
-                        return nowTime <= end;
-                    }
-                    return false;
-                }
-            });
-
-            bool hasOpenShift = await _context.CashHandovers
-                .AnyAsync(ch => ch.BranchId == branchId 
-                             && (ch.OutgoingCashierId == employeeId || ch.IncomingCashierId == employeeId) 
-                             && (ch.HandoverDate.Date == today || ch.HandoverDate.Date == yesterday)
-                             && (ch.ClosedAt == null || ch.Status == "Active"));
-
-            return inScheduledShift || hasOpenShift;
+            var result = await _cashHandoverService.CheckCashierSaleEligibilityAsync(employeeId, branchId);
+            return (result.isEligible, result.reasonCode, result.message);
         }
 
         public async Task<IActionResult> CreateOrder()
         {
             var branchId = await GetUserBranchIdAsync();
             var cashierId = await GetUserCashierIdAsync();
-            bool isInShift = await IsEmployeeInActiveShiftAsync(cashierId, branchId);
-            if (!isInShift)
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
             {
                 ViewBag.NotInShift = true;
-                ViewBag.NotInShiftMessage = "Bạn hiện không ở trong ca làm việc (hoặc chưa mở ca). Vui lòng mở ca hoặc kiểm tra phân công lịch làm việc để thực hiện bán hàng.";
+                ViewBag.ReasonCode = reasonCode;
+                ViewBag.NotInShiftMessage = message;
+                ViewBag.RedirectAction = reasonCode == "NotScheduled" ? "EmployeeIndex" : (reasonCode == "FirstShiftNotOpened" ? "OpenShift" : "Handover");
+                ViewBag.RedirectController = reasonCode == "NotScheduled" ? "WorkSchedule" : "CashHandover";
+                ViewBag.RedirectButtonText = reasonCode == "FirstShiftNotOpened" ? "Đến màn hình Mở ca" : (reasonCode == "MidShiftNotHandedOver" ? "Đến màn hình Nhận bàn giao" : "Xem lịch làm việc");
             }
 
             var menus = await _menuRepo.GetMenusByBranchAsync(branchId);
@@ -185,9 +154,10 @@ namespace SEP490_G52_CSMS.Controllers
             var branchId = await GetUserBranchIdAsync();
             var cashierId = await GetUserCashierIdAsync();
 
-            if (!await IsEmployeeInActiveShiftAsync(cashierId, branchId))
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
             {
-                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể thực hiện thanh toán." });
+                return BadRequest(new { success = false, message = message });
             }
 
             var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
@@ -225,9 +195,10 @@ namespace SEP490_G52_CSMS.Controllers
             var branchId = await GetUserBranchIdAsync();
             var cashierId = await GetUserCashierIdAsync();
 
-            if (!await IsEmployeeInActiveShiftAsync(cashierId, branchId))
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
             {
-                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể bán hàng." });
+                return BadRequest(new { success = false, message = message });
             }
 
             var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
@@ -259,18 +230,45 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ProcessPayment(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null)
+        public async Task<IActionResult> ProcessPayment(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null)
         {
             var branchId = await GetUserBranchIdAsync();
             var cashierId = await GetUserCashierIdAsync();
-            if (!await IsEmployeeInActiveShiftAsync(cashierId, branchId))
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
             {
-                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể thực hiện thanh toán." });
+                return BadRequest(new { success = false, message = message });
             }
 
-            bool result = await _orderService.ProcessPaymentAsync(orderId, paymentMethod, customerCash, changeAmount);
+            bool result = await _orderService.ProcessPaymentAsync(orderId, paymentMethod, customerCash, changeAmount, bankTransactionCode);
             if (result) return Json(new { success = true });
-            return BadRequest(new { success = false, message = "Payment failed" });
+            return BadRequest(new { success = false, message = "Thanh toán thất bại" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ProcessRefund([FromBody] RefundRequestModel model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.OrderId))
+            {
+                return BadRequest(new { success = false, message = "Mã đơn hàng không hợp lệ." });
+            }
+
+            var cashierId = await GetUserCashierIdAsync();
+            var branchId = await GetUserBranchIdAsync();
+
+            // Enforce that only a cashier currently on an active, open shift can process refunds
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = $"Chỉ thu ngân đang trong ca làm việc chính thức mới được phép thực hiện hoàn tiền! ({message})" });
+            }
+
+            bool result = await _orderService.ProcessRefundCashAsync(model.OrderId, model.RefundAmount, model.Reason ?? "Hoàn tiền do thiếu nguyên liệu/hủy món", cashierId);
+            if (result)
+            {
+                return Json(new { success = true, message = "Đã hoàn tiền mặt thành công. Số tiền đã được trừ vào dòng tiền mặt của ca hiện tại." });
+            }
+            return BadRequest(new { success = false, message = "Không thể xử lý hoàn tiền cho đơn hàng này." });
         }
 
         [HttpGet]
@@ -327,11 +325,13 @@ namespace SEP490_G52_CSMS.Controllers
             var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
+            string txCode = "MBB-" + DateTime.Now.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
             order.PaymentStatus = "TransferSuccessPending";
-            order.PaymentMethod = $"Bank Transfer (SePay Sim - Đã nhận:{order.TotalAmount:N0}đ)";
+            order.BankTransactionCode = txCode;
+            order.PaymentMethod = $"Bank Transfer (SePay #{txCode} - Đã nhận:{order.TotalAmount:N0}đ)";
             await _context.SaveChangesAsync();
 
-            return Json(new { success = true });
+            return Json(new { success = true, transactionCode = txCode });
         }
 
         [HttpGet]
@@ -358,7 +358,8 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new { 
                 success = true, 
                 paymentStatus = order.PaymentStatus,
-                receivedAmount = receivedAmount
+                receivedAmount = receivedAmount,
+                bankTransactionCode = order.BankTransactionCode
             });
         }
 
@@ -381,6 +382,12 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> OrderHistory(string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1)
         {
             var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+
+            ViewBag.CanRefund = isEligible;
+            ViewBag.IneligibleReason = message;
+
             var vm = await _orderService.GetOrderHistoryAsync(branchId, status, fromDate, toDate, search, page);
             return View(vm);
         }
@@ -391,8 +398,22 @@ namespace SEP490_G52_CSMS.Controllers
             var details = await _orderService.GetOrderDetailsAsync(orderId);
             if (details == null) return NotFound();
 
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+
+            ViewBag.CanRefund = isEligible;
+            ViewBag.IneligibleReason = message;
+
             return PartialView("_OrderDetailPartial", details);
         }
+    }
+
+    public class RefundRequestModel
+    {
+        public string OrderId { get; set; } = string.Empty;
+        public decimal RefundAmount { get; set; }
+        public string? Reason { get; set; }
     }
 
     public class OrderSubmissionModel

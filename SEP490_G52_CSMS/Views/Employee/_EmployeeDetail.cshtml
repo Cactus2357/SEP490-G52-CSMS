@@ -119,9 +119,25 @@
                         <span class="text-secondary small">Email:</span>
                         <span class="fw-bold text-dark small">@(Model.Email ?? "Chưa cập nhật")</span>
                     </div>
-                    <div class="d-flex justify-content-between py-1">
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
                         <span class="text-secondary small">Số CCCD:</span>
                         <span class="fw-bold text-dark small font-monospace">@(string.IsNullOrEmpty(maskedCitizenId) ? "Chưa cập nhật" : maskedCitizenId)</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 align-items-center">
+                        <span class="text-secondary small">Dữ liệu khuôn mặt (FaceID):</span>
+                        @if (!string.IsNullOrEmpty(Model.FaceData))
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success border"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng ký</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 small rounded-pill fw-bold" onclick="deleteEmployeeFaceData(@Model.EmployeeId, '@Model.FullName')">
+                                    <i class="bi bi-trash me-1"></i>Xóa
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-muted border">Chưa đăng ký</span>
+                        }
                     </div>
                 </div>
             </div>

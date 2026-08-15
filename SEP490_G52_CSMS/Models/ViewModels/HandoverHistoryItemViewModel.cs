@@ -12,6 +12,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string IncomingCashierName { get; set; } = string.Empty;
         public string InitialCash { get; set; } = string.Empty;
         public string MachineCashRevenue { get; set; } = string.Empty;
+        public string BankTransferRevenue { get; set; } = string.Empty;
+        public string CashRefundAmount { get; set; } = string.Empty;
         public string TheoreticalCash { get; set; } = string.Empty;
         public string ActualCash { get; set; } = string.Empty;
         public string Discrepancy { get; set; } = string.Empty;
@@ -22,7 +24,9 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string? Notes { get; set; }
         /// <summary> Thông tin người giao tiền </summary>
         public string? DelivererName { get; set; }
-        /// <summary> Loại phiên: "Mở ca" hoặc "Giao ca" </summary>
+        /// <summary> Loại phiên: "Mở ca đầu ngày", "Bàn giao ca", "Bàn giao đột xuất", "Đóng ca cuối ngày" </summary>
         public string SessionType { get; set; } = string.Empty;
+        public string HandoverType { get; set; } = "Normal";
+        public string? EmergencyReason { get; set; }
     }
 }

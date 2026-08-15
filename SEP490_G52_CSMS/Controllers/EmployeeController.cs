@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_G52_CSMS.Commons;
@@ -42,17 +43,21 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (dto == null)
             {
-                return Json(new { success = false, errorMessage = "Dữ liệu không hợp lệ." });
+                return Json(new { success = false, errorMessage = "Dữ liệu gửi lên không hợp lệ." });
+            }
+
+            // Scope to manager's branch if empty
+            var loggedInBranchId = User.GetBranchId() ?? "";
+            if (string.IsNullOrWhiteSpace(dto.BranchId))
+            {
+                dto.BranchId = loggedInBranchId;
             }
 
             if (!ModelState.IsValid)
             {
-                return Json(new { success = false, errorMessage = "Dữ liệu nhập vào chưa đúng định dạng." });
+                var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(e => !string.IsNullOrEmpty(e)));
+                return Json(new { success = false, errorMessage = string.IsNullOrWhiteSpace(errors) ? "Dữ liệu nhập vào chưa đúng định dạng." : $"Dữ liệu chưa đúng định dạng: {errors}" });
             }
-
-            // Force scope to manager's branch
-            var loggedInBranchId = User.GetBranchId() ?? "";
-            dto.BranchId = loggedInBranchId;
 
             var result = await _employeeService.CreateEmployeeAccountAsync(dto);
             if (result.Success)
@@ -103,14 +108,22 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
             }
 
+            var loggedInUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(loggedInUserIdStr, out int loggedInUserId);
+
+            bool isSelf = loggedInUserId == employee.EmployeeId;
+            bool isRManager = User.IsInRole("RManager");
+            bool isBranchManager = User.IsInRole("BranchManager");
             var loggedInBranchId = User.GetBranchId() ?? "";
-            if (employee.BranchId != loggedInBranchId)
+
+            if (!isSelf && !isRManager && (!isBranchManager || (!string.IsNullOrEmpty(employee.BranchId) && !string.Equals(employee.BranchId, loggedInBranchId, StringComparison.OrdinalIgnoreCase))))
             {
-                return Json(new { success = false, errorMessage = "Bạn không có quyền lưu dữ liệu khuôn mặt của nhân viên thuộc chi nhánh khác." });
+                return Json(new { success = false, errorMessage = "Bạn không có quyền lưu dữ liệu khuôn mặt cho nhân viên này." });
             }
 
             var faceData = model.FaceData.Trim();
             bool isDuplicate = false;
+            string duplicateOwnerInfo = "";
 
             // Check duplicate using vector distance if incoming data is a face descriptor
             float[]? newDescriptor = null;
@@ -129,7 +142,7 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 foreach (var emp in allEmployees)
                 {
-                    if (emp.EmployeeId == employee.EmployeeId || emp.FaceData == null)
+                    if (emp.EmployeeId == employee.EmployeeId || string.IsNullOrWhiteSpace(emp.FaceData))
                         continue;
 
                     var dbFaceData = emp.FaceData.Trim();
@@ -138,7 +151,7 @@ namespace SEP490_G52_CSMS.Controllers
                         try
                         {
                             var dbDescriptor = System.Text.Json.JsonSerializer.Deserialize<float[]>(dbFaceData);
-                            if (dbDescriptor != null && dbDescriptor.Length == 128)
+                            if (dbDescriptor != null && dbDescriptor.Length == 128 && dbDescriptor.Any(v => v != 0))
                             {
                                 double distance = 0;
                                 for (int i = 0; i < 128; i++)
@@ -148,29 +161,42 @@ namespace SEP490_G52_CSMS.Controllers
                                 }
                                 distance = Math.Sqrt(distance);
 
-                                if (distance < 0.55) // Duplicate if too close
+                                if (distance < 0.38) // Strict threshold for face-api.js duplicate detection (same person < 0.38)
                                 {
                                     isDuplicate = true;
+                                    duplicateOwnerInfo = $"{emp.FullName} (Mã NV: {emp.EmployeeId})";
                                     break;
                                 }
                             }
                         }
                         catch { }
                     }
+                    else if (dbFaceData == faceData && !string.IsNullOrWhiteSpace(dbFaceData))
+                    {
+                        isDuplicate = true;
+                        duplicateOwnerInfo = $"{emp.FullName} (Mã NV: {emp.EmployeeId})";
+                        break;
+                    }
                 }
             }
             else
             {
-                // Fallback: exact string check
-                isDuplicate = System.Linq.Enumerable.Any(allEmployees, emp =>
+                // Fallback for legacy face data strings
+                var dupEmp = System.Linq.Enumerable.FirstOrDefault(allEmployees, emp =>
                     emp.EmployeeId != employee.EmployeeId &&
                     emp.FaceData != null &&
                     emp.FaceData.Trim() == faceData);
+
+                if (dupEmp != null)
+                {
+                    isDuplicate = true;
+                    duplicateOwnerInfo = $"{dupEmp.FullName} (Mã NV: {dupEmp.EmployeeId})";
+                }
             }
 
             if (isDuplicate)
             {
-                return Json(new { success = false, errorMessage = "Dữ liệu khuôn mặt này đã được liên kết với tài khoản khác." });
+                return Json(new { success = false, errorMessage = $"Khuôn mặt này đã được đăng ký cho nhân viên {duplicateOwnerInfo}. Mỗi khuôn mặt chỉ được liên kết với 1 tài khoản duy nhất!" });
             }
 
             var success = await _employeeService.RegisterFaceDataAsync(model.EmployeeId, faceData);
@@ -180,6 +206,33 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             return Json(new { success = false, errorMessage = "Không tìm thấy nhân viên." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteFaceData(int employeeId)
+        {
+            var employee = await _employeeRepository.GetByIdAsync(employeeId);
+            if (employee == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy nhân viên." });
+            }
+
+            var loggedInUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(loggedInUserIdStr, out int loggedInUserId);
+            bool isSelf = (loggedInUserId == employeeId);
+            bool isRManager = User.IsInRole("RManager");
+            bool isBranchManager = User.IsInRole("BranchManager");
+            var loggedInBranchId = User.GetBranchId() ?? "";
+
+            if (!isSelf && !isRManager && (!isBranchManager || (!string.IsNullOrEmpty(employee.BranchId) && !string.Equals(employee.BranchId, loggedInBranchId, StringComparison.OrdinalIgnoreCase))))
+            {
+                return Json(new { success = false, message = "Bạn không có quyền xóa dữ liệu khuôn mặt của nhân viên này." });
+            }
+
+            employee.FaceData = null;
+            await _employeeRepository.UpdateAsync(employee);
+
+            return Json(new { success = true, message = $"Đã xóa thành công dữ liệu khuôn mặt (FaceID) của nhân viên {employee.FullName}." });
         }
 
         // GET: /Employee/Detail/{id}

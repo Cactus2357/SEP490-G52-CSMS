@@ -183,6 +183,15 @@
                                     <i class="bi bi-camera me-1"></i>Quét Face
                                 </a>
                             }
+                            else
+                            {
+                                <a href="/Employee/RegisterFace/@emp.EmployeeId" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 fw-bold" title="Quét lại dữ liệu khuôn mặt">
+                                    <i class="bi bi-camera me-1"></i>Quét lại
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 fw-bold" onclick="deleteEmployeeFaceData(@emp.EmployeeId, '@emp.FullName')" title="Xóa dữ liệu khuôn mặt">
+                                    <i class="bi bi-trash me-1"></i>Xóa Face
+                                </button>
+                            }
                         </div>
                     </div>
                 }
@@ -528,14 +537,49 @@
                 return;
             }
 
+            var fullName = document.getElementById('fullName').value.trim();
+            var phoneNumber = document.getElementById('phoneNumber').value.trim();
+            var email = document.getElementById('email').value.trim();
+            var citizenId = document.getElementById('citizenId').value.trim();
+            var role = document.getElementById('role').value;
+            var employmentType = document.getElementById('employmentType').value;
+            var branchId = document.getElementById('branchId').value;
+
+            // Extra client-side validation
+            if (!fullName) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Vui lòng nhập Họ và tên.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            if (!phoneNumber) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Vui lòng nhập Số điện thoại.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            if (!email || !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email)) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Email nhập vào chưa đúng định dạng (VD: name@@domain.com).';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            if (!citizenId || !/^\d{12}$/.test(citizenId)) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Số CCCD phải bao gồm đúng 12 chữ số.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            if (!role) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Vui lòng chọn vị trí làm việc.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
             var payload = {
-                FullName: document.getElementById('fullName').value.trim(),
-                PhoneNumber: document.getElementById('phoneNumber').value.trim(),
-                Email: document.getElementById('email').value.trim(),
-                CitizenId: document.getElementById('citizenId').value.trim(),
-                Role: document.getElementById('role').value,
-                EmploymentType: document.getElementById('employmentType').value,
-                BranchId: document.getElementById('branchId').value
+                FullName: fullName,
+                PhoneNumber: phoneNumber,
+                Email: email,
+                CitizenId: citizenId,
+                Role: role,
+                EmploymentType: employmentType,
+                BranchId: branchId
             };
 
             showConfirmModal(
@@ -562,14 +606,21 @@
                             document.getElementById('displayUsername').value = data.username;
                             document.getElementById('displayPassword').value = data.password || data.generatedPassword;
 
-                            var createModal = bootstrap.Modal.getInstance(document.getElementById('createEmployeeModal'));
+                            var createModalEl = document.getElementById('createEmployeeModal');
+                            var createModal = bootstrap.Modal.getInstance(createModalEl);
                             if (createModal) createModal.hide();
 
                             var credentialsModal = new bootstrap.Modal(document.getElementById('credentialsModal'));
                             credentialsModal.show();
+                            if (typeof showToast === 'function') {
+                                showToast('Tạo tài khoản nhân viên mới thành công!', 'success');
+                            }
                         } else {
                             alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Tạo thất bại.');
                             alertBox.classList.remove('d-none');
+                            if (typeof showToast === 'function') {
+                                showToast(data.errorMessage || 'Tạo thất bại.', 'danger');
+                            }
                         }
                     })
                     .catch(err => {
@@ -759,6 +810,33 @@
                 showToast('Lỗi hệ thống khi ngừng hoạt động nhân viên.', 'danger');
             });
             });
+        }
+
+        function deleteEmployeeFaceData(empId, empName) {
+            showConfirmModal(
+                'Xác nhận xóa dữ liệu FaceID',
+                `Bạn có chắc chắn muốn <strong>xóa dữ liệu khuôn mặt (FaceID)</strong> của nhân viên <strong>${empName}</strong> không?<br><br><span class="text-danger small"><i class="bi bi-exclamation-triangle-fill me-1"></i>Sau khi xóa, nhân viên này sẽ không thể điểm danh hoặc đăng nhập bằng khuôn mặt cho đến khi được quét lại.</span>`,
+                function() {
+                    fetch('/Employee/DeleteFaceData', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'employeeId=' + empId
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(function() { window.location.reload(); }, 1000);
+                        } else {
+                            showToast(data.message || 'Không thể xóa dữ liệu khuôn mặt.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Lỗi khi gửi yêu cầu xóa khuôn mặt.', 'danger');
+                    });
+                }
+            );
         }
     </script>
 }

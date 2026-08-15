@@ -130,11 +130,18 @@
                 </div>
             </div>
             <h3 class="mb-2 fw-bold text-dark">KHÁCH HÀNG ĐÃ CHUYỂN TIỀN THÀNH CÔNG</h3>
-            <div class="alert alert-success border-0 py-3 px-4 mb-3 d-inline-block rounded-3 shadow-sm">
-                <span class="text-uppercase text-secondary d-block small mb-1 fw-bold">SỐ TIỀN THỰC NHẬN TỪ SEPAY / NGÂN HÀNG:</span>
-                <h1 class="fw-bold text-success mb-0 fs-1" id="receivedAmountDisplay">@Model.TotalAmount.ToString("N0") đ</h1>
+            <div class="alert alert-success border-0 py-3 px-4 mb-3 d-inline-block rounded-3 shadow-sm text-start">
+                <div class="mb-2">
+                    <span class="text-uppercase text-secondary small d-block fw-bold">MÃ GIAO DỊCH NGÂN HÀNG (ĐỐI SOÁT):</span>
+                    <strong class="text-primary fs-4" id="bankTxCodeDisplay">MBB-000000</strong>
+                </div>
+                <hr class="my-2" />
+                <div>
+                    <span class="text-uppercase text-secondary small d-block fw-bold">SỐ TIỀN THỰC NHẬN TỪ SEPAY:</span>
+                    <h1 class="fw-bold text-success mb-0 fs-2" id="receivedAmountDisplay">@Model.TotalAmount.ToString("N0") đ</h1>
+                </div>
             </div>
-            <p class="text-secondary mb-4 fs-5">Hệ thống đã tự động nhận diện và xác nhận số tiền từ cổng SePay. Vui lòng bấm bên dưới để hoàn tất.</p>
+            <p class="text-secondary mb-4 fs-5">Hệ thống đã tự động ghi nhận mã giao dịch ngân hàng để đối soát. Vui lòng bấm bên dưới để hoàn tất.</p>
             <div class="d-grid gap-2 col-8 mx-auto">
                 <button type="button" class="btn btn-success py-3 fs-4 fw-bold shadow-sm" onclick="confirmPaymentReceived()">XÁC NHẬN ĐÃ NHẬN TIỀN</button>
             </div>
@@ -149,6 +156,7 @@
         var recipientName = '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.RecipientName))';
         var orderItems = @Html.Raw(itemsJson);
         var qrCodeUrl = document.getElementById('qrCodeImg').src;
+        var currentBankTxCode = '';
 
         // Sync order details and QR code with Customer Monitor immediately on load
         try {
@@ -176,11 +184,15 @@
                         var formattedAmount = new Intl.NumberFormat('vi-VN').format(recAmount) + ' đ';
                         document.getElementById('receivedAmountDisplay').innerText = formattedAmount;
 
+                        currentBankTxCode = data.bankTransactionCode || ('MBB-' + Date.now().toString().slice(-6));
+                        document.getElementById('bankTxCodeDisplay').innerText = currentBankTxCode;
+
                         // Sync paid status and received amount to Customer Monitor
                         localStorage.setItem('customer_display_state', JSON.stringify({
                             mode: 'PaidSuccess',
                             orderId: orderId,
-                            receivedAmount: formattedAmount
+                            receivedAmount: formattedAmount,
+                            bankTransactionCode: currentBankTxCode
                         }));
 
                         // Show cashier modal
@@ -232,6 +244,7 @@
             var formData = new URLSearchParams();
             formData.append('orderId', orderId);
             formData.append('paymentMethod', 'Bank Transfer');
+            formData.append('bankTransactionCode', currentBankTxCode);
 
             fetch('@Url.Action("ProcessPayment", "SaleManagement")', {
                 method: 'POST',

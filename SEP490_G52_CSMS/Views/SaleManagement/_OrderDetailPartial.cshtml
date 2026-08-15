@@ -6,7 +6,7 @@
     </h5>
     <span class="badge bg-primary px-2.5 py-1.5 fw-bold">@Model.OrderId</span>
 </div>
-<div class="card-body p-4 d-flex flex-column" style="flex: 1; overflow: hidden;">
+<div class="card-body p-4 d-flex flex-column" style="flex: 1; overflow-y: auto;">
     <div class="mb-3 flex-shrink-0">
         <div class="row mb-2">
             <div class="col-4 text-muted small">- Khách hàng:</div>
@@ -16,13 +16,36 @@
             <div class="col-4 text-muted small">- Thời gian:</div>
             <div class="col-8 text-secondary">@Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</div>
         </div>
-        <div class="row">
+        <div class="row mb-2">
+            <div class="col-4 text-muted small">- Thanh toán:</div>
+            <div class="col-8">
+                <span class="badge bg-light text-dark border">@Model.PaymentMethod</span>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.BankTransactionCode))
+        {
+            <div class="row mb-2">
+                <div class="col-4 text-muted small">- Mã GD Ngân hàng:</div>
+                <div class="col-8">
+                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-bold">
+                        <i class="bi bi-bank me-1"></i>@Model.BankTransactionCode
+                    </span>
+                </div>
+            </div>
+        }
+        <div class="row mb-2">
             <div class="col-4 text-muted small">- Trạng thái:</div>
             <div class="col-8">
                 @if (Model.DisplayStatus == "đã hoàn thành")
                 {
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
                         <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
+                    </span>
+                }
+                else if (Model.DisplayStatus.Contains("Hoàn tiền"))
+                {
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small">
+                        <i class="bi bi-x-circle-fill me-1"></i>@Model.DisplayStatus
                     </span>
                 }
                 else
@@ -33,10 +56,23 @@
                 }
             </div>
         </div>
+
+        @if (Model.RefundAmount > 0)
+        {
+            <div class="alert alert-danger p-2.5 mt-2 mb-0 rounded small">
+                <div class="fw-bold mb-1"><i class="bi bi-arrow-return-left me-1"></i>ĐÃ HOÀN TIỀN MẶT: -@Model.RefundAmount.ToString("N0") đ</div>
+                <div>- Lý do: <em>@Model.RefundReason</em></div>
+                @if (Model.RefundedAt.HasValue)
+                {
+                    <div>- Thời gian hoàn: @Model.RefundedAt.Value.ToString("HH:mm dd/MM/yyyy")</div>
+                }
+                <div class="text-muted mt-1">(Số tiền hoàn đã được tự động trừ vào két tiền ca hiện tại)</div>
+            </div>
+        }
     </div>
 
     <h6 class="fw-bold mb-2 border-bottom pb-2 flex-shrink-0">Danh Sách Món</h6>
-    <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
+    <div class="table-responsive flex-grow-1" style="max-height: 200px; overflow-y: auto;">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
@@ -69,4 +105,37 @@
         <h5 class="fw-semibold mb-0">Tổng tiền:</h5>
         <h4 class="fw-bold text-success mb-0">@Model.TotalAmount.ToString("N0") đ</h4>
     </div>
+
+    @if (Model.RefundAmount == 0 && !Model.DisplayStatus.Contains("Hoàn tiền"))
+    {
+        bool canRefund = ViewBag.CanRefund ?? true;
+        string ineligibleMsg = ViewBag.IneligibleReason ?? "Chỉ thu ngân đang trong ca làm việc chính thức mới được phép hoàn tiền!";
+
+        <div class="mt-3 flex-shrink-0">
+            @if (canRefund)
+            {
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 fw-semibold" onclick="openRefundModal('@Model.OrderId', @Model.TotalAmount)">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn tiền mặt (Hủy món / Thiếu nguyên liệu)
+                </button>
+            }
+            else
+            {
+                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-lock-fill me-1'></i> Không thể hoàn tiền" data-bs-content="Chỉ thu ngân đang trong ca làm việc chính thức mới được phép hoàn tiền mặt.<br><small class='text-muted'>Lý do: @ineligibleMsg</small>">
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
+                        <i class="bi bi-lock-fill me-1"></i>Hoàn tiền mặt (Không đủ điều kiện ca làm)
+                    </button>
+                </span>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="mt-3 flex-shrink-0">
+            <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-info-circle-fill text-warning me-1'></i> Đã hoàn tiền" data-bs-content="Đơn hàng này đã được thực hiện hoàn tiền / hủy món thành công.">
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-50" disabled style="pointer-events: none;">
+                    <i class="bi bi-check-circle-fill me-1"></i>Đã hoàn tiền mặt / Hủy món
+                </button>
+            </span>
+        </div>
+    }
 </div>
