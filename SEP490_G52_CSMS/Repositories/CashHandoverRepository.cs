@@ -143,6 +143,44 @@ namespace SEP490_G52_CSMS.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Employee>> GetEligibleHandoverCashiersAsync(string branchId, DateTime date, int currentShiftId, int outgoingCashierId)
+        {
+            var currentShift = await _context.FixedShifts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.ShiftId == currentShiftId);
+
+            var currentStartTime = currentShift?.StartTime ?? TimeSpan.Zero;
+
+            var rosterEmployeeIds = await _context.WeeklyRosterGrids
+                .Include(r => r.FixedShift)
+                .AsNoTracking()
+                .Where(r => r.BranchId == branchId
+                         && r.AssignmentDate.Date == date.Date
+                         && r.FixedShift != null
+                         && r.FixedShift.StartTime >= currentStartTime)
+                .Select(r => r.EmployeeId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!rosterEmployeeIds.Contains(outgoingCashierId))
+            {
+                rosterEmployeeIds.Add(outgoingCashierId);
+            }
+
+            var eligibleCashiers = await _context.Employees
+                .AsNoTracking()
+                .Where(e => rosterEmployeeIds.Contains(e.EmployeeId) && e.Status == BranchConstants.DefaultStatus)
+                .OrderBy(e => e.FullName)
+                .ToListAsync();
+
+            if (!eligibleCashiers.Any())
+            {
+                eligibleCashiers = await GetCashiersInBranchAsync(branchId);
+            }
+
+            return eligibleCashiers;
+        }
+
         public async Task<Employee?> GetEmployeeByIdAsync(int employeeId)
         {
             return await _context.Employees

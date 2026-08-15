@@ -106,9 +106,9 @@
                                 Tổng tiền mặt thực tế đếm trong két: <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input asp-for="ActualCash" type="number" step="1000" min="0"
-                                       class="form-control form-control-lg fw-bold" id="actualCashInput"
-                                       placeholder="Nhập tổng số tiền thực tế" required />
+                                <input type="text" class="form-control form-control-lg fw-bold" id="actualCashDisplay"
+                                       placeholder="Nhập tổng số tiền thực tế" value="@Model.ActualCash.ToString("N0")" inputmode="numeric" autocomplete="off" required />
+                                <input asp-for="ActualCash" type="hidden" id="actualCashInput" value="@Model.ActualCash" />
                                 <span class="input-group-text bg-light fw-bold">đ</span>
                             </div>
                             <span asp-validation-for="ActualCash" class="text-danger small"></span>
@@ -163,9 +163,9 @@
                                 Số tiền giữ lại trong két cho ca sáng mai:
                             </label>
                             <div class="input-group">
-                                <input asp-for="RetainedCashForTomorrow" type="number" step="1000" min="0"
-                                       class="form-control" id="retainedCashInput"
-                                       placeholder="Số tiền để lại két..." />
+                                <input type="text" class="form-control fw-bold" id="retainedCashDisplay"
+                                       placeholder="Số tiền để lại két..." value="@Model.RetainedCashForTomorrow.ToString("N0")" inputmode="numeric" autocomplete="off" />
+                                <input asp-for="RetainedCashForTomorrow" type="hidden" id="retainedCashInput" value="@Model.RetainedCashForTomorrow" />
                                 <span class="input-group-text bg-light">đ</span>
                             </div>
                             <span asp-validation-for="RetainedCashForTomorrow" class="text-danger small"></span>
@@ -214,12 +214,14 @@
         const cashRefund    = @Model.CashRefundAmount;
         const theoretical   = initialCash + machineRevenue - cashRefund;
 
-        const actualInput     = document.getElementById('actualCashInput');
-        const retainedInput   = document.getElementById('retainedCashInput');
-        const depositedDisplay= document.getElementById('depositedCashDisplay');
-        const discDisplay     = document.getElementById('discrepancyDisplay');
-        const notesLabel      = document.getElementById('notesLabel');
-        const notesInput      = document.getElementById('notesInput');
+        const actualDisplay    = document.getElementById('actualCashDisplay');
+        const actualInput      = document.getElementById('actualCashInput');
+        const retainedDisplay  = document.getElementById('retainedCashDisplay');
+        const retainedInput    = document.getElementById('retainedCashInput');
+        const depositedDisplay = document.getElementById('depositedCashDisplay');
+        const discDisplay      = document.getElementById('discrepancyDisplay');
+        const notesLabel       = document.getElementById('notesLabel');
+        const notesInput       = document.getElementById('notesInput');
 
         let currentDiff = 0;
 
@@ -253,10 +255,26 @@
             }
         }
 
-        actualInput.addEventListener('input', updateCalculations);
-        actualInput.addEventListener('change', updateCalculations);
-        retainedInput.addEventListener('input', updateCalculations);
-        retainedInput.addEventListener('change', updateCalculations);
+        if (actualDisplay) {
+            actualDisplay.addEventListener('input', function () {
+                const raw = this.value.replace(/\D/g, '');
+                const num = parseInt(raw, 10) || 0;
+                this.value = num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : (raw === '0' ? '0' : '');
+                actualInput.value = num;
+                updateCalculations();
+            });
+        }
+
+        if (retainedDisplay) {
+            retainedDisplay.addEventListener('input', function () {
+                const raw = this.value.replace(/\D/g, '');
+                const num = parseInt(raw, 10) || 0;
+                this.value = num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : (raw === '0' ? '0' : '');
+                retainedInput.value = num;
+                updateCalculations();
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', updateCalculations);
         updateCalculations();
 
@@ -271,5 +289,34 @@
                 icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
         }
+
+        document.getElementById('closeShiftForm').addEventListener('submit', function (e) {
+            if (this.dataset.confirmed === 'true') {
+                if (this.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    return false;
+                }
+                this.dataset.submitting = 'true';
+                const btn = document.getElementById('submitCloseShiftBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                }
+                return true;
+            }
+
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận đóng ca',
+                'Bạn có chắc chắn muốn xác nhận đóng ca và chốt két cuối ngày không?',
+                function () {
+                    form.dataset.confirmed = 'true';
+                    $(form).submit();
+                },
+                'Đóng ca',
+                'Hủy'
+            );
+        });
     </script>
 }

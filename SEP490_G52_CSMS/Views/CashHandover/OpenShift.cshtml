@@ -185,5 +185,34 @@
                 displayInput.value = new Intl.NumberFormat('vi-VN').format(parseInt(v));
             }
         })();
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            if (this.dataset.confirmed === 'true') {
+                if (this.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    return false;
+                }
+                this.dataset.submitting = 'true';
+                const btn = document.getElementById('confirmBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                }
+                return true;
+            }
+
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận mở ca',
+                'Bạn có chắc chắn muốn xác nhận mở ca làm việc này không?',
+                function () {
+                    form.dataset.confirmed = 'true';
+                    $(form).submit();
+                },
+                'Xác nhận mở ca',
+                'Hủy'
+            );
+        });
     </script>
 }

@@ -2,7 +2,8 @@
 
 @{
     ViewData["Title"] = "Cài đặt chung chi nhánh";
-    string activeTab = ViewBag.ActiveTab as string ?? "sepay";
+    // FIX 1: Default tab is now "general" instead of "sepay"
+    string activeTab = ViewBag.ActiveTab as string ?? "general";
 }
 
 <div class="container-fluid mt-4 pb-5">
@@ -31,13 +32,17 @@
                     <ul class="nav nav-tabs card-header-tabs m-0 border-0" id="settingsTab" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link py-3 px-4 fw-bold @(activeTab == "general" ? "active text-primary border-top border-3 border-primary" : "text-secondary")"
-                                    id="general-tab" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" role="tab">
+                                    id="general-tab" data-bs-toggle="tab" data-bs-target="#tab-general"
+                                    type="button" role="tab" aria-controls="tab-general"
+                                    aria-selected="@(activeTab == "general" ? "true" : "false")">
                                 <i class="bi bi-building me-2"></i>Cài Đặt Chung Chi Nhánh
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link py-3 px-4 fw-bold @(activeTab == "sepay" ? "active text-primary border-top border-3 border-primary" : "text-secondary")"
-                                    id="sepay-tab" data-bs-toggle="tab" data-bs-target="#tab-sepay" type="button" role="tab">
+                                    id="sepay-tab" data-bs-toggle="tab" data-bs-target="#tab-sepay"
+                                    type="button" role="tab" aria-controls="tab-sepay"
+                                    aria-selected="@(activeTab == "sepay" ? "true" : "false")">
                                 <i class="bi bi-qr-code-scan me-2"></i>Tài Khoản Ngân Hàng & SePay
                             </button>
                         </li>
@@ -50,11 +55,14 @@
                         <!-- =========================================================
                              TAB 1: CÀI ĐẶT CHUNG CHI NHÁNH
                         ========================================================== -->
-                        <div class="tab-pane fade @(activeTab == "general" ? "show active" : "")" id="tab-general" role="tabpanel">
+                        <div class="tab-pane fade @(activeTab == "general" ? "show active" : "")"
+                             id="tab-general" role="tabpanel" aria-labelledby="general-tab">
                             <form asp-action="SaveGeneralSettings" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" asp-for="SettingId" />
                                 <input type="hidden" asp-for="BranchId" />
+                                <!-- FIX 2: hidden field so the controller knows which tab to redirect back to -->
+                                <input type="hidden" name="activeTab" value="general" />
 
                                 <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom">
                                     <i class="bi bi-info-circle me-2"></i>Thông Tin Cửa Hàng / Chi Nhánh
@@ -104,11 +112,14 @@
                         <!-- =========================================================
                              TAB 2: TÀI KHOẢN NGÂN HÀNG & SEPAY CONFIG
                         ========================================================== -->
-                        <div class="tab-pane fade @(activeTab == "sepay" ? "show active" : "")" id="tab-sepay" role="tabpanel">
+                        <div class="tab-pane fade @(activeTab == "sepay" ? "show active" : "")"
+                             id="tab-sepay" role="tabpanel" aria-labelledby="sepay-tab">
                             <form asp-action="SaveSePay" method="post" class="needs-validation" novalidate>
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" asp-for="SettingId" />
                                 <input type="hidden" asp-for="BranchId" />
+                                <!-- FIX 2: hidden field so the controller knows which tab to redirect back to -->
+                                <input type="hidden" name="activeTab" value="sepay" />
 
                                 <!-- Section 1: Bank Info -->
                                 <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom">
@@ -331,5 +342,23 @@
                 showToast("Lỗi kiểm tra kết nối: " + err, "danger");
             });
         }
+
+        // FIX 3: keep the active tab in sync with the URL hash so a page
+        // refresh (F5) or a shared link opens the same tab the user was on.
+        document.addEventListener('DOMContentLoaded', function () {
+            var hash = window.location.hash;
+            if (hash) {
+                var triggerEl = document.querySelector('#settingsTab button[data-bs-target="' + hash + '"]');
+                if (triggerEl) {
+                    new bootstrap.Tab(triggerEl).show();
+                }
+            }
+
+            document.querySelectorAll('#settingsTab button[data-bs-toggle="tab"]').forEach(function (tabEl) {
+                tabEl.addEventListener('shown.bs.tab', function (event) {
+                    history.replaceState(null, null, event.target.getAttribute('data-bs-target'));
+                });
+            });
+        });
     </script>
 }

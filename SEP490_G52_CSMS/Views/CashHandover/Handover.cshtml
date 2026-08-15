@@ -118,9 +118,9 @@
                                 Tiền mặt thực tế đếm được trong két: <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input asp-for="ActualCash" type="number" step="1000" min="0"
-                                       class="form-control form-control-lg fw-bold" id="actualCashInput"
-                                       placeholder="VD: 4500000" required />
+                                <input type="text" class="form-control form-control-lg fw-bold" id="actualCashDisplay"
+                                       placeholder="VD: 4.500.000" value="@Model.ActualCash.ToString("N0")" inputmode="numeric" autocomplete="off" required />
+                                <input asp-for="ActualCash" type="hidden" id="actualCashInput" value="@Model.ActualCash" />
                                 <span class="input-group-text bg-light fw-bold">đ</span>
                             </div>
                             <span asp-validation-for="ActualCash" class="text-danger small"></span>
@@ -230,10 +230,11 @@
         const cashRefund    = @Model.CashRefundAmount;
         const theoretical   = initialCash + machineRevenue - cashRefund;
 
-        const actualInput  = document.getElementById('actualCashInput');
-        const discDisplay  = document.getElementById('discrepancyDisplay');
-        const notesLabel   = document.getElementById('notesLabel');
-        const notesInput   = document.getElementById('notesInput');
+        const actualDisplay = document.getElementById('actualCashDisplay');
+        const actualInput   = document.getElementById('actualCashInput');
+        const discDisplay   = document.getElementById('discrepancyDisplay');
+        const notesLabel    = document.getElementById('notesLabel');
+        const notesInput    = document.getElementById('notesInput');
 
         let currentDiff = 0;
 
@@ -262,8 +263,16 @@
             }
         }
 
-        actualInput.addEventListener('input', updateCalculations);
-        actualInput.addEventListener('change', updateCalculations);
+        if (actualDisplay) {
+            actualDisplay.addEventListener('input', function () {
+                const raw = this.value.replace(/\D/g, '');
+                const num = parseInt(raw, 10) || 0;
+                this.value = num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : (raw === '0' ? '0' : '');
+                actualInput.value = num;
+                updateCalculations();
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', updateCalculations);
         updateCalculations(); // Chạy ngay lập tức khi load trang
 
@@ -278,5 +287,34 @@
                 icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
         }
+
+        document.getElementById('handoverForm').addEventListener('submit', function (e) {
+            if (this.dataset.confirmed === 'true') {
+                if (this.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    return false;
+                }
+                this.dataset.submitting = 'true';
+                const btn = document.getElementById('submitHandoverBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                }
+                return true;
+            }
+
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận bàn giao ca',
+                'Bạn có chắc chắn muốn ký xác nhận bàn giao ca cho người tiếp quản không?',
+                function () {
+                    form.dataset.confirmed = 'true';
+                    $(form).submit();
+                },
+                'Ký bàn giao',
+                'Hủy'
+            );
+        });
     </script>
 }

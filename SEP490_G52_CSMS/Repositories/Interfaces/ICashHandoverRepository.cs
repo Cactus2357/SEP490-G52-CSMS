@@ -23,6 +23,9 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         /// <summary> Lấy danh sách thu ngân đang hoạt động tại chi nhánh (để chọn người nhận ca) </summary>
         Task<List<Employee>> GetCashiersInBranchAsync(string branchId);
 
+        /// <summary> Lấy danh sách thu ngân hợp lệ có thể nhận bàn giao ca (bản thân hoặc ca tiếp theo trong ngày) </summary>
+        Task<List<Employee>> GetEligibleHandoverCashiersAsync(string branchId, DateTime date, int currentShiftId, int outgoingCashierId);
+
         /// <summary> Lấy nhân viên theo ID (để verify mật khẩu) </summary>
         Task<Employee?> GetEmployeeByIdAsync(int employeeId);
 

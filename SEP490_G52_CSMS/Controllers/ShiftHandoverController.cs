@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons;
+using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 
@@ -18,7 +19,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(DateTime? date, int? shiftId, string? status)
+        public async Task<IActionResult> Index(DateTime? date, int? shiftId, string? status, string? handoverType)
         {
             var loggedInBranchId = User.GetBranchId() ?? "";
             var targetDate = (date ?? DateTime.Today).Date;
@@ -32,24 +33,14 @@ namespace SEP490_G52_CSMS.Controllers
                 .Include(h => h.IncomingCashier)
                 .Include(h => h.FixedShift)
                 .Where(h => h.BranchId == loggedInBranchId && h.HandoverDate.Date == targetDate)
+                .OrderBy(h => h.OpenedAt)
                 .ToListAsync();
 
-            var transitionRows = new List<HandoverRowVM>();
+            var allRows = new List<HandoverRowVM>();
             HandoverRowVM? openingInfo = null;
             HandoverRowVM? closingInfo = null;
 
-            var orderedHandovers = dayHandovers.OrderBy(h => h.FixedShift?.StartTime ?? TimeSpan.Zero).ToList();
-            if (orderedHandovers.Any())
-            {
-                var firstHandover = orderedHandovers.First();
-                var firstShiftIndex = allShifts.FindIndex(s => s.ShiftId == firstHandover.ShiftId);
-                FixedShift? nextForFirst = (firstShiftIndex >= 0 && firstShiftIndex < allShifts.Count - 1)
-                    ? allShifts[firstShiftIndex + 1]
-                    : null;
-                openingInfo = new HandoverRowVM { Handover = firstHandover, NextShift = nextForFirst };
-            }
-
-            foreach (var h in orderedHandovers)
+            foreach (var h in dayHandovers)
             {
                 var shiftIndex = allShifts.FindIndex(s => s.ShiftId == h.ShiftId);
                 FixedShift? next = (shiftIndex >= 0 && shiftIndex < allShifts.Count - 1)
@@ -57,22 +48,33 @@ namespace SEP490_G52_CSMS.Controllers
                     : null;
 
                 var row = new HandoverRowVM { Handover = h, NextShift = next };
+                allRows.Add(row);
 
-                if (next != null)
+                if (h.HandoverType == CashHandoverConstants.HandoverTypeFirstShift && openingInfo == null)
                 {
-                    transitionRows.Add(row);
+                    openingInfo = row;
                 }
-                else
+                if (h.HandoverType == CashHandoverConstants.HandoverTypeLastShift)
                 {
                     closingInfo = row;
                 }
             }
 
-            var totalRevenueToday = dayHandovers.Sum(h => h.MachineCashRevenue + (h.TheoreticalCash - h.InitialCash));
-            var totalVarianceToday = dayHandovers.Sum(h => h.ActualCash - h.TheoreticalCash);
-            var handedOverCount = dayHandovers.Count(h => h.IsPasswordConfirmed);
+            if (openingInfo == null && allRows.Any())
+            {
+                openingInfo = allRows.First();
+            }
+            if (closingInfo == null && allRows.Any())
+            {
+                closingInfo = allRows.Last();
+            }
 
-            IEnumerable<HandoverRowVM> filteredRows = transitionRows;
+            var totalRevenueToday = dayHandovers.Sum(h => h.MachineCashRevenue);
+            var totalVarianceToday = dayHandovers.Where(h => h.Status == CashHandoverConstants.ClosedStatus).Sum(h => h.ActualCash - h.TheoreticalCash);
+            var handedOverCount = dayHandovers.Count(h => h.Status == CashHandoverConstants.ClosedStatus);
+            var emergencyCount = dayHandovers.Count(h => h.HandoverType == CashHandoverConstants.HandoverTypeEmergency);
+
+            IEnumerable<HandoverRowVM> filteredRows = allRows;
 
             if (shiftId.HasValue)
             {
@@ -86,17 +88,24 @@ namespace SEP490_G52_CSMS.Controllers
                     : filteredRows.Where(r => r.Handover.ActualCash == r.Handover.TheoreticalCash);
             }
 
+            if (!string.IsNullOrWhiteSpace(handoverType))
+            {
+                filteredRows = filteredRows.Where(r => r.Handover.HandoverType == handoverType);
+            }
+
             var vm = new ShiftHandoverListViewModel
             {
                 SelectedDate = targetDate,
                 AllShifts = allShifts,
                 SelectedShiftId = shiftId,
                 SelectedStatus = status,
+                SelectedHandoverType = handoverType,
                 Rows = filteredRows.ToList(),
                 OpeningInfo = openingInfo,
                 ClosingInfo = closingInfo,
                 TotalRevenueToday = totalRevenueToday,
                 HandedOverCount = handedOverCount,
+                EmergencyCount = emergencyCount,
                 TotalShiftsConfigured = allShifts.Count,
                 TotalVarianceToday = totalVarianceToday
             };
@@ -142,6 +151,7 @@ namespace SEP490_G52_CSMS.Controllers
         public List<FixedShift> AllShifts { get; set; } = new();
         public int? SelectedShiftId { get; set; }
         public string? SelectedStatus { get; set; }
+        public string? SelectedHandoverType { get; set; }
 
         public List<HandoverRowVM> Rows { get; set; } = new();
         public HandoverRowVM? OpeningInfo { get; set; }
@@ -149,6 +159,7 @@ namespace SEP490_G52_CSMS.Controllers
 
         public decimal TotalRevenueToday { get; set; }
         public int HandedOverCount { get; set; }
+        public int EmergencyCount { get; set; }
         public int TotalShiftsConfigured { get; set; }
         public decimal TotalVarianceToday { get; set; }
     }
@@ -157,5 +168,23 @@ namespace SEP490_G52_CSMS.Controllers
     {
         public CashHandover Handover { get; set; } = null!;
         public FixedShift? NextShift { get; set; }
+
+        public string HandoverTypeLabel => Handover.HandoverType switch
+        {
+            "FirstShift" => "Mở ca đầu ngày",
+            "MidShift" => "Giao ca thường",
+            "Emergency" => "Bàn giao đột xuất",
+            "LastShift" => "Đóng ca cuối ngày",
+            _ => "Giao ca"
+        };
+
+        public string HandoverTypeBadgeClass => Handover.HandoverType switch
+        {
+            "FirstShift" => "bg-info text-dark",
+            "MidShift" => "bg-primary",
+            "Emergency" => "bg-danger",
+            "LastShift" => "bg-dark",
+            _ => "bg-secondary"
+        };
     }
 }

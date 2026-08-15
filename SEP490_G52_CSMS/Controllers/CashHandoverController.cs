@@ -96,6 +96,12 @@ namespace SEP490_G52_CSMS.Controllers
             }
         }
 
+        [HttpGet("/CashHandover/SubmitHandover")]
+        public async Task<IActionResult> SubmitHandover(int cashierId, string? branchId = null)
+        {
+            return await Index(cashierId, branchId);
+        }
+
         // =========================================================
         //  CHỌN THU NGÂN — GET
         // =========================================================
@@ -232,22 +238,16 @@ namespace SEP490_G52_CSMS.Controllers
                 cashierId = loggedInUserId;
             }
 
-            if (cashierId <= 0)
-                return RedirectToAction(nameof(Index));
-
             var userBranchId = await GetUserBranchIdAsync();
-            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
-            if (phase == CashHandoverConstants.HandoverTypeLastShift)
-            {
-                TempData["InfoMessage"] = "Hiện đang là ca cuối cùng trong ngày (không có ca kế tiếp). Đã chuyển sang màn hình Đóng ca cuối ngày.";
-                return RedirectToAction(nameof(CloseShift), new { cashierId });
-            }
+
+            if (cashierId <= 0)
+                return RedirectToAction(nameof(History), new { branchId = userBranchId });
 
             var model = await _cashHandoverService.GetHandoverModelAsync(cashierId);
             if (model == null)
             {
-                TempData["InfoMessage"] = "Chưa có ca làm việc đang mở hoặc ca hiện tại là ca cuối ngày. Vui lòng kiểm tra lại.";
-                return RedirectToAction(nameof(Index), new { cashierId });
+                TempData["InfoMessage"] = "Chưa có ca làm việc đang mở. Vui lòng kiểm tra Lịch làm việc hoặc Mở ca.";
+                return RedirectToAction(nameof(History), new { branchId = userBranchId });
             }
 
             // Chỉ thu ngân đang trực mới được bàn giao ca
@@ -258,6 +258,12 @@ namespace SEP490_G52_CSMS.Controllers
                     TempData["ErrorMessage"] = $"Bạn không phải là thu ngân đang phụ trách ca trực này ({model.OutgoingCashierName}). Chỉ thu ngân đang làm việc mới được bàn giao ca.";
                     return RedirectToAction(nameof(History), new { branchId = userBranchId });
                 }
+            }
+
+            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
+            if (phase == CashHandoverConstants.HandoverTypeLastShift)
+            {
+                return RedirectToAction(nameof(CloseShift), new { cashierId });
             }
 
             return View(model);
@@ -344,22 +350,16 @@ namespace SEP490_G52_CSMS.Controllers
                 cashierId = loggedInUserId;
             }
 
-            if (cashierId <= 0)
-                return RedirectToAction(nameof(Index));
-
             var userBranchId = await GetUserBranchIdAsync();
-            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
-            if (phase != CashHandoverConstants.HandoverTypeLastShift)
-            {
-                TempData["InfoMessage"] = "Màn hình Đóng ca cuối ngày chỉ áp dụng cho ca cuối cùng trong ngày.";
-                return RedirectToAction(nameof(Handover), new { cashierId });
-            }
+
+            if (cashierId <= 0)
+                return RedirectToAction(nameof(History), new { branchId = userBranchId });
 
             var model = await _cashHandoverService.GetCloseShiftModelAsync(cashierId);
             if (model == null)
             {
-                TempData["InfoMessage"] = "Không tìm thấy ca làm việc đang mở để đóng cuối ngày.";
-                return RedirectToAction(nameof(Index), new { cashierId });
+                TempData["InfoMessage"] = "Không tìm thấy ca làm việc đang mở để đóng ca.";
+                return RedirectToAction(nameof(History), new { branchId = userBranchId });
             }
 
             // Chỉ thu ngân đang trực mới được đóng ca
@@ -370,6 +370,12 @@ namespace SEP490_G52_CSMS.Controllers
                     TempData["ErrorMessage"] = $"Bạn không phải là thu ngân đang phụ trách ca trực này ({model.CashierName}). Chỉ thu ngân đang làm việc mới được đóng ca.";
                     return RedirectToAction(nameof(History), new { branchId = userBranchId });
                 }
+            }
+
+            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
+            if (phase != CashHandoverConstants.HandoverTypeLastShift)
+            {
+                return RedirectToAction(nameof(Handover), new { cashierId });
             }
 
             return View(model);
@@ -454,15 +460,16 @@ namespace SEP490_G52_CSMS.Controllers
                 cashierId = loggedInUserId;
             }
 
-            if (cashierId <= 0)
-                return RedirectToAction(nameof(Index));
-
             var userBranchId = await GetUserBranchIdAsync();
+
+            if (cashierId <= 0)
+                return RedirectToAction(nameof(History), new { branchId = userBranchId });
+
             var model = await _cashHandoverService.GetEmergencyHandoverModelAsync(cashierId);
             if (model == null)
             {
                 TempData["InfoMessage"] = "Không tìm thấy ca làm việc đang mở để bàn giao đột xuất.";
-                return RedirectToAction(nameof(Index), new { cashierId });
+                return RedirectToAction(nameof(History), new { branchId = userBranchId });
             }
 
             // Chỉ thu ngân đang trực mới được bàn giao đột xuất

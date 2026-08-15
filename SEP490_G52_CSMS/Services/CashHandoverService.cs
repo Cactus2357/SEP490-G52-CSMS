@@ -218,12 +218,15 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 activeHandover.BranchId, activeHandover.OutgoingCashierId, activeHandover.OpenedAt, null);
 
-            var cashiers = await _cashHandoverRepository.GetCashiersInBranchAsync(activeHandover.BranchId);
+            var cashiers = await _cashHandoverRepository.GetEligibleHandoverCashiersAsync(
+                activeHandover.BranchId, today, activeHandover.ShiftId, activeHandover.OutgoingCashierId);
 
             var currentTime = DateTime.Now.TimeOfDay;
             var nextCashierId = await _cashHandoverRepository.GetNextCashierForHandoverAsync(activeHandover.BranchId, today, currentTime);
 
             bool isSelfHandover = (nextCashierId.HasValue && nextCashierId.Value == activeHandover.OutgoingCashierId);
+
+            var theoretical = activeHandover.InitialCash + cashRev - cashRefunds;
 
             return new HandoverViewModel
             {
@@ -237,6 +240,7 @@ namespace SEP490_G52_CSMS.Services
                 MachineCashRevenue = cashRev,
                 BankTransferRevenue = bankRev,
                 CashRefundAmount = cashRefunds,
+                ActualCash = theoretical,
                 TargetShiftName = nextShift.ShiftName,
                 TargetShiftTimeRange = $"{nextShift.StartTime:hh\\:mm} – {nextShift.EndTime:hh\\:mm}",
                 IsSelfHandover = isSelfHandover,
@@ -267,6 +271,13 @@ namespace SEP490_G52_CSMS.Services
             if (!model.IncomingCashierId.HasValue || model.IncomingCashierId <= 0)
             {
                 return OperationResult.Fail("Vui lòng chọn người nhận ca.");
+            }
+
+            var eligibleCashiers = await _cashHandoverRepository.GetEligibleHandoverCashiersAsync(
+                handover.BranchId, handover.HandoverDate, handover.ShiftId, handover.OutgoingCashierId);
+            if (!eligibleCashiers.Any(c => c.EmployeeId == model.IncomingCashierId.Value))
+            {
+                return OperationResult.Fail("Nhân viên được chọn nhận ca không hợp lệ. Chỉ có thể bàn giao cho thu ngân có ca làm việc tiếp theo trong ngày hoặc chính bản thân.");
             }
 
             var incomingEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.IncomingCashierId.Value);
@@ -368,6 +379,8 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 activeHandover.BranchId, activeHandover.OutgoingCashierId, activeHandover.OpenedAt, null);
 
+            var theoretical = activeHandover.InitialCash + cashRev - cashRefunds;
+
             return new CloseShiftViewModel
             {
                 HandoverId = activeHandover.HandoverId,
@@ -382,6 +395,7 @@ namespace SEP490_G52_CSMS.Services
                 MachineCashRevenue = cashRev,
                 BankTransferRevenue = bankRev,
                 CashRefundAmount = cashRefunds,
+                ActualCash = theoretical,
                 RetainedCashForTomorrow = activeHandover.InitialCash
             };
         }
@@ -460,6 +474,13 @@ namespace SEP490_G52_CSMS.Services
             if (!model.IncomingCashierId.HasValue || model.IncomingCashierId <= 0)
             {
                 return OperationResult.Fail("Vui lòng chọn nhân viên tiếp nhận ủy quyền ca.");
+            }
+
+            var eligibleCashiers = await _cashHandoverRepository.GetEligibleHandoverCashiersAsync(
+                handover.BranchId, handover.HandoverDate, handover.ShiftId, handover.OutgoingCashierId);
+            if (!eligibleCashiers.Any(c => c.EmployeeId == model.IncomingCashierId.Value))
+            {
+                return OperationResult.Fail("Nhân viên được chọn nhận ủy quyền không hợp lệ. Chỉ có thể bàn giao cho thu ngân có ca làm việc tiếp theo trong ngày hoặc chính bản thân.");
             }
 
             var incomingEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.IncomingCashierId.Value);
