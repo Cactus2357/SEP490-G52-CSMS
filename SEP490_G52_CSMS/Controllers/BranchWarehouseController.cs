@@ -100,9 +100,10 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> GetInventoryDetails(int id)
         {
+            var (branchId, _) = await GetUserBranchAsync();
             var item = await _context.BranchInventories
                 .Include(bi => bi.Material)
-                .FirstOrDefaultAsync(bi => bi.InventoryId == id);
+                .FirstOrDefaultAsync(bi => bi.InventoryId == id && (bi.BranchId == branchId || User.IsInRole("RManager")));
 
             if (item == null) return NotFound();
 
@@ -315,7 +316,8 @@ namespace SEP490_G52_CSMS.Controllers
                 Title: "Yêu cầu xuất kho mới",
                 Message: $"Chi nhánh {branchName} đã gửi một yêu cầu xuất kho mới với mã đơn: {code}.",
                 RecipientRole: "WarehouseManager",
-                ResourceUrl: "/Warehouse/ExportRequests"
+                ResourceUrl: "/Warehouse/ExportRequests",
+                BranchId: branchId
             ));
 
             await _context.SaveChangesAsync();
@@ -501,7 +503,8 @@ namespace SEP490_G52_CSMS.Controllers
                     Title: "Nhập kho hoàn tất",
                     Message: $"Chi nhánh {branchName} đã nhận hàng thành công và cập nhật tồn kho cho đơn {code}.",
                     RecipientRole: "WarehouseManager",
-                    ResourceUrl: "/Warehouse/ExportRequests"
+                    ResourceUrl: "/Warehouse/ExportRequests",
+                    BranchId: branchId
                 ));
 
                 await _context.SaveChangesAsync();

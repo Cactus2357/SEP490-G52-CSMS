@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
@@ -37,6 +38,12 @@ namespace SEP490_G52_CSMS.Controllers
 
         private async Task<string> GetUserBranchIdAsync()
         {
+            var branchIdClaim = User.GetBranchId();
+            if (!string.IsNullOrWhiteSpace(branchIdClaim))
+            {
+                return branchIdClaim;
+            }
+
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(userIdStr, out int userId))
             {
@@ -46,7 +53,8 @@ namespace SEP490_G52_CSMS.Controllers
                     return employee.BranchId;
                 }
             }
-            return "CN001"; // Default fallback
+            var firstBranch = await _context.Branches.FirstOrDefaultAsync(b => b.Status == "Active");
+            return firstBranch?.BranchId ?? "CB001";
         }
 
         private async Task<int> GetUserCashierIdAsync()

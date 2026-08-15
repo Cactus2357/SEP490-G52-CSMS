@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Constants;
+using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
@@ -12,25 +14,49 @@ namespace SEP490_G52_CSMS.Controllers
     public class CashHandoverController : Controller
     {
         private readonly ICashHandoverService _cashHandoverService;
+        private readonly CSMSAppDbContext _context;
 
-        public CashHandoverController(ICashHandoverService cashHandoverService)
+        public CashHandoverController(ICashHandoverService cashHandoverService, CSMSAppDbContext context)
         {
             _cashHandoverService = cashHandoverService;
+            _context = context;
+        }
+
+        private async Task<string> GetUserBranchIdAsync()
+        {
+            var branchIdClaim = User.GetBranchId();
+            if (!string.IsNullOrWhiteSpace(branchIdClaim))
+            {
+                return branchIdClaim;
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId);
+                if (employee != null && !string.IsNullOrWhiteSpace(employee.BranchId))
+                {
+                    return employee.BranchId;
+                }
+            }
+            var firstBranch = await _context.Branches.FirstOrDefaultAsync(b => b.Status == "Active");
+            return firstBranch?.BranchId ?? "CB001";
         }
 
         // =========================================================
         //  TRANG CHÍNH — Tự động nhận diện và chuyển hướng đúng màn hình
         // =========================================================
 
-        public async Task<IActionResult> Index(int cashierId, string branchId = "CN001")
+        public async Task<IActionResult> Index(int cashierId, string? branchId = null)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int loggedInUserId = 0;
             int.TryParse(userIdStr, out loggedInUserId);
 
-            if (!User.IsInRole("RManager"))
+            var userBranchId = await GetUserBranchIdAsync();
+            if (!User.IsInRole("RManager") || string.IsNullOrWhiteSpace(branchId))
             {
-                branchId = User.GetBranchId() ?? branchId;
+                branchId = userBranchId;
             }
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
@@ -74,16 +100,17 @@ namespace SEP490_G52_CSMS.Controllers
         //  CHỌN THU NGÂN — GET
         // =========================================================
 
-        public async Task<IActionResult> SelectCashier(string branchId = "CN001")
+        public async Task<IActionResult> SelectCashier(string? branchId = null)
         {
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
                 return Forbid();
             }
 
-            if (!User.IsInRole("RManager"))
+            var userBranchId = await GetUserBranchIdAsync();
+            if (!User.IsInRole("RManager") || string.IsNullOrWhiteSpace(branchId))
             {
-                branchId = User.GetBranchId() ?? branchId;
+                branchId = userBranchId;
             }
 
             var cashiers = await _cashHandoverService.GetCashiersAsync(branchId);
@@ -109,7 +136,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (cashierId <= 0)
                 return RedirectToAction("Index", "Home");
 
-            var userBranchId = User.GetBranchId() ?? "CN001";
+            var userBranchId = await GetUserBranchIdAsync();
 
             try
             {
@@ -208,7 +235,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (cashierId <= 0)
                 return RedirectToAction(nameof(Index));
 
-            var userBranchId = User.GetBranchId() ?? "CN001";
+            var userBranchId = await GetUserBranchIdAsync();
             var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
             if (phase == CashHandoverConstants.HandoverTypeLastShift)
             {
@@ -244,14 +271,15 @@ namespace SEP490_G52_CSMS.Controllers
             int loggedInUserId = 0;
             int.TryParse(userIdStr, out loggedInUserId);
 
+            var userBranchId = await GetUserBranchIdAsync();
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
                 model.OutgoingCashierId = loggedInUserId;
-                model.BranchId = User.GetBranchId() ?? model.BranchId;
+                model.BranchId = userBranchId;
             }
             else if (!User.IsInRole("RManager"))
             {
-                model.BranchId = User.GetBranchId() ?? model.BranchId;
+                model.BranchId = userBranchId;
             }
 
             decimal theoretical = model.InitialCash + model.MachineCashRevenue - model.CashRefundAmount;
@@ -319,7 +347,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (cashierId <= 0)
                 return RedirectToAction(nameof(Index));
 
-            var userBranchId = User.GetBranchId() ?? "CN001";
+            var userBranchId = await GetUserBranchIdAsync();
             var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
             if (phase != CashHandoverConstants.HandoverTypeLastShift)
             {
@@ -355,14 +383,15 @@ namespace SEP490_G52_CSMS.Controllers
             int loggedInUserId = 0;
             int.TryParse(userIdStr, out loggedInUserId);
 
+            var userBranchId = await GetUserBranchIdAsync();
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
                 model.OutgoingCashierId = loggedInUserId;
-                model.BranchId = User.GetBranchId() ?? model.BranchId;
+                model.BranchId = userBranchId;
             }
             else if (!User.IsInRole("RManager"))
             {
-                model.BranchId = User.GetBranchId() ?? model.BranchId;
+                model.BranchId = userBranchId;
             }
 
             decimal theoretical = model.InitialCash + model.MachineCashRevenue - model.CashRefundAmount;
@@ -428,7 +457,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (cashierId <= 0)
                 return RedirectToAction(nameof(Index));
 
-            var userBranchId = User.GetBranchId() ?? "CN001";
+            var userBranchId = await GetUserBranchIdAsync();
             var model = await _cashHandoverService.GetEmergencyHandoverModelAsync(cashierId);
             if (model == null)
             {
@@ -457,14 +486,15 @@ namespace SEP490_G52_CSMS.Controllers
             int loggedInUserId = 0;
             int.TryParse(userIdStr, out loggedInUserId);
 
+            var userBranchId = await GetUserBranchIdAsync();
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
                 model.OutgoingCashierId = loggedInUserId;
-                model.BranchId = User.GetBranchId() ?? model.BranchId;
+                model.BranchId = userBranchId;
             }
             else if (!User.IsInRole("RManager"))
             {
-                model.BranchId = User.GetBranchId() ?? model.BranchId;
+                model.BranchId = userBranchId;
             }
 
             if (string.IsNullOrWhiteSpace(model.EmergencyReason))
@@ -516,7 +546,7 @@ namespace SEP490_G52_CSMS.Controllers
 
         public async Task<IActionResult> History(string branchId, int page = 1)
         {
-            var userBranchId = User.GetBranchId() ?? "";
+            var userBranchId = await GetUserBranchIdAsync();
             if (!User.IsInRole("RManager"))
             {
                 branchId = userBranchId;

@@ -9,6 +9,6 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         Task<IEnumerable<Order>> GetAllOrdersAsync();
         Task UpdateOrderAsync(Order order);
         Task<int> GetOrdersCountByDateAsync(DateTime date);
-        Task<IEnumerable<Order>> GetOrdersByStatusAsync(string paymentStatus, string brewingStatus);
+        Task<IEnumerable<Order>> GetOrdersByStatusAsync(string paymentStatus, string brewingStatus, string? branchId = null);
     }
 }

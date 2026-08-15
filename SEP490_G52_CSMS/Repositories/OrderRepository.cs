@@ -53,13 +53,18 @@ namespace SEP490_G52_CSMS.Repositories
                 .CountAsync();
         }
 
-        public async Task<IEnumerable<Order>> GetOrdersByStatusAsync(string paymentStatus, string brewingStatus)
+        public async Task<IEnumerable<Order>> GetOrdersByStatusAsync(string paymentStatus, string brewingStatus, string? branchId = null)
         {
             var query = _context.Orders
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.MasterProduct)
                 .AsQueryable();
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                query = query.Where(o => o.BranchId == branchId);
+            }
 
             if (!string.IsNullOrEmpty(paymentStatus))
             {

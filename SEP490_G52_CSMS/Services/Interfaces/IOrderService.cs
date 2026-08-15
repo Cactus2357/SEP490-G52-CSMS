@@ -11,7 +11,7 @@ namespace SEP490_G52_CSMS.Services.Interfaces
         Task<bool> StartBrewingAsync(string orderId);
         Task<bool> CompleteBrewingAsync(string orderId);
         Task<OrderHistoryViewModel> GetOrderHistoryAsync(string branchId, string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1);
-        Task<IEnumerable<OrderSummaryViewModel>> GetWaitingAndBrewingOrdersAsync();
+        Task<IEnumerable<OrderSummaryViewModel>> GetWaitingAndBrewingOrdersAsync(string? branchId = null);
         Task<SaleOrderDetailViewModel?> GetOrderDetailsAsync(string orderId);
     }
 }

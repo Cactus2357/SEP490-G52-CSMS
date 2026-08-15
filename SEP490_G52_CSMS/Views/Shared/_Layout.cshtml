@@ -53,15 +53,26 @@
     {
         int userId = 0;
         int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out userId);
+        var branchId = User.FindFirst("BranchId")?.Value;
+        bool isCentralRole = userRole == "RManager" || userRole == "WarehouseManager" || userRole == "WManager";
 
-        notificationsList = DbContext.Notifications
-            .Where(n => !n.IsRead && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)))
-            .OrderByDescending(n => n.CreatedTime)
-            .Take(5)
-            .ToList();
+        var allUnread = DbContext.Notifications.AsNoTracking().Where(n => !n.IsRead).ToList();
+        var userUnread = allUnread.Where(n =>
+        {
+            if (n.RecipientUserId.HasValue) return n.RecipientUserId.Value == userId;
+            bool roleMatches = string.IsNullOrEmpty(n.RecipientRole)
+                || n.RecipientRole == userRole
+                || (n.RecipientRole == "WarehouseManager" && (userRole == "WManager" || userRole == "WarehouseManager"))
+                || (n.RecipientRole == "WManager" && (userRole == "WManager" || userRole == "WarehouseManager"))
+                || isCentralRole;
+            bool branchMatches = string.IsNullOrEmpty(n.BranchId)
+                || n.BranchId == branchId
+                || isCentralRole;
+            return roleMatches && branchMatches;
+        }).OrderByDescending(n => n.CreatedTime).ToList();
 
-        unreadCount = DbContext.Notifications
-            .Count(n => !n.IsRead && (n.RecipientUserId == userId || (n.RecipientUserId == null && n.RecipientRole == userRole) || (n.RecipientUserId == null && n.RecipientRole == null)));
+        unreadCount = userUnread.Count;
+        notificationsList = userUnread.Take(5).ToList();
     }
 
     string shiftDisplayInfo = "";

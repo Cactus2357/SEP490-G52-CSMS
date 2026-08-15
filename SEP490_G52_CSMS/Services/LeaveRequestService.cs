@@ -9,11 +9,13 @@ namespace SEP490_G52_CSMS.Services
     public class LeaveRequestService : ILeaveRequestService
     {
         private readonly ILeaveRequestRepository _repository;
+        private readonly IEmployeeRepository _employeeRepository;
         private readonly INotificationService _notificationService;
 
-        public LeaveRequestService(ILeaveRequestRepository repository, INotificationService notificationService)
+        public LeaveRequestService(ILeaveRequestRepository repository, IEmployeeRepository employeeRepository, INotificationService notificationService)
         {
             _repository = repository;
+            _employeeRepository = employeeRepository;
             _notificationService = notificationService;
         }
 
@@ -78,12 +80,14 @@ namespace SEP490_G52_CSMS.Services
 
             await _repository.AddLeaveRequestAsync(request);
 
+            var emp = await _employeeRepository.GetByIdAsync(model.EmployeeId);
             // Raise notification event for Branch Manager
             await _notificationService.SendAsync(new NotificationEvent(
                 Title: "Đơn xin nghỉ phép mới",
                 Message: $"Nhân viên {model.EmployeeName} đã nộp đơn xin nghỉ phép ngày {model.StartDate:dd/MM/yyyy}.",
                 RecipientRole: "BranchManager",
-                ResourceUrl: "/LeaveRequest/ManagerIndex"
+                ResourceUrl: "/LeaveRequest/ManagerIndex",
+                BranchId: emp?.BranchId
             ));
 
             return OperationResult.Ok("Gửi đơn xin nghỉ phép thành công.");
@@ -288,7 +292,8 @@ namespace SEP490_G52_CSMS.Services
                 Title: "Đơn xin nghỉ phép đã được duyệt",
                 Message: $"Đơn xin nghỉ phép ngày {request.StartDate:dd/MM/yyyy} của bạn đã được phê duyệt.",
                 RecipientUserId: request.EmployeeId,
-                ResourceUrl: "/LeaveRequest"
+                ResourceUrl: "/LeaveRequest",
+                BranchId: request.Employee?.BranchId ?? branchId
             ));
 
             return OperationResult.Ok("Phê duyệt đơn xin nghỉ phép thành công.");
@@ -318,7 +323,8 @@ namespace SEP490_G52_CSMS.Services
                 Title: "Đơn xin nghỉ phép bị từ chối",
                 Message: $"Đơn xin nghỉ phép ngày {request.StartDate:dd/MM/yyyy} của bạn đã bị từ chối.",
                 RecipientUserId: request.EmployeeId,
-                ResourceUrl: "/LeaveRequest"
+                ResourceUrl: "/LeaveRequest",
+                BranchId: request.Employee?.BranchId ?? branchId
             ));
 
             return OperationResult.Ok("Đã từ chối đơn xin nghỉ phép.");

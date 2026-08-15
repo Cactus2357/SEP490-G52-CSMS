@@ -246,10 +246,10 @@ namespace SEP490_G52_CSMS.Services
             return vm;
         }
 
-        public async Task<IEnumerable<OrderSummaryViewModel>> GetWaitingAndBrewingOrdersAsync()
+        public async Task<IEnumerable<OrderSummaryViewModel>> GetWaitingAndBrewingOrdersAsync(string? branchId = null)
         {
-            var waiting = await _orderRepo.GetOrdersByStatusAsync("Paid", "Waiting for Brewing");
-            var brewing = await _orderRepo.GetOrdersByStatusAsync("Paid", "Brewing in Progress");
+            var waiting = await _orderRepo.GetOrdersByStatusAsync("Paid", "Waiting for Brewing", branchId);
+            var brewing = await _orderRepo.GetOrdersByStatusAsync("Paid", "Brewing in Progress", branchId);
 
             var combined = waiting.Concat(brewing).OrderBy(o => o.CreatedAt).ToList();
 

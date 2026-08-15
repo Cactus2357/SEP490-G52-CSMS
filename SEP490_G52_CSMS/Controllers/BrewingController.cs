@@ -1,5 +1,9 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
+using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -8,15 +12,38 @@ namespace SEP490_G52_CSMS.Controllers
     public class BrewingController : Controller
     {
         private readonly IOrderService _orderService;
+        private readonly CSMSAppDbContext _context;
 
-        public BrewingController(IOrderService orderService)
+        public BrewingController(IOrderService orderService, CSMSAppDbContext context)
         {
             _orderService = orderService;
+            _context = context;
+        }
+
+        private async Task<string> GetUserBranchIdAsync()
+        {
+            var branchIdClaim = User.GetBranchId();
+            if (!string.IsNullOrWhiteSpace(branchIdClaim))
+            {
+                return branchIdClaim;
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId);
+                if (employee != null && !string.IsNullOrWhiteSpace(employee.BranchId))
+                {
+                    return employee.BranchId;
+                }
+            }
+            return "";
         }
 
         public async Task<IActionResult> Index()
         {
-            var waitingAndBrewingOrders = await _orderService.GetWaitingAndBrewingOrdersAsync();
+            var branchId = await GetUserBranchIdAsync();
+            var waitingAndBrewingOrders = await _orderService.GetWaitingAndBrewingOrdersAsync(branchId);
             return View(waitingAndBrewingOrders);
         }
 
@@ -32,7 +59,8 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> GetLiveOrders()
         {
-            var orders = await _orderService.GetWaitingAndBrewingOrdersAsync();
+            var branchId = await GetUserBranchIdAsync();
+            var orders = await _orderService.GetWaitingAndBrewingOrdersAsync(branchId);
             var result = orders.Select(o => new
             {
                 orderId = o.OrderId,

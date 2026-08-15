@@ -677,7 +677,8 @@ namespace SEP490_G52_CSMS.Controllers
                 Message: $"Đơn yêu cầu {req.RequestCode} của chi nhánh bạn đã được duyệt và đang chuẩn bị xuất kho.",
                 RecipientUserId: bManager?.EmployeeId,
                 RecipientRole: "BranchManager",
-                ResourceUrl: "/BranchWarehouse/RequestHistory"
+                ResourceUrl: "/BranchWarehouse/RequestHistory",
+                BranchId: req.BranchId
             ));
 
             await _context.SaveChangesAsync();
@@ -722,7 +723,8 @@ namespace SEP490_G52_CSMS.Controllers
                     Message: $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang trên đường giao tới chi nhánh.",
                     RecipientUserId: bManager?.EmployeeId,
                     RecipientRole: "BranchManager",
-                    ResourceUrl: "/BranchWarehouse/RequestHistory"
+                    ResourceUrl: "/BranchWarehouse/RequestHistory",
+                    BranchId: req.BranchId
                 ));
 
                 await _context.SaveChangesAsync();

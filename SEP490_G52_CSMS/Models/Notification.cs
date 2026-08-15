@@ -38,5 +38,9 @@ namespace SEP490_G52_CSMS.Models
         [Column("resource_url")]
         [StringLength(500)]
         public string? ResourceUrl { get; set; }
+
+        [Column("branch_id")]
+        [StringLength(10)]
+        public string? BranchId { get; set; }
     }
 }

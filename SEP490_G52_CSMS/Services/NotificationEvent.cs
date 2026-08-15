@@ -8,6 +8,7 @@ namespace SEP490_G52_CSMS.Services
         string Message,
         int? RecipientUserId = null,
         string? RecipientRole = null,
-        string? ResourceUrl = null
+        string? ResourceUrl = null,
+        string? BranchId = null
     );
 }

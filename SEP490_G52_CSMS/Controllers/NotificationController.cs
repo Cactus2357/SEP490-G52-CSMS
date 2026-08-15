@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
+using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
 
@@ -9,10 +12,32 @@ namespace SEP490_G52_CSMS.Controllers
     public class NotificationController : Controller
     {
         private readonly INotificationService _notificationService;
+        private readonly CSMSAppDbContext _context;
 
-        public NotificationController(INotificationService notificationService)
+        public NotificationController(INotificationService notificationService, CSMSAppDbContext context)
         {
             _notificationService = notificationService;
+            _context = context;
+        }
+
+        private async Task<string?> GetUserBranchIdAsync()
+        {
+            var branchIdClaim = User.GetBranchId();
+            if (!string.IsNullOrWhiteSpace(branchIdClaim))
+            {
+                return branchIdClaim;
+            }
+
+            int userId = GetUserId();
+            if (userId > 0)
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId);
+                if (employee != null && !string.IsNullOrWhiteSpace(employee.BranchId))
+                {
+                    return employee.BranchId;
+                }
+            }
+            return null;
         }
 
         /// <summary>Marks a single notification as read (called when user clicks an item).</summary>
@@ -21,7 +46,8 @@ namespace SEP490_G52_CSMS.Controllers
         {
             var userId = GetUserId();
             var userRole = GetUserRole();
-            var ok = await _notificationService.MarkReadAsync(id, userId, userRole);
+            var branchId = await GetUserBranchIdAsync();
+            var ok = await _notificationService.MarkReadAsync(id, userId, userRole, branchId);
             return Json(new { success = ok });
         }
 
@@ -29,7 +55,8 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> ClearAll()
         {
-            await _notificationService.ClearAllAsync(GetUserId(), GetUserRole());
+            var branchId = await GetUserBranchIdAsync();
+            await _notificationService.ClearAllAsync(GetUserId(), GetUserRole(), branchId);
             return Json(new { success = true });
         }
 
@@ -39,7 +66,8 @@ namespace SEP490_G52_CSMS.Controllers
         {
             var userId = GetUserId();
             var userRole = GetUserRole();
-            var list = await _notificationService.GetAllForUserAsync(userId, userRole);
+            var branchId = await GetUserBranchIdAsync();
+            var list = await _notificationService.GetAllForUserAsync(userId, userRole, branchId);
 
             var result = list.ConvertAll(n => new
             {

@@ -24,6 +24,26 @@ namespace SEP490_G52_CSMS.Controllers
             _context = context;
         }
 
+        private async Task<string> GetUserBranchIdAsync()
+        {
+            var branchIdClaim = User.GetBranchId();
+            if (!string.IsNullOrWhiteSpace(branchIdClaim))
+            {
+                return branchIdClaim;
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId);
+                if (employee != null && !string.IsNullOrWhiteSpace(employee.BranchId))
+                {
+                    return employee.BranchId;
+                }
+            }
+            return "";
+        }
+
         [HttpGet]
         public async Task<IActionResult> Index(DateTime? weekStart)
         {
@@ -32,7 +52,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return RedirectToAction(nameof(EmployeeIndex), new { weekStart });
             }
 
-            var loggedInBranchId = User.GetBranchId() ?? "";
+            var loggedInBranchId = await GetUserBranchIdAsync();
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
             var sunday = monday.AddDays(6);
 
@@ -117,7 +137,7 @@ namespace SEP490_G52_CSMS.Controllers
         [Authorize(Roles = "BranchManager")]
         public async Task<IActionResult> Manage(DateTime? weekStart)
         {
-            var loggedInBranchId = User.GetBranchId() ?? "";
+            var loggedInBranchId = await GetUserBranchIdAsync();
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
 
             var vm = await _service.GetFormOptionsAsync(loggedInBranchId, monday);
@@ -134,7 +154,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest("Invalid request.");
             }
 
-            var loggedInBranchId = User.GetBranchId() ?? "";
+            var loggedInBranchId = await GetUserBranchIdAsync();
             if (vm.BranchId != loggedInBranchId)
             {
                 return Forbid();
@@ -159,7 +179,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest("Invalid request.");
             }
 
-            var loggedInBranchId = User.GetBranchId() ?? "";
+            var loggedInBranchId = await GetUserBranchIdAsync();
             if (vm.BranchId != loggedInBranchId)
             {
                 return Forbid();
@@ -178,7 +198,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportExcel(DateTime? weekStart)
         {
-            var loggedInBranchId = User.GetBranchId() ?? "";
+            var loggedInBranchId = await GetUserBranchIdAsync();
             var monday = GetMondayOfWeek(weekStart ?? DateTime.Today);
             var sunday = monday.AddDays(6);
 
