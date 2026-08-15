@@ -175,11 +175,11 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SubmitOrder([FromBody] OrderSubmissionModel model)
+        public async Task<IActionResult> SubmitAndPayCash([FromBody] CashPaymentSubmissionModel model)
         {
-            if (model == null || !model.Items.Any())
+            if (model == null || model.Items == null || !model.Items.Any())
             {
-                return BadRequest(new { success = false, message = "Invalid order data" });
+                return BadRequest(new { success = false, message = "Dữ liệu đơn hàng không hợp lệ." });
             }
 
             var branchId = await GetUserBranchIdAsync();
@@ -187,13 +187,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (!await IsEmployeeInActiveShiftAsync(cashierId, branchId))
             {
-                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể bán hàng." });
-            }
-
-            // Order Idempotency check
-            if (!string.IsNullOrEmpty(model.IdempotencyKey) && _idempotencyStore.TryGetValue(model.IdempotencyKey, out var existing))
-            {
-                return Json(new { success = true, orderId = existing.OrderId, isDuplicate = true });
+                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể thực hiện thanh toán." });
             }
 
             var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
@@ -206,22 +200,62 @@ namespace SEP490_G52_CSMS.Controllers
             }).ToList();
 
             var order = await _orderService.CreateOrderAsync(recipient, branchId, cashierId, orderItems);
-
-            if (!string.IsNullOrEmpty(model.IdempotencyKey) && order != null && !string.IsNullOrEmpty(order.OrderId))
+            if (order == null || string.IsNullOrEmpty(order.OrderId))
             {
-                _idempotencyStore[model.IdempotencyKey] = (order.OrderId, DateTime.Now);
-                // Clean up store entries older than 30 minutes
-                var cutoff = DateTime.Now.AddMinutes(-30);
-                foreach (var k in _idempotencyStore.Keys)
-                {
-                    if (_idempotencyStore.TryGetValue(k, out var val) && val.CreatedAt < cutoff)
-                    {
-                        _idempotencyStore.TryRemove(k, out _);
-                    }
-                }
+                return BadRequest(new { success = false, message = "Không thể khởi tạo đơn hàng." });
             }
 
-            return Json(new { success = true, orderId = order?.OrderId });
+            bool paid = await _orderService.ProcessPaymentAsync(order.OrderId, "Cash", model.CustomerCash, model.ChangeAmount);
+            if (!paid)
+            {
+                return BadRequest(new { success = false, message = "Lỗi khi xử lý thanh toán tiền mặt." });
+            }
+
+            return Json(new { success = true, orderId = order.OrderId });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubmitOrderForTransfer([FromBody] OrderSubmissionModel model)
+        {
+            if (model == null || model.Items == null || !model.Items.Any())
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu đơn hàng không hợp lệ." });
+            }
+
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+
+            if (!await IsEmployeeInActiveShiftAsync(cashierId, branchId))
+            {
+                return BadRequest(new { success = false, message = "Bạn hiện không ở trong ca làm việc nên không thể bán hàng." });
+            }
+
+            var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
+
+            var orderItems = model.Items.Select(i => new OrderItem
+            {
+                VariantId = i.VariantId,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice
+            }).ToList();
+
+            var order = await _orderService.CreateOrderAsync(recipient, branchId, cashierId, orderItems);
+            if (order == null || string.IsNullOrEmpty(order.OrderId))
+            {
+                return BadRequest(new { success = false, message = "Không thể khởi tạo đơn hàng." });
+            }
+
+            order.PaymentMethod = "Bank Transfer";
+            order.PaymentStatus = "Unpaid";
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, orderId = order.OrderId });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SubmitOrder([FromBody] OrderSubmissionModel model)
+        {
+            return await SubmitOrderForTransfer(model);
         }
 
         [HttpPost]
@@ -331,11 +365,15 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> CancelBankTransfer(string orderId)
         {
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
-            if (order != null && order.PaymentStatus == "Unpaid")
+            if (!string.IsNullOrEmpty(orderId))
             {
-                order.PaymentStatus = "Cancelled";
-                await _context.SaveChangesAsync();
+                var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.OrderId == orderId);
+                if (order != null && (order.PaymentStatus == "Unpaid" || order.PaymentStatus == "Cancelled"))
+                {
+                    _context.OrderItems.RemoveRange(order.OrderItems);
+                    _context.Orders.Remove(order);
+                    await _context.SaveChangesAsync();
+                }
             }
             return Json(new { success = true });
         }
@@ -362,6 +400,12 @@ namespace SEP490_G52_CSMS.Controllers
         public string RecipientName { get; set; } = "";
         public string? IdempotencyKey { get; set; }
         public List<OrderItemSubmission> Items { get; set; } = new List<OrderItemSubmission>();
+    }
+
+    public class CashPaymentSubmissionModel : OrderSubmissionModel
+    {
+        public decimal CustomerCash { get; set; }
+        public decimal ChangeAmount { get; set; }
     }
 
     public class OrderItemSubmission

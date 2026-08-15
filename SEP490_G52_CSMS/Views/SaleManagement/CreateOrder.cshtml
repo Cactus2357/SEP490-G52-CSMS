@@ -479,7 +479,6 @@
                 showToast("Vui lòng thêm ít nhất 1 sản phẩm vào đơn hàng.", true);
                 return;
             }
-            var recipient = document.getElementById("recipientName").value.trim();
 
             // Gộp các sản phẩm trùng lặp (cùng selectedVariantId)
             var mergedCart = [];
@@ -494,32 +493,9 @@
             cart = mergedCart;
             renderCart(); // Cập nhật lại giao diện giỏ hàng ngoài màn hình chính
 
-            if (!cartIdempotencyKey) {
-                cartIdempotencyKey = generateIdempotencyKey();
-            }
-
-            var orderData = {
-                recipientName: recipient,
-                idempotencyKey: cartIdempotencyKey,
-                items: cart.map(i => ({ variantId: i.selectedVariantId, quantity: i.quantity, unitPrice: i.unitPrice }))
-            };
-
-            fetch('@Url.Action("SubmitOrder", "SaleManagement")', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(orderData)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    currentOrderId = data.orderId;
-                    renderReviewCarts();
-                    var modal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
-                    modal.show();
-                } else {
-                    showToast("Lỗi khi tạo đơn hàng: " + data.message, true);
-                }
-            });
+            renderReviewCarts();
+            var modal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
+            modal.show();
         }
 
         var currentOrderTotalAmount = 0;
@@ -615,27 +591,30 @@
         }
 
         function initiateBankTransfer() {
-            if (!currentOrderId) {
-                showToast("Không tìm thấy thông tin đơn hàng.", true);
+            if (cart.length === 0) {
+                showToast("Vui lòng chọn sản phẩm vào đơn hàng.", true);
                 return;
             }
+
+            var recipient = document.getElementById("recipientName").value.trim();
+            var payload = {
+                recipientName: recipient,
+                items: cart.map(i => ({ variantId: i.selectedVariantId, quantity: i.quantity, unitPrice: i.unitPrice }))
+            };
             
-            var formData = new URLSearchParams();
-            formData.append('orderId', currentOrderId);
-            
-            fetch('@Url.Action("SelectBankTransfer", "SaleManagement")', {
+            fetch('@Url.Action("SubmitOrderForTransfer", "SaleManagement")', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     var modal = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
                     if (modal) modal.hide();
-                    window.location.href = '@Url.Action("BankTransferPayment", "SaleManagement")?orderId=' + currentOrderId;
+                    window.location.href = '@Url.Action("BankTransferPayment", "SaleManagement")?orderId=' + data.orderId;
                 } else {
-                    showToast("Lỗi ghi nhận phương thức thanh toán chuyển khoản.", true);
+                    showToast("Lỗi khởi tạo chuyển khoản: " + data.message, true);
                 }
             })
             .catch(err => {
@@ -645,21 +624,26 @@
         }
 
         function processPayment(method) {
-            var formData = new URLSearchParams();
-            formData.append('orderId', currentOrderId);
-            formData.append('paymentMethod', method);
-
-            if (method === 'Cash') {
-                var given = parseFloat($('#customerCashInput').val()) || 0;
-                var change = Math.max(0, given - currentOrderTotalAmount);
-                formData.append('customerCash', given);
-                formData.append('changeAmount', change);
+            if (cart.length === 0) {
+                showToast("Đơn hàng rỗng.", true);
+                return;
             }
 
-            fetch('@Url.Action("ProcessPayment", "SaleManagement")', {
+            var recipient = document.getElementById("recipientName").value.trim();
+            var given = parseFloat($('#customerCashInput').val()) || 0;
+            var change = Math.max(0, given - currentOrderTotalAmount);
+
+            var payload = {
+                recipientName: recipient,
+                customerCash: given,
+                changeAmount: change,
+                items: cart.map(i => ({ variantId: i.selectedVariantId, quantity: i.quantity, unitPrice: i.unitPrice }))
+            };
+
+            fetch('@Url.Action("SubmitAndPayCash", "SaleManagement")', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             })
             .then(res => res.json())
             .then(data => {
@@ -667,19 +651,26 @@
                     var m1 = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
                     if (m1) m1.hide();
                     
-                    showToast("Thanh toán thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
-                    
-                    syncCustomerMonitor('PaidSuccess');
+                    showToast("Thanh toán tiền mặt thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
 
+                    if (document.getElementById("autoPrintReceiptCheck") && document.getElementById("autoPrintReceiptCheck").checked) {
+                        openReceiptModal(data.orderId, recipient, cart, currentOrderTotalAmount, given, change, "Tiền mặt");
+                    }
+
+                    // Reset cart state
                     cart = [];
-                    cartIdempotencyKey = null;
-                    document.getElementById("recipientName").value = "";
-                    currentOrderId = null;
                     localStorage.removeItem('csms_cart');
+                    cartIdempotencyKey = null;
+                    document.getElementById("recipientName").value = '';
                     renderCart();
+                    syncCustomerMonitor('PaidSuccess');
                 } else {
-                    showToast("Lỗi thanh toán: " + data.message, true);
+                    showToast("Thanh toán thất bại: " + data.message, true);
                 }
+            })
+            .catch(err => {
+                console.error("Payment error:", err);
+                showToast("Lỗi kết nối máy chủ.", true);
             });
         }
     </script>
