@@ -49,6 +49,12 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         [Display(Name = "Tiền nộp về két tổng / chủ quán")]
         public decimal DepositedCashAmount => Math.Max(0, ActualCash - RetainedCashForTomorrow);
 
+        /// <summary> Thông tin người nhận tiền nộp cuối ngày (Quản lý / Chủ quán / Két tổng - bắt buộc) </summary>
+        [Required(ErrorMessage = "Vui lòng nhập thông tin người nhận tiền.")]
+        [Display(Name = "Thông tin người nhận tiền")]
+        [StringLength(100, ErrorMessage = "Tên người nhận tiền không được vượt quá 100 ký tự.")]
+        public string ReceiverName { get; set; } = string.Empty;
+
         // ===== Xác nhận đóng ca cuối ngày =====
         [Required(ErrorMessage = "Vui lòng nhập mật khẩu xác nhận đóng ca cuối ngày.")]
         [DataType(DataType.Password)]

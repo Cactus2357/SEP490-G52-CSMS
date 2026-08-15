@@ -37,7 +37,7 @@ namespace SEP490_G52_CSMS.Services
             {
                 var displayStatus = item.Status switch
                 {
-                    "Pending" => "Chờ duyệt",
+                    "Pending" => "Đã gửi",
                     "Approved" => "Đã duyệt",
                     "Rejected" => "Từ chối",
                     "Canceled" => "Đã hủy",
@@ -48,7 +48,11 @@ namespace SEP490_G52_CSMS.Services
                 {
                     ApplicationId = item.ApplicationId,
                     SubmittedAt = item.SubmittedAt.ToString("dd/MM/yyyy"),
-                    Status = displayStatus
+                    Status = displayStatus,
+                    StartDate = item.StartDate.ToString("dd/MM/yyyy"),
+                    EndDate = item.EndDate.ToString("dd/MM/yyyy"),
+                    LeaveShifts = string.IsNullOrWhiteSpace(item.LeaveShifts) ? "Tất cả ca" : item.LeaveShifts,
+                    Reason = item.Reason ?? ""
                 });
             }
 
@@ -101,9 +105,9 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Không tìm thấy đơn xin nghỉ.");
             }
 
-            if (request.Status != "Pending")
+            if (request.Status != "Pending" && request.Status != "Submitted" && request.Status != "Chờ duyệt" && request.Status != "Đã gửi")
             {
-                return OperationResult.Fail("Chỉ có thể hủy đơn khi trạng thái là 'Chờ duyệt'.");
+                return OperationResult.Fail("Chỉ có thể hủy đơn khi trạng thái là 'Đã gửi'.");
             }
 
             request.Status = "Canceled";

@@ -64,17 +64,22 @@
                         <i class="bi bi-cash-coin me-2 text-success"></i>* KHAI BÁO DÒNG TIỀN ĐẦU CA
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small mb-2">
-                            @if (Model.IsFirstShift)
-                            {
-                                <text>- Nhập số tiền đang có trong két:</text>
-                            }
-                            else
-                            {
-                                <text>- Số tiền đầu ca (tự động nhận từ ca trước):</text>
-                            }
-                        </p>
                         <div class="mb-3">
+                            <label asp-for="DelivererName" class="form-label fw-bold small text-dark mb-1">
+                                Thông tin người giao tiền đầu ca: <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person-up text-secondary"></i></span>
+                                <input asp-for="DelivererName" class="form-control"
+                                       placeholder="VD: Quản lý Nguyễn Văn A / Thu ngân ca trước..." required />
+                            </div>
+                            <span asp-validation-for="DelivererName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-dark mb-1">
+                                @(Model.IsFirstShift ? "Nhập số tiền đang có trong két:" : "Số tiền đầu ca (nhận từ ca trước):") <span class="text-danger">*</span>
+                            </label>
                             <div class="input-group">
                                 <input type="text" id="initialCashDisplay"
                                        class="form-control form-control-lg fw-semibold @(Model.IsFirstShift ? "" : "bg-light")"
@@ -102,7 +107,7 @@
                                     <i class="bi bi-clock me-2"></i>Chưa đến giờ mở ca
                                 </button>
                                 <div class="text-danger small mt-2 text-center">
-                                    Bạn không có ca trực nào được lên lịch cho hôm nay hoặc chưa đến giờ nhận ca (chỉ cho phép mở sớm tối đa 30 phút).
+                                    Bạn không có ca trực nào được lên lịch cho hôm nay hoặc chưa đến giờ nhận ca (chỉ cho phép mở sớm tối đa 5 phút).
                                 </div>
                             }
                         </div>

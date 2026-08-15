@@ -33,6 +33,12 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string PreviousApproverName { get; set; } = "-";
 
         // ===== Input người dùng =====
+        /// <summary> Thông tin người giao tiền đầu ca (bắt buộc) </summary>
+        [Required(ErrorMessage = "Vui lòng nhập thông tin người giao tiền.")]
+        [StringLength(100, ErrorMessage = "Tên người giao tiền không được vượt quá 100 ký tự.")]
+        [Display(Name = "Thông tin người giao tiền")]
+        public string DelivererName { get; set; } = string.Empty;
+
         /// <summary> Số tiền khai báo đầu ca (bắt buộc nhập) </summary>
         [Required(ErrorMessage = "Vui lòng nhập số tiền đầu ca.")]
         [Range(0, double.MaxValue, ErrorMessage = "Số tiền không hợp lệ.")]

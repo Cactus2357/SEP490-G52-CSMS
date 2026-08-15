@@ -110,8 +110,14 @@ namespace SEP490_G52_CSMS.Repositories
                 if (nextShift != null)
                 {
                     var rosterForNextShift = await _context.WeeklyRosterGrids
+                        .Include(w => w.Employee)
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(w => w.BranchId == branchId && w.AssignmentDate.Date == date.Date && w.ShiftId == nextShift.ShiftId);
+                        .FirstOrDefaultAsync(w => w.BranchId == branchId 
+                                               && w.AssignmentDate.Date == date.Date 
+                                               && w.ShiftId == nextShift.ShiftId
+                                               && w.Employee != null
+                                               && (w.Employee.Role == CashHandoverConstants.CashierRole || w.Employee.Role == "Cashier")
+                                               && w.Employee.Status == BranchConstants.DefaultStatus);
 
                     if (rosterForNextShift != null)
                     {
@@ -120,11 +126,18 @@ namespace SEP490_G52_CSMS.Repositories
                 }
             }
 
-            // 2. Tìm nhân viên có ca trực tiếp theo trong ngày
+            // 2. Tìm thu ngân có ca trực tiếp theo trong ngày
             var roster = await _context.WeeklyRosterGrids
                 .Include(w => w.FixedShift)
+                .Include(w => w.Employee)
                 .AsNoTracking()
-                .Where(w => w.BranchId == branchId && w.AssignmentDate.Date == date.Date && w.FixedShift.StartTime >= currentTime)
+                .Where(w => w.BranchId == branchId 
+                         && w.AssignmentDate.Date == date.Date 
+                         && w.FixedShift != null
+                         && w.FixedShift.StartTime >= currentTime
+                         && w.Employee != null
+                         && (w.Employee.Role == CashHandoverConstants.CashierRole || w.Employee.Role == "Cashier")
+                         && w.Employee.Status == BranchConstants.DefaultStatus)
                 .OrderBy(w => w.FixedShift.StartTime)
                 .FirstOrDefaultAsync();
 
@@ -137,7 +150,7 @@ namespace SEP490_G52_CSMS.Repositories
                 .AsNoTracking()
                 .Where(e =>
                     e.BranchId == branchId &&
-                    e.Role == CashHandoverConstants.CashierRole &&
+                    (e.Role == CashHandoverConstants.CashierRole || e.Role == "Cashier") &&
                     e.Status == BranchConstants.DefaultStatus)
                 .OrderBy(e => e.FullName)
                 .ToListAsync();
@@ -151,13 +164,17 @@ namespace SEP490_G52_CSMS.Repositories
 
             var currentStartTime = currentShift?.StartTime ?? TimeSpan.Zero;
 
+            // Chỉ lấy nhân viên có vai trò Thu ngân (Cashier)
             var rosterEmployeeIds = await _context.WeeklyRosterGrids
                 .Include(r => r.FixedShift)
+                .Include(r => r.Employee)
                 .AsNoTracking()
                 .Where(r => r.BranchId == branchId
                          && r.AssignmentDate.Date == date.Date
                          && r.FixedShift != null
-                         && r.FixedShift.StartTime >= currentStartTime)
+                         && r.FixedShift.StartTime >= currentStartTime
+                         && r.Employee != null
+                         && (r.Employee.Role == CashHandoverConstants.CashierRole || r.Employee.Role == "Cashier"))
                 .Select(r => r.EmployeeId)
                 .Distinct()
                 .ToListAsync();
@@ -169,7 +186,9 @@ namespace SEP490_G52_CSMS.Repositories
 
             var eligibleCashiers = await _context.Employees
                 .AsNoTracking()
-                .Where(e => rosterEmployeeIds.Contains(e.EmployeeId) && e.Status == BranchConstants.DefaultStatus)
+                .Where(e => rosterEmployeeIds.Contains(e.EmployeeId) 
+                         && (e.Role == CashHandoverConstants.CashierRole || e.Role == "Cashier")
+                         && e.Status == BranchConstants.DefaultStatus)
                 .OrderBy(e => e.FullName)
                 .ToListAsync();
 
@@ -240,16 +259,19 @@ namespace SEP490_G52_CSMS.Repositories
         public async Task<string> GetShiftPhaseAsync(int shiftId)
         {
             var shifts = await GetAllFixedShiftsAsync();
-            if (!shifts.Any()) return CashHandoverConstants.HandoverTypeFirstShift;
+            if (!shifts.Any()) return CashHandoverConstants.HandoverTypeLastShift;
+
+            var next = await GetNextFixedShiftAsync(shiftId);
+            if (next == null)
+            {
+                return CashHandoverConstants.HandoverTypeLastShift;
+            }
 
             if (shifts.First().ShiftId == shiftId)
             {
                 return CashHandoverConstants.HandoverTypeFirstShift;
             }
-            if (shifts.Last().ShiftId == shiftId)
-            {
-                return CashHandoverConstants.HandoverTypeLastShift;
-            }
+
             return CashHandoverConstants.HandoverTypeMidShift;
         }
 
@@ -267,7 +289,9 @@ namespace SEP490_G52_CSMS.Repositories
         public async Task<(decimal cashRevenue, decimal bankRevenue, decimal cashRefunds)> GetShiftSalesStatsAsync(string branchId, int? cashierId, DateTime openedAt, DateTime? closedAt)
         {
             var query = _context.Orders
-                .Where(o => o.BranchId == branchId && o.CreatedAt >= openedAt && o.PaymentStatus == "Paid");
+                .Where(o => o.BranchId == branchId 
+                         && o.CreatedAt >= openedAt 
+                         && (o.PaymentStatus == "Paid" || o.PaymentStatus == "Partially Refunded"));
 
             if (closedAt.HasValue)
             {
@@ -276,11 +300,18 @@ namespace SEP490_G52_CSMS.Repositories
 
             var orders = await query.ToListAsync();
 
-            decimal cashRevenue = orders
+            // CHỈ CÓ ĐƠN HOÀN THÀNH HOẶC HOÀN TIỀN 1 PHẦN MỚI TÍNH DOANH THU LÚC BÀN GIAO / ĐÓNG CA
+            var completedOrders = orders
+                .Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done" || o.BrewingStatus == "Partially Refunded" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount))
+                         && o.BrewingStatus != "Cancelled / Refunded"
+                         && o.PaymentStatus != "Cancelled")
+                .ToList();
+
+            decimal cashRevenue = completedOrders
                 .Where(o => !string.IsNullOrEmpty(o.PaymentMethod) && o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase))
                 .Sum(o => o.TotalAmount);
 
-            decimal bankRevenue = orders
+            decimal bankRevenue = completedOrders
                 .Where(o => !string.IsNullOrEmpty(o.PaymentMethod) && !o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase))
                 .Sum(o => o.TotalAmount);
 
@@ -297,24 +328,10 @@ namespace SEP490_G52_CSMS.Repositories
             var yesterday = today.AddDays(-1);
             var nowTime = DateTime.Now.TimeOfDay;
 
-            // 1. Nếu nhân viên này ĐÃ CÓ ca làm việc đang Active tại chi nhánh hôm nay (đã mở ca hoặc đã nhận bàn giao ca sớm)
-            var activeHandover = await _context.CashHandovers
-                .Include(ch => ch.FixedShift)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(ch => ch.BranchId == branchId 
-                                        && (ch.OutgoingCashierId == cashierId || ch.IncomingCashierId == cashierId)
-                                        && (ch.HandoverDate.Date == today || ch.HandoverDate.Date == yesterday) 
-                                        && ch.Status == CashHandoverConstants.ActiveStatus);
-
-            if (activeHandover != null && activeHandover.FixedShift != null)
-            {
-                var phase = await GetShiftPhaseAsync(activeHandover.ShiftId);
-                return (true, "Eligible", "Hợp lệ", activeHandover.ShiftId, phase);
-            }
-
-            // 2. Tìm lịch phân công trực ca của nhân viên tại chi nhánh
+            // 1. KIỂM TRA LỊCH PHÂN CÔNG CA LÀM VIỆC CỦA THU NGÂN (ROSTER)
             var rosters = await _context.WeeklyRosterGrids
                 .Include(r => r.FixedShift)
+                .Include(r => r.AttendanceLogs)
                 .Where(r => r.EmployeeId == cashierId && r.BranchId == branchId && (r.AssignmentDate.Date == today || r.AssignmentDate.Date == yesterday))
                 .ToListAsync();
 
@@ -327,44 +344,83 @@ namespace SEP490_G52_CSMS.Repositories
                 if (r.FixedShift == null) return false;
                 var start = r.FixedShift.StartTime;
                 var end = r.FixedShift.EndTime;
-                var earlyWindow = TimeSpan.FromHours(2); // Cho phép mở/nhận ca sớm trước 2 tiếng
+                var earlyWindow = TimeSpan.FromHours(2);
 
                 if (start <= end)
                 {
-                    return r.AssignmentDate.Date == today && nowTime >= start.Subtract(earlyWindow) && nowTime <= end;
+                    return r.AssignmentDate.Date == today && nowTime >= start.Subtract(earlyWindow) && nowTime <= end.Add(TimeSpan.FromHours(1));
                 }
                 else
                 {
                     if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(earlyWindow);
-                    if (r.AssignmentDate.Date == yesterday) return nowTime <= end;
+                    if (r.AssignmentDate.Date == yesterday) return nowTime <= end.Add(TimeSpan.FromHours(1));
                     return false;
                 }
             }) ?? rosters.OrderBy(r => r.FixedShift?.StartTime).FirstOrDefault();
 
             if (matchingRoster == null || matchingRoster.FixedShift == null)
             {
-                return (false, "NotScheduled", "Bạn chưa có lịch phân công ca làm việc tại thời điểm hiện tại. Vui lòng kiểm tra lại Lịch làm việc.", null, null);
+                return (false, "NotScheduled", "Hiện tại chưa tới giờ ca làm việc của bạn. Vui lòng kiểm tra lại Lịch làm việc.", null, null);
             }
 
             var shiftPhase = await GetShiftPhaseAsync(matchingRoster.ShiftId);
 
+            // 2. KIỂM TRA ĐÃ CÓ PHIÊN CA ĐANG MỞ (ACTIVE) TẠI CHI NHÁNH HAY CHƯA
+            var activeHandover = await _context.CashHandovers
+                .Include(ch => ch.FixedShift)
+                .Include(ch => ch.OutgoingCashier)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ch => ch.BranchId == branchId 
+                                        && ch.ShiftId == matchingRoster.ShiftId
+                                        && ch.HandoverDate.Date == matchingRoster.AssignmentDate.Date
+                                        && ch.Status == CashHandoverConstants.ActiveStatus);
+
+            if (activeHandover != null)
+            {
+                // Nếu ca này đang mở và đúng thu ngân này phụ trách -> Cho phép bán hàng ngay
+                if (activeHandover.OutgoingCashierId == cashierId || activeHandover.IncomingCashierId == cashierId)
+                {
+                    return (true, "Eligible", "Hợp lệ", activeHandover.ShiftId, shiftPhase);
+                }
+                else
+                {
+                    return (false, "OtherCashierActive", $"Hiện tại ca làm việc đang được phụ trách bởi thu ngân khác ({activeHandover.OutgoingCashier?.FullName}). Bạn chưa nhận bàn giao ca.", activeHandover.ShiftId, shiftPhase);
+                }
+            }
+
+            // 3. NẾU CHƯA CÓ CA ACTIVE: KIỂM TRA XEM CA NÀY ĐÃ BỊ ĐÓNG (CLOSED) HAY CHƯA
+            var closedHandover = await _context.CashHandovers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ch => ch.BranchId == branchId
+                                        && ch.ShiftId == matchingRoster.ShiftId
+                                        && ch.HandoverDate.Date == matchingRoster.AssignmentDate.Date
+                                        && ch.Status == CashHandoverConstants.ClosedStatus);
+
+            if (closedHandover != null)
+            {
+                return (false, "ShiftClosed", $"Ca làm việc {matchingRoster.FixedShift.ShiftName} hôm nay đã được đóng/kết thúc. Quầy thu ngân đã khóa sổ.", matchingRoster.ShiftId, shiftPhase);
+            }
+
+            // 4. KIỂM TRA ĐIỂM DANH CHẤM CÔNG (CHECK-IN)
+            var attendanceLog = matchingRoster.AttendanceLogs.FirstOrDefault();
+            if (attendanceLog == null || attendanceLog.CheckInTime == null || (attendanceLog.OverallStatus != "Present" && attendanceLog.CheckInStatus == "Absent"))
+            {
+                return (false, "NotCheckedIn", $"Bạn chưa thực hiện điểm danh chấm công vào ca {matchingRoster.FixedShift.ShiftName}. Vui lòng điểm danh chấm công trước khi mở ca và bán hàng.", matchingRoster.ShiftId, shiftPhase);
+            }
+
+            if (attendanceLog.CheckOutTime != null || attendanceLog.CheckOutStatus == "CheckedOut")
+            {
+                return (false, "ShiftEnded", $"Ca làm việc {matchingRoster.FixedShift.ShiftName} của bạn đã kết thúc (đã chấm công ra ca).", matchingRoster.ShiftId, shiftPhase);
+            }
+
+            // 5. NẾU ĐÃ CHECK-IN NHƯNG CHƯA MỞ CA: HƯỚNG DẪN MỞ CA / NHẬN BÀN GIAO
             if (shiftPhase == CashHandoverConstants.HandoverTypeFirstShift)
             {
-                var shiftActive = await GetActiveHandoverByShiftAsync(branchId, matchingRoster.ShiftId, today);
-                if (shiftActive == null)
-                {
-                    return (false, "FirstShiftNotOpened", $"Ca đầu ngày ({matchingRoster.FixedShift.ShiftName}) chưa được Mở ca. Vui lòng thực hiện Mở ca trước khi bán hàng.", matchingRoster.ShiftId, shiftPhase);
-                }
-                return (true, "Eligible", "Hợp lệ", matchingRoster.ShiftId, shiftPhase);
+                return (false, "FirstShiftNotOpened", $"Ca đầu ngày ({matchingRoster.FixedShift.ShiftName}) chưa được Mở ca. Vui lòng thực hiện Mở ca trước khi bán hàng.", matchingRoster.ShiftId, shiftPhase);
             }
             else
             {
-                var shiftActive = await GetActiveHandoverByShiftAsync(branchId, matchingRoster.ShiftId, today);
-                if (shiftActive == null)
-                {
-                    return (false, "MidShiftNotHandedOver", $"Bạn chưa nhận Bàn giao ca ({matchingRoster.FixedShift.ShiftName}) từ ca trước. Vui lòng thực hiện Nhận bàn giao ca để bắt đầu bán hàng.", matchingRoster.ShiftId, shiftPhase);
-                }
-                return (true, "Eligible", "Hợp lệ", matchingRoster.ShiftId, shiftPhase);
+                return (false, "MidShiftNotHandedOver", $"Bạn chưa nhận Bàn giao ca ({matchingRoster.FixedShift.ShiftName}) từ ca trước. Vui lòng thực hiện Nhận bàn giao ca để bắt đầu bán hàng.", matchingRoster.ShiftId, shiftPhase);
             }
         }
 
@@ -401,6 +457,29 @@ namespace SEP490_G52_CSMS.Repositories
                                         && ch.Status == CashHandoverConstants.ActiveStatus);
         }
 
+        public async Task<bool> IsDayClosedAsync(string branchId, DateTime date)
+        {
+            return await _context.CashHandovers
+                .AsNoTracking()
+                .AnyAsync(ch => ch.BranchId == branchId
+                             && ch.HandoverDate.Date == date.Date
+                             && ch.HandoverType == CashHandoverConstants.HandoverTypeLastShift
+                             && ch.Status == CashHandoverConstants.ClosedStatus);
+        }
+
+        public async Task<CashHandover?> GetClosedHandoverByShiftAsync(string branchId, int shiftId, DateTime date)
+        {
+            return await _context.CashHandovers
+                .Include(ch => ch.FixedShift)
+                .Include(ch => ch.OutgoingCashier)
+                .Include(ch => ch.IncomingCashier)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ch => ch.BranchId == branchId
+                                        && ch.ShiftId == shiftId
+                                        && ch.HandoverDate.Date == date.Date
+                                        && ch.Status == CashHandoverConstants.ClosedStatus);
+        }
+
         public async Task SyncAttendanceOnOpenShiftAsync(int employeeId, int shiftId, DateTime date)
         {
             var roster = await _context.WeeklyRosterGrids
@@ -420,6 +499,8 @@ namespace SEP490_G52_CSMS.Repositories
                         CheckInTime = DateTime.Now,
                         IsFaceCheckInValid = true,
                         CheckInStatus = "OnTime",
+                        CheckOutTime = null,
+                        CheckOutStatus = "NotYetCheckOut",
                         OverallStatus = "Present"
                     };
                     _context.AttendanceLogs.Add(log);
@@ -428,6 +509,8 @@ namespace SEP490_G52_CSMS.Repositories
                 {
                     if (log.CheckInTime == null) log.CheckInTime = DateTime.Now;
                     log.CheckInStatus = "OnTime";
+                    log.CheckOutTime = null;
+                    log.CheckOutStatus = "NotYetCheckOut";
                     log.OverallStatus = "Present";
                     _context.AttendanceLogs.Update(log);
                 }

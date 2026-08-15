@@ -136,6 +136,12 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == loggedInUserId);
+                if (employee == null || (employee.Role != CashHandoverConstants.CashierRole && employee.Role != "Cashier"))
+                {
+                    TempData["ErrorMessage"] = "Bạn không có quyền thực hiện mở ca thu ngân (Chỉ dành cho nhân viên Thu ngân).";
+                    return RedirectToAction("Index", "Home");
+                }
                 cashierId = loggedInUserId;
             }
 
@@ -149,6 +155,13 @@ namespace SEP490_G52_CSMS.Controllers
                 var model = await _cashHandoverService.GetOpenShiftModelAsync(cashierId);
                 if (model == null)
                 {
+                    var isDayClosed = await _cashHandoverService.IsDayClosedAsync(userBranchId, DateTime.Today);
+                    if (isDayClosed)
+                    {
+                        TempData["InfoMessage"] = "Ca làm việc cuối ngày hôm nay tại chi nhánh đã được Đóng ca (chốt sổ ngày). Quầy thu ngân đã đóng cửa, không thể thao tác thêm ca.";
+                        return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                    }
+
                     var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
                     if (phase == CashHandoverConstants.HandoverTypeLastShift)
                     {
@@ -235,6 +248,12 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == loggedInUserId);
+                if (employee == null || (employee.Role != CashHandoverConstants.CashierRole && employee.Role != "Cashier"))
+                {
+                    TempData["ErrorMessage"] = "Bạn không có quyền thực hiện bàn giao ca thu ngân (Chỉ dành cho nhân viên Thu ngân).";
+                    return RedirectToAction("Index", "Home");
+                }
                 cashierId = loggedInUserId;
             }
 
@@ -347,6 +366,12 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == loggedInUserId);
+                if (employee == null || (employee.Role != CashHandoverConstants.CashierRole && employee.Role != "Cashier"))
+                {
+                    TempData["ErrorMessage"] = "Bạn không có quyền thực hiện đóng ca thu ngân (Chỉ dành cho nhân viên Thu ngân).";
+                    return RedirectToAction("Index", "Home");
+                }
                 cashierId = loggedInUserId;
             }
 
@@ -457,6 +482,12 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == loggedInUserId);
+                if (employee == null || (employee.Role != CashHandoverConstants.CashierRole && employee.Role != "Cashier"))
+                {
+                    TempData["ErrorMessage"] = "Bạn không có quyền thực hiện bàn giao đột xuất ca thu ngân (Chỉ dành cho nhân viên Thu ngân).";
+                    return RedirectToAction("Index", "Home");
+                }
                 cashierId = loggedInUserId;
             }
 

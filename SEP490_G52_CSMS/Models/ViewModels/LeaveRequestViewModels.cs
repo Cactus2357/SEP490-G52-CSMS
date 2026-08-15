@@ -24,7 +24,11 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int ApplicationId { get; set; }
         public string SubmittedAt { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
-        public bool CanCancel => Status == "Pending" || Status == "Đã gửi";
+        public string StartDate { get; set; } = string.Empty;
+        public string EndDate { get; set; } = string.Empty;
+        public string LeaveShifts { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+        public bool CanCancel => Status == "Pending" || Status == "Đã gửi" || Status == "Chờ duyệt";
     }
 
     public class LeaveRequestCreateViewModel

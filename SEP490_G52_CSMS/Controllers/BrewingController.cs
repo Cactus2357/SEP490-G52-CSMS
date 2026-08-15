@@ -47,9 +47,81 @@ namespace SEP490_G52_CSMS.Controllers
             return id;
         }
 
+        private async Task<(bool isEligible, string reasonCode, string message)> CheckBartenderEligibilityAsync(int bartenderId, string branchId)
+        {
+            if (User.IsInRole("RManager") || User.IsInRole("BranchManager"))
+            {
+                return (true, "Eligible", "Hợp lệ");
+            }
+
+            var today = DateTime.Today;
+            var yesterday = today.AddDays(-1);
+            var nowTime = DateTime.Now.TimeOfDay;
+
+            // Tìm lịch phân công trực ca của nhân viên tại chi nhánh hôm nay
+            var rosters = await _context.WeeklyRosterGrids
+                .Include(r => r.FixedShift)
+                .Include(r => r.AttendanceLogs)
+                .Where(r => r.EmployeeId == bartenderId && r.BranchId == branchId && (r.AssignmentDate.Date == today || r.AssignmentDate.Date == yesterday))
+                .ToListAsync();
+
+            if (!rosters.Any())
+            {
+                return (false, "NotScheduled", "Bạn không có lịch phân công ca làm việc tại chi nhánh hôm nay. Vui lòng kiểm tra lại Lịch làm việc.");
+            }
+
+            // Tìm ca phù hợp với khung giờ hiện tại
+            var matchingRoster = rosters.FirstOrDefault(r => {
+                if (r.FixedShift == null) return false;
+                var start = r.FixedShift.StartTime;
+                var end = r.FixedShift.EndTime;
+                var earlyWindow = TimeSpan.FromHours(1);
+
+                if (start <= end)
+                {
+                    return r.AssignmentDate.Date == today && nowTime >= start.Subtract(earlyWindow) && nowTime <= end.Add(TimeSpan.FromHours(1));
+                }
+                else
+                {
+                    if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(earlyWindow);
+                    if (r.AssignmentDate.Date == yesterday) return nowTime <= end.Add(TimeSpan.FromHours(1));
+                    return false;
+                }
+            }) ?? rosters.OrderBy(r => r.FixedShift?.StartTime).FirstOrDefault();
+
+            if (matchingRoster == null || matchingRoster.FixedShift == null)
+            {
+                return (false, "NotScheduled", "Hiện tại chưa tới giờ ca làm việc của bạn. Vui lòng kiểm tra lại Lịch làm việc.");
+            }
+
+            var log = matchingRoster.AttendanceLogs.FirstOrDefault();
+            if (log == null || log.CheckInTime == null || (log.OverallStatus != "Present" && log.CheckInStatus == "Absent"))
+            {
+                return (false, "NotCheckedIn", $"Bạn chưa thực hiện chấm công vào ca {matchingRoster.FixedShift.ShiftName}. Vui lòng chấm công trước khi vào màn hình pha chế.");
+            }
+
+            if (log.CheckOutTime != null || log.CheckOutStatus == "CheckedOut")
+            {
+                return (false, "ShiftEnded", $"Ca làm việc {matchingRoster.FixedShift.ShiftName} của bạn đã kết thúc (đã chấm công ra ca).");
+            }
+
+            return (true, "Eligible", "Hợp lệ");
+        }
+
         public async Task<IActionResult> Index()
         {
             var branchId = await GetUserBranchIdAsync();
+            var userId = GetUserId();
+
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(userId, branchId);
+            if (!isEligible)
+            {
+                ViewBag.NotInShift = true;
+                ViewBag.ReasonCode = reasonCode;
+                ViewBag.NotInShiftMessage = message;
+                return View(Enumerable.Empty<OrderSummaryViewModel>());
+            }
+
             var waitingAndBrewingOrders = await _orderService.GetWaitingAndBrewingOrdersAsync(branchId);
             return View(waitingAndBrewingOrders);
         }
@@ -67,6 +139,14 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> GetLiveOrders()
         {
             var branchId = await GetUserBranchIdAsync();
+            var userId = GetUserId();
+
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(userId, branchId);
+            if (!isEligible)
+            {
+                return Json(new List<object>());
+            }
+
             var orders = await _orderService.GetWaitingAndBrewingOrdersAsync(branchId);
             var result = orders.Select(o => new
             {
@@ -92,6 +172,13 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> StartBrewing(string orderId)
         {
+            var branchId = await GetUserBranchIdAsync();
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(GetUserId(), branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = message });
+            }
+
             var result = await _orderService.StartBrewingAsync(orderId);
             if (result) return Json(new { success = true });
             return BadRequest(new { success = false, message = "Không thể bắt đầu pha chế đơn hàng này." });
@@ -100,6 +187,13 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> CompleteBrewing(string orderId)
         {
+            var branchId = await GetUserBranchIdAsync();
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(GetUserId(), branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = message });
+            }
+
             var result = await _orderService.CompleteBrewingAsync(orderId);
             if (result) return Json(new { success = true });
             return BadRequest(new { success = false, message = "Không thể hoàn thành đơn hàng này." });
@@ -116,6 +210,13 @@ namespace SEP490_G52_CSMS.Controllers
             if (model.MissingVariantIds == null || !model.MissingVariantIds.Any())
             {
                 return BadRequest(new { success = false, message = "Vui lòng chọn ít nhất một món bị thiếu nguyên liệu." });
+            }
+
+            var branchId = await GetUserBranchIdAsync();
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(GetUserId(), branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = message });
             }
 
             int userId = GetUserId();

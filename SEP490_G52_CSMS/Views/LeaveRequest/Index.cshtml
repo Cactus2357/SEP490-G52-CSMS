@@ -46,9 +46,10 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-4" style="width: 30%;">Ngày Gửi Đơn</th>
-                        <th style="width: 40%;">Trạng Thái</th>
-                        <th class="pe-4" style="width: 30%;">Hành Động</th>
+                        <th class="ps-4" style="width: 25%;">Ngày Gửi Đơn</th>
+                        <th style="width: 25%;">Thời Gian Xin Nghỉ</th>
+                        <th style="width: 25%;">Trạng Thái</th>
+                        <th class="pe-4 text-end" style="width: 25%;">Hành Động</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -56,8 +57,24 @@
                     {
                         foreach (var item in Model.Items)
                         {
-                            <tr>
+                            <tr class="leave-row"
+                                data-id="@item.ApplicationId"
+                                data-employee="@Model.EmployeeName"
+                                data-submitted="@item.SubmittedAt"
+                                data-status="@item.Status"
+                                data-start="@item.StartDate"
+                                data-end="@item.EndDate"
+                                data-shifts="@item.LeaveShifts"
+                                data-reason="@item.Reason">
                                 <td class="ps-4 fw-semibold text-secondary">@item.SubmittedAt</td>
+                                <td>
+                                    <span class="fw-semibold text-dark">@item.StartDate</span>
+                                    @if (item.StartDate != item.EndDate && !string.IsNullOrEmpty(item.EndDate))
+                                    {
+                                        <span class="text-muted small"> đến @item.EndDate</span>
+                                    }
+                                    <small class="d-block text-muted">(@item.LeaveShifts)</small>
+                                </td>
                                 <td>
                                     @if (item.Status == "Đã duyệt")
                                     {
@@ -84,12 +101,16 @@
                                         </span>
                                     }
                                 </td>
-                                <td class="pe-4">
+                                <td class="pe-4 text-end">
+                                    <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="showLeaveDetailModal(this)">
+                                        <i class="bi bi-eye me-1"></i>Chi tiết
+                                    </button>
                                     @if (item.CanCancel)
                                     {
-                                        <form asp-action="Cancel" method="post" class="d-inline" onsubmit="return confirmCancelLeaveForm(this);">
+                                        <form asp-action="Cancel" method="post" class="d-inline" id="cancelLeaveForm_@item.ApplicationId">
+                                            @Html.AntiForgeryToken()
                                             <input type="hidden" name="applicationId" value="@item.ApplicationId" />
-                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmCancelLeave(@item.ApplicationId)">
                                                 <i class="bi bi-x-circle me-1"></i>Hủy đơn
                                             </button>
                                         </form>
@@ -107,7 +128,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="3" class="text-center py-4 text-muted">Không có đơn xin nghỉ phép nào.</td>
+                            <td colspan="4" class="text-center py-4 text-muted">Không có đơn xin nghỉ phép nào.</td>
                         </tr>
                     }
                 </tbody>
@@ -126,6 +147,55 @@
         <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#createLeaveModal">
             <i class="bi bi-plus-lg me-1"></i>Đơn xin nghỉ
         </button>
+    </div>
+</div>
+
+<!-- Modal Chi Tiết Đơn Xin Nghỉ (Dành Cho Nhân Viên) -->
+<div class="modal fade" id="staffLeaveDetailModal" tabindex="-1" aria-labelledby="staffLeaveDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-light border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-text text-primary fs-4"></i>
+                    <h5 class="modal-title fw-bold text-dark m-0" id="staffLeaveDetailModalLabel">CHI TIẾT ĐƠN XIN NGHỈ</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="card border border-secondary-subtle rounded-3 p-3 mb-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary-subtle">
+                        <span class="text-muted fw-semibold small">Nhân viên:</span>
+                        <span class="fw-bold text-dark" id="modalDetailEmployee">@Model.EmployeeName</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary-subtle">
+                        <span class="text-muted fw-semibold small">Trạng thái:</span>
+                        <span id="modalDetailStatusBadge">–</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary-subtle">
+                        <span class="text-muted fw-semibold small">Ngày gửi đơn:</span>
+                        <span class="fw-semibold text-secondary" id="modalDetailSubmitted">–</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary-subtle">
+                        <span class="text-muted fw-semibold small">Thời gian nghỉ:</span>
+                        <span class="fw-bold text-primary" id="modalDetailTimeRange">–</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span class="text-muted fw-semibold small">Ca muốn nghỉ:</span>
+                        <span class="fw-bold text-dark" id="modalDetailShifts">–</span>
+                    </div>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Lý do nghỉ phép:</label>
+                    <div class="p-3 border rounded bg-white small text-dark" id="modalDetailReason" style="min-height: 80px; white-space: pre-wrap;">
+                        –
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2.5">
+                <button type="button" class="btn btn-secondary btn-sm px-4 fw-semibold" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -211,13 +281,58 @@
 
 @section Scripts {
     <script>
-        function confirmCancelLeaveForm(form) {
+        var staffLeaveModalInstance = null;
+
+        function showLeaveDetailModal(btn) {
+            const row = btn.closest('tr');
+            if (!row) return;
+
+            const employee  = row.dataset.employee || '@Model.EmployeeName';
+            const submitted = row.dataset.submitted || '–';
+            const status    = row.dataset.status || 'Đã gửi';
+            const startDate = row.dataset.start || '–';
+            const endDate   = row.dataset.end || '–';
+            const shifts    = row.dataset.shifts || 'Tất cả ca';
+            const reason    = row.dataset.reason || '(Không có lý do)';
+
+            document.getElementById('modalDetailEmployee').textContent = employee;
+            document.getElementById('modalDetailSubmitted').textContent = submitted;
+            document.getElementById('modalDetailShifts').textContent = shifts;
+            document.getElementById('modalDetailReason').textContent = reason;
+
+            if (startDate === endDate || !endDate || endDate === '–') {
+                document.getElementById('modalDetailTimeRange').textContent = startDate;
+            } else {
+                document.getElementById('modalDetailTimeRange').textContent = `${startDate} đến ${endDate}`;
+            }
+
+            let badgeHtml = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1"><i class="bi bi-send-fill me-1"></i>Đã gửi</span>';
+            if (status === 'Đã duyệt') {
+                badgeHtml = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i>Đã duyệt</span>';
+            } else if (status === 'Từ chối') {
+                badgeHtml = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1"><i class="bi bi-x-circle-fill me-1"></i>Từ chối</span>';
+            } else if (status === 'Đã hủy') {
+                badgeHtml = '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1"><i class="bi bi-dash-circle-fill me-1"></i>Đã hủy</span>';
+            }
+            document.getElementById('modalDetailStatusBadge').innerHTML = badgeHtml;
+
+            if (!staffLeaveModalInstance) {
+                staffLeaveModalInstance = new bootstrap.Modal(document.getElementById('staffLeaveDetailModal'));
+            }
+            staffLeaveModalInstance.show();
+        }
+
+        function confirmCancelLeave(appId) {
             showConfirmModal(
                 'Hủy đơn xin nghỉ',
-                'Bạn có chắc chắn muốn hủy đơn này?',
-                function() { form.submit(); }
+                'Bạn có chắc chắn muốn hủy đơn xin nghỉ phép này?',
+                function() {
+                    const form = document.getElementById('cancelLeaveForm_' + appId);
+                    if (form) {
+                        form.submit();
+                    }
+                }
             );
-            return false;
         }
 
         $('#createLeaveForm').on('submit', function(e) {

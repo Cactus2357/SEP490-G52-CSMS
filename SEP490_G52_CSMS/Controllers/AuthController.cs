@@ -7,6 +7,8 @@ using Microsoft.Extensions.Caching.Memory;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
+using SEP490_G52_CSMS.Models.Core;
+using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
@@ -126,7 +128,7 @@ namespace SEP490_G52_CSMS.Controllers
                     .ToListAsync();
 
                 double minDistance = double.MaxValue;
-                const double threshold = 0.55; // Standard distance threshold for face-api.js (usually 0.6; 0.55 is slightly more conservative)
+                const double threshold = 0.60; // Standard distance threshold for face-api.js euclidean distance (0.60)
 
                 foreach (var emp in activeEmployees)
                 {
@@ -188,15 +190,44 @@ namespace SEP490_G52_CSMS.Controllers
             // -------------------------------------------------------
             // CHẤM CÔNG: Nếu nhân viên có ca làm hôm nay, ghi nhận check-in
             // -------------------------------------------------------
-            var today = DateTime.Now.Date;
+            var today = DateTime.Today;
+            var yesterday = today.AddDays(-1);
             var now = DateTime.Now;
+            var nowTime = now.TimeOfDay;
 
-            var todayRoster = await _context.WeeklyRosterGrids
+            var rosters = await _context.WeeklyRosterGrids
                 .Include(r => r.FixedShift)
                 .Include(r => r.AttendanceLogs)
                 .Where(r => r.EmployeeId == matchedEmployee.EmployeeId
-                         && r.AssignmentDate.Date == today)
-                .FirstOrDefaultAsync();
+                         && (r.AssignmentDate.Date == today || r.AssignmentDate.Date == yesterday))
+                .ToListAsync();
+
+            WeeklyRosterGrid? todayRoster = null;
+            if (rosters.Any())
+            {
+                var earlyWindow = TimeSpan.FromHours(2);
+                var lateWindow = TimeSpan.FromHours(2);
+
+                // Ưu tiên ca làm việc đang diễn ra hoặc chuẩn bị bắt đầu
+                todayRoster = rosters.FirstOrDefault(r => {
+                    if (r.FixedShift == null) return false;
+                    var start = r.FixedShift.StartTime;
+                    var end = r.FixedShift.EndTime;
+
+                    if (start <= end)
+                    {
+                        return r.AssignmentDate.Date == today && nowTime >= start.Subtract(earlyWindow) && nowTime <= end.Add(lateWindow);
+                    }
+                    else
+                    {
+                        // Ca đêm qua ngày
+                        if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(earlyWindow);
+                        if (r.AssignmentDate.Date == yesterday) return nowTime <= end.Add(lateWindow);
+                        return false;
+                    }
+                }) ?? rosters.Where(r => r.AssignmentDate.Date == today).OrderBy(r => r.FixedShift?.StartTime).FirstOrDefault()
+                   ?? rosters.OrderBy(r => r.AssignmentDate).ThenBy(r => r.FixedShift?.StartTime).FirstOrDefault();
+            }
 
             string? attendanceMessage = null;
 
@@ -206,13 +237,13 @@ namespace SEP490_G52_CSMS.Controllers
                 var existingLog = todayRoster.AttendanceLogs
                     .FirstOrDefault(l => l.EmployeeId == matchedEmployee.EmployeeId);
 
+                // Determine OnTime or Late: allow 15-minute grace window after shift start
+                var shiftStart = todayRoster.AssignmentDate.Date + todayRoster.FixedShift.StartTime;
+                var graceCutoff = shiftStart.AddMinutes(15);
+                var checkInStatus = now <= graceCutoff ? "OnTime" : "Late";
+
                 if (existingLog == null)
                 {
-                    // Determine OnTime or Late: allow 15-minute grace window after shift start
-                    var shiftStart = todayRoster.AssignmentDate.Date + todayRoster.FixedShift.StartTime;
-                    var graceCutoff = shiftStart.AddMinutes(15);
-                    var checkInStatus = now <= graceCutoff ? "OnTime" : "Late";
-
                     var log = new Models.Attendance.AttendanceLog
                     {
                         RosterId = todayRoster.RosterId,
@@ -222,15 +253,30 @@ namespace SEP490_G52_CSMS.Controllers
                         CheckInConfidence = 95,
                         CheckInStatus = checkInStatus,
                         OverallStatus = "Present",
+                        CheckOutStatus = "NotYetCheckOut"
                     };
                     _context.AttendanceLogs.Add(log);
                     attendanceMessage = checkInStatus == "OnTime"
                         ? $"Chấm công thành công! Ca: {todayRoster.FixedShift.ShiftName} – Đúng giờ."
                         : $"Chấm công thành công! Ca: {todayRoster.FixedShift.ShiftName} – Đi trễ.";
                 }
+                else if (existingLog.CheckInTime == null || existingLog.OverallStatus != "Present" || existingLog.CheckInStatus == "Absent")
+                {
+                    existingLog.CheckInTime = now;
+                    existingLog.IsFaceCheckInValid = true;
+                    existingLog.CheckInConfidence = 95;
+                    existingLog.CheckInStatus = checkInStatus;
+                    existingLog.OverallStatus = "Present";
+                    existingLog.CheckOutTime = null;
+                    existingLog.CheckOutStatus = "NotYetCheckOut";
+
+                    attendanceMessage = checkInStatus == "OnTime"
+                        ? $"Chấm công thành công! Ca: {todayRoster.FixedShift.ShiftName} – Đúng giờ."
+                        : $"Chấm công thành công! Ca: {todayRoster.FixedShift.ShiftName} – Đi trễ.";
+                }
                 else
                 {
-                    attendanceMessage = "Bạn đã chấm công cho ca hôm nay rồi.";
+                    attendanceMessage = $"Bạn đã chấm công cho ca {todayRoster.FixedShift.ShiftName} rồi.";
                 }
             }
 
@@ -424,8 +470,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpGet, HttpPost]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

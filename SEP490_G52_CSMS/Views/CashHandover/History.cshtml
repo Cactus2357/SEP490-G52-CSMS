@@ -53,8 +53,9 @@
                         <option value="">Tất cả các phiên</option>
                         <option value="mở ca">Mở ca đầu ngày</option>
                         <option value="bàn giao ca">Bàn giao ca giữa ngày</option>
-                        <option value="đóng ca">Đóng ca cuối ngày</option>
+                        <option value="liên tiếp">Giao ca liên tiếp (Cùng NV)</option>
                         <option value="đột xuất">Bàn giao đột xuất</option>
+                        <option value="đóng ca">Đóng ca cuối ngày</option>
                     </select>
                 </div>
                 <div class="col-md-5">
@@ -81,22 +82,23 @@
             <table class="table table-hover table-sm align-middle mb-0" id="historyTable">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-3" style="width: 5%;">STT</th>
-                        <th style="width: 14%;">Thời Gian Mở</th>
-                        <th style="width: 14%;">Loại Phiên</th>
-                        <th style="width: 10%;">Ca Làm</th>
-                        <th style="width: 16%;">Người Bàn Giao</th>
-                        <th style="width: 14%;" class="text-end">Tiền Thực Tế</th>
-                        <th style="width: 13%;" class="text-end">Chênh Lệch</th>
-                        <th style="width: 8%;">Trạng Thái</th>
-                        <th style="width: 6%;" class="text-center">Chi Tiết</th>
+                        <th class="ps-3" style="width: 4%;">STT</th>
+                        <th style="width: 14%;">Thời Gian Thực Hiện</th>
+                        <th style="width: 16%;">Loại Phiên Làm Việc</th>
+                        <th style="width: 8%;">Ca Trực</th>
+                        <th style="width: 13%;">Người Bàn Giao</th>
+                        <th style="width: 13%;">Người Nhận Ca</th>
+                        <th style="width: 11%;" class="text-end">Tiền Thực Tế</th>
+                        <th style="width: 9%;" class="text-end">Chênh Lệch</th>
+                        <th style="width: 7%;">Trạng Thái</th>
+                        <th style="width: 5%;" class="text-center">Chi Tiết</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.Items.Any())
                     {
                         <tr>
-                            <td colspan="9" class="text-center py-5 text-muted">
+                            <td colspan="10" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                 Chưa có dữ liệu lịch sử giao ca nào
                             </td>
@@ -117,8 +119,13 @@
                                 data-date="@item.HandoverDate"
                                 data-shift="@item.ShiftName"
                                 data-session-type="@item.SessionType.ToLower()"
+                                data-raw-session-type="@item.SessionType"
+                                data-action-time="@item.ActionTime"
+                                data-action-time-type="@item.ActionTimeType"
                                 data-outgoing="@item.OutgoingCashierName"
+                                data-has-outgoing="@(item.HasOutgoing ? "true" : "false")"
                                 data-incoming="@item.IncomingCashierName"
+                                data-has-incoming="@(item.HasIncoming ? "true" : "false")"
                                 data-initial="@item.InitialCash"
                                 data-revenue="@item.MachineCashRevenue"
                                 data-bank="@item.BankTransferRevenue"
@@ -134,7 +141,8 @@
                                 data-status="@item.Status">
                                 <td class="ps-3 text-secondary">@stt</td>
                                 <td>
-                                    <span class="fw-semibold text-dark">@item.OpenedAt</span>
+                                    <span class="fw-semibold text-dark">@item.ActionTime</span>
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">@item.ActionTimeType</small>
                                 </td>
                                 <td>
                                     @if (item.SessionType.Contains("Mở ca"))
@@ -146,13 +154,19 @@
                                     else if (item.SessionType.Contains("Đóng ca"))
                                     {
                                         <span class="badge bg-danger px-2.5 py-1 rounded-pill">
-                                            <i class="bi bi-door-closed me-1"></i>@item.SessionType
+                                            <i class="bi bi-door-closed-fill me-1"></i>@item.SessionType
                                         </span>
                                     }
                                     else if (item.SessionType.Contains("đột xuất"))
                                     {
                                         <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill">
                                             <i class="bi bi-exclamation-triangle-fill me-1"></i>@item.SessionType
+                                        </span>
+                                    }
+                                    else if (item.SessionType.Contains("liên tiếp"))
+                                    {
+                                        <span class="badge bg-info text-dark px-2.5 py-1 rounded-pill">
+                                            <i class="bi bi-arrow-repeat me-1"></i>@item.SessionType
                                         </span>
                                     }
                                     else
@@ -164,10 +178,27 @@
                                 </td>
                                 <td class="fw-semibold text-dark">@item.ShiftName</td>
                                 <td>
-                                    <span class="fw-semibold text-primary">@item.OutgoingCashierName</span>
-                                    @if (!string.IsNullOrEmpty(item.IncomingCashierName) && item.IncomingCashierName != "–" && item.IncomingCashierName != item.OutgoingCashierName)
+                                    @if (item.HasOutgoing && item.OutgoingCashierName != "-")
                                     {
-                                        <small class="text-muted d-block">&rarr; Nhận: @item.IncomingCashierName</small>
+                                        <span class="fw-semibold text-primary">
+                                            <i class="bi bi-person-badge me-1"></i>@item.OutgoingCashierName
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fw-normal fst-italic">–</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.HasIncoming && item.IncomingCashierName != "-")
+                                    {
+                                        <span class="fw-semibold text-success">
+                                            <i class="bi bi-person-check me-1"></i>@item.IncomingCashierName
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fw-normal fst-italic">–</span>
                                     }
                                 </td>
                                 <td class="text-end fw-bold text-dark font-monospace">@item.ActualCash</td>
@@ -184,7 +215,7 @@
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="showDetailModal(this)">
-                                        Chi tiết
+                                        <i class="bi bi-eye me-1"></i>Chi tiết
                                     </button>
                                 </td>
                             </tr>
@@ -238,23 +269,23 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <!-- Thông tin nhân sự -->
+                <!-- Thông tin nhân sự phân định rõ ràng -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <div class="p-3 border rounded bg-light h-100">
-                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-badge me-1"></i>Thu ngân bàn giao / mở ca:</span>
+                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-badge me-1"></i>Thu ngân bàn giao ca:</span>
                             <strong id="modalOutgoing" class="fs-6 text-dark">–</strong>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="p-3 border rounded bg-light h-100">
-                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-check me-1"></i>Thu ngân nhận ca / duyệt:</span>
+                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-check me-1"></i>Thu ngân nhận ca:</span>
                             <strong id="modalIncoming" class="fs-6 text-success">–</strong>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="p-3 border rounded bg-light h-100">
-                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-lines-fill me-1"></i>Người giao tiền đại diện:</span>
+                            <span class="text-muted small d-block mb-1"><i class="bi bi-person-lines-fill me-1"></i>Người nhận tiền nộp / Đại diện:</span>
                             <strong id="modalDeliverer" class="fs-6 text-primary">–</strong>
                         </div>
                     </div>
@@ -273,7 +304,7 @@
                                 <table class="table table-sm table-borderless align-middle mb-0">
                                     <tbody>
                                         <tr class="border-bottom">
-                                            <td class="ps-3 py-2 text-muted fw-semibold">Tiền mặt đầu ca:</td>
+                                             <td class="ps-3 py-2 text-muted fw-semibold">Tiền mặt đầu ca:</td>
                                             <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" id="modalInitial">–</td>
                                         </tr>
                                         <tr class="border-bottom">
@@ -316,11 +347,15 @@
                             </div>
                             <div class="card-body d-flex flex-column gap-3">
                                 <div class="d-flex justify-content-between small text-muted border-bottom pb-2">
+                                    <span>Mốc thời gian thực hiện:</span>
+                                    <strong class="text-dark" id="modalActionTime">–</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted border-bottom pb-2">
                                     <span>Thời điểm mở ca:</span>
                                     <strong class="text-dark" id="modalOpenedAt">–</strong>
                                 </div>
                                 <div class="d-flex justify-content-between small text-muted border-bottom pb-2">
-                                    <span>Thời điểm chốt ca:</span>
+                                    <span>Thời điểm đóng / chốt ca:</span>
                                     <strong class="text-dark" id="modalClosedAt">–</strong>
                                 </div>
 
@@ -359,9 +394,13 @@
             const row = btn.closest('tr');
             if (!row) return;
 
-            const sessionType = row.dataset.sessionType || '';
+            const sessionType = row.dataset.rawSessionType || '';
             const date        = row.dataset.date || '';
             const shift       = row.dataset.shift || '';
+            const actionTime  = row.dataset.actionTime || '–';
+            const actionType  = row.dataset.actionTimeType || '–';
+            const hasOutgoing = row.dataset.hasOutgoing === 'true';
+            const hasIncoming = row.dataset.hasIncoming === 'true';
             const outgoing    = row.dataset.outgoing || '–';
             const incoming    = row.dataset.incoming || '–';
             const initial     = row.dataset.initial || '0 đ';
@@ -377,16 +416,19 @@
             const openedAt    = row.dataset.openedAt || '–';
             const closedAt    = row.dataset.closedAt || '–';
 
-            document.getElementById('detailSubTitle').textContent = `Ca làm: ${shift} • Ngày: ${date}`;
-            document.getElementById('modalOutgoing').textContent = outgoing;
-            document.getElementById('modalIncoming').textContent = incoming;
+            document.getElementById('detailSubTitle').textContent = `Loại phiên: ${sessionType} • Ca làm: ${shift} • Ngày: ${date}`;
+            
+            document.getElementById('modalOutgoing').textContent = (hasOutgoing && outgoing !== '-') ? outgoing : '(Không áp dụng - Ca đầu ngày)';
+            document.getElementById('modalIncoming').textContent = (hasIncoming && incoming !== '-') ? incoming : '(Không áp dụng - Khóa sổ két cuối ngày)';
             document.getElementById('modalDeliverer').textContent = deliverer || '–';
+            
             document.getElementById('modalInitial').textContent = initial;
             document.getElementById('modalRevenue').textContent = '+' + revenue;
             document.getElementById('modalBank').textContent = bank;
             document.getElementById('modalRefund').textContent = '-' + refund;
             document.getElementById('modalTheoretical').textContent = theoretical;
             document.getElementById('modalActual').textContent = actual;
+            document.getElementById('modalActionTime').textContent = `${actionTime} (${actionType})`;
             document.getElementById('modalOpenedAt').textContent = openedAt;
             document.getElementById('modalClosedAt').textContent = closedAt;
 
@@ -434,7 +476,7 @@
                 const typeOk = !sessionFilter || rowType.includes(sessionFilter);
                 const fromOk = !dateFrom || !rowDate || rowDate >= new Date(dateFrom);
                 const toOk   = !dateTo   || !rowDate || rowDate <= new Date(dateTo);
-                const searchOk = !searchKeyword || outgoing.includes(searchKeyword) || incoming.includes(searchKeyword) || shift.includes(searchKeyword);
+                const searchOk = !searchKeyword || outgoing.includes(searchKeyword) || incoming.includes(searchKeyword) || shift.includes(searchKeyword) || rowType.includes(searchKeyword);
 
                 row.style.display = (typeOk && fromOk && toOk && searchOk) ? '' : 'none';
             });

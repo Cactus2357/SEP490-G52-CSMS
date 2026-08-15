@@ -73,5 +73,11 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
 
         /// <summary> Đồng bộ dữ liệu chấm công khi đóng/giao ca </summary>
         Task SyncAttendanceOnCloseShiftAsync(int employeeId, int shiftId, DateTime date);
+
+        /// <summary> Kiểm tra xem ngày hôm nay tại chi nhánh đã thực hiện Đóng ca cuối ngày (HandoverTypeLastShift) chưa </summary>
+        Task<bool> IsDayClosedAsync(string branchId, DateTime date);
+
+        /// <summary> Kiểm tra xem ca làm việc cụ thể tại chi nhánh đã bị đóng (Closed) chưa </summary>
+        Task<CashHandover?> GetClosedHandoverByShiftAsync(string branchId, int shiftId, DateTime date);
     }
 }

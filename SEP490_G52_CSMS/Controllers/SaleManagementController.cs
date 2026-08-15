@@ -88,9 +88,39 @@ namespace SEP490_G52_CSMS.Controllers
                 ViewBag.NotInShift = true;
                 ViewBag.ReasonCode = reasonCode;
                 ViewBag.NotInShiftMessage = message;
-                ViewBag.RedirectAction = reasonCode == "NotScheduled" ? "EmployeeIndex" : (reasonCode == "FirstShiftNotOpened" ? "OpenShift" : "Handover");
-                ViewBag.RedirectController = reasonCode == "NotScheduled" ? "WorkSchedule" : "CashHandover";
-                ViewBag.RedirectButtonText = reasonCode == "FirstShiftNotOpened" ? "Đến màn hình Mở ca" : (reasonCode == "MidShiftNotHandedOver" ? "Đến màn hình Nhận bàn giao" : "Xem lịch làm việc");
+
+                if (reasonCode == "NotScheduled" || reasonCode == "NotCheckedIn" || reasonCode == "ShiftEnded")
+                {
+                    if (reasonCode == "NotCheckedIn")
+                    {
+                        ViewBag.IsLogoutRequired = true;
+                        ViewBag.RedirectButtonText = "Đăng xuất để Chấm công Face Login";
+                    }
+                    else
+                    {
+                        ViewBag.RedirectAction = "EmployeeIndex";
+                        ViewBag.RedirectController = "WorkSchedule";
+                        ViewBag.RedirectButtonText = "Xem lịch làm việc";
+                    }
+                }
+                else if (reasonCode == "FirstShiftNotOpened")
+                {
+                    ViewBag.RedirectAction = "OpenShift";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Đến màn hình Mở ca";
+                }
+                else if (reasonCode == "MidShiftNotHandedOver")
+                {
+                    ViewBag.RedirectAction = "Handover";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Đến màn hình Nhận bàn giao";
+                }
+                else
+                {
+                    ViewBag.RedirectAction = "History";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Xem lịch sử giao ca";
+                }
             }
 
             var menus = await _menuRepo.GetMenusByBranchAsync(branchId);
@@ -333,10 +363,10 @@ namespace SEP490_G52_CSMS.Controllers
             var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
-            string txCode = "MBB-" + DateTime.Now.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
+            string txCode = "QR-MANUAL-" + DateTime.Now.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
             order.PaymentStatus = "TransferSuccessPending";
             order.BankTransactionCode = txCode;
-            order.PaymentMethod = $"Bank Transfer (SePay #{txCode} - Đã nhận:{order.TotalAmount:N0}đ)";
+            order.PaymentMethod = $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{order.TotalAmount:N0}đ)";
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, transactionCode = txCode });

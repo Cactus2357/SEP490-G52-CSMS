@@ -12,16 +12,11 @@
             <legend class="float-none w-auto px-2 fs-6 text-muted">Avatar</legend>
 
             <div class="d-flex flex-column align-items-center">
-                <div class="border d-flex flex-column align-items-center justify-content-center mb-3 text-muted"
+                <div class="border d-flex flex-column align-items-center justify-content-center text-muted"
                      style="width: 100%; aspect-ratio: 1/1; max-width: 260px; background-color: #f8f9fa;">
                     <i class="bi bi-person-circle" style="font-size: 5rem;"></i>
                     <span class="small mt-2">Ảnh đại diện</span>
                 </div>
-
-                <!-- TODO: chưa xử lý upload ảnh -->
-                <button type="button" class="btn btn-outline-dark btn-sm" disabled title="Chức năng đang phát triển">
-                    Đổi ảnh
-                </button>
             </div>
         </fieldset>
     </div>
@@ -60,18 +55,11 @@
                 </div>
             </div>
 
-            <div class="mb-4 row align-items-center">
+            <div class="mb-3 row align-items-center">
                 <label class="col-sm-3 col-form-label fw-semibold">Vai trò:</label>
                 <div class="col-sm-9">
                     <input type="text" class="form-control" value="@Model.Role" readonly />
                 </div>
-            </div>
-
-            <!-- TODO: chưa nối chức năng lưu thay đổi -->
-            <div class="d-grid">
-                <button type="button" class="btn btn-dark" disabled title="Chức năng đang phát triển">
-                    Lưu thay đổi
-                </button>
             </div>
         </fieldset>
     </div>

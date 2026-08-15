@@ -106,8 +106,8 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-1.5" onclick="simulateSuccess()">
-                            <i class="bi bi-patch-check me-1"></i>[Giả lập Khách chuyển khoản thành công]
+                        <button type="button" class="btn btn-success fw-bold py-2.5 shadow-sm" onclick="confirmManualBankTransfer()">
+                            <i class="bi bi-qr-code-scan me-2"></i>Xác nhận đã nhận chuyển khoản (QR Giấy / Thủ công)
                         </button>
                         
                         <button type="button" class="btn btn-outline-danger fw-semibold py-2 mt-1" onclick="cancelPayment()">
@@ -137,11 +137,11 @@
                 </div>
                 <hr class="my-2" />
                 <div>
-                    <span class="text-uppercase text-secondary small d-block fw-bold">SỐ TIỀN THỰC NHẬN TỪ SEPAY:</span>
+                    <span class="text-uppercase text-secondary small d-block fw-bold">SỐ TIỀN THỰC NHẬN:</span>
                     <h1 class="fw-bold text-success mb-0 fs-2" id="receivedAmountDisplay">@Model.TotalAmount.ToString("N0") đ</h1>
                 </div>
             </div>
-            <p class="text-secondary mb-4 fs-5">Hệ thống đã tự động ghi nhận mã giao dịch ngân hàng để đối soát. Vui lòng bấm bên dưới để hoàn tất.</p>
+            <p class="text-secondary mb-4 fs-5">Hệ thống đã ghi nhận mã giao dịch ngân hàng để đối soát. Vui lòng bấm bên dưới để hoàn tất.</p>
             <div class="d-grid gap-2 col-8 mx-auto">
                 <button type="button" class="btn btn-success py-3 fs-4 fw-bold shadow-sm" onclick="confirmPaymentReceived()">XÁC NHẬN ĐÃ NHẬN TIỀN</button>
             </div>
@@ -203,17 +203,28 @@
                 .catch(err => console.error("Error polling payment status:", err));
         }, 2000);
 
-        function simulateSuccess() {
-            fetch('@Url.Action("SimulateBankTransferSuccess", "SaleManagement")?orderId=' + orderId, {
-                method: 'POST'
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) {
-                    showToast("Giả lập lỗi: " + data.message, "danger");
-                }
-            })
-            .catch(err => console.error("Failed to request bank simulation:", err));
+        function confirmManualBankTransfer() {
+            showConfirmModal(
+                'Xác nhận đã nhận tiền chuyển khoản',
+                'Xác nhận khách hàng đã chuyển khoản thành công qua <strong>QR Giấy / Ngân hàng</strong> (trường hợp SePay bị chậm hoặc chuyển thủ công)?',
+                function() {
+                    fetch('@Url.Action("SimulateBankTransferSuccess", "SaleManagement")?orderId=' + orderId, {
+                        method: 'POST'
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            showToast("Lỗi xác nhận: " + data.message, "danger");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Failed to request bank simulation:", err);
+                        showToast("Lỗi khi gửi yêu cầu xác nhận.", "danger");
+                    });
+                },
+                'Xác nhận nhận tiền',
+                'Hủy'
+            );
         }
 
         function cancelPayment() {

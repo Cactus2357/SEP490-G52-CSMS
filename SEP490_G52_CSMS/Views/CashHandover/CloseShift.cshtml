@@ -178,6 +178,18 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <label asp-for="ReceiverName" class="form-label small fw-semibold text-dark mb-1">
+                                Thông tin người nhận tiền nộp (Quản lý / Chủ quán / Két tổng): <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person-check text-secondary"></i></span>
+                                <input asp-for="ReceiverName" class="form-control"
+                                       placeholder="VD: Nguyễn Văn Quản Lý (hoặc Két tổng tầng 1)..." required />
+                            </div>
+                            <span asp-validation-for="ReceiverName" class="text-danger small"></span>
+                        </div>
+
                         <div class="mb-4">
                             <label asp-for="Password" class="form-label small fw-semibold text-dark mb-1">
                                 Mật khẩu của bạn để xác nhận đóng ca: <span class="text-danger">*</span>

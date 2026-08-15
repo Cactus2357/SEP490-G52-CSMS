@@ -88,7 +88,24 @@ namespace SEP490_G52_CSMS.Services
             order.RefundReason = reason;
             order.RefundMethod = "Cash";
             order.RefundedAt = DateTime.Now;
-            order.BrewingStatus = "Cancelled / Refunded";
+
+            bool isPartial = (effectiveRefund < order.TotalAmount);
+            if (isPartial)
+            {
+                order.PaymentStatus = "Partially Refunded";
+                order.BrewingStatus = "Partially Refunded";
+            }
+            else
+            {
+                order.PaymentStatus = "Cancelled";
+                order.BrewingStatus = "Cancelled / Refunded";
+
+                // Hoàn trả nguyên liệu lại vào kho nếu hủy toàn bộ đơn hàng
+                if (order.OrderItems != null && order.OrderItems.Any())
+                {
+                    await RestoreInventoryForItemsAsync(order.BranchId, order.OrderItems.Select(oi => (oi.VariantId, oi.Quantity)));
+                }
+            }
 
             await _orderRepo.UpdateOrderAsync(order);
 
@@ -387,10 +404,15 @@ namespace SEP490_G52_CSMS.Services
                 {
                     orders = orders.Where(o => o.BrewingStatus == "Missing Ingredients");
                 }
+                else if (status == "Hoàn tiền 1 phần" || status == "Hoàn tiền một phần")
+                {
+                    orders = orders.Where(o => o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount && o.BrewingStatus != "Missing Ingredients");
+                }
                 else if (status == "Đang xử lý")
                 {
                     orders = orders.Where(o => o.BrewingStatus != "Completed" && o.BrewingStatus != "Done"
                                             && o.BrewingStatus != "Cancelled / Refunded" && o.BrewingStatus != "Missing Ingredients"
+                                            && o.BrewingStatus != "Partially Refunded"
                                             && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
                 }
                 else if (status == "Đã hoàn thành")
@@ -400,7 +422,7 @@ namespace SEP490_G52_CSMS.Services
                 }
                 else if (status == "Đã hủy" || status == "Đã hủy / Hoàn tiền")
                 {
-                    orders = orders.Where(o => o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount > 0);
+                    orders = orders.Where(o => o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount);
                 }
             }
 
@@ -423,12 +445,14 @@ namespace SEP490_G52_CSMS.Services
                 Orders = pagedOrders.Select(o =>
                 {
                     bool isMissing = (o.BrewingStatus == "Missing Ingredients");
-                    bool isCancelled = (o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount > 0);
-                    bool isDone = !isCancelled && !isMissing && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+                    bool isPartialRefund = (!isMissing && o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount);
+                    bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount));
+                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
 
                     string displayStatus = isMissing ? "thiếu nguyên liệu (chờ xử lý)" :
+                                           (isPartialRefund ? "Hoàn tiền 1 phần" :
                                            (isCancelled ? "Đã hủy / Hoàn tiền" :
-                                           (isDone ? "đã hoàn thành" : "đang xử lý"));
+                                           (isDone ? "đã hoàn thành" : "đang xử lý")));
 
                     return new OrderSummaryViewModel
                     {
@@ -496,13 +520,15 @@ namespace SEP490_G52_CSMS.Services
             if (order == null) return null;
 
             bool isMissing = (order.BrewingStatus == "Missing Ingredients");
-            bool isCancelled = (order.BrewingStatus == "Cancelled / Refunded" || order.PaymentStatus == "Cancelled" || order.RefundAmount > 0);
-            bool isDone = !isCancelled && !isMissing && (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done");
+            bool isPartialRefund = (!isMissing && order.RefundAmount > 0 && order.RefundAmount < order.TotalAmount);
+            bool isCancelled = (!isMissing && (order.BrewingStatus == "Cancelled / Refunded" || order.PaymentStatus == "Cancelled" || order.RefundAmount >= order.TotalAmount));
+            bool isDone = !isCancelled && !isMissing && !isPartialRefund && (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done");
 
             string displayStatus = isMissing ? "thiếu nguyên liệu (chờ xử lý)" :
+                                   (isPartialRefund ? "Hoàn tiền 1 phần" :
                                    (isCancelled ? "Đã hủy / Hoàn tiền" :
                                    (isDone ? "đã hoàn thành" :
-                                   (order.BrewingStatus == "Waiting for Brewing" ? "đang chờ pha chế" : "đang trong quá trình pha chế")));
+                                   (order.BrewingStatus == "Waiting for Brewing" ? "đang chờ pha chế" : "đang trong quá trình pha chế"))));
 
             decimal missingAmount = 0;
             if (isMissing && !string.IsNullOrEmpty(order.RefundReason) && order.RefundReason.Contains("Ước tính hoàn:"))

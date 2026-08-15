@@ -54,7 +54,21 @@ namespace SEP490_G52_CSMS.Services
                 return null;
             }
 
-            // Kiểm tra đã có ca Active hôm nay tại chi nhánh chưa
+            // 1. Nếu ngày hôm nay tại chi nhánh đã thực hiện Đóng ca cuối ngày -> Không cho mở ca nữa
+            var isDayClosed = await _cashHandoverRepository.IsDayClosedAsync(branchId, today);
+            if (isDayClosed)
+            {
+                return null; // Đã đóng ca cuối ngày hôm nay
+            }
+
+            // 2. Nếu ca làm việc cụ thể này hôm nay đã bị đóng (Closed) -> Không cho mở lại
+            var specificClosed = await _cashHandoverRepository.GetClosedHandoverByShiftAsync(branchId, roster.ShiftId, today);
+            if (specificClosed != null)
+            {
+                return null; // Ca này hôm nay đã chốt đóng
+            }
+
+            // 3. Kiểm tra đã có ca Active hôm nay tại chi nhánh chưa
             var existingActive = await _cashHandoverRepository.GetActiveHandoverAsync(cashierId, today)
                               ?? await _cashHandoverRepository.GetCurrentActiveHandoverForBranchAsync(branchId, today);
             if (existingActive != null)
@@ -79,8 +93,18 @@ namespace SEP490_G52_CSMS.Services
             if (roster.FixedShift != null)
             {
                 var currentTime = DateTime.Now.TimeOfDay;
-                var thirtyMinutes = TimeSpan.FromMinutes(30);
-                isTimeToOpen = currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes);
+                var fiveMinutes = TimeSpan.FromMinutes(5);
+
+                if (roster.FixedShift.StartTime <= roster.FixedShift.EndTime)
+                {
+                    // Ca ngày (VD: 12:00 - 18:00)
+                    isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(fiveMinutes) && currentTime <= roster.FixedShift.EndTime);
+                }
+                else
+                {
+                    // Ca đêm (VD: 22:00 - 06:00)
+                    isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(fiveMinutes));
+                }
             }
 
             bool isFirstShift = (lastHandover == null || lastHandover.HandoverDate.Date < today.Date);
@@ -108,6 +132,7 @@ namespace SEP490_G52_CSMS.Services
                 PreviousHandoverDate = lastHandover?.HandoverDate.ToString("dd/MM/yyyy") ?? "-",
                 PreviousInitialCash = lastHandover != null ? lastHandover.InitialCash.ToString("N0") + " ₫" : "-",
                 PreviousApproverName = lastHandover?.IncomingCashier?.FullName ?? "-",
+                DelivererName = lastHandover?.OutgoingCashier?.FullName ?? "",
                 InitialCash = initialCash,
                 IsFirstShift = isFirstShift,
                 IsTimeToOpen = isTimeToOpen
@@ -126,7 +151,25 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Bạn không có lịch trực ca hôm nay tại chi nhánh. Chỉ thu ngân có lịch làm việc mới được mở ca.");
             }
 
-            var activeShiftHandover = await _cashHandoverRepository.GetActiveHandoverByShiftAsync(model.BranchId, model.ShiftId, today);
+            var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.CashierId);
+            var branchId = roster?.BranchId ?? cashierEmployee?.BranchId ?? model.BranchId;
+
+            // 1. KIỂM TRA ĐÃ ĐÓNG CA CUỐI NGÀY HÔM NAY CHƯA
+            var isDayClosed = await _cashHandoverRepository.IsDayClosedAsync(branchId, today);
+            if (isDayClosed)
+            {
+                return OperationResult.Fail("Ca làm việc cuối ngày hôm nay tại chi nhánh đã được Đóng ca (chốt sổ ngày). Quầy thu ngân đã khóa sổ, không thể mở thêm ca mới trong ngày hôm nay.");
+            }
+
+            // 2. KIỂM TRA CA NÀY HÔM NAY ĐÃ BỊ ĐÓNG CHƯA
+            var specificClosed = await _cashHandoverRepository.GetClosedHandoverByShiftAsync(branchId, model.ShiftId, today);
+            if (specificClosed != null)
+            {
+                return OperationResult.Fail($"Ca làm việc {roster.FixedShift?.ShiftName ?? "này"} hôm nay tại chi nhánh đã được thực hiện và chốt đóng. Không thể mở lại ca đã đóng.");
+            }
+
+            // 3. KIỂM TRA ĐÃ CÓ CA ACTIVE HÔM NAY TẠI CHI NHÁNH CHƯA
+            var activeShiftHandover = await _cashHandoverRepository.GetActiveHandoverByShiftAsync(branchId, model.ShiftId, today);
             if (activeShiftHandover != null)
             {
                 return OperationResult.Fail("Ca làm việc này tại chi nhánh đã được mở. Không thể tạo ca trùng lặp.");
@@ -138,15 +181,36 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Ca làm việc hôm nay của bạn đã được mở. Vui lòng chuyển sang Giao ca.");
             }
 
-            var currentTime = DateTime.Now.TimeOfDay;
-            var thirtyMinutes = TimeSpan.FromMinutes(30);
-            if (roster.FixedShift != null && currentTime < roster.FixedShift.StartTime.Subtract(thirtyMinutes))
+            if (string.IsNullOrWhiteSpace(model.DelivererName))
             {
-                return OperationResult.Fail("Chưa đến giờ mở ca. Bạn chỉ có thể mở ca trước 30 phút so với giờ bắt đầu ca trực.");
+                return OperationResult.Fail("Vui lòng nhập thông tin người giao tiền khi mở ca.");
             }
 
-            var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.CashierId);
-            var branchId = roster?.BranchId ?? cashierEmployee?.BranchId ?? model.BranchId;
+            // 4. KIỂM TRA THỜI GIAN CA LÀM VIỆC (CHƯA ĐẾN GIỜ HOẶC ĐÃ QUÁ GIỜ)
+            var currentTime = DateTime.Now.TimeOfDay;
+            var fiveMinutes = TimeSpan.FromMinutes(5);
+            if (roster.FixedShift != null)
+            {
+                if (roster.FixedShift.StartTime <= roster.FixedShift.EndTime)
+                {
+                    if (currentTime < roster.FixedShift.StartTime.Subtract(fiveMinutes))
+                    {
+                        return OperationResult.Fail($"Chưa đến giờ mở ca {roster.FixedShift.ShiftName}. Bạn chỉ có thể mở ca sớm tối đa 5 phút trước khi ca làm bắt đầu.");
+                    }
+                    if (currentTime > roster.FixedShift.EndTime)
+                    {
+                        return OperationResult.Fail($"Ca làm việc {roster.FixedShift.ShiftName} ({roster.FixedShift.StartTime:hh\\:mm} – {roster.FixedShift.EndTime:hh\\:mm}) đã hết thời gian làm việc hôm nay. Không thể mở ca đã quá giờ.");
+                    }
+                }
+                else
+                {
+                    if (currentTime < roster.FixedShift.StartTime.Subtract(fiveMinutes) && currentTime > roster.FixedShift.EndTime)
+                    {
+                        return OperationResult.Fail($"Chưa đến giờ mở ca {roster.FixedShift.ShiftName}. Vui lòng quay lại vào ca làm việc.");
+                    }
+                }
+            }
+
             var lastHandover = string.IsNullOrEmpty(branchId)
                 ? null
                 : await _cashHandoverRepository.GetLastClosedHandoverForBranchAsync(branchId);
@@ -158,9 +222,11 @@ namespace SEP490_G52_CSMS.Services
                 initialCash = lastHandover.ActualCash;
             }
 
+            string handoverType = isFirstShift ? CashHandoverConstants.HandoverTypeFirstShift : CashHandoverConstants.HandoverTypeMidShift;
+
             var handover = new CashHandover
             {
-                BranchId = model.BranchId,
+                BranchId = branchId,
                 HandoverDate = today,
                 ShiftId = model.ShiftId,
                 OutgoingCashierId = model.CashierId,
@@ -171,8 +237,9 @@ namespace SEP490_G52_CSMS.Services
                 CashRefundAmount = 0,
                 TheoreticalCash = initialCash,
                 ActualCash = 0,
+                DelivererName = model.DelivererName,
                 IsPasswordConfirmed = false,
-                HandoverType = CashHandoverConstants.HandoverTypeFirstShift,
+                HandoverType = handoverType,
                 Status = CashHandoverConstants.ActiveStatus,
                 OpenedAt = DateTime.Now,
             };
@@ -180,7 +247,7 @@ namespace SEP490_G52_CSMS.Services
             await _cashHandoverRepository.AddHandoverAsync(handover);
             await _cashHandoverRepository.SyncAttendanceOnOpenShiftAsync(model.CashierId, model.ShiftId, today);
 
-            return OperationResult.Ok($"Đã mở ca đầu ngày thành công. Tiền đầu ca: {initialCash:N0} đ");
+            return OperationResult.Ok($"Đã mở ca ({roster.FixedShift?.ShiftName ?? "mới"}) thành công. Tiền đầu ca: {initialCash:N0} đ");
         }
 
         // =========================================================
@@ -268,6 +335,18 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Hiện tại là ca cuối cùng trong ngày (không có ca tiếp theo). Không thể thực hiện bàn giao, vui lòng sử dụng chức năng Đóng ca cuối ngày.");
             }
 
+            // Kiểm tra thời gian bàn giao ca sớm 10 phút
+            if (!model.IsEmergencyHandover && handover.FixedShift != null)
+            {
+                var currentTime = DateTime.Now.TimeOfDay;
+                var tenMinutes = TimeSpan.FromMinutes(10);
+                var earlyHandoverTime = handover.FixedShift.EndTime.Subtract(tenMinutes);
+                if (earlyHandoverTime > TimeSpan.Zero && currentTime < earlyHandoverTime)
+                {
+                    return OperationResult.Fail($"Chưa đến giờ bàn giao ca. Bạn chỉ có thể thực hiện bàn giao ca sớm tối đa 10 phút trước khi ca kết thúc (từ {earlyHandoverTime:hh\\:mm}).");
+                }
+            }
+
             if (!model.IncomingCashierId.HasValue || model.IncomingCashierId <= 0)
             {
                 return OperationResult.Fail("Vui lòng chọn người nhận ca.");
@@ -284,6 +363,11 @@ namespace SEP490_G52_CSMS.Services
             if (incomingEmployee == null)
             {
                 return OperationResult.Fail("Không tìm thấy thông tin nhân viên nhận ca.");
+            }
+
+            if (incomingEmployee.Role != CashHandoverConstants.CashierRole && incomingEmployee.Role != "Cashier")
+            {
+                return OperationResult.Fail($"Nhân viên {incomingEmployee.FullName} không có vai trò Thu ngân (Vai trò: {incomingEmployee.Role}). Chỉ có thể bàn giao cho nhân viên Thu ngân.");
             }
 
             // Xác minh mật khẩu người nhận ca
@@ -408,6 +492,23 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Không tìm thấy ca làm việc đang mở để đóng cuối ngày.");
             }
 
+            if (string.IsNullOrWhiteSpace(model.ReceiverName))
+            {
+                return OperationResult.Fail("Vui lòng nhập thông tin người nhận tiền đóng ca.");
+            }
+
+            // Kiểm tra thời gian đóng ca sớm 10 phút
+            if (handover.FixedShift != null)
+            {
+                var currentTime = DateTime.Now.TimeOfDay;
+                var tenMinutes = TimeSpan.FromMinutes(10);
+                var earlyCloseTime = handover.FixedShift.EndTime.Subtract(tenMinutes);
+                if (earlyCloseTime > TimeSpan.Zero && currentTime < earlyCloseTime)
+                {
+                    return OperationResult.Fail($"Chưa đến giờ đóng ca cuối ngày. Bạn chỉ có thể thực hiện đóng ca sớm tối đa 10 phút trước khi ca kết thúc (từ {earlyCloseTime:hh\\:mm}).");
+                }
+            }
+
             var employee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.OutgoingCashierId);
             if (employee == null)
             {
@@ -431,12 +532,13 @@ namespace SEP490_G52_CSMS.Services
             }
 
             handover.IncomingCashierId = model.OutgoingCashierId;
+            handover.DelivererName = model.ReceiverName;
             handover.MachineCashRevenue = cashRev;
             handover.BankTransferRevenue = bankRev;
             handover.CashRefundAmount = cashRefunds;
             handover.ActualCash = model.ActualCash;
             handover.TheoreticalCash = theoretical;
-            handover.Notes = $"[ĐÓNG CA CUỐI NGÀY - Để lại két: {model.RetainedCashForTomorrow:N0}đ, Nộp két tổng: {model.DepositedCashAmount:N0}đ] " + (model.Notes ?? "");
+            handover.Notes = $"[ĐÓNG CA CUỐI NGÀY - Để lại két: {model.RetainedCashForTomorrow:N0}đ, Nộp két tổng: {model.DepositedCashAmount:N0}đ" + (!string.IsNullOrWhiteSpace(model.ReceiverName) ? $", Người nhận tiền: {model.ReceiverName}" : "") + "] " + (model.Notes ?? "");
             handover.IsPasswordConfirmed = true;
             handover.HandoverType = CashHandoverConstants.HandoverTypeLastShift;
             handover.Status = CashHandoverConstants.ClosedStatus;
@@ -487,6 +589,11 @@ namespace SEP490_G52_CSMS.Services
             if (incomingEmployee == null)
             {
                 return OperationResult.Fail("Không tìm thấy thông tin nhân viên tiếp nhận ủy quyền.");
+            }
+
+            if (incomingEmployee.Role != CashHandoverConstants.CashierRole && incomingEmployee.Role != "Cashier")
+            {
+                return OperationResult.Fail($"Nhân viên {incomingEmployee.FullName} không có vai trò Thu ngân (Vai trò: {incomingEmployee.Role}). Chỉ có thể bàn giao cho nhân viên Thu ngân.");
             }
 
             if (!DAT_PasswordHasher.VerifyPassword(model.IncomingPassword, incomingEmployee.Password ?? ""))
@@ -546,6 +653,11 @@ namespace SEP490_G52_CSMS.Services
             return OperationResult.Ok($"Đã xử lý bàn giao đột xuất thành công. Ca đã được chuyển giao cho {incomingEmployee.FullName}.");
         }
 
+        public async Task<bool> IsDayClosedAsync(string branchId, DateTime date)
+        {
+            return await _cashHandoverRepository.IsDayClosedAsync(branchId, date);
+        }
+
         // =========================================================
         //  5. KIỂM TRA ĐIỀU KIỆN MỞ BÁN HÀNG CHO CASHIER
         // =========================================================
@@ -576,29 +688,102 @@ namespace SEP490_G52_CSMS.Services
                     var theoretical = ch.InitialCash + ch.MachineCashRevenue - ch.CashRefundAmount;
                     var discrepancy = ch.ActualCash - theoretical;
 
-                    string sessionType = ch.HandoverType switch
+                    string sessionType;
+                    string actionTime;
+                    string actionTimeType;
+                    string outgoingName;
+                    string incomingName;
+                    bool hasOutgoing;
+                    bool hasIncoming;
+
+                    bool isActive = (ch.Status == CashHandoverConstants.ActiveStatus);
+
+                    if (isActive)
                     {
-                        CashHandoverConstants.HandoverTypeFirstShift => "Mở ca đầu ngày",
-                        CashHandoverConstants.HandoverTypeLastShift => "Đóng ca cuối ngày",
-                        CashHandoverConstants.HandoverTypeEmergency => "Bàn giao đột xuất",
-                        "SelfHandover" => "Giao ca liên tiếp (Cùng NV)",
-                        _ => ch.Status == CashHandoverConstants.ActiveStatus ? "Mở ca" : "Bàn giao ca"
-                    };
+                        actionTime = ch.OpenedAt.ToString("HH:mm dd/MM/yyyy");
+                        actionTimeType = "Mở ca lúc";
+                        hasOutgoing = !string.IsNullOrWhiteSpace(ch.DelivererName);
+                        outgoingName = !string.IsNullOrWhiteSpace(ch.DelivererName) ? ch.DelivererName : "-";
+                        hasIncoming = true;
+                        incomingName = ch.OutgoingCashier?.FullName ?? ch.IncomingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+
+                        if (ch.HandoverType == CashHandoverConstants.HandoverTypeFirstShift)
+                        {
+                            sessionType = "Mở ca đầu ngày";
+                        }
+                        else if (ch.HandoverType == CashHandoverConstants.HandoverTypeEmergency)
+                        {
+                            sessionType = "Tiếp quản ca đột xuất (Đang mở)";
+                        }
+                        else if (ch.HandoverType == "SelfHandover")
+                        {
+                            sessionType = "Nhận ca liên tiếp (Đang mở)";
+                        }
+                        else
+                        {
+                            sessionType = "Tiếp quản ca làm việc (Đang mở)";
+                        }
+                    }
+                    else // Status == Closed
+                    {
+                        actionTime = ch.ClosedAt?.ToString("HH:mm dd/MM/yyyy") ?? ch.OpenedAt.ToString("HH:mm dd/MM/yyyy");
+
+                        if (ch.HandoverType == CashHandoverConstants.HandoverTypeLastShift)
+                        {
+                            sessionType = "Đóng ca cuối ngày";
+                            actionTimeType = "Đóng ca lúc";
+                            hasOutgoing = true;
+                            outgoingName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+                            hasIncoming = !string.IsNullOrWhiteSpace(ch.DelivererName);
+                            incomingName = !string.IsNullOrWhiteSpace(ch.DelivererName) ? $"{ch.DelivererName} (Người nhận tiền)" : "-";
+                        }
+                        else if (ch.HandoverType == CashHandoverConstants.HandoverTypeEmergency)
+                        {
+                            sessionType = "Bàn giao đột xuất";
+                            actionTimeType = "Bàn giao lúc";
+                            hasOutgoing = true;
+                            outgoingName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+                            hasIncoming = true;
+                            incomingName = ch.IncomingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+                        }
+                        else if (ch.HandoverType == "SelfHandover")
+                        {
+                            sessionType = "Giao ca liên tiếp (Cùng NV)";
+                            actionTimeType = "Bàn giao lúc";
+                            hasOutgoing = true;
+                            outgoingName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+                            hasIncoming = true;
+                            incomingName = ch.IncomingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+                        }
+                        else
+                        {
+                            sessionType = "Bàn giao ca giữa ngày";
+                            actionTimeType = "Bàn giao lúc";
+                            hasOutgoing = true;
+                            outgoingName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+                            hasIncoming = true;
+                            incomingName = ch.IncomingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
+                        }
+                    }
 
                     return new HandoverHistoryItemViewModel
                     {
                         HandoverId = ch.HandoverId,
                         HandoverDate = ch.HandoverDate.ToString("dd/MM/yyyy"),
                         ShiftName = ch.FixedShift?.ShiftName ?? "-",
-                        OutgoingCashierName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel,
-                        IncomingCashierName = ch.IncomingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel,
+                        ActionTime = actionTime,
+                        ActionTimeType = actionTimeType,
+                        OutgoingCashierName = outgoingName,
+                        IncomingCashierName = incomingName,
+                        HasOutgoing = hasOutgoing,
+                        HasIncoming = hasIncoming,
                         InitialCash = ch.InitialCash.ToString("N0") + " đ",
-                        MachineCashRevenue = ch.MachineCashRevenue.ToString("N0") + " đ",
-                        BankTransferRevenue = ch.BankTransferRevenue.ToString("N0") + " đ",
-                        CashRefundAmount = ch.CashRefundAmount.ToString("N0") + " đ",
-                        TheoreticalCash = theoretical.ToString("N0") + " đ",
-                        ActualCash = ch.ActualCash.ToString("N0") + " đ",
-                        Discrepancy = (discrepancy >= 0 ? "+" : "") + discrepancy.ToString("N0") + " đ",
+                        MachineCashRevenue = isActive ? "-" : ch.MachineCashRevenue.ToString("N0") + " đ",
+                        BankTransferRevenue = isActive ? "-" : ch.BankTransferRevenue.ToString("N0") + " đ",
+                        CashRefundAmount = isActive ? "-" : ch.CashRefundAmount.ToString("N0") + " đ",
+                        TheoreticalCash = isActive ? "-" : theoretical.ToString("N0") + " đ",
+                        ActualCash = isActive ? "-" : ch.ActualCash.ToString("N0") + " đ",
+                        Discrepancy = isActive ? "-" : ((discrepancy >= 0 ? "+" : "") + discrepancy.ToString("N0") + " đ"),
                         Status = ch.Status,
                         OpenedAt = ch.OpenedAt.ToString("HH:mm dd/MM/yyyy"),
                         ClosedAt = ch.ClosedAt?.ToString("HH:mm dd/MM/yyyy") ?? "-",

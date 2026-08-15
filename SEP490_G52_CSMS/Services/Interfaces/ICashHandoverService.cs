@@ -35,6 +35,9 @@ namespace SEP490_G52_CSMS.Services.Interfaces
         /// <summary> Lấy danh sách thu ngân Active của chi nhánh để chọn </summary>
         Task<List<CashierSelectItemViewModel>> GetCashiersAsync(string branchId);
 
+        /// <summary> Kiểm tra xem ngày hôm nay tại chi nhánh đã thực hiện Đóng ca cuối ngày chưa </summary>
+        Task<bool> IsDayClosedAsync(string branchId, DateTime date);
+
         /// <summary>
         /// Tìm ID thu ngân đang trực hoặc sắp trực ở hiện tại
         /// </summary>

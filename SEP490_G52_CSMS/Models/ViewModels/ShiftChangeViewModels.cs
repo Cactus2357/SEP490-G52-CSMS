@@ -18,6 +18,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int RequestId { get; set; }
         public string SubmittedAt { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public string Aspiration { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
         public bool CanCancel { get; set; }
     }
 

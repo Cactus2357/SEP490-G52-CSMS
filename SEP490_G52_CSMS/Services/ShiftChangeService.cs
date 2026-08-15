@@ -32,7 +32,9 @@ namespace SEP490_G52_CSMS.Services
                     RequestId = r.RequestId,
                     SubmittedAt = r.SubmittedAt.ToString("dd/MM/yyyy"),
                     Status = MapStatusToVietnamese(r.Status),
-                    CanCancel = r.Status == "Submitted" // Chỉ cho phép hủy khi đang "Đã gửi"
+                    Aspiration = r.Aspiration ?? "",
+                    Reason = r.Reason ?? "",
+                    CanCancel = r.Status == "Submitted" || r.Status == "Pending" // Chỉ cho phép hủy khi đang "Đã gửi"
                 }).ToList()
             };
 
