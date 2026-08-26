@@ -23,6 +23,11 @@ namespace SEP490_G52_CSMS.Services
         public async Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items)
         {
             var date = DateTime.Now;
+            if (date.TimeOfDay < TimeSpan.FromHours(6))
+            {
+                throw new InvalidOperationException("Hệ thống chỉ mở bán hàng từ 06:00 đến 24:00 hàng ngày. Hiện tại đang ngoài khung giờ phục vụ.");
+            }
+
             int countToday = await _orderRepo.GetOrdersCountByDateAsync(date);
             string orderId = $"MH{date:yyMMdd}-{(countToday + 1):D3}";
 

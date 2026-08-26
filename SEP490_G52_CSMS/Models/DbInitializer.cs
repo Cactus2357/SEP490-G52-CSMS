@@ -89,10 +89,9 @@ namespace SEP490_G52_CSMS.Models
                 // ---------- 2. FIXED SHIFTS ----------
                 var shifts = new List<FixedShift>
                 {
-                    new FixedShift { ShiftName = "Ca 1", StartTime = new TimeSpan(6,0,0), EndTime = new TimeSpan(12,0,0) },
-                    new FixedShift { ShiftName = "Ca 2", StartTime = new TimeSpan(12,0,0), EndTime = new TimeSpan(18,0,0) },
-                    new FixedShift { ShiftName = "Ca 3", StartTime = new TimeSpan(18,0,0), EndTime = new TimeSpan(22,0,0) },
-                    new FixedShift { ShiftName = "Ca đêm", StartTime = new TimeSpan(22,0,0), EndTime = new TimeSpan(6,0,0) }
+                    new FixedShift { ShiftName = "Ca 1", StartTime = new TimeSpan(7,0,0), EndTime = new TimeSpan(12,0,0) },
+                    new FixedShift { ShiftName = "Ca 2", StartTime = new TimeSpan(13,0,0), EndTime = new TimeSpan(18,0,0) },
+                    new FixedShift { ShiftName = "Ca 3", StartTime = new TimeSpan(19,0,0), EndTime = new TimeSpan(23,59,59) }
                 };
                 context.FixedShifts.AddRange(shifts);
                 context.SaveChanges();
@@ -934,6 +933,27 @@ namespace SEP490_G52_CSMS.Models
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('cash_handovers') AND name = 'emergency_reason')
                     BEGIN
                         ALTER TABLE [cash_handovers] ADD [emergency_reason] nvarchar(255) NULL;
+                    END
+
+                    -- Cập nhật Ca 3 kết thúc lúc 23:59:59 (24h) và loại bỏ Ca đêm
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'fixed_shifts')
+                    BEGIN
+                        UPDATE [fixed_shifts] SET [start_time] = '18:00:00', [end_time] = '23:59:59' WHERE [shift_name] = 'Ca 3';
+
+                        IF EXISTS (SELECT * FROM [fixed_shifts] WHERE [shift_name] LIKE N'%đêm%' OR [shift_name] LIKE '%Night%' OR [start_time] >= '22:00:00')
+                        BEGIN
+                            DECLARE @NightShiftId int;
+                            DECLARE @Ca3ShiftId int;
+                            SELECT TOP 1 @NightShiftId = [shift_id] FROM [fixed_shifts] WHERE [shift_name] LIKE N'%đêm%' OR [shift_name] LIKE '%Night%' OR [start_time] >= '22:00:00';
+                            SELECT TOP 1 @Ca3ShiftId = [shift_id] FROM [fixed_shifts] WHERE [shift_name] = 'Ca 3';
+
+                            IF @NightShiftId IS NOT NULL AND @Ca3ShiftId IS NOT NULL
+                            BEGIN
+                                UPDATE [weekly_roster_grids] SET [shift_id] = @Ca3ShiftId WHERE [shift_id] = @NightShiftId;
+                                UPDATE [cash_handovers] SET [shift_id] = @Ca3ShiftId WHERE [shift_id] = @NightShiftId;
+                                DELETE FROM [fixed_shifts] WHERE [shift_id] = @NightShiftId;
+                            END
+                        END
                     END");
             }
             catch { }

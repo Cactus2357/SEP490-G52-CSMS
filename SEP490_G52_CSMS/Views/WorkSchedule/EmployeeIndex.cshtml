@@ -74,7 +74,7 @@
                         <tr>
                             <td class="text-start ps-3 bg-body-tertiary py-3">
                                 <div class="fw-bold text-dark">@shift.ShiftName</div>
-                                <div class="small text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</div>
+                                <div class="small text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @(shift.EndTime.Hours == 23 && shift.EndTime.Minutes >= 59 ? "24:00" : shift.EndTime.ToString(@"hh\:mm")))</div>
                             </td>
                             @foreach (var day in Model.Days)
                             {

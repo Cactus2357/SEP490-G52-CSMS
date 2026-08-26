@@ -50,11 +50,12 @@ namespace SEP490_G52_CSMS.Services
 
             foreach (var shift in shifts)
             {
+                var endFormatted = (shift.EndTime.Hours == 23 && shift.EndTime.Minutes >= 59) ? "24:00" : shift.EndTime.ToString(@"hh\:mm");
                 var row = new WorkScheduleRowViewModel
                 {
                     ShiftId = shift.ShiftId,
                     ShiftName = shift.ShiftName ?? "",
-                    ShiftTimeRange = $"{shift.StartTime:hh\\:mm} - {shift.EndTime:hh\\:mm}"
+                    ShiftTimeRange = $"{shift.StartTime:hh\\:mm} - {endFormatted}"
                 };
 
                 for (int i = 0; i < 7; i++)

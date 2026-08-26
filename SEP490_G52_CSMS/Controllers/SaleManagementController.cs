@@ -69,6 +69,12 @@ namespace SEP490_G52_CSMS.Controllers
 
         private async Task<(bool isEligible, string reasonCode, string message)> CheckCashierEligibilityAsync(int employeeId, string branchId)
         {
+            var nowTime = DateTime.Now.TimeOfDay;
+            if (nowTime < TimeSpan.FromHours(6))
+            {
+                return (false, "OutsideOperatingHours", "Hệ thống chỉ mở bán hàng từ 06:00 đến 24:00 hàng ngày. Hiện tại đang ngoài khung giờ phục vụ.");
+            }
+
             if (User.IsInRole("RManager") || User.IsInRole("BranchManager"))
             {
                 return (true, "Eligible", "Hợp lệ");
@@ -89,7 +95,13 @@ namespace SEP490_G52_CSMS.Controllers
                 ViewBag.ReasonCode = reasonCode;
                 ViewBag.NotInShiftMessage = message;
 
-                if (reasonCode == "NotScheduled" || reasonCode == "NotCheckedIn" || reasonCode == "ShiftEnded")
+                if (reasonCode == "OutsideOperatingHours")
+                {
+                    ViewBag.RedirectAction = "Index";
+                    ViewBag.RedirectController = "Home";
+                    ViewBag.RedirectButtonText = "Về Trang Chủ";
+                }
+                else if (reasonCode == "NotScheduled" || reasonCode == "NotCheckedIn" || reasonCode == "ShiftEnded")
                 {
                     if (reasonCode == "NotCheckedIn")
                     {

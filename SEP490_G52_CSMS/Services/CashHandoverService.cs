@@ -17,6 +17,13 @@ namespace SEP490_G52_CSMS.Services
             _cashHandoverRepository = cashHandoverRepository;
         }
 
+        private static string FormatShiftTimeRange(FixedShift? shift)
+        {
+            if (shift == null) return "-";
+            var endStr = (shift.EndTime.Hours == 23 && shift.EndTime.Minutes >= 59) ? "24:00" : shift.EndTime.ToString(@"hh\:mm");
+            return $"{shift.StartTime:hh\\:mm} – {endStr}";
+        }
+
         // =========================================================
         //  XÁC ĐỊNH LOẠI CA HIỆN TẠI
         // =========================================================
@@ -86,8 +93,8 @@ namespace SEP490_G52_CSMS.Services
             int shiftId = roster.ShiftId;
             string shiftName = roster.FixedShift?.ShiftName ?? firstShift?.ShiftName ?? "Ca 1";
             string shiftTimeRange = roster.FixedShift != null
-                ? $"{roster.FixedShift.StartTime:hh\\:mm} – {roster.FixedShift.EndTime:hh\\:mm}"
-                : (firstShift != null ? $"{firstShift.StartTime:hh\\:mm} – {firstShift.EndTime:hh\\:mm}" : "-");
+                ? FormatShiftTimeRange(roster.FixedShift)
+                : (firstShift != null ? FormatShiftTimeRange(firstShift) : "-");
 
             bool isTimeToOpen = true;
             if (roster.FixedShift != null)
@@ -97,12 +104,10 @@ namespace SEP490_G52_CSMS.Services
 
                 if (roster.FixedShift.StartTime <= roster.FixedShift.EndTime)
                 {
-                    // Ca ngày (VD: 12:00 - 18:00)
                     isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(fiveMinutes) && currentTime <= roster.FixedShift.EndTime);
                 }
                 else
                 {
-                    // Ca đêm (VD: 22:00 - 06:00)
                     isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(fiveMinutes));
                 }
             }
@@ -309,7 +314,7 @@ namespace SEP490_G52_CSMS.Services
                 CashRefundAmount = cashRefunds,
                 ActualCash = theoretical,
                 TargetShiftName = nextShift.ShiftName,
-                TargetShiftTimeRange = $"{nextShift.StartTime:hh\\:mm} – {nextShift.EndTime:hh\\:mm}",
+                TargetShiftTimeRange = FormatShiftTimeRange(nextShift),
                 IsSelfHandover = isSelfHandover,
                 IncomingCashierId = nextCashierId ?? activeHandover.OutgoingCashierId,
                 DelivererName = activeHandover.DelivererName,
@@ -472,7 +477,7 @@ namespace SEP490_G52_CSMS.Services
                 BranchId = activeHandover.BranchId,
                 CashierName = activeHandover.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel,
                 ShiftName = activeHandover.FixedShift?.ShiftName ?? "-",
-                ShiftTimeRange = activeHandover.FixedShift != null ? $"{activeHandover.FixedShift.StartTime:hh\\:mm} – {activeHandover.FixedShift.EndTime:hh\\:mm}" : "-",
+                ShiftTimeRange = FormatShiftTimeRange(activeHandover.FixedShift),
                 HandoverDate = activeHandover.HandoverDate,
                 OpenedAt = activeHandover.OpenedAt,
                 InitialCash = activeHandover.InitialCash,
@@ -503,9 +508,13 @@ namespace SEP490_G52_CSMS.Services
                 var currentTime = DateTime.Now.TimeOfDay;
                 var tenMinutes = TimeSpan.FromMinutes(10);
                 var earlyCloseTime = handover.FixedShift.EndTime.Subtract(tenMinutes);
-                if (earlyCloseTime > TimeSpan.Zero && currentTime < earlyCloseTime)
+                bool isPastShiftDay = DateTime.Today > handover.HandoverDate.Date;
+                bool isPastMidnight = (DateTime.Today == handover.HandoverDate.Date.AddDays(1) || currentTime < TimeSpan.FromHours(6));
+
+                if (!isPastShiftDay && !isPastMidnight && earlyCloseTime > TimeSpan.Zero && currentTime < earlyCloseTime)
                 {
-                    return OperationResult.Fail($"Chưa đến giờ đóng ca cuối ngày. Bạn chỉ có thể thực hiện đóng ca sớm tối đa 10 phút trước khi ca kết thúc (từ {earlyCloseTime:hh\\:mm}).");
+                    var earlyStr = (handover.FixedShift.EndTime.Hours == 23 && handover.FixedShift.EndTime.Minutes >= 59) ? "23:50" : $"{earlyCloseTime:hh\\:mm}";
+                    return OperationResult.Fail($"Chưa đến giờ đóng ca cuối ngày. Bạn chỉ có thể thực hiện đóng ca sớm tối đa 10 phút trước khi ca kết thúc (từ {earlyStr}).");
                 }
             }
 

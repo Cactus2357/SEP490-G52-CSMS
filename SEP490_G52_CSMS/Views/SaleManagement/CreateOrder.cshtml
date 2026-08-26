@@ -35,11 +35,12 @@
                                 <i class="bi bi-clock-history display-4"></i>
                             </div>
                             <h4 class="fw-bold text-dark mb-2">
-                                @(ViewBag.ReasonCode == "NotScheduled" ? "Chưa Có Lịch Ca Trực Hiện Tại" : 
+                                @(ViewBag.ReasonCode == "OutsideOperatingHours" ? "Ngoài Khung Giờ Bán Hàng (06:00 - 24:00)" :
+                                 (ViewBag.ReasonCode == "NotScheduled" ? "Chưa Có Lịch Ca Trực Hiện Tại" : 
                                  (ViewBag.ReasonCode == "NotCheckedIn" ? "Chưa Điểm Danh Chấm Công Vào Ca" : 
                                  (ViewBag.ReasonCode == "FirstShiftNotOpened" ? "Ca Đầu Ngày Chưa Được Mở Ca" : 
                                  (ViewBag.ReasonCode == "ShiftClosed" ? "Ca Làm Việc Đã Được Đóng / Khóa Sổ" : 
-                                 (ViewBag.ReasonCode == "ShiftEnded" ? "Ca Làm Việc Đã Kết Thúc (Đã Ra Ca)" : "Chưa Nhận Bàn Giao Ca")))))
+                                 (ViewBag.ReasonCode == "ShiftEnded" ? "Ca Làm Việc Đã Kết Thúc (Đã Ra Ca)" : "Chưa Nhận Bàn Giao Ca"))))))
                             </h4>
                             <p class="text-muted fs-5 mb-0">
                                 @ViewBag.NotInShiftMessage
@@ -48,8 +49,9 @@
 
                         <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-dark py-3 px-4 rounded-3 text-start small mb-4">
                             <i class="bi bi-info-circle-fill me-2 text-warning"></i>
-                            <strong>Quy định bán hàng cho Thu ngân:</strong> Bạn chỉ được phép mở màn hình bán hàng khi thỏa mãn đồng thời:
+                            <strong>Quy định bán hàng cho Thu ngân:</strong> Bạn chỉ được phép mở màn hình bán hàng khi thỏa mãn:
                             <ul class="mb-0 mt-1">
+                                <li>Trong khung giờ mở bán chính thức của hệ thống (<strong>06:00 – 24:00 hàng ngày</strong>).</li>
                                 <li>Có ca làm việc trong lịch phân công tại thời điểm hiện tại.</li>
                                 <li>Đã <strong>điểm danh chấm công (Check-in)</strong> vào ca làm việc.</li>
                                 <li>Đã thực hiện <strong>Mở ca đầu ngày</strong> (nếu ca 1) hoặc <strong>Nhận bàn giao ca</strong> (nếu ca 2, 3...).</li>

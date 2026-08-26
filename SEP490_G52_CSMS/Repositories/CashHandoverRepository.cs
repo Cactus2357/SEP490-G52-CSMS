@@ -328,6 +328,12 @@ namespace SEP490_G52_CSMS.Repositories
             var yesterday = today.AddDays(-1);
             var nowTime = DateTime.Now.TimeOfDay;
 
+            // 0. KIỂM TRA KHUNG GIỜ BÁN HÀNG CỦA HỆ THỐNG (CHỈ TỪ 06:00 ĐẾN 24:00)
+            if (nowTime < TimeSpan.FromHours(6))
+            {
+                return (false, "OutsideOperatingHours", "Hệ thống chỉ mở bán hàng từ 06:00 đến 24:00 hàng ngày. Hiện tại đang ngoài khung giờ phục vụ.", null, null);
+            }
+
             // 1. KIỂM TRA LỊCH PHÂN CÔNG CA LÀM VIỆC CỦA THU NGÂN (ROSTER)
             var rosters = await _context.WeeklyRosterGrids
                 .Include(r => r.FixedShift)

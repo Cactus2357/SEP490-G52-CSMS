@@ -230,6 +230,7 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             string? attendanceMessage = null;
+            bool isAlreadyCheckedIn = false;
 
             if (todayRoster != null && todayRoster.FixedShift != null)
             {
@@ -276,13 +277,87 @@ namespace SEP490_G52_CSMS.Controllers
                 }
                 else
                 {
-                    attendanceMessage = $"Bạn đã chấm công cho ca {todayRoster.FixedShift.ShiftName} rồi.";
+                    isAlreadyCheckedIn = true;
+                    attendanceMessage = $"Bạn đã điểm danh cho ca {todayRoster.FixedShift.ShiftName} rồi.";
                 }
+            }
+
+            // Retrieve matched employee's branch info if not loaded
+            if (matchedEmployee.Branch == null && !string.IsNullOrEmpty(matchedEmployee.BranchId))
+            {
+                matchedEmployee.Branch = await _context.Branches.FirstOrDefaultAsync(b => b.BranchId == matchedEmployee.BranchId);
+            }
+
+            string roleDisplayName = matchedEmployee.Role switch
+            {
+                "Cashier" => "Nhân viên Thu ngân",
+                "Bartender" => "Nhân viên Pha chế",
+                "Busser" => "Nhân viên Phục vụ",
+                "BranchManager" => "Quản lý Chi nhánh",
+                "WarehouseManager" => "Quản lý Kho",
+                "RManager" => "Quản lý Vùng",
+                "Admin" => "Quản trị viên",
+                _ => matchedEmployee.Role ?? "Nhân viên"
+            };
+
+            var employeePayload = new
+            {
+                employeeId = matchedEmployee.EmployeeId,
+                fullName = matchedEmployee.FullName ?? matchedEmployee.Username ?? "Nhân viên",
+                username = matchedEmployee.Username ?? "",
+                role = matchedEmployee.Role ?? "",
+                roleDisplayName = roleDisplayName,
+                branchId = matchedEmployee.BranchId ?? "",
+                branchName = matchedEmployee.Branch?.BranchName ?? (string.IsNullOrEmpty(matchedEmployee.BranchId) ? "Hệ thống trung tâm" : matchedEmployee.BranchId),
+                email = matchedEmployee.Email ?? "",
+                phoneNumber = matchedEmployee.PhoneNumber ?? ""
+            };
+
+            object attendancePayload;
+            if (todayRoster != null && todayRoster.FixedShift != null)
+            {
+                var fs = todayRoster.FixedShift;
+                var endFormatted = (fs.EndTime.Hours == 23 && fs.EndTime.Minutes >= 59) ? "24:00" : fs.EndTime.ToString(@"hh\:mm");
+                var shiftTimeRange = $"{fs.StartTime:hh\\:mm} - {endFormatted}";
+                var shiftStart = todayRoster.AssignmentDate.Date + fs.StartTime;
+                var graceCutoff = shiftStart.AddMinutes(15);
+                var checkInStatus = now <= graceCutoff ? "OnTime" : "Late";
+
+                attendancePayload = new
+                {
+                    hasShift = true,
+                    shiftId = fs.ShiftId,
+                    shiftName = fs.ShiftName ?? $"Ca {fs.ShiftId}",
+                    shiftTimeRange = shiftTimeRange,
+                    checkInTime = now.ToString("HH:mm:ss - dd/MM/yyyy"),
+                    checkInStatus = checkInStatus,
+                    statusText = isAlreadyCheckedIn ? "Đã điểm danh trước đó" : (checkInStatus == "OnTime" ? "Đúng giờ" : "Đi trễ"),
+                    message = attendanceMessage
+                };
+            }
+            else
+            {
+                attendancePayload = new
+                {
+                    hasShift = false,
+                    shiftId = 0,
+                    shiftName = "",
+                    shiftTimeRange = "",
+                    checkInTime = "",
+                    checkInStatus = "None",
+                    statusText = "Không có ca trực hôm nay",
+                    message = "Đăng nhập thành công (Nhân viên không có ca trực cần điểm danh tại thời điểm này)."
+                };
             }
 
             await _context.SaveChangesAsync();
             await SignInUserAsync(matchedEmployee);
-            return Json(new { success = true, attendanceMessage });
+            return Json(new { 
+                success = true, 
+                employee = employeePayload, 
+                attendance = attendancePayload, 
+                attendanceMessage = attendanceMessage 
+            });
         }
 
 

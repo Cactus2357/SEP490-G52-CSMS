@@ -108,7 +108,7 @@
                             <tr>
                                 <td class="bg-body-tertiary text-start ps-3 py-3">
                                     <strong class="text-dark">@(shift.ShiftName ?? "Ca ?")</strong><br />
-                                    <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @shift.EndTime.ToString(@"hh\:mm"))</small>
+                                    <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @(shift.EndTime.Hours == 23 && shift.EndTime.Minutes >= 59 ? "24:00" : shift.EndTime.ToString(@"hh\:mm")))</small>
                                 </td>
                                 @for (var d = 0; d < 7; d++)
                                 {

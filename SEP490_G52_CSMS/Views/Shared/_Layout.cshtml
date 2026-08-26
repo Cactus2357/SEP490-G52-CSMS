@@ -116,7 +116,8 @@
                         }
                     }
 
-                    string timeRange = $"{startTime:hh\\:mm}-{endTime:hh\\:mm}";
+                    var endStr = (endTime.Hours == 23 && endTime.Minutes >= 59) ? "24:00" : endTime.ToString(@"hh\:mm");
+                    string timeRange = $"{startTime:hh\\:mm}-{endStr}";
                     if (i == j - 1)
                     {
                         mergedShifts.Add($"{startShiftName} ({timeRange})");
