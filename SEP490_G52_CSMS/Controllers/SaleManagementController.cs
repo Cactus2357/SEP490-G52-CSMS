@@ -21,19 +21,22 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly CSMSAppDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ICashHandoverService _cashHandoverService;
+        private readonly ICashierWorkEligibilityService _eligibilityService;
 
         public SaleManagementController(
             IOrderService orderService,
             IMenuRepository menuRepo,
             CSMSAppDbContext context,
             IHttpClientFactory httpClientFactory,
-            ICashHandoverService cashHandoverService)
+            ICashHandoverService cashHandoverService,
+            ICashierWorkEligibilityService eligibilityService)
         {
             _orderService = orderService;
             _menuRepo = menuRepo;
             _context = context;
             _httpClientFactory = httpClientFactory;
             _cashHandoverService = cashHandoverService;
+            _eligibilityService = eligibilityService;
         }
 
         private async Task<string> GetUserBranchIdAsync()
@@ -69,19 +72,23 @@ namespace SEP490_G52_CSMS.Controllers
 
         private async Task<(bool isEligible, string reasonCode, string message)> CheckCashierEligibilityAsync(int employeeId, string branchId)
         {
-            var nowTime = DateTime.Now.TimeOfDay;
-            if (nowTime < TimeSpan.FromHours(6))
-            {
-                return (false, "OutsideOperatingHours", "Hệ thống chỉ mở bán hàng từ 06:00 đến 24:00 hàng ngày. Hiện tại đang ngoài khung giờ phục vụ.");
-            }
-
             if (User.IsInRole("RManager") || User.IsInRole("BranchManager"))
             {
                 return (true, "Eligible", "Hợp lệ");
             }
 
-            var result = await _cashHandoverService.CheckCashierSaleEligibilityAsync(employeeId, branchId);
-            return (result.isEligible, result.reasonCode, result.message);
+            var result = await _eligibilityService.CheckEligibilityAsync(employeeId, branchId);
+            return (result.IsEligible, result.ReasonCode, result.Message);
+        }
+
+        [HttpGet("api/cashier/check-eligibility")]
+        public async Task<IActionResult> GetCashierEligibility(int? cashierId, string? branchId)
+        {
+            var targetBranchId = !string.IsNullOrWhiteSpace(branchId) ? branchId : await GetUserBranchIdAsync();
+            var targetCashierId = (cashierId.HasValue && cashierId.Value > 0) ? cashierId.Value : await GetUserCashierIdAsync();
+
+            var result = await _eligibilityService.CheckEligibilityAsync(targetCashierId, targetBranchId);
+            return Ok(result);
         }
 
         public async Task<IActionResult> CreateOrder()

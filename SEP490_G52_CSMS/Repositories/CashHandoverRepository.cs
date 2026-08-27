@@ -371,7 +371,21 @@ namespace SEP490_G52_CSMS.Repositories
 
             var shiftPhase = await GetShiftPhaseAsync(matchingRoster.ShiftId);
 
-            // 2. KIỂM TRA ĐÃ CÓ PHIÊN CA ĐANG MỞ (ACTIVE) TẠI CHI NHÁNH HAY CHƯA
+            // 2. KIỂM TRA ĐIỂM DANH CHẤM CÔNG (CHECK-IN HÀNG ĐẦU - ƯU TIÊN HƠN CASH HANDOVER)
+            var attendanceLog = matchingRoster.AttendanceLogs.FirstOrDefault();
+            bool isCheckedIn = (attendanceLog != null && attendanceLog.CheckInTime != null && (attendanceLog.OverallStatus == "Present" || attendanceLog.CheckInStatus == "OnTime" || attendanceLog.CheckInStatus == "Late"));
+
+            if (!isCheckedIn)
+            {
+                return (false, "NotCheckedIn", $"Bạn chưa thực hiện điểm danh chấm công vào ca {matchingRoster.FixedShift.ShiftName}. Vui lòng điểm danh chấm công trước khi mở ca và bán hàng.", matchingRoster.ShiftId, shiftPhase);
+            }
+
+            if (attendanceLog!.CheckOutTime != null || attendanceLog.CheckOutStatus == "CheckedOut")
+            {
+                return (false, "ShiftEnded", $"Ca làm việc {matchingRoster.FixedShift.ShiftName} của bạn đã kết thúc (đã chấm công ra ca).", matchingRoster.ShiftId, shiftPhase);
+            }
+
+            // 3. KIỂM TRA ĐÃ CÓ PHIÊN CA ĐANG MỞ (ACTIVE) TẠI CHI NHÁNH HAY CHƯA
             var activeHandover = await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
@@ -394,7 +408,7 @@ namespace SEP490_G52_CSMS.Repositories
                 }
             }
 
-            // 3. NẾU CHƯA CÓ CA ACTIVE: KIỂM TRA XEM CA NÀY ĐÃ BỊ ĐÓNG (CLOSED) HAY CHƯA
+            // 4. NẾU CHƯA CÓ CA ACTIVE: KIỂM TRA XEM CA NÀY ĐÃ BỊ ĐÓNG (CLOSED) HAY CHƯA
             var closedHandover = await _context.CashHandovers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ch => ch.BranchId == branchId
@@ -405,18 +419,6 @@ namespace SEP490_G52_CSMS.Repositories
             if (closedHandover != null)
             {
                 return (false, "ShiftClosed", $"Ca làm việc {matchingRoster.FixedShift.ShiftName} hôm nay đã được đóng/kết thúc. Quầy thu ngân đã khóa sổ.", matchingRoster.ShiftId, shiftPhase);
-            }
-
-            // 4. KIỂM TRA ĐIỂM DANH CHẤM CÔNG (CHECK-IN)
-            var attendanceLog = matchingRoster.AttendanceLogs.FirstOrDefault();
-            if (attendanceLog == null || attendanceLog.CheckInTime == null || (attendanceLog.OverallStatus != "Present" && attendanceLog.CheckInStatus == "Absent"))
-            {
-                return (false, "NotCheckedIn", $"Bạn chưa thực hiện điểm danh chấm công vào ca {matchingRoster.FixedShift.ShiftName}. Vui lòng điểm danh chấm công trước khi mở ca và bán hàng.", matchingRoster.ShiftId, shiftPhase);
-            }
-
-            if (attendanceLog.CheckOutTime != null || attendanceLog.CheckOutStatus == "CheckedOut")
-            {
-                return (false, "ShiftEnded", $"Ca làm việc {matchingRoster.FixedShift.ShiftName} của bạn đã kết thúc (đã chấm công ra ca).", matchingRoster.ShiftId, shiftPhase);
             }
 
             // 5. NẾU ĐÃ CHECK-IN NHƯNG CHƯA MỞ CA: HƯỚNG DẪN MỞ CA / NHẬN BÀN GIAO

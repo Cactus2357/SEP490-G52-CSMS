@@ -16,6 +16,12 @@
         background-color: rgba(13, 110, 253, 0.15) !important;
         border-bottom: 3px solid #0d6efd !important;
     }
+    .schedule-table td {
+        min-height: 100px;
+        height: 120px;
+        vertical-align: top;
+        padding: 12px 10px !important;
+    }
 </style>
 
 <div class="container-fluid mt-3 px-4 pb-5">
@@ -80,7 +86,7 @@
         <!-- Weekly Schedule Matrix Grid (Today Highlight + Colored Employee Roles) -->
         <div class="card border-0 shadow-sm rounded-3 mb-4">
             <div class="table-responsive">
-                <table class="table table-bordered table-sm align-middle text-center mb-0" style="table-layout: fixed; min-width: 980px;">
+                <table class="table table-bordered table-sm align-middle text-center mb-0 schedule-table" style="table-layout: fixed; min-width: 980px;">
                     <thead class="table-light">
                         <tr>
                             <th style="width: 160px;" class="text-start ps-3 py-2">Ca Làm Việc</th>

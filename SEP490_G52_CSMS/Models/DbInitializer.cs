@@ -954,6 +954,17 @@ namespace SEP490_G52_CSMS.Models
                                 DELETE FROM [fixed_shifts] WHERE [shift_id] = @NightShiftId;
                             END
                         END
+                    END
+
+                    -- Dọn dẹp các bản ghi trùng lặp trong weekly_roster_grids nếu có
+                    IF EXISTS (SELECT * FROM sys.tables WHERE name = 'weekly_roster_grids')
+                    BEGIN
+                        ;WITH CTE AS (
+                            SELECT [roster_id],
+                                   ROW_NUMBER() OVER (PARTITION BY [employee_id], [shift_id], CAST([assignment_date] AS DATE) ORDER BY [roster_id]) as rn
+                            FROM [weekly_roster_grids]
+                        )
+                        DELETE FROM CTE WHERE rn > 1;
                     END");
             }
             catch { }

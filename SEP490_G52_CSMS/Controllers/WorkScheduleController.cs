@@ -110,14 +110,28 @@ namespace SEP490_G52_CSMS.Controllers
             var scheduleData = new Dictionary<(int, DateTime), EmployeeShiftDetail>();
             foreach (var r in rosters)
             {
+                var key = (r.ShiftId, r.AssignmentDate.Date);
                 var log = r.AttendanceLogs.FirstOrDefault();
-                scheduleData.Add((r.ShiftId, r.AssignmentDate.Date), new EmployeeShiftDetail
+                var detail = new EmployeeShiftDetail
                 {
                     IsAssigned = true,
                     OverallStatus = log?.OverallStatus,
                     CheckInTime = log?.CheckInTime,
                     CheckOutTime = log?.CheckOutTime
-                });
+                };
+
+                if (!scheduleData.ContainsKey(key))
+                {
+                    scheduleData[key] = detail;
+                }
+                else
+                {
+                    // Nếu trùng lịch (do dữ liệu cũ), ưu tiên bản ghi đã có log chấm công
+                    if (log != null && (log.CheckInTime != null || !string.IsNullOrEmpty(log.OverallStatus)))
+                    {
+                        scheduleData[key] = detail;
+                    }
+                }
             }
 
             var vm = new EmployeeScheduleViewModel
@@ -219,6 +233,111 @@ namespace SEP490_G52_CSMS.Controllers
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
             return File(bytes, "text/csv", $"LichLamViec_{monday:ddMM}_{sunday:ddMM}.csv");
+        }
+
+        public class QuickCheckInRequest
+        {
+            public int ShiftId { get; set; }
+            public DateTime? Date { get; set; }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleCheckIn([FromBody] QuickCheckInRequest request)
+        {
+            var empIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(empIdStr, out int empId))
+            {
+                return Unauthorized(new { success = false, message = "Phiên đăng nhập đã hết hạn." });
+            }
+
+            var targetDate = (request.Date ?? DateTime.Today).Date;
+
+            var roster = await _context.WeeklyRosterGrids
+                .Include(r => r.FixedShift)
+                .Include(r => r.AttendanceLogs)
+                .FirstOrDefaultAsync(r => r.EmployeeId == empId 
+                                          && r.ShiftId == request.ShiftId 
+                                          && r.AssignmentDate.Date == targetDate);
+
+            if (roster == null || roster.FixedShift == null)
+            {
+                return BadRequest(new { success = false, message = "Không tìm thấy ca làm việc được phân công tương ứng." });
+            }
+
+            var log = roster.AttendanceLogs.FirstOrDefault();
+            bool currentlyCheckedIn = log != null && log.OverallStatus == "Present";
+
+            if (currentlyCheckedIn && log != null)
+            {
+                // Toggle OFF -> Delete attendance log for testing
+                _context.AttendanceLogs.Remove(log);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    isCheckedIn = false,
+                    message = $"Đã chuyển ca {roster.FixedShift.ShiftName} về trạng thái (Chưa điểm danh)!"
+                });
+            }
+            else
+            {
+                // Toggle ON -> Add / update attendance log
+                var now = DateTime.Now;
+                var fs = roster.FixedShift;
+                var shiftStart = roster.AssignmentDate.Date + fs.StartTime;
+
+                if (shiftStart > now)
+                {
+                    return BadRequest(new { success = false, message = "Chưa đến giờ ca làm việc. Bạn không thể điểm danh ca trong tương lai!" });
+                }
+
+                var graceCutoff = shiftStart.AddMinutes(15);
+                var checkInStatus = (now <= graceCutoff) ? "OnTime" : "Late";
+
+                if (log == null)
+                {
+                    log = new AttendanceLog
+                    {
+                        RosterId = roster.RosterId,
+                        EmployeeId = empId,
+                        CheckInTime = now,
+                        IsFaceCheckInValid = true,
+                        CheckInConfidence = 100,
+                        CheckInStatus = checkInStatus,
+                        OverallStatus = "Present",
+                        CheckOutStatus = "NotYetCheckOut"
+                    };
+                    _context.AttendanceLogs.Add(log);
+                }
+                else
+                {
+                    log.CheckInTime = now;
+                    log.IsFaceCheckInValid = true;
+                    log.CheckInConfidence = 100;
+                    log.CheckInStatus = checkInStatus;
+                    log.OverallStatus = "Present";
+                    log.CheckOutStatus = "NotYetCheckOut";
+                    log.CheckOutTime = null;
+                }
+
+                await _context.SaveChangesAsync();
+
+                string statusText = checkInStatus == "OnTime" ? "Đúng giờ" : "Đi trễ";
+                return Ok(new
+                {
+                    success = true,
+                    isCheckedIn = true,
+                    message = $"Đã điểm danh ca {fs.ShiftName} lúc {now:HH:mm:ss} ({statusText})!",
+                    checkInTime = now.ToString("HH:mm")
+                });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> QuickCheckIn([FromBody] QuickCheckInRequest request)
+        {
+            return await ToggleCheckIn(request);
         }
 
         private static DateTime GetMondayOfWeek(DateTime date)

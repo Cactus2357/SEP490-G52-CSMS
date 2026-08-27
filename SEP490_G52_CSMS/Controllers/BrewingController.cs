@@ -153,6 +153,7 @@ namespace SEP490_G52_CSMS.Controllers
                 orderId = o.OrderId,
                 recipientName = string.IsNullOrWhiteSpace(o.RecipientName) ? "Khách lẻ" : o.RecipientName,
                 orderTime = o.OrderTime.ToString("dd/MM/yyyy HH:mm"),
+                orderTimeRaw = o.OrderTime.ToString("o"),
                 brewingStatus = o.BrewingStatus,
                 displayStatus = o.DisplayStatus,
                 items = o.Items.Select((item, index) => new
@@ -182,6 +183,34 @@ namespace SEP490_G52_CSMS.Controllers
             var result = await _orderService.StartBrewingAsync(orderId);
             if (result) return Json(new { success = true });
             return BadRequest(new { success = false, message = "Không thể bắt đầu pha chế đơn hàng này." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> StartBrewingMultiple([FromBody] List<string> orderIds)
+        {
+            if (orderIds == null || !orderIds.Any())
+            {
+                return BadRequest(new { success = false, message = "Không có đơn hàng nào được chọn." });
+            }
+
+            var branchId = await GetUserBranchIdAsync();
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(GetUserId(), branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = message });
+            }
+
+            int successCount = 0;
+            foreach (var id in orderIds)
+            {
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    var ok = await _orderService.StartBrewingAsync(id.Trim());
+                    if (ok) successCount++;
+                }
+            }
+
+            return Json(new { success = true, count = successCount, message = $"Đã bắt đầu pha chế {successCount} đơn hàng." });
         }
 
         [HttpPost]

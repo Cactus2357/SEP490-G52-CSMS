@@ -300,7 +300,7 @@
                         </button>
 
                         <div class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3 navbar-dropdown-menu"
-                             style="width: 390px; z-index: 1060;"
+                             style="width: 440px; z-index: 10700 !important;"
                              id="notificationDropdownMenu">
 
                             <!-- Header -->
@@ -804,7 +804,7 @@
 ========================================================== -->
 <div class="modal fade" id="allNotificationsModal" tabindex="-1"
      aria-labelledby="allNotificationsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 1050px;">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold" id="allNotificationsModalLabel">
@@ -825,6 +825,9 @@
 </div>
 
 <style>
+    #allNotificationsModal {
+        z-index: 10850 !important;
+    }
     #bsConfirmModal {
         z-index: 10999 !important;
     }
@@ -876,6 +879,43 @@
             confirmModalInstance.show();
         }
     }
+
+    window.showToast = function (message, type = 'success') {
+        const bgClass = (type === 'danger' || type === 'error') ? 'bg-danger text-white' :
+                        type === 'warning' ? 'bg-warning text-dark' :
+                        type === 'info' ? 'bg-info text-dark' : 'bg-success text-white';
+        const icon = (type === 'danger' || type === 'error') ? 'bi-exclamation-triangle-fill' :
+                     type === 'warning' ? 'bi-exclamation-circle-fill' :
+                     type === 'info' ? 'bi-info-circle-fill' : 'bi-check-circle-fill';
+
+        let container = document.getElementById('globalToastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'globalToastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '11000';
+            document.body.appendChild(container);
+        }
+
+        const toastId = 'toast_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center ${bgClass} border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body fs-6 fw-semibold">
+                        <i class="bi ${icon} me-2"></i>${message}
+                    </div>
+                    <button type="button" class="btn-close ${bgClass.includes('text-white') ? 'btn-close-white' : ''} me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>`;
+
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        bsToast.show();
+        toastEl.addEventListener('hidden.bs.toast', function () {
+            toastEl.remove();
+        });
+    };
 
     document.addEventListener('DOMContentLoaded', function() {
         const modalEl = document.getElementById('bsConfirmModal');

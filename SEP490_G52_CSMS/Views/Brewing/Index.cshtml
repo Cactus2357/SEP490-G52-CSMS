@@ -1,30 +1,85 @@
 @model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.OrderSummaryViewModel>
 
 @{
-    ViewData["Title"] = "Danh sách đơn pha chế";
+    ViewData["Title"] = "Pha chế đơn hàng";
 }
 
-<div class="container-fluid mt-3 px-4">
+<style>
+    .order-card {
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        border-radius: 8px;
+    }
+    .order-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .kds-row-clickable {
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s ease;
+    }
+    .kds-row-clickable:hover {
+        background-color: #f8f9fa !important;
+    }
+    .kds-row-done {
+        background-color: #f0faf4 !important;
+    }
+    .kds-row-done .item-text {
+        text-decoration: line-through;
+        color: #6c757d !important;
+    }
+    .kds-checkbox {
+        width: 19px;
+        height: 19px;
+        cursor: pointer;
+        margin: 0;
+        vertical-align: middle;
+    }
+    .kds-chk-col {
+        width: 1%;
+        white-space: nowrap;
+        text-align: center;
+        padding-left: 14px !important;
+        padding-right: 8px !important;
+    }
+    .batch-recipe-card {
+        border-radius: 8px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .batch-recipe-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .batch-recipe-card .card-header {
+        min-height: 48px;
+    }
+    /* Distinct badge colors for order badges */
+    .bg-indigo { background-color: #6610f2 !important; color: #fff !important; }
+    .bg-purple { background-color: #6f42c1 !important; color: #fff !important; }
+    .bg-pink { background-color: #d63384 !important; color: #fff !important; }
+    .bg-teal { background-color: #20c997 !important; color: #fff !important; }
+    .bg-orange { background-color: #fd7e14 !important; color: #fff !important; }
+</style>
+
+<div class="container-fluid px-4 pt-3 pb-5">
     @if (ViewBag.NotInShift == true)
     {
         <!-- Large Blocking Modal with Static Backdrop preventing screen interaction for Bartender -->
-        <div class="modal fade show d-block" id="notInShiftModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="false" style="background-color: rgba(0,0,0,0.75); z-index: 10550;">
+        <div class="modal fade show d-block" id="notInShiftModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="false" style="background-color: rgba(0,0,0,0.75); z-index: 1040;">
             <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
                     <div class="modal-header bg-danger text-white py-3 border-0">
-                        <h4 class="modal-title fw-bold">
+                        <h5 class="modal-title fw-bold">
                             <i class="bi bi-exclamation-octagon-fill me-2"></i>CHƯA ĐỦ ĐIỀU KIỆN VÀO MÀN HÌNH PHA CHẾ
-                        </h4>
+                        </h5>
                     </div>
                     <div class="modal-body p-4 p-md-5 text-center">
                         <div class="mb-4">
-                            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 100px; height: 100px;">
-                                <i class="bi bi-cup-straw display-4"></i>
+                            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 90px; height: 90px;">
+                                <i class="bi bi-cup-straw fs-1"></i>
                             </div>
                             <h4 class="fw-bold text-dark mb-2">
                                 @(ViewBag.ReasonCode == "NotScheduled" ? "Chưa Có Lịch Phân Công Ca Làm Việc" : (ViewBag.ReasonCode == "NotCheckedIn" ? "Chưa Chấm Công Vào Ca" : "Ca Làm Việc Đã Kết Thúc"))
                             </h4>
-                            <p class="text-muted fs-5 mb-0">
+                            <p class="text-muted fs-6 mb-0">
                                 @ViewBag.NotInShiftMessage
                             </p>
                         </div>
@@ -61,184 +116,200 @@
         </div>
     }
 
-    <!-- Header Section -->
-    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
-        <div class="card-body p-3 d-flex justify-content-between align-items-center">
-            <div>
-                <span class="text-muted small">Bartender / Pha chế</span>
-                <h4 class="fw-bold m-0 text-dark">DANH SÁCH ĐƠN PHA CHẾ</h4>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <div style="width: 280px;">
-                    <input type="text" id="brewingSearch" class="form-control" placeholder="Tìm theo Mã đơn / Tên khách..." onkeyup="filterBrewingOrders()">
-                </div>
+    <!-- Tiêu đề trang & Tiến độ tổng -->
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
+        <h3 class="fw-bold mb-0 text-uppercase text-dark">
+            <i class="bi bi-cup-hot-fill text-primary me-2"></i>Tiếp nhận &amp; Pha chế đơn hàng
+        </h3>
+        
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-secondary small fw-semibold">Tiến độ tổng:</span>
+            <span class="badge bg-primary fs-6 px-3 py-1.5 rounded-pill" id="statTotalDrinksFraction">0 / 0</span>
+        </div>
+    </div>
+
+    <!-- Search bar dài chiếm toàn bộ chiều rộng -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-2.5">
+            <div class="input-group">
+                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="brewingSearch" class="form-control border-start-0 ps-0" placeholder="Tìm theo mã đơn hàng, tên khách hàng, tên món..." onkeyup="handleGlobalSearch()">
+                <button class="btn btn-outline-secondary border-start-0" type="button" onclick="clearSearch()" title="Xóa tìm kiếm">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Orders Master-Detail Table -->
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-sm align-middle m-0" id="brewingTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 5%;" class="ps-3"></th>
-                            <th style="width: 18%;">Mã Đơn Hàng</th>
-                            <th style="width: 22%;">Tên Khách Hàng</th>
-                            <th style="width: 18%;">Thời Gian</th>
-                            <th style="width: 15%;">Trạng Thái</th>
-                            <th style="width: 22%;" class="text-center pe-3">Hành Động</th>
-                        </tr>
-                    </thead>
-                    <tbody id="brewingTableBody">
-                        @if (!Model.Any())
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-5">
-                                    <i class="bi bi-cup-hot fs-2 d-block mb-2 text-secondary-subtle"></i>
-                                    Không có đơn hàng nào đang chờ pha chế.
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            int orderIdx = 0;
-                            foreach (var o in Model)
-                            {
-                                bool isBrewing = o.BrewingStatus == "Brewing in Progress";
-                                string rowClass = isBrewing ? "table-primary fw-semibold" : "table-warning fw-semibold";
-                                string badgeClass = isBrewing ? "bg-primary text-white" : "bg-warning text-dark";
-                                bool isExpanded = (orderIdx == 0);
-                                orderIdx++;
+    <!-- Tab Điều Hướng (Chuẩn Bootstrap 5 tối giản) -->
+    <ul class="nav nav-tabs mb-3" id="kdsViewTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-dark" id="tab-orders-view-btn" data-bs-toggle="tab" data-bs-target="#pills-orders-view" type="button" role="tab">
+                <i class="bi bi-card-checklist me-1 text-primary"></i>Theo Đơn Hàng
+                <span class="badge bg-secondary ms-1" id="badgeOrdersViewCount">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-dark" id="tab-batch-view-btn" data-bs-toggle="tab" data-bs-target="#pills-batch-view" type="button" role="tab">
+                <i class="bi bi-stack me-1 text-primary"></i>Tổng Hợp Theo Món
+                <span class="badge bg-secondary ms-1" id="badgeBatchViewCount">0</span>
+            </button>
+        </li>
+    </ul>
 
-                                <tr class="brewing-row @rowClass" data-name="@o.RecipientName.ToLower()" data-id="@o.OrderId.ToLower()" data-code="@o.OrderId">
-                                    <td class="ps-3">
-                                        <button type="button" class="btn btn-sm btn-link text-dark p-0 toggle-nested-btn" onclick="toggleNestedItems('@o.OrderId')">
-                                            <i class="bi @(isExpanded ? "bi-chevron-up" : "bi-chevron-down")" id="chevron-@o.OrderId"></i>
-                                        </button>
-                                    </td>
-                                    <td class="fw-bold text-primary">@o.OrderId</td>
-                                    <td>@o.RecipientName</td>
-                                    <td class="text-secondary">@o.OrderTime.ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td>
-                                        <span class="badge @badgeClass rounded-pill px-3 py-1.5">
-                                            @o.DisplayStatus
-                                        </span>
-                                    </td>
-                                    <td class="text-center pe-3">
-                                        <div class="d-flex align-items-center justify-content-center gap-2">
-                                            @if (!isBrewing)
-                                            {
-                                                <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('@o.OrderId')">
-                                                    <i class="bi bi-play-fill me-1"></i> Pha chế
-                                                </button>
-                                            }
-                                            else
-                                            {
-                                                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('@o.OrderId')">
-                                                    <i class="bi bi-check-lg me-1"></i> Hoàn thành
-                                                </button>
-                                            }
-                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fw-bold shadow-sm" onclick="openMissingModal('@o.OrderId')" title="Báo thiếu nguyên liệu cho đơn này">
-                                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Báo thiếu NL
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+    <!-- Nội dung các Tab -->
+    <div class="tab-content" id="kdsViewTabsContent">
+        <!-- ========================================================= -->
+        <!-- TAB 1: THEO ĐƠN HÀNG                                       -->
+        <!-- ========================================================= -->
+        <div class="tab-pane fade show active" id="pills-orders-view" role="tabpanel">
+            <!-- Điều khiển riêng cho Tab Theo Đơn Hàng -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <!-- Bộ lọc trạng thái đơn -->
+                <div class="d-flex align-items-center gap-2 flex-wrap" id="orderStatusFilters">
+                    <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 fw-bold active filter-btn" data-filter="all" onclick="setOrderFilter('all', this)">
+                        Tất cả (<span id="filterCountAll">0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 py-1 fw-bold filter-btn" data-filter="waiting" onclick="setOrderFilter('waiting', this)">
+                        <i class="bi bi-hourglass-split me-1"></i>Chờ pha chế (<span id="filterCountWaiting">0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold filter-btn" data-filter="brewing" onclick="setOrderFilter('brewing', this)">
+                        <i class="bi bi-play-circle-fill me-1"></i>Đang pha chế (<span id="filterCountBrewing">0</span>)
+                    </button>
+                </div>
 
-                                <!-- Nested Table Row -->
-                                <tr class="nested-items-row" id="nested-row-@o.OrderId" style="@(isExpanded ? "" : "display: none;")">
-                                    <td colspan="6" class="p-0 border-0">
-                                        <div class="bg-body-tertiary p-3 border-bottom shadow-inner">
-                                            <div class="table-responsive bg-white rounded border">
-                                                <table class="table table-sm table-striped table-bordered m-0 align-middle">
-                                                    <thead class="table-light">
-                                                        <tr>
-                                                            <th style="width: 10%;" class="ps-3 text-center">STT</th>
-                                                            <th style="width: 50%;">Tên món</th>
-                                                            <th style="width: 20%;" class="text-center">Size</th>
-                                                            <th style="width: 20%;" class="text-center">Số lượng</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @if (o.Items != null && o.Items.Any())
-                                                        {
-                                                            for (int idx = 0; idx < o.Items.Count; idx++)
-                                                            {
-                                                                var item = o.Items[idx];
-                                                                <tr>
-                                                                    <td class="text-center ps-3 text-muted">@(idx + 1)</td>
-                                                                    <td class="fw-bold text-dark">@item.ProductName</td>
-                                                                    <td class="text-center"><span class="badge bg-secondary-subtle text-dark">@item.Size</span></td>
-                                                                    <td class="text-center fw-bold text-primary">@item.Quantity</td>
-                                                                </tr>
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            <tr>
-                                                                <td colspan="4" class="text-center text-muted py-2">Không có dữ liệu chi tiết món.</td>
-                                                            </tr>
-                                                        }
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
+                <!-- Nút thao tác riêng cho Tab Theo Đơn Hàng -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" id="btnStartAllWaiting" onclick="startAllWaitingOrders()">
+                        <i class="bi bi-play-fill me-1"></i>Pha tất cả đơn chờ
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" onclick="toggleExpandAllOrders()">
+                        <i class="bi bi-arrows-expand me-1" id="iconExpandAll"></i><span id="textExpandAll">Mở rộng tất cả</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danh sách các thẻ đơn hàng -->
+            <div id="ordersCardsContainer" class="d-flex flex-column gap-3">
+                <div class="text-center py-5 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Đang tải danh sách đơn hàng...
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB 2: TỔNG HỢP THEO MÓN                                   -->
+        <!-- ========================================================= -->
+        <div class="tab-pane fade" id="pills-batch-view" role="tabpanel">
+            <!-- Danh sách gom món theo công thức -->
+            <div id="batchDrinksContainer" class="row g-3">
+                <div class="col-12 text-center py-5 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Đang tổng hợp các món pha chế...
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Báo Thiếu Nguyên Liệu -->
+<!-- ========================================================= -->
+<!-- ========================================================= -->
+<!-- MODAL: XÁC NHẬN HOÀN THÀNH ĐƠN (KHI CÒN MÓN CHƯA TICK)     -->
+<!-- ========================================================= -->
+<div class="modal fade" id="confirmCompleteOrderModal" tabindex="-1" aria-labelledby="confirmCompleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-warning bg-opacity-10 py-3 px-4 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
+                    <h4 class="modal-title fw-bold text-dark mb-0" id="confirmCompleteOrderModalLabel">Xác nhận hoàn thành đơn</h4>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded border mb-3">
+                    <div>
+                        <span class="text-muted">Mã đơn:</span>
+                        <strong class="text-primary fs-5 ms-1" id="modalCompleteOrderId">MH------</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">Khách:</span>
+                        <strong class="text-dark fs-5 ms-1" id="modalCompleteCustomer">Khách lẻ</strong>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 mb-3 py-2.5 px-3">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Đơn hàng này hiện còn <strong id="modalCompleteUncheckedCount" class="text-danger fs-6">0</strong> món chưa được tích chọn.
+                </div>
+
+                <label class="form-label fw-bold text-secondary mb-1">Danh sách món chưa tích chọn hoàn thành:</label>
+                <div id="modalCompleteUncheckedList" class="border rounded p-3 bg-light mb-3" style="max-height: 280px; overflow-y: auto;">
+                    <!-- Rendered via JS -->
+                </div>
+
+                <p class="text-dark mb-0 text-center fw-semibold fs-6">
+                    Bạn có chắc chắn muốn xác nhận hoàn thành tất cả các món và kết thúc đơn hàng này không?
+                </p>
+            </div>
+
+            <div class="modal-footer bg-light py-3 px-4 border-top d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded px-4 fw-semibold" data-bs-dismiss="modal">
+                    Tiếp tục pha chế
+                </button>
+                <button type="button" class="btn btn-success rounded px-4 fw-bold shadow-sm" id="btnConfirmCompleteSubmit" onclick="executeCompleteOrderConfirmed()">
+                    <i class="bi bi-check-lg me-1"></i>Hoàn thành tất cả
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL: BÁO THIẾU NGUYÊN LIỆU                               -->
+<!-- ========================================================= -->
 <div class="modal fade" id="missingIngredientsModal" tabindex="-1" aria-labelledby="missingIngredientsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-danger text-white py-3">
-                <h5 class="modal-title fw-bold" id="missingIngredientsModalLabel">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>BÁO THIẾU NGUYÊN LIỆU PHA CHẾ
-                </h5>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-danger text-white py-3 px-4 border-0">
+                <h4 class="modal-title fw-bold mb-0" id="missingIngredientsModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Báo thiếu nguyên liệu
+                </h4>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="alert alert-warning small mb-3">
+                <div class="alert alert-warning mb-3 py-2.5 px-3">
                     <i class="bi bi-info-circle-fill me-1"></i>
-                    Vui lòng chọn <strong>các món đồ uống bị thiếu nguyên liệu</strong>. Hệ thống sẽ chuyển đơn hàng về cho Thu ngân để xử lý hoàn tiền hoặc đổi món cho khách.
+                    Vui lòng tích chọn <strong>các món bị thiếu nguyên liệu</strong> để chuyển thông báo về Thu ngân xử lý.
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold text-secondary small mb-1">Mã đơn hàng:</label>
-                    <input type="text" id="modalMissingOrderId" class="form-control form-control-sm bg-light fw-bold text-primary" readonly />
+                    <input type="text" id="modalMissingOrderId" class="form-control bg-light fw-bold text-primary fs-6" readonly />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold text-dark small mb-2">
-                        Chọn món bị thiếu nguyên liệu: <span class="text-danger">*</span>
+                    <label class="form-label fw-semibold text-dark mb-2">
+                        Chọn món bị thiếu: <span class="text-danger">*</span>
                     </label>
-                    <div id="missingItemsListContainer" class="border rounded p-2.5 bg-light" style="max-height: 200px; overflow-y: auto;">
+                    <div id="missingItemsListContainer" class="border rounded p-3 bg-light" style="max-height: 280px; overflow-y: auto;">
                         <div class="text-center text-muted py-3">
-                            <span class="spinner-border spinner-border-sm me-1"></span> Đang tải danh sách món...
+                            <span class="spinner-border spinner-border-sm me-1"></span> Đang tải...
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-2">
                     <label class="form-label fw-semibold text-secondary small mb-1">
-                        Ghi chú lý do thiếu nguyên liệu <span class="text-muted fw-normal">(Tùy chọn)</span>:
+                        Ghi chú lý do <span class="text-muted fw-normal">(Tùy chọn)</span>:
                     </label>
-                    <textarea id="modalMissingReason" class="form-control form-control-sm" rows="3" placeholder="Ví dụ: Hết sữa tươi thanh trùng, hết trân châu đen, thiếu siro đào..."></textarea>
+                    <textarea id="modalMissingReason" class="form-control" rows="3" placeholder="Ví dụ: Hết sữa tươi thanh trùng, hết trân châu đen..."></textarea>
                 </div>
             </div>
-            <div class="modal-footer bg-light py-2.5">
-                <button type="button" class="btn btn-secondary btn-sm fw-semibold px-3" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-danger btn-sm fw-bold px-4 shadow-sm" onclick="submitMissingIngredientsReport()">
-                    <i class="bi bi-send-fill me-1"></i> Gửi báo cáo cho Thu ngân
+            <div class="modal-footer bg-light py-3 px-4 border-top">
+                <button type="button" class="btn btn-secondary rounded px-3" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-danger rounded fw-bold px-4 shadow-sm" onclick="submitMissingIngredientsReport()">
+                    <i class="bi bi-send-fill me-1"></i>Gửi báo cáo
                 </button>
             </div>
         </div>
@@ -247,121 +318,819 @@
 
 @section Scripts {
     <script>
-        const expandedOrderIds = new Set();
-        let cachedOrdersData = {};
+        // =========================================================
+        // CLIENT STATE & COLOR PALETTE
+        // =========================================================
+        let rawOrdersList = [];
+        let currentFilter = 'all'; // 'all' | 'waiting' | 'brewing'
+        let expandedOrderIds = new Set();
+        let checkedItemKeys = new Set(); // `${orderId}_${variantId}`
+        let isAllExpanded = true;
+        let pendingCompleteOrderId = null;
         let missingModalInstance = null;
+        let completeConfirmModalInstance = null;
 
-        @if (Model.Any())
-        {
-            @:expandedOrderIds.add('@Model.First().OrderId');
+        // Distinct colors to differentiate orders
+        const orderPalette = [
+            { border: '#0d6efd', bg: '#f0f6ff', text: '#0d6efd', badgeClass: 'bg-primary text-white' },
+            { border: '#6f42c1', bg: '#f7f2ff', text: '#6f42c1', badgeClass: 'bg-purple text-white' },
+            { border: '#d63384', bg: '#fff0f6', text: '#d63384', badgeClass: 'bg-pink text-white' },
+            { border: '#fd7e14', bg: '#fff8f0', text: '#d96200', badgeClass: 'bg-warning text-dark' },
+            { border: '#0dcaf0', bg: '#f0fcff', text: '#055160', badgeClass: 'bg-info text-dark' },
+            { border: '#198754', bg: '#f0faf4', text: '#198754', badgeClass: 'bg-success text-white' },
+            { border: '#20c997', bg: '#f0faf6', text: '#0f5132', badgeClass: 'bg-teal text-white' }
+        ];
+
+        function showAppAlert(message, title) {
+            showConfirmModal(
+                title || 'Thông báo',
+                message,
+                function () {},
+                'Đồng ý',
+                ''
+            );
         }
 
-        // Cache initial Model items
-        @foreach (var o in Model)
-        {
-            @:cachedOrdersData['@o.OrderId'] = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(o.Items.Select(i => new { variantId = i.VariantId, productName = i.ProductName, size = i.Size, quantity = i.Quantity, unitPrice = i.UnitPrice, amount = i.Amount })));
+        function getOrderStyle(orderId) {
+            if (!orderId) return orderPalette[0];
+            let hash = 0;
+            for (let i = 0; i < orderId.length; i++) {
+                hash = orderId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const idx = Math.abs(hash) % orderPalette.length;
+            return orderPalette[idx];
         }
 
-        function toggleNestedItems(orderId) {
-            let row = $(`#nested-row-${orderId}`);
-            let chevron = $(`#chevron-${orderId}`);
-            if (row.is(':visible')) {
-                row.hide();
-                chevron.removeClass('bi-chevron-up').addClass('bi-chevron-down');
-                expandedOrderIds.delete(orderId);
-            } else {
-                row.show();
-                chevron.removeClass('bi-chevron-down').addClass('bi-chevron-up');
-                expandedOrderIds.add(orderId);
+        function getTimeAgo(dateStrOrRaw) {
+            if (!dateStrOrRaw) return '';
+            const date = new Date(dateStrOrRaw);
+            if (isNaN(date.getTime())) return '';
+            const now = new Date();
+            const diffSecs = Math.max(0, Math.floor((now - date) / 1000));
+            if (diffSecs < 60) return 'Vừa xong';
+            const diffMins = Math.floor(diffSecs / 60);
+            if (diffMins < 60) return `${diffMins} phút trước`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours} giờ trước`;
+            const diffDays = Math.floor(diffHours / 24);
+            return `${diffDays} ngày trước`;
+        }
+
+        // Restore checked items from sessionStorage
+        try {
+            const savedChecked = sessionStorage.getItem('csms_kds_checked_items');
+            if (savedChecked) {
+                JSON.parse(savedChecked).forEach(k => checkedItemKeys.add(k));
+            }
+        } catch (e) {
+            console.error('Failed to load saved checked items:', e);
+        }
+
+        function saveCheckedState() {
+            try {
+                sessionStorage.setItem('csms_kds_checked_items', JSON.stringify(Array.from(checkedItemKeys)));
+            } catch (e) {
+                console.error('Failed to save checked items:', e);
             }
         }
 
-        function filterBrewingOrders() {
-            let val = $('#brewingSearch').val().toLowerCase().trim();
-            $('.brewing-row').each(function() {
-                let name = $(this).data('name') || '';
-                let code = $(this).data('code') ? $(this).data('code').toLowerCase() : '';
-                let orderId = $(this).data('id') || '';
+        // =========================================================
+        // ITEM CHECKBOX & ROW CLICK TOGGLE
+        // =========================================================
+        function toggleItemCheck(orderId, variantId, isChecked) {
+            const key = `${orderId}_${variantId}`;
+            if (isChecked) {
+                checkedItemKeys.add(key);
+            } else {
+                checkedItemKeys.delete(key);
+            }
+            saveCheckedState();
 
-                if (!val || name.includes(val) || code.includes(val) || orderId.includes(val)) {
-                    $(this).removeClass('d-none');
-                    let id = $(this).data('code');
-                    if (expandedOrderIds.has(id)) {
-                        $(`#nested-row-${id}`).removeClass('d-none').show();
-                    }
+            updateOrderCardProgress(orderId);
+            syncBatchItemCheckboxes(orderId, variantId, isChecked);
+            updateTotalFraction();
+        }
+
+        function toggleSelectAllOrder(orderId, isChecked) {
+            const order = rawOrdersList.find(o => o.orderId === orderId);
+            if (!order || !order.items) return;
+
+            const isBrewing = (order.brewingStatus === 'Brewing in Progress');
+            if (!isBrewing) {
+                startBrewingSingle(orderId);
+                return;
+            }
+
+            order.items.forEach(it => {
+                const key = `${orderId}_${it.variantId}`;
+                if (isChecked) {
+                    checkedItemKeys.add(key);
                 } else {
-                    $(this).addClass('d-none');
-                    let id = $(this).data('code');
-                    $(`#nested-row-${id}`).addClass('d-none').hide();
+                    checkedItemKeys.delete(key);
+                }
+            });
+            saveCheckedState();
+            updateOrderCardProgress(orderId);
+            renderBatchView(rawOrdersList);
+            updateTotalFraction();
+        }
+
+        function toggleSelectAllBatch(variantId, isChecked) {
+            const relevantOrders = rawOrdersList.filter(o => o.items && o.items.some(it => it.variantId === variantId));
+            if (relevantOrders.length === 0) return;
+
+            relevantOrders.forEach(o => {
+                const isBrewing = (o.brewingStatus === 'Brewing in Progress');
+                if (isBrewing) {
+                    const key = `${o.orderId}_${variantId}`;
+                    if (isChecked) {
+                        checkedItemKeys.add(key);
+                    } else {
+                        checkedItemKeys.delete(key);
+                    }
+                    updateOrderCardProgress(o.orderId);
+                }
+            });
+
+            saveCheckedState();
+            renderBatchView(rawOrdersList);
+            updateTotalFraction();
+        }
+
+        function handleRowClick(event, orderId, variantId, isBrewing) {
+            if (!isBrewing) return;
+            // Prevent double-toggling if directly clicking on the checkbox or a button
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.closest('button')) {
+                return;
+            }
+            const key = `${orderId}_${variantId}`;
+            const willBeChecked = !checkedItemKeys.has(key);
+            toggleItemCheck(orderId, variantId, willBeChecked);
+        }
+
+        function syncBatchItemCheckboxes(orderId, variantId, isChecked) {
+            $(`.batch-item-chk[data-order-id="${orderId}"][data-variant-id="${variantId}"]`).prop('checked', isChecked);
+            renderBatchView(rawOrdersList);
+        }
+
+        // =========================================================
+        // ORDER ACTIONS: START, COMPLETE, BATCH START
+        // =========================================================
+        function startBrewingSingle(orderId) {
+            $.ajax({
+                url: '/Brewing/StartBrewing',
+                type: 'POST',
+                data: { orderId: orderId },
+                success: function (res) {
+                    expandedOrderIds.add(orderId);
+                    fetchLiveOrders();
+                },
+                error: function (xhr) {
+                    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể bắt đầu pha chế.';
+                    showAppAlert(msg, 'Thông báo lỗi');
                 }
             });
         }
 
-        function startBrewingOrder(orderId) {
+        function startAllWaitingOrders() {
+            const waitingOrders = rawOrdersList.filter(o => o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing');
+            if (waitingOrders.length === 0) {
+                showAppAlert('Hiện không có đơn hàng nào đang chờ pha chế.', 'Thông báo');
+                return;
+            }
+
+            const orderIds = waitingOrders.map(o => o.orderId);
             showConfirmModal(
-                'Xác nhận pha chế',
-                `Bắt đầu chuyển trạng thái đơn hàng <strong>${orderId}</strong> sang <strong>Đang pha chế</strong>?`,
-                function() {
+                'Xác nhận pha tất cả đơn chờ',
+                `Bạn có chắc chắn muốn bắt đầu pha chế cho tất cả <strong>${orderIds.length} đơn hàng đang chờ</strong> không?`,
+                function () {
                     $.ajax({
-                        url: '/Brewing/StartBrewing',
+                        url: '/Brewing/StartBrewingMultiple',
                         type: 'POST',
-                        data: { orderId: orderId },
-                        success: function(res) {
-                            showToast(`Đã nhận đơn hàng ${orderId} để pha chế.`, 'success');
+                        contentType: 'application/json',
+                        data: JSON.stringify(orderIds),
+                        success: function () {
+                            orderIds.forEach(id => expandedOrderIds.add(id));
                             fetchLiveOrders();
                         },
-                        error: function(xhr) {
-                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể cập nhật trạng thái đơn.';
-                            showToast(msg, 'danger');
+                        error: function (xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi bắt đầu pha chế.';
+                            showAppAlert(msg, 'Thông báo lỗi');
                         }
                     });
-                }
+                },
+                'Bắt đầu pha chế',
+                'Hủy'
             );
         }
 
-        function completeBrewingOrder(orderId) {
+        function startBrewingForDrink(variantId) {
+            const waitingOrdersWithDrink = rawOrdersList.filter(o => 
+                (o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing') &&
+                o.items && o.items.some(it => it.variantId === variantId)
+            );
+
+            if (waitingOrdersWithDrink.length === 0) {
+                showAppAlert('Không có đơn hàng nào đang chờ cho món này.', 'Thông báo');
+                return;
+            }
+
+            const orderIds = waitingOrdersWithDrink.map(o => o.orderId);
             showConfirmModal(
-                'Xác nhận hoàn thành',
-                `Xác nhận đơn hàng <strong>${orderId}</strong> đã được pha chế <strong>Hoàn thành</strong>?`,
-                function() {
+                'Xác nhận pha chế món gom',
+                `Bắt đầu pha chế <strong>${orderIds.length} đơn hàng chờ</strong> có chứa món này?`,
+                function () {
                     $.ajax({
-                        url: '/Brewing/CompleteBrewing',
+                        url: '/Brewing/StartBrewingMultiple',
                         type: 'POST',
-                        data: { orderId: orderId },
-                        success: function(res) {
-                            showToast(`Đã hoàn thành đơn hàng ${orderId}.`, 'success');
+                        contentType: 'application/json',
+                        data: JSON.stringify(orderIds),
+                        success: function () {
+                            orderIds.forEach(id => expandedOrderIds.add(id));
                             fetchLiveOrders();
                         },
-                        error: function(xhr) {
-                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể hoàn thành đơn hàng.';
-                            showToast(msg, 'danger');
+                        error: function (xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi bắt đầu pha chế.';
+                            showAppAlert(msg, 'Thông báo lỗi');
                         }
                     });
-                }
+                },
+                'Bắt đầu pha',
+                'Hủy'
             );
         }
 
+        function requestCompleteOrder(orderId) {
+            const order = rawOrdersList.find(o => o.orderId === orderId);
+            if (!order) return;
+
+            const uncheckedItems = (order.items || []).filter(it => !checkedItemKeys.has(`${orderId}_${it.variantId}`));
+
+            if (uncheckedItems.length > 0) {
+                pendingCompleteOrderId = orderId;
+                $('#modalCompleteOrderId').text(order.orderId);
+                $('#modalCompleteCustomer').text(order.recipientName || 'Khách lẻ');
+                $('#modalCompleteUncheckedCount').text(uncheckedItems.length);
+
+                let listHtml = '';
+                uncheckedItems.forEach(it => {
+                    listHtml += `
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <span class="fw-bold text-dark fs-6">${it.productName}</span>
+                                <span class="badge bg-secondary-subtle text-dark border ms-1">Size ${it.size}</span>
+                            </div>
+                            <span class="badge bg-secondary fs-6">x${it.quantity}</span>
+                        </div>
+                    `;
+                });
+                $('#modalCompleteUncheckedList').html(listHtml);
+
+                if (!completeConfirmModalInstance) {
+                    completeConfirmModalInstance = new bootstrap.Modal(document.getElementById('confirmCompleteOrderModal'));
+                }
+                completeConfirmModalInstance.show();
+            } else {
+                showConfirmModal(
+                    'Xác nhận hoàn thành',
+                    `Xác nhận đơn hàng <strong>${orderId}</strong> đã pha chế hoàn thành?`,
+                    function () {
+                        executeCompleteOrder(orderId);
+                    },
+                    'Hoàn thành',
+                    'Hủy'
+                );
+            }
+        }
+
+        function executeCompleteOrderConfirmed() {
+            if (!pendingCompleteOrderId) return;
+            const orderId = pendingCompleteOrderId;
+            if (completeConfirmModalInstance) {
+                completeConfirmModalInstance.hide();
+            }
+            executeCompleteOrder(orderId);
+        }
+
+        function executeCompleteOrder(orderId) {
+            $.ajax({
+                url: '/Brewing/CompleteBrewing',
+                type: 'POST',
+                data: { orderId: orderId },
+                success: function () {
+                    const keysToRemove = Array.from(checkedItemKeys).filter(k => k.startsWith(`${orderId}_`));
+                    keysToRemove.forEach(k => checkedItemKeys.delete(k));
+                    saveCheckedState();
+                    expandedOrderIds.delete(orderId);
+
+                    fetchLiveOrders();
+                },
+                error: function (xhr) {
+                    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể hoàn thành đơn hàng.';
+                    showAppAlert(msg, 'Thông báo lỗi');
+                }
+            });
+        }
+
+        // =========================================================
+        // RENDER: ORDER VIEW (TAB 1)
+        // =========================================================
+        function renderOrderView(orders) {
+            const container = $('#ordersCardsContainer');
+            const search = $('#brewingSearch').val().toLowerCase().trim();
+
+            let filtered = orders;
+
+            if (currentFilter === 'waiting') {
+                filtered = filtered.filter(o => o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing');
+            } else if (currentFilter === 'brewing') {
+                filtered = filtered.filter(o => o.brewingStatus === 'Brewing in Progress');
+            }
+
+            if (search) {
+                filtered = filtered.filter(o => 
+                    o.orderId.toLowerCase().includes(search) || 
+                    o.recipientName.toLowerCase().includes(search) ||
+                    (o.items && o.items.some(it => it.productName.toLowerCase().includes(search)))
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.html(`
+                    <div class="card border shadow-sm p-5 text-center text-muted">
+                        <i class="bi bi-cup-hot fs-1 text-secondary mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-1">Không có đơn hàng nào</h6>
+                        <small class="text-muted">Đơn hàng mới sẽ tự động hiển thị khi Thu ngân tạo đơn.</small>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '';
+            filtered.forEach((o, index) => {
+                const isBrewing = (o.brewingStatus === 'Brewing in Progress');
+                const isExpanded = expandedOrderIds.has(o.orderId);
+                const itemsCount = o.items ? o.items.length : 0;
+                const totalDrinks = o.items ? o.items.reduce((sum, it) => sum + (it.quantity || 0), 0) : 0;
+                const orderStyle = getOrderStyle(o.orderId);
+                const timeAgoText = getTimeAgo(o.orderTimeRaw || o.orderTime);
+
+                let checkedCount = 0;
+                if (o.items) {
+                    o.items.forEach(it => {
+                        if (checkedItemKeys.has(`${o.orderId}_${it.variantId}`)) checkedCount++;
+                    });
+                }
+                const progressPct = itemsCount > 0 ? Math.round((checkedCount / itemsCount) * 100) : 0;
+
+                html += `
+                    <div class="card border shadow-sm order-card" id="order-card-col-${o.orderId}" style="border-left: 5px solid ${orderStyle.border} !important;">
+                        <!-- Header -->
+                        <div class="card-header bg-white py-2.5 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-link text-dark p-0" onclick="toggleOrderExpand('${o.orderId}')">
+                                    <i class="bi ${isExpanded ? 'bi-chevron-up' : 'bi-chevron-down'} fs-6" id="chevron-${o.orderId}"></i>
+                                </button>
+                                <span class="badge ${orderStyle.badgeClass} rounded px-2 py-1">#${index + 1}</span>
+                                <h6 class="fw-bold mb-0 text-primary">${o.orderId}</h6>
+                                <span class="text-muted">|</span>
+                                <span class="fw-bold text-dark">${o.recipientName}</span>
+                                <span class="text-secondary small">
+                                    <i class="bi bi-clock me-1"></i>${o.orderTime} 
+                                    ${timeAgoText ? `<span class="badge bg-light text-secondary border ms-1">${timeAgoText}</span>` : ''}
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                ${isBrewing ? `
+                                    <span class="badge bg-primary px-2.5 py-1.5">Đang pha chế</span>
+                                    <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" onclick="requestCompleteOrder('${o.orderId}')">
+                                        <i class="bi bi-check-lg me-1"></i>Hoàn thành đơn
+                                    </button>
+                                ` : `
+                                    <span class="badge bg-warning text-dark px-2.5 py-1.5">Chờ pha chế</span>
+                                    <button type="button" class="btn btn-outline-warning text-dark btn-sm fw-bold shadow-sm" onclick="startBrewingSingle('${o.orderId}')">
+                                        <i class="bi bi-play-fill me-1"></i>Pha chế
+                                    </button>
+                                `}
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="openMissingModal('${o.orderId}')" title="Báo thiếu nguyên liệu">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Báo thiếu NL
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mini Progress summary if brewing -->
+                        ${isBrewing ? `
+                            <div class="px-3 pt-2 pb-1 bg-light border-bottom d-flex align-items-center justify-content-between gap-3">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-success" id="order-progress-${o.orderId}" role="progressbar" style="width: ${progressPct}%;"></div>
+                                </div>
+                                <span class="small fw-bold text-success text-nowrap" id="order-progress-text-${o.orderId}">${checkedCount} / ${itemsCount} món (${progressPct}%)</span>
+                            </div>
+                        ` : ''}
+
+                        <!-- Body (List of items - Layout đồng nhất cho cả Đang pha chế và Chờ pha chế) -->
+                        <div class="card-body p-0" id="order-body-${o.orderId}" style="${isExpanded ? '' : 'display: none;'}">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-sm align-middle m-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="kds-chk-col">
+                                                <input type="checkbox" class="form-check-input kds-checkbox order-select-all-chk" 
+                                                       id="chk-all-${o.orderId}" 
+                                                       data-order-id="${o.orderId}"
+                                                       ${!isBrewing ? 'disabled' : ''}
+                                                       onchange="toggleSelectAllOrder('${o.orderId}', this.checked)"
+                                                       title="${isBrewing ? 'Chọn/Bỏ chọn tất cả món trong đơn này' : 'Bắt đầu pha chế trước khi chọn'}">
+                                            </th>
+                                            <th style="width: 1%; white-space: nowrap;" class="text-center px-2">STT</th>
+                                            <th>Tên đồ uống</th>
+                                            <th style="width: 12%;" class="text-center">Size</th>
+                                            <th style="width: 14%;" class="text-center">Số lượng</th>
+                                            <th style="width: 18%;" class="text-end pe-3">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${o.items && o.items.length ? o.items.map((it, i) => {
+                                            const itemDone = checkedItemKeys.has(`${o.orderId}_${it.variantId}`);
+                                            return `
+                                                <tr class="kds-row-clickable ${itemDone ? 'kds-row-done' : ''}" 
+                                                    id="item-row-${o.orderId}-${it.variantId}"
+                                                    onclick="handleRowClick(event, '${o.orderId}', ${it.variantId}, ${isBrewing})"
+                                                    title="${isBrewing ? 'Click vào dòng này để tích/hủy tích làm xong' : ''}">
+                                                    <td class="kds-chk-col">
+                                                        <input type="checkbox" class="form-check-input kds-checkbox item-complete-chk" 
+                                                               id="chk-${o.orderId}-${it.variantId}"
+                                                               data-order-id="${o.orderId}"
+                                                               data-variant-id="${it.variantId}"
+                                                               ${itemDone ? 'checked' : ''}
+                                                               ${!isBrewing ? 'disabled' : ''}
+                                                               onchange="toggleItemCheck('${o.orderId}', ${it.variantId}, this.checked)">
+                                                    </td>
+                                                    <td class="text-center fw-bold text-dark px-2">${i + 1}</td>
+                                                    <td>
+                                                        <span class="fw-bold text-dark item-text">${it.productName}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-secondary-subtle text-dark border">Size ${it.size}</span>
+                                                    </td>
+                                                    <td class="text-center fw-bold text-dark fs-6">
+                                                        x${it.quantity}
+                                                    </td>
+                                                    <td class="text-end pe-3">
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle ${itemDone ? '' : 'd-none'}" id="badge-done-${o.orderId}-${it.variantId}">
+                                                            <i class="bi bi-check me-1"></i>Đã xong
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('') : `
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted py-2">Không có chi tiết món.</td>
+                                            </tr>
+                                        `}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.html(html);
+
+            // Cập nhật trạng thái indeterminate cho checkbox header của từng đơn
+            filtered.forEach(o => {
+                updateOrderCardProgress(o.orderId);
+            });
+        }
+
+        function updateOrderCardProgress(orderId) {
+            const order = rawOrdersList.find(o => o.orderId === orderId);
+            if (!order || !order.items) return;
+
+            const itemsCount = order.items.length;
+            let checkedCount = 0;
+            order.items.forEach(it => {
+                const isChecked = checkedItemKeys.has(`${orderId}_${it.variantId}`);
+                if (isChecked) checkedCount++;
+
+                const rowEl = $(`#item-row-${orderId}-${it.variantId}`);
+                const badgeEl = $(`#badge-done-${orderId}-${it.variantId}`);
+                const chkEl = $(`#chk-${orderId}-${it.variantId}`);
+
+                if (isChecked) {
+                    rowEl.addClass('kds-row-done');
+                    badgeEl.removeClass('d-none');
+                    chkEl.prop('checked', true);
+                } else {
+                    rowEl.removeClass('kds-row-done');
+                    badgeEl.addClass('d-none');
+                    chkEl.prop('checked', false);
+                }
+            });
+
+            const progressPct = itemsCount > 0 ? Math.round((checkedCount / itemsCount) * 100) : 0;
+            $(`#order-progress-${orderId}`).css('width', `${progressPct}%`);
+            $(`#order-progress-text-${orderId}`).text(`${checkedCount} / ${itemsCount} món (${progressPct}%)`);
+
+            // Cập nhật Indeterminate Checkbox của Order
+            const chkAll = document.getElementById(`chk-all-${orderId}`);
+            if (chkAll) {
+                if (checkedCount === 0) {
+                    chkAll.checked = false;
+                    chkAll.indeterminate = false;
+                } else if (checkedCount === itemsCount && itemsCount > 0) {
+                    chkAll.checked = true;
+                    chkAll.indeterminate = false;
+                } else {
+                    chkAll.checked = false;
+                    chkAll.indeterminate = true;
+                }
+            }
+        }
+
+        function toggleOrderExpand(orderId) {
+            const bodyEl = $(`#order-body-${orderId}`);
+            const chevronEl = $(`#chevron-${orderId}`);
+
+            if (bodyEl.is(':visible')) {
+                bodyEl.hide();
+                chevronEl.removeClass('bi-chevron-up').addClass('bi-chevron-down');
+                expandedOrderIds.delete(orderId);
+            } else {
+                bodyEl.show();
+                chevronEl.removeClass('bi-chevron-down').addClass('bi-chevron-up');
+                expandedOrderIds.add(orderId);
+            }
+        }
+
+        function toggleExpandAllOrders() {
+            isAllExpanded = !isAllExpanded;
+            if (isAllExpanded) {
+                rawOrdersList.forEach(o => expandedOrderIds.add(o.orderId));
+                $('#textExpandAll').text('Thu gọn');
+                $('#iconExpandAll').removeClass('bi-arrows-expand').addClass('bi-arrows-collapse');
+            } else {
+                expandedOrderIds.clear();
+                $('#textExpandAll').text('Mở rộng');
+                $('#iconExpandAll').removeClass('bi-arrows-collapse').addClass('bi-arrows-expand');
+            }
+            renderOrderView(rawOrdersList);
+        }
+
+        function setOrderFilter(filter, btnEl) {
+            currentFilter = filter;
+            $('#orderStatusFilters .filter-btn').removeClass('active btn-dark btn-warning btn-primary').addClass('btn-outline-secondary');
+            
+            if (filter === 'all') {
+                $(btnEl).removeClass('btn-outline-secondary').addClass('btn-dark active');
+            } else if (filter === 'waiting') {
+                $(btnEl).removeClass('btn-outline-secondary').addClass('btn-warning text-dark active');
+            } else if (filter === 'brewing') {
+                $(btnEl).removeClass('btn-outline-secondary').addClass('btn-primary active');
+            }
+
+            renderOrderView(rawOrdersList);
+        }
+
+        // =========================================================
+        // RENDER: BATCH RECIPE VIEW (TAB 2)
+        // =========================================================
+        function renderBatchView(orders) {
+            const container = $('#batchDrinksContainer');
+            const search = $('#brewingSearch').val().toLowerCase().trim();
+
+            const batchMap = new Map();
+
+            orders.forEach((o, orderIndex) => {
+                if (!o.items) return;
+
+                o.items.forEach(it => {
+                    const key = `${it.productName}___${it.size}___${it.variantId}`;
+                    if (!batchMap.has(key)) {
+                        batchMap.set(key, {
+                            productName: it.productName,
+                            size: it.size,
+                            variantId: it.variantId,
+                            totalQuantity: 0,
+                            ordersList: []
+                        });
+                    }
+
+                    const recipeGroup = batchMap.get(key);
+                    recipeGroup.totalQuantity += it.quantity;
+                    recipeGroup.ordersList.push({
+                        orderId: o.orderId,
+                        recipientName: o.recipientName,
+                        orderTime: o.orderTime,
+                        orderTimeRaw: o.orderTimeRaw,
+                        brewingStatus: o.brewingStatus,
+                        quantity: it.quantity,
+                        variantId: it.variantId,
+                        orderRank: orderIndex + 1
+                    });
+                });
+            });
+
+            let recipes = Array.from(batchMap.values());
+
+            if (search) {
+                recipes = recipes.filter(r => 
+                    r.productName.toLowerCase().includes(search) || 
+                    r.ordersList.some(ord => ord.orderId.toLowerCase().includes(search) || ord.recipientName.toLowerCase().includes(search))
+                );
+            }
+
+            if (recipes.length === 0) {
+                container.html(`
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="bi bi-stack fs-1 text-secondary mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-1">Không có món nào cần pha chế</h6>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '';
+            recipes.forEach(r => {
+                let doneCups = 0;
+                let waitingOrdersCount = 0;
+
+                r.ordersList.forEach(ord => {
+                    const isChecked = checkedItemKeys.has(`${ord.orderId}_${ord.variantId}`);
+                    if (isChecked) doneCups += ord.quantity;
+                    if (ord.brewingStatus === 'Waiting' || ord.brewingStatus === 'Waiting for Brewing') waitingOrdersCount++;
+                });
+
+                const allDone = doneCups >= r.totalQuantity && r.totalQuantity > 0;
+
+                html += `
+                    <div class="col-12 col-md-6 col-xl-4" id="batch-card-${r.variantId}">
+                        <div class="card border shadow-sm batch-recipe-card h-100 ${allDone ? 'bg-success-subtle border-success' : 'bg-white'}">
+                            <!-- Header: Tên sản phẩm - Size | Nút pha đơn chờ | Tiến độ 0/2 | Indeterminate Checkbox -->
+                            <div class="card-header bg-secondary-subtle py-2 px-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h6 class="fw-bold text-dark mb-0">${r.productName} - Size ${r.size}</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    ${waitingOrdersCount > 0 ? `
+                                        <button type="button" class="btn btn-warning btn-sm py-0.5 px-2 fw-bold shadow-sm" onclick="startBrewingForDrink(${r.variantId})" title="Bắt đầu pha chế ${waitingOrdersCount} đơn chờ">
+                                            <i class="bi bi-play-fill me-1"></i>Pha ${waitingOrdersCount} đơn chờ
+                                        </button>
+                                    ` : ''}
+                                    <span class="badge ${allDone ? 'bg-success' : 'bg-primary'} fs-6 px-2.5 py-1" id="badge-batch-total-${r.variantId}">
+                                        ${doneCups} / ${r.totalQuantity}
+                                    </span>
+                                    <input type="checkbox" class="form-check-input kds-checkbox batch-select-all-chk" 
+                                           id="chk-batch-all-${r.variantId}" 
+                                           data-variant-id="${r.variantId}"
+                                           onchange="toggleSelectAllBatch(${r.variantId}, this.checked)"
+                                           title="Chọn/Bỏ chọn tất cả đơn cho món này">
+                                </div>
+                            </div>
+
+                            <!-- Body: Danh sách đơn hàng -->
+                            <div class="card-body p-2.5">
+                                <div class="d-flex flex-column gap-2" style="max-height: 260px; overflow-y: auto;">
+                                    ${r.ordersList.map(ord => {
+                                        const isBrewing = (ord.brewingStatus === 'Brewing in Progress');
+                                        const isChecked = checkedItemKeys.has(`${ord.orderId}_${ord.variantId}`);
+                                        const ordStyle = getOrderStyle(ord.orderId);
+                                        const timeAgo = getTimeAgo(ord.orderTimeRaw || ord.orderTime);
+
+                                        return `
+                                            <div class="p-2 rounded border kds-row-clickable ${isChecked ? 'kds-row-done border-success' : 'bg-light'}" 
+                                                 style="border-left: 4px solid ${ordStyle.border} !important;"
+                                                 onclick="handleRowClick(event, '${ord.orderId}', ${ord.variantId}, ${isBrewing})"
+                                                 title="${isBrewing ? 'Click vào dòng này để tích/hủy tích làm xong' : ''}">
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <div class="overflow-hidden">
+                                                        <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                                            <span class="badge ${ordStyle.badgeClass} rounded px-2 py-0.5 small fw-bold">#${ord.orderRank}</span>
+                                                            <strong class="text-primary small">${ord.orderId}</strong>
+                                                            <span class="text-dark small fw-semibold">${ord.recipientName}</span>
+                                                        </div>
+                                                        <div class="text-secondary small" style="font-size: 0.75rem;">
+                                                            ${ord.orderTime} ${timeAgo ? `(${timeAgo})` : ''}
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                                        <!-- Số lượng chỉ hiển thị x?, bỏ chữ ly -->
+                                                        <span class="fw-bold text-dark fs-6">x${ord.quantity}</span>
+
+                                                        ${isBrewing ? `
+                                                            <input type="checkbox" class="form-check-input kds-checkbox batch-item-chk"
+                                                                   data-order-id="${ord.orderId}"
+                                                                   data-variant-id="${ord.variantId}"
+                                                                   ${isChecked ? 'checked' : ''}
+                                                                   onchange="toggleItemCheck('${ord.orderId}', ${ord.variantId}, this.checked)"
+                                                                   title="Tích chọn làm xong">
+                                                        ` : `
+                                                            <button type="button" class="btn btn-outline-warning text-dark btn-sm p-1 px-2" onclick="startBrewingSingle('${ord.orderId}')" title="Bắt đầu pha chế đơn này">
+                                                                <i class="bi bi-play-fill"></i>
+                                                            </button>
+                                                        `}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.html(html);
+
+            // Cập nhật trạng thái indeterminate cho checkbox header của từng món gom
+            recipes.forEach(r => {
+                let doneCups = 0;
+                r.ordersList.forEach(ord => {
+                    if (checkedItemKeys.has(`${ord.orderId}_${ord.variantId}`)) doneCups += ord.quantity;
+                });
+                const chkBatchAll = document.getElementById(`chk-batch-all-${r.variantId}`);
+                if (chkBatchAll) {
+                    if (doneCups === 0) {
+                        chkBatchAll.checked = false;
+                        chkBatchAll.indeterminate = false;
+                    } else if (doneCups >= r.totalQuantity && r.totalQuantity > 0) {
+                        chkBatchAll.checked = true;
+                        chkBatchAll.indeterminate = false;
+                    } else {
+                        chkBatchAll.checked = false;
+                        chkBatchAll.indeterminate = true;
+                    }
+                }
+            });
+        }
+
+        // =========================================================
+        // GLOBAL SEARCH & FRACTION SUMMARY
+        // =========================================================
+        function handleGlobalSearch() {
+            renderOrderView(rawOrdersList);
+            renderBatchView(rawOrdersList);
+        }
+
+        function clearSearch() {
+            $('#brewingSearch').val('');
+            handleGlobalSearch();
+        }
+
+        function updateTotalFraction() {
+            let totalDrinks = 0;
+            let doneDrinks = 0;
+
+            rawOrdersList.forEach(o => {
+                if (o.items) {
+                    o.items.forEach(it => {
+                        totalDrinks += (it.quantity || 0);
+                        if (checkedItemKeys.has(`${o.orderId}_${it.variantId}`)) {
+                            doneDrinks += (it.quantity || 0);
+                        }
+                    });
+                }
+            });
+
+            $('#statTotalDrinksFraction').text(`${doneDrinks} / ${totalDrinks}`);
+        }
+
+        function updateDashboardStatistics(orders) {
+            const totalOrders = orders.length;
+            const waitingCount = orders.filter(o => o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing').length;
+            const brewingCount = orders.filter(o => o.brewingStatus === 'Brewing in Progress').length;
+
+            const recipeSet = new Set();
+            orders.forEach(o => {
+                if (o.items) {
+                    o.items.forEach(it => recipeSet.add(`${it.productName}___${it.size}`));
+                }
+            });
+
+            $('#badgeOrdersViewCount').text(totalOrders);
+            $('#badgeBatchViewCount').text(recipeSet.size);
+
+            $('#filterCountAll').text(totalOrders);
+            $('#filterCountWaiting').text(waitingCount);
+            $('#filterCountBrewing').text(brewingCount);
+
+            updateTotalFraction();
+        }
+
+        // =========================================================
+        // MISSING INGREDIENTS MODAL
+        // =========================================================
         function openMissingModal(orderId) {
             $('#modalMissingOrderId').val(orderId);
             $('#modalMissingReason').val('');
 
-            let items = cachedOrdersData[orderId];
-            if (!items || items.length === 0) {
-                // Fallback: fetch live details
-                $.ajax({
-                    url: '/Brewing/GetLiveOrders',
-                    type: 'GET',
-                    success: function(orders) {
-                        let ord = orders.find(o => o.orderId === orderId);
-                        if (ord && ord.items) {
-                            renderMissingItemsList(ord.items);
-                        } else {
-                            $('#missingItemsListContainer').html('<div class="text-danger small">Không tìm thấy danh sách món của đơn.</div>');
-                        }
-                    }
-                });
+            const order = rawOrdersList.find(o => o.orderId === orderId);
+            if (order && order.items && order.items.length) {
+                renderMissingItemsList(order.items);
             } else {
-                renderMissingItemsList(items);
+                $('#missingItemsListContainer').html('<div class="text-muted small py-2 text-center">Không tìm thấy danh sách món.</div>');
             }
 
             if (!missingModalInstance) {
@@ -376,11 +1145,11 @@
                 let vId = it.variantId || idx;
                 html += `
                     <div class="form-check p-2 mb-1 border-bottom bg-white rounded">
-                        <input class="form-check-input missing-item-chk ms-0 me-2" type="checkbox" value="${vId}" id="chk_item_${vId}">
-                        <label class="form-check-label w-100 cursor-pointer d-flex justify-content-between align-items-center" for="chk_item_${vId}">
+                        <input class="form-check-input missing-item-chk ms-0 me-2" type="checkbox" value="${vId}" id="chk_missing_${vId}">
+                        <label class="form-check-label w-100 cursor-pointer d-flex justify-content-between align-items-center" for="chk_missing_${vId}">
                             <div>
                                 <span class="fw-bold text-dark">${it.productName}</span>
-                                <span class="badge bg-secondary-subtle text-dark ms-1">Size ${it.size}</span>
+                                <span class="text-muted small ms-1">(Size ${it.size})</span>
                                 <span class="text-muted ms-1">x${it.quantity}</span>
                             </div>
                             <span class="fw-bold text-primary">${(it.amount || (it.quantity * it.unitPrice) || 0).toLocaleString('vi-VN')} đ</span>
@@ -392,28 +1161,24 @@
         }
 
         function submitMissingIngredientsReport() {
-            let orderId = $('#modalMissingOrderId').val();
-            let reason = $('#modalMissingReason').val().trim();
-            let selectedVariantIds = [];
+            const orderId = $('#modalMissingOrderId').val();
+            const reason = $('#modalMissingReason').val().trim();
+            const selectedVariantIds = [];
 
-            $('.missing-item-chk:checked').each(function() {
-                let val = parseInt($(this).val());
-                if (!isNaN(val)) {
-                    selectedVariantIds.push(val);
-                }
+            $('.missing-item-chk:checked').each(function () {
+                const val = parseInt($(this).val());
+                if (!isNaN(val)) selectedVariantIds.push(val);
             });
 
             if (selectedVariantIds.length === 0) {
-                showToast('Vui lòng tích chọn ít nhất 1 món bị thiếu nguyên liệu!', 'warning');
+                showAppAlert('Vui lòng tích chọn ít nhất 1 món bị thiếu nguyên liệu!', 'Cảnh báo');
                 return;
             }
 
-            let confirmMsg = `Xác nhận gửi báo cáo <strong>thiếu nguyên liệu cho ${selectedVariantIds.length} món</strong> của đơn <strong>${orderId}</strong> tới Thu ngân để xử lý?`;
-
             showConfirmModal(
                 'Xác nhận báo thiếu nguyên liệu',
-                confirmMsg,
-                function() {
+                `Gửi báo cáo thiếu nguyên liệu cho <strong>${selectedVariantIds.length} món</strong> của đơn <strong>${orderId}</strong> tới Thu ngân?`,
+                function () {
                     $.ajax({
                         url: '/Brewing/ReportMissingIngredients',
                         type: 'POST',
@@ -423,141 +1188,51 @@
                             missingVariantIds: selectedVariantIds,
                             reason: reason
                         }),
-                        success: function(res) {
+                        success: function (res) {
                             if (missingModalInstance) missingModalInstance.hide();
-                            showToast(res.message || 'Đã gửi thông báo cho Thu ngân thành công.', 'success');
                             fetchLiveOrders();
                         },
-                        error: function(xhr) {
-                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi gửi báo cáo thiếu nguyên liệu.';
-                            showToast(msg, 'danger');
+                        error: function (xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi gửi báo cáo.';
+                            showAppAlert(msg, 'Thông báo lỗi');
                         }
                     });
                 }
             );
         }
 
-        // Live Auto-Polling (every 5 seconds)
+        // =========================================================
+        // LIVE AUTO-POLLING (EVERY 5 SECONDS)
+        // =========================================================
         function fetchLiveOrders() {
             $.ajax({
                 url: '/Brewing/GetLiveOrders',
                 type: 'GET',
-                success: function(orders) {
-                    if (!orders || orders.length === 0) {
-                        expandedOrderIds.clear();
-                        $('#brewingTableBody').html(`
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-5">
-                                    <i class="bi bi-cup-hot fs-2 d-block mb-2 text-secondary-subtle"></i>
-                                    Không có đơn hàng nào đang chờ pha chế.
-                                </td>
-                            </tr>
-                        `);
-                        return;
+                success: function (orders) {
+                    rawOrdersList = orders || [];
+
+                    if (rawOrdersList.length > 0 && expandedOrderIds.size === 0) {
+                        expandedOrderIds.add(rawOrdersList[0].orderId);
                     }
 
-                    // Update cached items
-                    orders.forEach(o => {
-                        cachedOrdersData[o.orderId] = o.items;
-                    });
-
-                    // Auto-expand the top order in the queue if no active order is currently expanded
-                    let hasExpandedActiveOrder = orders.some(o => expandedOrderIds.has(o.orderId));
-                    if (!hasExpandedActiveOrder && orders.length > 0) {
-                        expandedOrderIds.add(orders[0].orderId);
-                    }
-
-                    let search = $('#brewingSearch').val().toLowerCase().trim();
-                    let rowsHtml = '';
-
-                    orders.forEach(o => {
-                        let isBrewing = o.brewingStatus === 'Brewing in Progress';
-                        let stringRowClass = isBrewing ? 'table-primary fw-semibold' : 'table-warning fw-semibold';
-                        let badgeClass = isBrewing ? 'bg-primary text-white' : 'bg-warning text-dark';
-                        let matchesSearch = !search || o.recipientName.toLowerCase().includes(search) || o.orderId.toLowerCase().includes(search);
-                        let hiddenCls = matchesSearch ? '' : 'd-none';
-
-                        let isExpanded = expandedOrderIds.has(o.orderId);
-                        let displayStyle = isExpanded ? '' : 'display: none;';
-                        let chevronClass = isExpanded ? 'bi-chevron-up' : 'bi-chevron-down';
-
-                        rowsHtml += `
-                            <tr class="brewing-row ${stringRowClass} ${hiddenCls}" data-name="${o.recipientName.toLowerCase()}" data-id="${o.orderId.toLowerCase()}" data-code="${o.orderId}">
-                                <td class="ps-3">
-                                    <button type="button" class="btn btn-sm btn-link text-dark p-0 toggle-nested-btn" onclick="toggleNestedItems('${o.orderId}')">
-                                        <i class="bi ${chevronClass}" id="chevron-${o.orderId}"></i>
-                                    </button>
-                                </td>
-                                <td class="fw-bold text-primary">${o.orderId}</td>
-                                <td>${o.recipientName}</td>
-                                <td class="text-secondary">${o.orderTime}</td>
-                                <td>
-                                    <span class="badge ${badgeClass} rounded-pill px-3 py-1.5">
-                                        ${o.displayStatus}
-                                    </span>
-                                </td>
-                                <td class="text-center pe-3">
-                                    <div class="d-flex align-items-center justify-content-center gap-2">
-                                        ${!isBrewing ? `
-                                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm" onclick="startBrewingOrder('${o.orderId}')">
-                                                <i class="bi bi-play-fill me-1"></i> Pha chế
-                                            </button>
-                                        ` : `
-                                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm" onclick="completeBrewingOrder('${o.orderId}')">
-                                                <i class="bi bi-check-lg me-1"></i> Hoàn thành
-                                            </button>
-                                        `}
-                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fw-bold shadow-sm" onclick="openMissingModal('${o.orderId}')" title="Báo thiếu nguyên liệu cho đơn này">
-                                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Báo thiếu NL
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="nested-items-row ${hiddenCls}" id="nested-row-${o.orderId}" style="${displayStyle}">
-                                <td colspan="6" class="p-0 border-0">
-                                    <div class="bg-body-tertiary p-3 border-bottom shadow-inner">
-                                        <div class="table-responsive bg-white rounded border">
-                                            <table class="table table-sm table-striped table-bordered m-0 align-middle">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th style="width: 10%;" class="ps-3 text-center">STT</th>
-                                                        <th style="width: 50%;">Tên món</th>
-                                                        <th style="width: 20%;" class="text-center">Size</th>
-                                                        <th style="width: 20%;" class="text-center">Số lượng</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${o.items && o.items.length ? o.items.map(item => `
-                                                        <tr>
-                                                            <td class="text-center ps-3 text-muted">${item.stt}</td>
-                                                            <td class="fw-bold text-dark">${item.productName}</td>
-                                                            <td class="text-center"><span class="badge bg-secondary-subtle text-dark">${item.size}</span></td>
-                                                            <td class="text-center fw-bold text-primary">${item.quantity}</td>
-                                                        </tr>
-                                                    `).join('') : `
-                                                        <tr>
-                                                            <td colspan="4" class="text-center text-muted py-2">Không có dữ liệu chi tiết món.</td>
-                                                        </tr>
-                                                    `}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
-
-                    $('#brewingTableBody').html(rowsHtml);
+                    updateDashboardStatistics(rawOrdersList);
+                    renderOrderView(rawOrdersList);
+                    renderBatchView(rawOrdersList);
+                },
+                error: function (xhr) {
+                    console.error('Error polling live orders:', xhr);
                 }
             });
         }
 
-        $(document).ready(function() {
+        // =========================================================
+        // INITIALIZATION
+        // =========================================================
+        $(document).ready(function () {
             @if (ViewBag.NotInShift != true)
             {
                 <text>
-                // Poll every 5 seconds only when eligible in shift
+                fetchLiveOrders();
                 setInterval(fetchLiveOrders, 5000);
                 </text>
             }
@@ -567,7 +1242,7 @@
             showConfirmModal(
                 'Xác nhận đăng xuất',
                 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản để thực hiện điểm danh <strong>chấm công bằng khuôn mặt (Face Login)</strong> không?',
-                function() {
+                function () {
                     window.location.href = '@Url.Action("Logout", "Auth")';
                 },
                 'Đăng xuất ngay',
