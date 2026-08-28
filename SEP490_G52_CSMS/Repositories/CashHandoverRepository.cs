@@ -351,35 +351,38 @@ namespace SEP490_G52_CSMS.Repositories
                 return (false, "NotScheduled", "Bạn không có lịch phân công ca làm việc tại chi nhánh hôm nay. Vui lòng kiểm tra lại Lịch làm việc.", null, null);
             }
 
-            // Prioritize roster where cashier is currently checked-in (CheckInTime != null && CheckOutTime == null)
+            // 1. Match current roster by current time (within shift bounds: start - 30m to end)
             var matchingRoster = rosters.FirstOrDefault(r => {
-                var log = r.AttendanceLogs.FirstOrDefault();
-                return log != null && log.CheckInTime != null && log.CheckOutTime == null 
-                       && (log.OverallStatus == "Present" || log.CheckInStatus == "OnTime" || log.CheckInStatus == "Late");
+                if (r.FixedShift == null) return false;
+                var start = r.FixedShift.StartTime;
+                var end = r.FixedShift.EndTime;
+
+                if (start <= end)
+                {
+                    return r.AssignmentDate.Date == today && nowTime >= start.Subtract(TimeSpan.FromMinutes(30)) && nowTime <= end;
+                }
+                else
+                {
+                    if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(TimeSpan.FromMinutes(30));
+                    if (r.AssignmentDate.Date == yesterday) return nowTime <= end;
+                    return false;
+                }
             });
 
-            // If not checked in yet, match strictly by current time within shift bounds
+            // 2. If no roster strictly matches shift bounds, check active check-in roster whose end time hasn't expired by more than 30 mins
             if (matchingRoster == null)
             {
                 matchingRoster = rosters.FirstOrDefault(r => {
                     if (r.FixedShift == null) return false;
-                    var start = r.FixedShift.StartTime;
+                    var log = r.AttendanceLogs.FirstOrDefault();
+                    if (log == null || log.CheckInTime == null || log.CheckOutTime != null) return false;
+                    
                     var end = r.FixedShift.EndTime;
-
-                    if (start <= end)
-                    {
-                        return r.AssignmentDate.Date == today && nowTime >= start.Subtract(TimeSpan.FromMinutes(30)) && nowTime <= end;
-                    }
-                    else
-                    {
-                        if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(TimeSpan.FromMinutes(30));
-                        if (r.AssignmentDate.Date == yesterday) return nowTime <= end;
-                        return false;
-                    }
+                    return r.AssignmentDate.Date == today && nowTime <= end.Add(TimeSpan.FromMinutes(30));
                 });
             }
 
-            // Fallback: match by wider window or earliest shift
+            // 3. Fallback: match by wider window or earliest shift
             if (matchingRoster == null)
             {
                 var earlyWindow = TimeSpan.FromHours(2);
