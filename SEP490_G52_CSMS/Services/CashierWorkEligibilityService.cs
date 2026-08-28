@@ -49,23 +49,55 @@ namespace SEP490_G52_CSMS.Services
                 };
             }
 
-            var earlyWindow = TimeSpan.FromHours(2);
+            // Prioritize roster where cashier is currently checked-in (CheckInTime != null && CheckOutTime == null)
             var matchingRoster = rosters.FirstOrDefault(r => {
-                if (r.FixedShift == null) return false;
-                var start = r.FixedShift.StartTime;
-                var end = r.FixedShift.EndTime;
+                var log = r.AttendanceLogs.FirstOrDefault();
+                return log != null && log.CheckInTime != null && log.CheckOutTime == null 
+                       && (log.OverallStatus == "Present" || log.CheckInStatus == "OnTime" || log.CheckInStatus == "Late");
+            });
 
-                if (start <= end)
-                {
-                    return r.AssignmentDate.Date == today && nowTime >= start.Subtract(earlyWindow) && nowTime <= end.Add(TimeSpan.FromHours(1));
-                }
-                else
-                {
-                    if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(earlyWindow);
-                    if (r.AssignmentDate.Date == yesterday) return nowTime <= end.Add(TimeSpan.FromHours(1));
-                    return false;
-                }
-            }) ?? rosters.OrderBy(r => r.FixedShift?.StartTime).FirstOrDefault();
+            // If not checked in yet, match strictly by current time within shift bounds
+            if (matchingRoster == null)
+            {
+                matchingRoster = rosters.FirstOrDefault(r => {
+                    if (r.FixedShift == null) return false;
+                    var start = r.FixedShift.StartTime;
+                    var end = r.FixedShift.EndTime;
+
+                    if (start <= end)
+                    {
+                        return r.AssignmentDate.Date == today && nowTime >= start.Subtract(TimeSpan.FromMinutes(30)) && nowTime <= end;
+                    }
+                    else
+                    {
+                        if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(TimeSpan.FromMinutes(30));
+                        if (r.AssignmentDate.Date == yesterday) return nowTime <= end;
+                        return false;
+                    }
+                });
+            }
+
+            // Fallback: match by wider window or earliest shift
+            if (matchingRoster == null)
+            {
+                var earlyWindow = TimeSpan.FromHours(2);
+                matchingRoster = rosters.FirstOrDefault(r => {
+                    if (r.FixedShift == null) return false;
+                    var start = r.FixedShift.StartTime;
+                    var end = r.FixedShift.EndTime;
+
+                    if (start <= end)
+                    {
+                        return r.AssignmentDate.Date == today && nowTime >= start.Subtract(earlyWindow) && nowTime <= end.Add(TimeSpan.FromHours(1));
+                    }
+                    else
+                    {
+                        if (r.AssignmentDate.Date == today) return nowTime >= start.Subtract(earlyWindow);
+                        if (r.AssignmentDate.Date == yesterday) return nowTime <= end.Add(TimeSpan.FromHours(1));
+                        return false;
+                    }
+                }) ?? rosters.OrderBy(r => r.FixedShift?.StartTime).FirstOrDefault();
+            }
 
             if (matchingRoster == null || matchingRoster.FixedShift == null)
             {
@@ -77,12 +109,24 @@ namespace SEP490_G52_CSMS.Services
                 };
             }
 
-            // Determine Shift Phase
-            var allShifts = await _context.FixedShifts.OrderBy(s => s.StartTime).ToListAsync();
-            var shiftIndex = allShifts.FindIndex(s => s.ShiftId == matchingRoster.ShiftId);
-            string shiftPhase = CashHandoverConstants.HandoverTypeMidShift;
-            if (shiftIndex == 0) shiftPhase = CashHandoverConstants.HandoverTypeFirstShift;
-            else if (shiftIndex == allShifts.Count - 1) shiftPhase = CashHandoverConstants.HandoverTypeLastShift;
+            // Determine Shift Phase based on branch handover history today
+            bool hasAnyHandoverToday = await _context.CashHandovers
+                .AnyAsync(ch => ch.BranchId == branchId && ch.HandoverDate.Date == matchingRoster.AssignmentDate.Date);
+
+            string shiftPhase;
+            if (!hasAnyHandoverToday)
+            {
+                shiftPhase = CashHandoverConstants.HandoverTypeFirstShift;
+            }
+            else
+            {
+                var allShifts = await _context.FixedShifts.OrderBy(s => s.StartTime).ToListAsync();
+                var shiftIndex = allShifts.FindIndex(s => s.ShiftId == matchingRoster.ShiftId);
+                if (shiftIndex == allShifts.Count - 1)
+                    shiftPhase = CashHandoverConstants.HandoverTypeLastShift;
+                else
+                    shiftPhase = CashHandoverConstants.HandoverTypeMidShift;
+            }
 
             // 3. ATTENDANCE CHECK (CHẤM CÔNG - TOP PRIORITY FOR WORKING ELIGIBILITY!)
             var attendanceLog = matchingRoster.AttendanceLogs.FirstOrDefault();
@@ -118,18 +162,18 @@ namespace SEP490_G52_CSMS.Services
                 };
             }
 
-            // 4. CASH HANDOVER CHECK (ONLY CHECKED AFTER ATTENDANCE IS CONFIRMED)
+            // 4. CASH HANDOVER CHECK (CHECK ACTIVE HANDOVER FOR THE BRANCH TODAY)
             var activeHandover = await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ch => ch.BranchId == branchId 
-                                        && ch.ShiftId == matchingRoster.ShiftId
                                         && ch.HandoverDate.Date == matchingRoster.AssignmentDate.Date
                                         && ch.Status == CashHandoverConstants.ActiveStatus);
 
             if (activeHandover != null)
             {
+                // Correct Cashier or Consecutive Shifts by the same Cashier
                 if (activeHandover.OutgoingCashierId == cashierId || activeHandover.IncomingCashierId == cashierId)
                 {
                     return new CashierEligibilityResult
@@ -182,16 +226,16 @@ namespace SEP490_G52_CSMS.Services
                 };
             }
 
-            if (shiftPhase == CashHandoverConstants.HandoverTypeFirstShift)
+            if (!hasAnyHandoverToday)
             {
                 return new CashierEligibilityResult
                 {
                     IsEligible = false,
                     ReasonCode = "FirstShiftNotOpened",
-                    Message = $"Ca đầu ngày ({matchingRoster.FixedShift.ShiftName}) chưa được Mở ca. Vui lòng thực hiện Mở ca trước khi bán hàng.",
+                    Message = $"Ca làm việc chưa được Mở ca. Vui lòng thực hiện Mở ca trước khi bán hàng.",
                     ActiveShiftId = matchingRoster.ShiftId,
                     ShiftName = matchingRoster.FixedShift.ShiftName,
-                    ShiftPhase = shiftPhase,
+                    ShiftPhase = CashHandoverConstants.HandoverTypeFirstShift,
                     IsCheckedIn = true,
                     IsShiftOpened = false
                 };

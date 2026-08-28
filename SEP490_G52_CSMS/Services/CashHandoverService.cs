@@ -36,10 +36,21 @@ namespace SEP490_G52_CSMS.Services
 
             if (activeHandover != null)
             {
-                return await _cashHandoverRepository.GetShiftPhaseAsync(activeHandover.ShiftId);
+                return await _cashHandoverRepository.GetShiftPhaseAsync(activeHandover.ShiftId, branchId, today);
             }
 
-            // Nếu chưa có ca nào mở hôm nay trong chi nhánh -> Luôn là FirstShift (Mở ca đầu ngày)
+            var lastHandover = await _cashHandoverRepository.GetLastClosedHandoverForBranchAsync(branchId);
+            if (lastHandover == null || lastHandover.HandoverDate.Date < today.Date)
+            {
+                return CashHandoverConstants.HandoverTypeFirstShift;
+            }
+
+            var roster = await _cashHandoverRepository.GetCurrentRosterAsync(cashierId, today);
+            if (roster != null)
+            {
+                return await _cashHandoverRepository.GetShiftPhaseAsync(roster.ShiftId, branchId, today);
+            }
+
             return CashHandoverConstants.HandoverTypeFirstShift;
         }
 
@@ -100,15 +111,15 @@ namespace SEP490_G52_CSMS.Services
             if (roster.FixedShift != null)
             {
                 var currentTime = DateTime.Now.TimeOfDay;
-                var fiveMinutes = TimeSpan.FromMinutes(5);
+                var thirtyMinutes = TimeSpan.FromMinutes(30);
 
                 if (roster.FixedShift.StartTime <= roster.FixedShift.EndTime)
                 {
-                    isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(fiveMinutes) && currentTime <= roster.FixedShift.EndTime);
+                    isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes) && currentTime <= roster.FixedShift.EndTime);
                 }
                 else
                 {
-                    isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(fiveMinutes));
+                    isTimeToOpen = (currentTime >= roster.FixedShift.StartTime.Subtract(thirtyMinutes));
                 }
             }
 
@@ -193,14 +204,14 @@ namespace SEP490_G52_CSMS.Services
 
             // 4. KIỂM TRA THỜI GIAN CA LÀM VIỆC (CHƯA ĐẾN GIỜ HOẶC ĐÃ QUÁ GIỜ)
             var currentTime = DateTime.Now.TimeOfDay;
-            var fiveMinutes = TimeSpan.FromMinutes(5);
+            var thirtyMinutes = TimeSpan.FromMinutes(30);
             if (roster.FixedShift != null)
             {
                 if (roster.FixedShift.StartTime <= roster.FixedShift.EndTime)
                 {
-                    if (currentTime < roster.FixedShift.StartTime.Subtract(fiveMinutes))
+                    if (currentTime < roster.FixedShift.StartTime.Subtract(thirtyMinutes))
                     {
-                        return OperationResult.Fail($"Chưa đến giờ mở ca {roster.FixedShift.ShiftName}. Bạn chỉ có thể mở ca sớm tối đa 5 phút trước khi ca làm bắt đầu.");
+                        return OperationResult.Fail($"Chưa đến giờ mở ca {roster.FixedShift.ShiftName}. Bạn chỉ có thể mở ca sớm tối đa 30 phút trước khi ca làm bắt đầu.");
                     }
                     if (currentTime > roster.FixedShift.EndTime)
                     {
@@ -209,7 +220,7 @@ namespace SEP490_G52_CSMS.Services
                 }
                 else
                 {
-                    if (currentTime < roster.FixedShift.StartTime.Subtract(fiveMinutes) && currentTime > roster.FixedShift.EndTime)
+                    if (currentTime < roster.FixedShift.StartTime.Subtract(thirtyMinutes) && currentTime > roster.FixedShift.EndTime)
                     {
                         return OperationResult.Fail($"Chưa đến giờ mở ca {roster.FixedShift.ShiftName}. Vui lòng quay lại vào ca làm việc.");
                     }
@@ -340,15 +351,15 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Hiện tại là ca cuối cùng trong ngày (không có ca tiếp theo). Không thể thực hiện bàn giao, vui lòng sử dụng chức năng Đóng ca cuối ngày.");
             }
 
-            // Kiểm tra thời gian bàn giao ca sớm 10 phút
+            // Kiểm tra thời gian bàn giao ca cho thu ngân khác (sớm tối đa 1h30p = 90 phút)
             if (!model.IsEmergencyHandover && handover.FixedShift != null)
             {
                 var currentTime = DateTime.Now.TimeOfDay;
-                var tenMinutes = TimeSpan.FromMinutes(10);
-                var earlyHandoverTime = handover.FixedShift.EndTime.Subtract(tenMinutes);
+                var ninetyMinutes = TimeSpan.FromMinutes(90);
+                var earlyHandoverTime = handover.FixedShift.EndTime.Subtract(ninetyMinutes);
                 if (earlyHandoverTime > TimeSpan.Zero && currentTime < earlyHandoverTime)
                 {
-                    return OperationResult.Fail($"Chưa đến giờ bàn giao ca. Bạn chỉ có thể thực hiện bàn giao ca sớm tối đa 10 phút trước khi ca kết thúc (từ {earlyHandoverTime:hh\\:mm}).");
+                    return OperationResult.Fail($"Chưa đến giờ bàn giao ca. Bạn chỉ có thể thực hiện bàn giao ca cho thu ngân khác sớm tối đa 1 tiếng 30 phút trước khi ca kết thúc (từ {earlyHandoverTime:hh\\:mm}).");
                 }
             }
 
@@ -502,19 +513,17 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Vui lòng nhập thông tin người nhận tiền đóng ca.");
             }
 
-            // Kiểm tra thời gian đóng ca sớm 10 phút
+            // Kiểm tra thời gian đóng ca cuối ngày (Cho phép sau khi ca làm việc cuối bắt đầu 30 phút)
             if (handover.FixedShift != null)
             {
                 var currentTime = DateTime.Now.TimeOfDay;
-                var tenMinutes = TimeSpan.FromMinutes(10);
-                var earlyCloseTime = handover.FixedShift.EndTime.Subtract(tenMinutes);
+                var allowedCloseTime = handover.FixedShift.StartTime.Add(TimeSpan.FromMinutes(30));
                 bool isPastShiftDay = DateTime.Today > handover.HandoverDate.Date;
                 bool isPastMidnight = (DateTime.Today == handover.HandoverDate.Date.AddDays(1) || currentTime < TimeSpan.FromHours(6));
 
-                if (!isPastShiftDay && !isPastMidnight && earlyCloseTime > TimeSpan.Zero && currentTime < earlyCloseTime)
+                if (!isPastShiftDay && !isPastMidnight && currentTime < allowedCloseTime)
                 {
-                    var earlyStr = (handover.FixedShift.EndTime.Hours == 23 && handover.FixedShift.EndTime.Minutes >= 59) ? "23:50" : $"{earlyCloseTime:hh\\:mm}";
-                    return OperationResult.Fail($"Chưa đến giờ đóng ca cuối ngày. Bạn chỉ có thể thực hiện đóng ca sớm tối đa 10 phút trước khi ca kết thúc (từ {earlyStr}).");
+                    return OperationResult.Fail($"Chưa đến giờ đóng ca cuối ngày. Chỉ được phép thực hiện Đóng ca cuối ngày sau khi ca làm việc cuối bắt đầu 30 phút (từ {allowedCloseTime:hh\\:mm}).");
                 }
             }
 

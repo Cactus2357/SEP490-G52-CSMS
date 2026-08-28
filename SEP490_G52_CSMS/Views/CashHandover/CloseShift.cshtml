@@ -12,7 +12,7 @@
         </div>
         <div class="d-flex gap-2">
             <a asp-action="EmergencyHandover" asp-route-cashierId="@Model.OutgoingCashierId"
-               class="btn btn-outline-warning btn-sm">
+               class="btn btn-warning text-dark btn-sm fw-bold">
                 <i class="bi bi-exclamation-octagon me-1"></i>Bàn giao đột xuất
             </a>
             <a asp-action="History" asp-route-branchId="@Model.BranchId"
@@ -37,12 +37,6 @@
             <div asp-validation-summary="ModelOnly"></div>
         </div>
     }
-
-    <!-- Header biểu mẫu -->
-    <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
-        <span class="fw-semibold text-uppercase text-secondary small">Biểu mẫu tổng kết két &amp; Đóng ca kết thúc ngày</span>
-        <a asp-action="Index" class="btn btn-outline-danger btn-sm">Hủy</a>
-    </div>
 
     <form asp-action="CloseShift" method="post" id="closeShiftForm">
         @Html.AntiForgeryToken()

@@ -17,14 +17,6 @@
         </div>
     </div>
 
-
-
-    <!-- Header biểu mẫu -->
-    <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
-        <span class="fw-semibold text-uppercase text-secondary small">Biểu mẫu kích hoạt / Mở ca</span>
-        <a asp-action="Index" class="btn btn-outline-danger btn-sm">Hủy</a>
-    </div>
-
     <form asp-action="OpenShift" method="post">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="CashierId" />

@@ -12,7 +12,7 @@
         </div>
         <div class="d-flex gap-2">
             <a asp-action="EmergencyHandover" asp-route-cashierId="@Model.OutgoingCashierId"
-               class="btn btn-outline-warning btn-sm">
+               class="btn btn-warning text-dark btn-sm fw-bold">
                 <i class="bi bi-exclamation-octagon me-1"></i>Bàn giao đột xuất
             </a>
             <a asp-action="History" asp-route-branchId="@Model.BranchId"
@@ -30,17 +30,6 @@
         </div>
     }
 
-    @if (Model.IsSelfHandover)
-    {
-        <div class="alert alert-warning d-flex align-items-center mb-3">
-            <i class="bi bi-person-check-fill fs-4 me-3 text-warning"></i>
-            <div>
-                <strong>Lưu ý: Bạn được phân công làm 2 ca liên tiếp!</strong><br />
-                <span class="small">Hệ thống yêu cầu thực hiện bước bàn giao chốt két giữa 2 ca để tách bạch doanh thu và báo cáo đối soát riêng cho từng ca làm việc. Sau khi xác nhận, ca tiếp theo sẽ tự động được mở với số tiền thực tế vừa bàn giao.</span>
-            </div>
-        </div>
-    }
-
     @if (!ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger alert-dismissible fade show">
@@ -48,12 +37,6 @@
             <div asp-validation-summary="ModelOnly"></div>
         </div>
     }
-
-    <!-- Header biểu mẫu -->
-    <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
-        <span class="fw-semibold text-uppercase text-secondary small">Biểu mẫu đối soát &amp; Bàn giao ca giữa ngày</span>
-        <a asp-action="Index" class="btn btn-outline-danger btn-sm">Hủy</a>
-    </div>
 
     <form asp-action="Handover" method="post" id="handoverForm">
         @Html.AntiForgeryToken()

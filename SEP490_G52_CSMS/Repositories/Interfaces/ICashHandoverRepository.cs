@@ -48,7 +48,7 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         Task<List<FixedShift>> GetAllFixedShiftsAsync();
 
         /// <summary> Xác định giai đoạn của ca: FirstShift (Đầu ngày), MidShift (Giữa ngày), LastShift (Cuối ngày) </summary>
-        Task<string> GetShiftPhaseAsync(int shiftId);
+        Task<string> GetShiftPhaseAsync(int shiftId, string? branchId = null, DateTime? date = null);
 
         /// <summary> Lấy ca cố định tiếp theo </summary>
         Task<FixedShift?> GetNextFixedShiftAsync(int currentShiftId);

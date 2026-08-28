@@ -1,0 +1,27 @@
+version: "3.9"
+
+name: SEP490-G52-CSMS
+
+services:
+  csms-web-staging:
+    container_name: csms_web_staging
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+      - "8080:8080"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=https://+:9000;http://+:8080
+      - ASPNETCORE_HTTPS_PORTS=9000
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/csms.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=csms123456
+      # SQL Server on Host Machine:
+      - ConnectionStrings__DefaultConnection=Server=host.docker.internal,1433;Database=CSMSSystem;User Id=sa;Password=123;TrustServerCertificate=True
+    volumes:
+      - ./https:/https:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
