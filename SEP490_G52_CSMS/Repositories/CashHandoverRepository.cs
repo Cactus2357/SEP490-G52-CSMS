@@ -32,27 +32,87 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<CashHandover?> GetLastClosedHandoverForBranchAsync(string branchId)
         {
+            // Auto-close any leftover Active handovers from PAST days for this branch
+            var today = DateTime.Today;
+            var staleActiveHandovers = await _context.CashHandovers
+                .Where(ch => ch.BranchId == branchId && ch.Status == CashHandoverConstants.ActiveStatus && ch.HandoverDate.Date < today.Date)
+                .ToListAsync();
+
+            if (staleActiveHandovers.Any())
+            {
+                foreach (var stale in staleActiveHandovers)
+                {
+                    stale.Status = CashHandoverConstants.ClosedStatus;
+                    stale.ClosedAt = stale.OpenedAt.AddHours(8);
+                    stale.ActualCash = stale.ActualCash > 0 ? stale.ActualCash : (stale.InitialCash + stale.MachineCashRevenue - stale.CashRefundAmount);
+                    stale.Notes = (stale.Notes ?? "") + " [TỰ ĐỘNG ĐÓNG CA QUÁ HẠN KHI MỞ NGÀY MỚI]";
+                }
+                await _context.SaveChangesAsync();
+            }
+
             return await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
                 .Include(ch => ch.IncomingCashier)
                 .AsNoTracking()
                 .Where(ch => ch.BranchId == branchId && ch.Status == CashHandoverConstants.ClosedStatus)
-                .OrderByDescending(ch => ch.ClosedAt)
+                .OrderByDescending(ch => ch.HandoverDate)
+                .ThenByDescending(ch => ch.ClosedAt)
+                .ThenByDescending(ch => ch.HandoverId)
                 .FirstOrDefaultAsync();
         }
 
         public async Task<WeeklyRosterGrid?> GetCurrentRosterAsync(int cashierId, DateTime date)
         {
-            return await _context.WeeklyRosterGrids
+            var rosters = await _context.WeeklyRosterGrids
                 .Include(w => w.FixedShift)
                 .Include(w => w.Branch)
                 .AsNoTracking()
                 .Where(w =>
                     w.EmployeeId == cashierId &&
                     w.AssignmentDate.Date == date.Date)
-                .OrderBy(w => w.FixedShift.StartTime)
-                .FirstOrDefaultAsync();
+                .ToListAsync();
+
+            if (!rosters.Any()) return null;
+
+            var nowTime = DateTime.Now.TimeOfDay;
+
+            // 1. Match current shift bounds (start - 30m to end)
+            var matching = rosters.FirstOrDefault(r => {
+                if (r.FixedShift == null) return false;
+                var start = r.FixedShift.StartTime;
+                var end = r.FixedShift.EndTime;
+                if (start <= end)
+                {
+                    return nowTime >= start.Subtract(TimeSpan.FromMinutes(30)) && nowTime <= end;
+                }
+                else
+                {
+                    return nowTime >= start.Subtract(TimeSpan.FromMinutes(30));
+                }
+            });
+
+            // 2. If no strict time match, match roster where cashier is checked in
+            if (matching == null)
+            {
+                var checkedInRosterIds = await _context.AttendanceLogs
+                    .Where(a => a.EmployeeId == cashierId && a.CheckInTime != null && a.CheckOutTime == null)
+                    .Select(a => a.RosterId)
+                    .ToListAsync();
+
+                matching = rosters.FirstOrDefault(r => checkedInRosterIds.Contains(r.RosterId));
+            }
+
+            // 3. Fallback: match upcoming shift or earliest shift
+            if (matching == null)
+            {
+                matching = rosters.Where(r => r.FixedShift != null && r.FixedShift.StartTime >= nowTime)
+                                  .OrderBy(r => r.FixedShift.StartTime)
+                                  .FirstOrDefault()
+                           ?? rosters.OrderBy(r => r.FixedShift?.StartTime).FirstOrDefault();
+            }
+
+            return matching;
         }
 
         public async Task<int?> GetCurrentCashierIdAsync(string branchId, DateTime date, TimeSpan time)

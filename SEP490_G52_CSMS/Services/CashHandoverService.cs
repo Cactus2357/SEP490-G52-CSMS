@@ -146,7 +146,7 @@ namespace SEP490_G52_CSMS.Services
                 PreviousCashierName = lastHandover?.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel,
                 PreviousShiftName = lastHandover?.FixedShift?.ShiftName ?? "-",
                 PreviousHandoverDate = lastHandover?.HandoverDate.ToString("dd/MM/yyyy") ?? "-",
-                PreviousInitialCash = lastHandover != null ? lastHandover.InitialCash.ToString("N0") + " ₫" : "-",
+                PreviousInitialCash = lastHandover != null ? lastHandover.ActualCash.ToString("N0") + " ₫" : "-",
                 PreviousApproverName = lastHandover?.IncomingCashier?.FullName ?? "-",
                 DelivererName = lastHandover?.OutgoingCashier?.FullName ?? "",
                 InitialCash = initialCash,
@@ -447,6 +447,12 @@ namespace SEP490_G52_CSMS.Services
                     await _cashHandoverRepository.AddHandoverAsync(nextHandover);
                     await _cashHandoverRepository.SyncAttendanceOnOpenShiftAsync(model.IncomingCashierId.Value, nextShift.ShiftId, handover.HandoverDate);
                 }
+                else
+                {
+                    nextShiftActive.InitialCash = model.ActualCash;
+                    nextShiftActive.TheoreticalCash = model.ActualCash;
+                    await _cashHandoverRepository.UpdateHandoverAsync(nextShiftActive);
+                }
             }
 
             var discrepancyText = discrepancy >= 0 ? $"+{discrepancy:N0} đ" : $"{discrepancy:N0} đ";
@@ -554,9 +560,9 @@ namespace SEP490_G52_CSMS.Services
             handover.MachineCashRevenue = cashRev;
             handover.BankTransferRevenue = bankRev;
             handover.CashRefundAmount = cashRefunds;
-            handover.ActualCash = model.ActualCash;
+            handover.ActualCash = model.RetainedCashForTomorrow > 0 ? model.RetainedCashForTomorrow : model.ActualCash;
             handover.TheoreticalCash = theoretical;
-            handover.Notes = $"[ĐÓNG CA CUỐI NGÀY - Để lại két: {model.RetainedCashForTomorrow:N0}đ, Nộp két tổng: {model.DepositedCashAmount:N0}đ" + (!string.IsNullOrWhiteSpace(model.ReceiverName) ? $", Người nhận tiền: {model.ReceiverName}" : "") + "] " + (model.Notes ?? "");
+            handover.Notes = $"[ĐÓNG CA CUỐI NGÀY - Tổng két chốt: {model.ActualCash:N0}đ, Để lại két ngày mai: {model.RetainedCashForTomorrow:N0}đ, Nộp két tổng: {model.DepositedCashAmount:N0}đ" + (!string.IsNullOrWhiteSpace(model.ReceiverName) ? $", Người nhận tiền: {model.ReceiverName}" : "") + "] " + (model.Notes ?? "");
             handover.IsPasswordConfirmed = true;
             handover.HandoverType = CashHandoverConstants.HandoverTypeLastShift;
             handover.Status = CashHandoverConstants.ClosedStatus;
