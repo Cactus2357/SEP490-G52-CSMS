@@ -47,57 +47,49 @@ namespace SEP490_G52_CSMS.Controllers
         //  TRANG CHÍNH — Tự động nhận diện và chuyển hướng đúng màn hình
         // =========================================================
 
-        public async Task<IActionResult> Index(int cashierId, string? branchId = null)
+        public async Task<IActionResult> Index(int? cashierId = null, string? branchId = null)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
-
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
             var userBranchId = await GetUserBranchIdAsync();
+
             if (!User.IsInRole("RManager") || string.IsNullOrWhiteSpace(branchId))
             {
                 branchId = userBranchId;
             }
 
-            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
-            {
-                cashierId = loggedInUserId;
-            }
+            int effectiveCashierId = (cashierId.HasValue && cashierId.Value > 0 && (User.IsInRole("BranchManager") || User.IsInRole("RManager")))
+                ? cashierId.Value
+                : loggedInUserId;
 
-            if (cashierId <= 0)
+            if (effectiveCashierId <= 0)
             {
-                cashierId = loggedInUserId;
-            }
-
-            if (cashierId <= 0)
-            {
-                return RedirectToAction(nameof(SelectCashier), new { branchId });
+                return RedirectToAction(nameof(SelectCashier));
             }
 
             // Nhận diện giai đoạn ca
-            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, branchId);
+            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(effectiveCashierId, branchId);
 
             if (phase == CashHandoverConstants.HandoverTypeFirstShift)
             {
-                var openModel = await _cashHandoverService.GetOpenShiftModelAsync(cashierId);
+                var openModel = await _cashHandoverService.GetOpenShiftModelAsync(effectiveCashierId);
                 if (openModel != null)
                 {
-                    return RedirectToAction(nameof(OpenShift), new { cashierId });
+                    return RedirectToAction(nameof(OpenShift));
                 }
-                return RedirectToAction(nameof(Handover), new { cashierId });
+                return RedirectToAction(nameof(Handover));
             }
             else if (phase == CashHandoverConstants.HandoverTypeLastShift)
             {
-                return RedirectToAction(nameof(CloseShift), new { cashierId });
+                return RedirectToAction(nameof(CloseShift));
             }
             else
             {
-                return RedirectToAction(nameof(Handover), new { cashierId });
+                return RedirectToAction(nameof(Handover));
             }
         }
 
         [HttpGet("/CashHandover/SubmitHandover")]
-        public async Task<IActionResult> SubmitHandover(int cashierId, string? branchId = null)
+        public async Task<IActionResult> SubmitHandover(int? cashierId = null, string? branchId = null)
         {
             return await Index(cashierId, branchId);
         }
@@ -128,11 +120,9 @@ namespace SEP490_G52_CSMS.Controllers
         //  1. MỞ CA ĐẦU NGÀY (UC11) — GET & POST
         // =========================================================
 
-        public async Task<IActionResult> OpenShift(int cashierId)
+        public async Task<IActionResult> OpenShift(int? cashierId = null)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
@@ -145,29 +135,30 @@ namespace SEP490_G52_CSMS.Controllers
                 cashierId = loggedInUserId;
             }
 
-            if (cashierId <= 0)
+            int targetCashierId = (cashierId.HasValue && cashierId.Value > 0) ? cashierId.Value : loggedInUserId;
+            if (targetCashierId <= 0)
                 return RedirectToAction("Index", "Home");
 
             var userBranchId = await GetUserBranchIdAsync();
 
             try
             {
-                var model = await _cashHandoverService.GetOpenShiftModelAsync(cashierId);
+                var model = await _cashHandoverService.GetOpenShiftModelAsync(targetCashierId);
                 if (model == null)
                 {
                     var isDayClosed = await _cashHandoverService.IsDayClosedAsync(userBranchId, DateTime.Today);
                     if (isDayClosed)
                     {
                         TempData["InfoMessage"] = "Ca làm việc cuối ngày hôm nay tại chi nhánh đã được Đóng ca (chốt sổ ngày). Quầy thu ngân đã đóng cửa, không thể thao tác thêm ca.";
-                        return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                        return RedirectToAction(nameof(History));
                     }
 
-                    var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
+                    var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(targetCashierId, userBranchId);
                     if (phase == CashHandoverConstants.HandoverTypeLastShift)
                     {
-                        return RedirectToAction(nameof(CloseShift), new { cashierId });
+                        return RedirectToAction(nameof(CloseShift));
                     }
-                    return RedirectToAction(nameof(Handover), new { cashierId });
+                    return RedirectToAction(nameof(Handover));
                 }
                 return View(model);
             }
@@ -240,11 +231,9 @@ namespace SEP490_G52_CSMS.Controllers
         //  2. BÀN GIAO CA GIỮA NGÀY (UC12) — GET & POST
         // =========================================================
 
-        public async Task<IActionResult> Handover(int cashierId)
+        public async Task<IActionResult> Handover(int? cashierId = null)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
@@ -257,16 +246,17 @@ namespace SEP490_G52_CSMS.Controllers
                 cashierId = loggedInUserId;
             }
 
+            int targetCashierId = (cashierId.HasValue && cashierId.Value > 0) ? cashierId.Value : loggedInUserId;
             var userBranchId = await GetUserBranchIdAsync();
 
-            if (cashierId <= 0)
-                return RedirectToAction(nameof(History), new { branchId = userBranchId });
+            if (targetCashierId <= 0)
+                return RedirectToAction(nameof(History));
 
-            var model = await _cashHandoverService.GetHandoverModelAsync(cashierId);
+            var model = await _cashHandoverService.GetHandoverModelAsync(targetCashierId);
             if (model == null)
             {
                 TempData["InfoMessage"] = "Chưa có ca làm việc đang mở. Vui lòng kiểm tra Lịch làm việc hoặc Mở ca.";
-                return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                return RedirectToAction(nameof(History));
             }
 
             // Chỉ thu ngân đang trực mới được bàn giao ca
@@ -275,14 +265,14 @@ namespace SEP490_G52_CSMS.Controllers
                 if (model.OutgoingCashierId != loggedInUserId)
                 {
                     TempData["ErrorMessage"] = $"Bạn không phải là thu ngân đang phụ trách ca trực này ({model.OutgoingCashierName}). Chỉ thu ngân đang làm việc mới được bàn giao ca.";
-                    return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                    return RedirectToAction(nameof(History));
                 }
             }
 
-            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
+            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(targetCashierId, userBranchId);
             if (phase == CashHandoverConstants.HandoverTypeLastShift)
             {
-                return RedirectToAction(nameof(CloseShift), new { cashierId });
+                return RedirectToAction(nameof(CloseShift));
             }
 
             return View(model);
@@ -292,11 +282,9 @@ namespace SEP490_G52_CSMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Handover(HandoverViewModel model)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
-
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
             var userBranchId = await GetUserBranchIdAsync();
+
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
                 model.OutgoingCashierId = loggedInUserId;
@@ -327,6 +315,8 @@ namespace SEP490_G52_CSMS.Controllers
                     model.OutgoingCashierName = freshModel.OutgoingCashierName;
                     model.ShiftName = freshModel.ShiftName;
                     model.TargetShiftName = freshModel.TargetShiftName;
+                    model.TargetShiftTimeRange = freshModel.TargetShiftTimeRange;
+                    model.DelivererName = freshModel.DelivererName;
                 }
                 return View(model);
             }
@@ -346,23 +336,23 @@ namespace SEP490_G52_CSMS.Controllers
                     model.OutgoingCashierName = freshModel.OutgoingCashierName;
                     model.ShiftName = freshModel.ShiftName;
                     model.TargetShiftName = freshModel.TargetShiftName;
+                    model.TargetShiftTimeRange = freshModel.TargetShiftTimeRange;
+                    model.DelivererName = freshModel.DelivererName;
                 }
                 return View(model);
             }
 
             TempData["SuccessMessage"] = result.Message;
-            return RedirectToAction(nameof(History), new { branchId = model.BranchId });
+            return RedirectToAction(nameof(History));
         }
 
         // =========================================================
         //  3. ĐÓNG CA CUỐI NGÀY — GET & POST
         // =========================================================
 
-        public async Task<IActionResult> CloseShift(int cashierId)
+        public async Task<IActionResult> CloseShift(int? cashierId = null)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
@@ -375,16 +365,17 @@ namespace SEP490_G52_CSMS.Controllers
                 cashierId = loggedInUserId;
             }
 
+            int targetCashierId = (cashierId.HasValue && cashierId.Value > 0) ? cashierId.Value : loggedInUserId;
             var userBranchId = await GetUserBranchIdAsync();
 
-            if (cashierId <= 0)
-                return RedirectToAction(nameof(History), new { branchId = userBranchId });
+            if (targetCashierId <= 0)
+                return RedirectToAction(nameof(History));
 
-            var model = await _cashHandoverService.GetCloseShiftModelAsync(cashierId);
+            var model = await _cashHandoverService.GetCloseShiftModelAsync(targetCashierId);
             if (model == null)
             {
                 TempData["InfoMessage"] = "Không tìm thấy ca làm việc đang mở để đóng ca.";
-                return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                return RedirectToAction(nameof(History));
             }
 
             // Chỉ thu ngân đang trực mới được đóng ca
@@ -393,14 +384,14 @@ namespace SEP490_G52_CSMS.Controllers
                 if (model.OutgoingCashierId != loggedInUserId)
                 {
                     TempData["ErrorMessage"] = $"Bạn không phải là thu ngân đang phụ trách ca trực này ({model.CashierName}). Chỉ thu ngân đang làm việc mới được đóng ca.";
-                    return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                    return RedirectToAction(nameof(History));
                 }
             }
 
-            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(cashierId, userBranchId);
+            var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(targetCashierId, userBranchId);
             if (phase != CashHandoverConstants.HandoverTypeLastShift)
             {
-                return RedirectToAction(nameof(Handover), new { cashierId });
+                return RedirectToAction(nameof(Handover));
             }
 
             return View(model);
@@ -410,11 +401,9 @@ namespace SEP490_G52_CSMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CloseShift(CloseShiftViewModel model)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
-
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
             var userBranchId = await GetUserBranchIdAsync();
+
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
                 model.OutgoingCashierId = loggedInUserId;
@@ -467,18 +456,16 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             TempData["SuccessMessage"] = result.Message;
-            return RedirectToAction(nameof(History), new { branchId = model.BranchId });
+            return RedirectToAction(nameof(History));
         }
 
         // =========================================================
         //  4. BÀN GIAO ĐỘT XUẤT GIỮA CA (Ốm / Khẩn cấp) — GET & POST
         // =========================================================
 
-        public async Task<IActionResult> EmergencyHandover(int cashierId)
+        public async Task<IActionResult> EmergencyHandover(int? cashierId = null)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
 
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
@@ -491,16 +478,17 @@ namespace SEP490_G52_CSMS.Controllers
                 cashierId = loggedInUserId;
             }
 
+            int targetCashierId = (cashierId.HasValue && cashierId.Value > 0) ? cashierId.Value : loggedInUserId;
             var userBranchId = await GetUserBranchIdAsync();
 
-            if (cashierId <= 0)
-                return RedirectToAction(nameof(History), new { branchId = userBranchId });
+            if (targetCashierId <= 0)
+                return RedirectToAction(nameof(History));
 
-            var model = await _cashHandoverService.GetEmergencyHandoverModelAsync(cashierId);
+            var model = await _cashHandoverService.GetEmergencyHandoverModelAsync(targetCashierId);
             if (model == null)
             {
                 TempData["InfoMessage"] = "Không tìm thấy ca làm việc đang mở để bàn giao đột xuất.";
-                return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                return RedirectToAction(nameof(History));
             }
 
             // Chỉ thu ngân đang trực mới được bàn giao đột xuất
@@ -509,7 +497,7 @@ namespace SEP490_G52_CSMS.Controllers
                 if (model.OutgoingCashierId != loggedInUserId)
                 {
                     TempData["ErrorMessage"] = $"Bạn không phải là thu ngân đang phụ trách ca trực này ({model.OutgoingCashierName}). Chỉ thu ngân đang làm việc mới được bàn giao đột xuất.";
-                    return RedirectToAction(nameof(History), new { branchId = userBranchId });
+                    return RedirectToAction(nameof(History));
                 }
             }
 
@@ -520,11 +508,9 @@ namespace SEP490_G52_CSMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EmergencyHandover(HandoverViewModel model)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int loggedInUserId = 0;
-            int.TryParse(userIdStr, out loggedInUserId);
-
+            int loggedInUserId = User.GetEmployeeId() ?? 0;
             var userBranchId = await GetUserBranchIdAsync();
+
             if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
             {
                 model.OutgoingCashierId = loggedInUserId;
@@ -575,14 +561,14 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             TempData["SuccessMessage"] = result.Message;
-            return RedirectToAction(nameof(History), new { branchId = model.BranchId });
+            return RedirectToAction(nameof(History));
         }
 
         // =========================================================
         //  5. LỊCH SỬ GIAO CA — GET
         // =========================================================
 
-        public async Task<IActionResult> History(string branchId, int page = 1)
+        public async Task<IActionResult> History(string? branchId = null, int page = 1)
         {
             var userBranchId = await GetUserBranchIdAsync();
             if (!User.IsInRole("RManager"))

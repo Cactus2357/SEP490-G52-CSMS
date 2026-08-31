@@ -13,9 +13,9 @@
             <p class="text-muted small mb-0">Ủy quyền tiếp quản ca giữa chừng &bull; Ca hiện tại: <strong>@Model.ShiftName</strong></p>
         </div>
         <div class="d-flex gap-2">
-            <a asp-action="Handover" asp-route-cashierId="@Model.OutgoingCashierId"
+            <a asp-action="Handover"
                class="btn btn-outline-secondary btn-sm">Quay lại Giao ca thường</a>
-            <a asp-action="History" asp-route-branchId="@Model.BranchId"
+            <a asp-action="History"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-clock-history me-1"></i>Lịch sử giao ca
             </a>

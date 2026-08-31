@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -36,7 +37,7 @@ namespace SEP490_G52_CSMS.Controllers
                 var employee = await _context.Employees.Include(e => e.Branch).FirstOrDefaultAsync(e => e.EmployeeId == userId);
                 if (employee != null)
                 {
-                    string branchId = employee.BranchId ?? "CB004";
+                    string branchId = employee.BranchId ?? User.GetBranchId() ?? "CB001";
                     var branchManager = await _context.Employees
                         .FirstOrDefaultAsync(e => e.BranchId == branchId && e.Role == "BranchManager" && e.Status == "Active");
 

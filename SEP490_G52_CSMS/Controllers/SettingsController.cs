@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Sales;
@@ -24,16 +25,23 @@ namespace SEP490_G52_CSMS.Controllers
 
         private async Task<string> GetUserBranchIdAsync()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (int.TryParse(userIdStr, out int userId))
+            var branchIdClaim = User.GetBranchId();
+            if (!string.IsNullOrWhiteSpace(branchIdClaim))
             {
-                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId);
+                return branchIdClaim;
+            }
+
+            var userId = User.GetEmployeeId();
+            if (userId.HasValue)
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == userId.Value);
                 if (employee != null && !string.IsNullOrEmpty(employee.BranchId))
                 {
                     return employee.BranchId;
                 }
             }
-            return "CB004";
+            var firstBranch = await _context.Branches.FirstOrDefaultAsync(b => b.Status == "Active");
+            return firstBranch?.BranchId ?? "CB001";
         }
 
         public async Task<IActionResult> Index(string activeTab = "sepay")

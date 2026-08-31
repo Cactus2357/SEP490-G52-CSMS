@@ -11,11 +11,11 @@
             <p class="text-muted small mb-0">Ca hiện tại: <strong>@Model.ShiftName</strong> &bull; Chuyển giao sang: <strong>@Model.TargetShiftName (@Model.TargetShiftTimeRange)</strong></p>
         </div>
         <div class="d-flex gap-2">
-            <a asp-action="EmergencyHandover" asp-route-cashierId="@Model.OutgoingCashierId"
+            <a asp-action="EmergencyHandover"
                class="btn btn-outline-warning text-dark btn-sm fw-bold">
                 <i class="bi bi-exclamation-octagon me-1"></i>Bàn giao đột xuất
             </a>
-            <a asp-action="History" asp-route-branchId="@Model.BranchId"
+            <a asp-action="History"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-clock-history me-1"></i>Lịch sử giao ca
             </a>

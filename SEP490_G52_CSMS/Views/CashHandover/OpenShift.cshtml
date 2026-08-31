@@ -8,12 +8,9 @@
     <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
         <h1 class="h3 fw-bold text-dark mb-0">QUẢN LÝ KẾT TIỀN &amp; GIAO CA</h1>
         <div class="d-flex gap-2">
-            <a asp-action="OpenShift" asp-route-cashierId="@Model.CashierId"
-               class="btn btn-primary btn-sm">Mở ca</a>
-            <a asp-action="Handover" asp-route-cashierId="@Model.CashierId"
-               class="btn btn-outline-secondary btn-sm">Giao &amp; Đóng ca</a>
-            <a asp-action="History" asp-route-branchId="@Model.BranchId"
-               class="btn btn-outline-secondary btn-sm">Lịch sử</a>
+            <a asp-action="OpenShift" class="btn btn-primary btn-sm">Mở ca</a>
+            <a asp-action="Handover" class="btn btn-outline-secondary btn-sm">Giao &amp; Đóng ca</a>
+            <a asp-action="History" class="btn btn-outline-secondary btn-sm">Lịch sử</a>
         </div>
     </div>
 

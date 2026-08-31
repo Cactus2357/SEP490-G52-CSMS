@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -14,12 +15,14 @@ namespace SEP490_G52_CSMS.Controllers
             _menuService = menuService;
         }
 
-        // Dummy method to get branch ID for current manager
         private string GetCurrentBranchId()
         {
-            // In a real application, you might get this from the logged-in user's claims or DB
-            // We use a dummy branch "CB004" (Chi nhánh 1) for the mock-up
-            return "CB004";
+            var branchId = User.GetBranchId();
+            if (!string.IsNullOrWhiteSpace(branchId))
+            {
+                return branchId;
+            }
+            return "CB001";
         }
 
         [HttpGet]

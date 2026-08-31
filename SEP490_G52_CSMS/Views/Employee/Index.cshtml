@@ -1,6 +1,8 @@
+@using SEP490_G52_CSMS.Commons
 @model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
 @{
     ViewData["Title"] = "Quản lý Nhân viên";
+    var userBranchId = User.GetBranchId() ?? "";
 }
 
 <div class="container-fluid mt-3 px-4 pb-5">
@@ -271,7 +273,7 @@
                             <div class="mb-3">
                                 <label for="branchDisplay" class="form-label fw-bold">Chi nhánh *</label>
                                 <input type="text" class="form-control bg-light rounded-3" id="branchDisplay" value="Chi nhánh Quận 1" readonly>
-                                <input type="hidden" id="branchId" name="BranchId" value="CB001">
+                                <input type="hidden" id="branchId" name="BranchId" value="@userBranchId">
                             </div>
                             <div class="mb-3">
                                 <label for="createContractFile" class="form-label fw-bold">Tệp hợp đồng lao động (Tùy chọn)</label>
