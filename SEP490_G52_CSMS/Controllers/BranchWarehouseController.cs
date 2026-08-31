@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Services;
@@ -291,7 +292,7 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 RequestCode = code,
                 BranchId = branchId,
-                RequestDate = DateTime.Now,
+                RequestDate = DateTime.UtcNow,
                 Status = "Chờ duyệt"
             };
 
@@ -335,9 +336,9 @@ namespace SEP490_G52_CSMS.Controllers
             ViewBag.BranchName = branchName;
 
             // Default dates logic (BR03: current month range)
-            var now = DateTime.Now;
-            var defaultFrom = now.Date.AddMonths(-3);
-            var defaultTo = now.Date;
+            var today = DateTime.Today;
+            var defaultFrom = today.AddMonths(-3);
+            var defaultTo = today;
 
             var filterFrom = fromDate ?? defaultFrom;
             var filterTo = toDate ?? defaultTo;
@@ -494,7 +495,7 @@ namespace SEP490_G52_CSMS.Controllers
                 req.Status = "Đã hoàn thành";
                 req.DelivererName = delivererName.Trim();
                 req.DelivererPhone = delivererPhone?.Trim();
-                req.ReceivedDate = DateTime.Now;
+                req.ReceivedDate = DateTime.UtcNow;
 
                 // Raise notification event for WarehouseManager role
                 var branch = await _context.Branches.FindAsync(branchId);

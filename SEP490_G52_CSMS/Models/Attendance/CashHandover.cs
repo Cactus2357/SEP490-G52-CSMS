@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using SEP490_G52_CSMS.Commons;
 namespace SEP490_G52_CSMS.Models.Attendance
 {
     /// <summary>
@@ -76,7 +77,7 @@ namespace SEP490_G52_CSMS.Models.Attendance
 
         /// <summary> Thời điểm mở ca </summary>
         [Column("opened_at")]
-        public DateTime OpenedAt { get; set; } = DateTime.Now;
+        public DateTime OpenedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary> Thời điểm đóng ca </summary>
         [Column("closed_at")]

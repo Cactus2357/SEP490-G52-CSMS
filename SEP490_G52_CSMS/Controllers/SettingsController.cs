@@ -91,7 +91,7 @@ namespace SEP490_G52_CSMS.Controllers
             setting.Address = string.IsNullOrWhiteSpace(model.Address) ? "" : model.Address.Trim();
             setting.AutoPrintReceipt = model.AutoPrintReceipt;
             setting.EnableSoundNotification = model.EnableSoundNotification;
-            setting.UpdatedAt = DateTime.Now;
+            setting.UpdatedAt = DateTime.UtcNow;
 
             // Also update main Branch record
             var branch = await _context.Branches.FirstOrDefaultAsync(b => b.BranchId == branchId);
@@ -130,7 +130,7 @@ namespace SEP490_G52_CSMS.Controllers
             setting.TransferPrefix = string.IsNullOrWhiteSpace(model.TransferPrefix) ? "CSMS" : model.TransferPrefix.Trim();
             setting.AutoConfirmOrder = model.AutoConfirmOrder;
             setting.IsSePayActive = model.IsSePayActive;
-            setting.UpdatedAt = DateTime.Now;
+            setting.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã cập nhật tài khoản ngân hàng & cấu hình SePay thành công!";

@@ -192,8 +192,8 @@ namespace SEP490_G52_CSMS.Controllers
             // -------------------------------------------------------
             var today = DateTime.Today;
             var yesterday = today.AddDays(-1);
-            var now = DateTime.Now;
-            var nowTime = now.TimeOfDay;
+            var nowLocal = DateTime.Now;
+            var nowTime = nowLocal.TimeOfDay;
 
             var rosters = await _context.WeeklyRosterGrids
                 .Include(r => r.FixedShift)
@@ -241,7 +241,7 @@ namespace SEP490_G52_CSMS.Controllers
                 // Determine OnTime or Late: allow 15-minute grace window after shift start
                 var shiftStart = todayRoster.AssignmentDate.Date + todayRoster.FixedShift.StartTime;
                 var graceCutoff = shiftStart.AddMinutes(15);
-                var checkInStatus = now <= graceCutoff ? "OnTime" : "Late";
+                var checkInStatus = nowLocal <= graceCutoff ? "OnTime" : "Late";
 
                 if (existingLog == null)
                 {
@@ -249,7 +249,7 @@ namespace SEP490_G52_CSMS.Controllers
                     {
                         RosterId = todayRoster.RosterId,
                         EmployeeId = matchedEmployee.EmployeeId,
-                        CheckInTime = now,
+                        CheckInTime = DateTime.UtcNow,
                         IsFaceCheckInValid = true,
                         CheckInConfidence = 95,
                         CheckInStatus = checkInStatus,
@@ -263,7 +263,7 @@ namespace SEP490_G52_CSMS.Controllers
                 }
                 else if (existingLog.CheckInTime == null || existingLog.OverallStatus != "Present" || existingLog.CheckInStatus == "Absent")
                 {
-                    existingLog.CheckInTime = now;
+                    existingLog.CheckInTime = DateTime.UtcNow;
                     existingLog.IsFaceCheckInValid = true;
                     existingLog.CheckInConfidence = 95;
                     existingLog.CheckInStatus = checkInStatus;
@@ -321,7 +321,7 @@ namespace SEP490_G52_CSMS.Controllers
                 var shiftTimeRange = $"{fs.StartTime:hh\\:mm} - {endFormatted}";
                 var shiftStart = todayRoster.AssignmentDate.Date + fs.StartTime;
                 var graceCutoff = shiftStart.AddMinutes(15);
-                var checkInStatus = now <= graceCutoff ? "OnTime" : "Late";
+                var checkInStatus = nowLocal <= graceCutoff ? "OnTime" : "Late";
 
                 attendancePayload = new
                 {
@@ -329,7 +329,7 @@ namespace SEP490_G52_CSMS.Controllers
                     shiftId = fs.ShiftId,
                     shiftName = fs.ShiftName ?? $"Ca {fs.ShiftId}",
                     shiftTimeRange = shiftTimeRange,
-                    checkInTime = now.ToString("HH:mm:ss - dd/MM/yyyy"),
+                    checkInTime = nowLocal.ToString("HH:mm:ss - dd/MM/yyyy"),
                     checkInStatus = checkInStatus,
                     statusText = isAlreadyCheckedIn ? "Đã điểm danh trước đó" : (checkInStatus == "OnTime" ? "Đúng giờ" : "Đi trễ"),
                     message = attendanceMessage

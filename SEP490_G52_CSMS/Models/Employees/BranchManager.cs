@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Employees
 {
     /// <summary>
@@ -15,7 +15,7 @@ namespace SEP490_G52_CSMS.Models.Employees
 
         /// <summary> Ngày bổ nhiệm quản lý </summary>
         [Column("appointed_date")]
-        public DateTime AppointedDate { get; set; } = DateTime.Now;
+        public DateTime AppointedDate { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("BranchId")]
         public virtual Core.Branch? Branch { get; set; }

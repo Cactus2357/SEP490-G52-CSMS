@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SEP490_G52_CSMS.Models.Attendance
@@ -25,7 +25,7 @@ namespace SEP490_G52_CSMS.Models.Attendance
 
         [Required]
         [Column("submitted_at")]
-        public DateTime SubmittedAt { get; set; } = DateTime.Now;
+        public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
 
         [Required]
         [Column("status")]

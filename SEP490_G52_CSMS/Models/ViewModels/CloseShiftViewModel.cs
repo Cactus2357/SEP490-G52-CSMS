@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.ViewModels;
 
 namespace SEP490_G52_CSMS.Models.ViewModels
@@ -18,7 +19,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string ShiftName { get; set; } = string.Empty;
         public string ShiftTimeRange { get; set; } = string.Empty;
         public DateTime HandoverDate { get; set; } = DateTime.Today;
-        public DateTime OpenedAt { get; set; } = DateTime.Now;
+        public DateTime OpenedAt { get; set; } = DateTime.UtcNow;
 
         // ===== Doanh thu ca chốt ngày =====
         public decimal InitialCash { get; set; }

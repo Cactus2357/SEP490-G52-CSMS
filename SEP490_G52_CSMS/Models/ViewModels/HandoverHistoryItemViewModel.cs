@@ -8,6 +8,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int HandoverId { get; set; }
         public string HandoverDate { get; set; } = string.Empty;
         public string ShiftName { get; set; } = string.Empty;
+        public string ShiftTimeRange { get; set; } = string.Empty;
 
         /// <summary> Mốc thời gian thực hiện hành động (Mở ca: OpenedAt / Bàn giao, Đóng ca: ClosedAt) </summary>
         public string ActionTime { get; set; } = string.Empty;

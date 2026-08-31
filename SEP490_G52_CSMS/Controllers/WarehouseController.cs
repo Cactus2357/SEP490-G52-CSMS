@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Services;
@@ -273,29 +274,22 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (filterTo < filterFrom)
             {
-                TempData["HistoryError"] = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.";
+                TempData["ImportError"] = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.";
+                return RedirectToAction("ImportHistory", new { fromDate = defaultFrom.ToString("yyyy-MM-dd"), toDate = defaultTo.ToString("yyyy-MM-dd") });
             }
 
             var query = _context.WarehouseReceiptItems
                 .Include(i => i.WarehouseReceipt)
                 .Include(i => i.Material)
-                .AsQueryable();
+                .Where(i => i.WarehouseReceipt != null && i.WarehouseReceipt.ImportDate.Date >= filterFrom.Date && i.WarehouseReceipt.ImportDate.Date <= filterTo.Date);
 
-            if (filterTo >= filterFrom)
-            {
-                var toDateEnd = filterTo.AddDays(1).AddTicks(-1);
-                query = query.Where(i => i.WarehouseReceipt != null &&
-                                         i.WarehouseReceipt.ImportDate >= filterFrom &&
-                                         i.WarehouseReceipt.ImportDate <= toDateEnd);
-            }
-
-            const int pageSize = 10;
+            int pageSize = 10;
             int totalItems = await query.CountAsync();
-            int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
             if (page < 1) page = 1;
             if (page > totalPages && totalPages > 0) page = totalPages;
 
-            var items = await query
+            var list = await query
                 .OrderByDescending(i => i.WarehouseReceipt!.ImportDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -303,7 +297,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             var viewModel = new WarehouseImportHistoryViewModel
             {
-                Items = items,
+                Items = list,
                 FromDate = filterFrom,
                 ToDate = filterTo,
                 CurrentPage = page,
@@ -328,33 +322,28 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.");
             }
 
-            var toDateEnd = filterTo.AddDays(1).AddTicks(-1);
-            var items = await _context.WarehouseReceiptItems
+            var query = _context.WarehouseReceiptItems
                 .Include(i => i.WarehouseReceipt)
                 .Include(i => i.Material)
-                .Where(i => i.WarehouseReceipt != null &&
-                             i.WarehouseReceipt.ImportDate >= filterFrom &&
-                             i.WarehouseReceipt.ImportDate <= toDateEnd)
+                .AsQueryable();
+
+            var toDateEnd = filterTo.AddDays(1).AddTicks(-1);
+            query = query.Where(i => i.WarehouseReceipt != null &&
+                                     i.WarehouseReceipt.ImportDate >= filterFrom &&
+                                     i.WarehouseReceipt.ImportDate <= toDateEnd);
+
+            var items = await query
                 .OrderByDescending(i => i.WarehouseReceipt!.ImportDate)
                 .ToListAsync();
 
             var csvBuilder = new System.Text.StringBuilder();
-            csvBuilder.AppendLine("Mã phiếu,Ngày nhập,Nhà cung cấp,Nguyên liệu,Số lượng nhập,Đơn vị,Tổng tiền");
+            csvBuilder.AppendLine("Mã phiếu nhập,Ngày nhập,Nhà cung cấp,Tên nguyên liệu,Số lượng nhập,Đơn vị,Đơn giá (VNĐ),Thành tiền (VNĐ),Người nhận,Người giao,SĐT người giao,Trạng thái");
 
             foreach (var item in items)
             {
-                var receiptCode = item.WarehouseReceipt?.ReceiptCode ?? "";
-                var importDate = item.WarehouseReceipt?.ImportDate.ToString("yyyy-MM-dd HH:mm:ss") ?? "";
-                var supplier = item.WarehouseReceipt?.Supplier ?? "";
-                var materialName = item.Material?.MaterialName ?? "";
-                var qty = item.Quantity.ToString("G29");
-                var unit = item.Material?.StorageUnit ?? "";
-                var amount = item.Amount.ToString("F0");
-
-                supplier = $"\"{supplier.Replace("\"", "\"\"")}\"";
-                materialName = $"\"{materialName.Replace("\"", "\"\"")}\"";
-
-                csvBuilder.AppendLine($"{receiptCode},{importDate},{supplier},{materialName},{qty},{unit},{amount}");
+                var r = item.WarehouseReceipt;
+                var line = $"\"{r?.ReceiptCode}\",\"{r?.ImportDate:dd/MM/yyyy HH:mm}\",\"{r?.Supplier}\",\"{item.Material?.MaterialName}\",{item.Quantity},\"{item.Material?.StorageUnit}\",{item.UnitPrice},{item.Amount},\"{r?.ReceiverName}\",\"{r?.DelivererName}\",\"{r?.DelivererPhone}\",\"{r?.Status}\"";
+                csvBuilder.AppendLine(line);
             }
 
             var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csvBuilder.ToString())).ToArray();
@@ -365,7 +354,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> CreateReceipt()
         {
-            ViewBag.CurrentTime = DateTime.Now.ToString("dd/MM/yyyy : HH\\hmm");
+            ViewBag.CurrentTime = DateTime.UtcNow.ToString("dd/MM/yyyy : HH\\hmm");
             var materials = await _context.Materials.OrderBy(m => m.MaterialName).ToListAsync();
             return View(materials);
         }
@@ -409,7 +398,7 @@ namespace SEP490_G52_CSMS.Controllers
             var receipt = new WarehouseReceipt
             {
                 ReceiptCode = code,
-                ImportDate = DateTime.Now,
+                ImportDate = DateTime.UtcNow,
                 Supplier = supplier ?? "N/A",
                 TotalAmount = totalAmount,
                 Status = "Đã nhập kho",
@@ -481,9 +470,9 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportRequests(DateTime? fromDate, DateTime? toDate, string status = "Tất cả", int page = 1)
         {
-            var now = DateTime.Now;
-            var defaultFrom = now.Date.AddMonths(-3);
-            var defaultTo = now.Date;
+            var today = DateTime.Today;
+            var defaultFrom = today.AddMonths(-3);
+            var defaultTo = today;
 
             var filterFrom = fromDate ?? defaultFrom;
             var filterTo = toDate ?? defaultTo;
@@ -532,9 +521,9 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportRequestsCsv(DateTime? fromDate, DateTime? toDate, string status)
         {
-            var now = DateTime.Now;
-            var defaultFrom = new DateTime(now.Year, now.Month, 1);
-            var defaultTo = now.Date;
+            var today = DateTime.Today;
+            var defaultFrom = new DateTime(today.Year, today.Month, 1);
+            var defaultTo = today;
 
             var filterFrom = fromDate ?? defaultFrom;
             var filterTo = toDate ?? defaultTo;
@@ -667,7 +656,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             req.Status = "Đang chuẩn bị xuất";
             req.ApprovedBy = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Warehouse Manager";
-            req.ApprovedDate = DateTime.Now;
+            req.ApprovedDate = DateTime.UtcNow;
 
             var bManager = await _context.Employees
                 .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");

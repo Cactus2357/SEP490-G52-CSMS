@@ -126,7 +126,6 @@ namespace SEP490_G52_CSMS.Controllers
                 }
                 else
                 {
-                    // Nếu trùng lịch (do dữ liệu cũ), ưu tiên bản ghi đã có log chấm công
                     if (log != null && (log.CheckInTime != null || !string.IsNullOrEmpty(log.OverallStatus)))
                     {
                         scheduleData[key] = detail;
@@ -283,17 +282,17 @@ namespace SEP490_G52_CSMS.Controllers
             else
             {
                 // Toggle ON -> Add / update attendance log
-                var now = DateTime.Now;
+                var nowLocal = DateTime.Now;
                 var fs = roster.FixedShift;
                 var shiftStart = roster.AssignmentDate.Date + fs.StartTime;
 
-                if (shiftStart > now)
+                if (shiftStart > nowLocal)
                 {
                     return BadRequest(new { success = false, message = "Chưa đến giờ ca làm việc. Bạn không thể điểm danh ca trong tương lai!" });
                 }
 
                 var graceCutoff = shiftStart.AddMinutes(15);
-                var checkInStatus = (now <= graceCutoff) ? "OnTime" : "Late";
+                var checkInStatus = (nowLocal <= graceCutoff) ? "OnTime" : "Late";
 
                 if (log == null)
                 {
@@ -301,7 +300,7 @@ namespace SEP490_G52_CSMS.Controllers
                     {
                         RosterId = roster.RosterId,
                         EmployeeId = empId,
-                        CheckInTime = now,
+                        CheckInTime = DateTime.UtcNow,
                         IsFaceCheckInValid = true,
                         CheckInConfidence = 100,
                         CheckInStatus = checkInStatus,
@@ -312,7 +311,7 @@ namespace SEP490_G52_CSMS.Controllers
                 }
                 else
                 {
-                    log.CheckInTime = now;
+                    log.CheckInTime = DateTime.UtcNow;
                     log.IsFaceCheckInValid = true;
                     log.CheckInConfidence = 100;
                     log.CheckInStatus = checkInStatus;
@@ -328,8 +327,8 @@ namespace SEP490_G52_CSMS.Controllers
                 {
                     success = true,
                     isCheckedIn = true,
-                    message = $"Đã điểm danh ca {fs.ShiftName} lúc {now:HH:mm:ss} ({statusText})!",
-                    checkInTime = now.ToString("HH:mm")
+                    message = $"Đã điểm danh ca {fs.ShiftName} lúc {nowLocal:HH:mm:ss} ({statusText})!",
+                    checkInTime = nowLocal.ToString("HH:mm")
                 });
             }
         }

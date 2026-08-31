@@ -33,7 +33,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public decimal TheoreticalCash => InitialCash + MachineCashRevenue - CashRefundAmount;
 
         /// <summary> Thời điểm mở ca </summary>
-        public DateTime OpenedAt { get; set; } = DateTime.Now;
+        public DateTime OpenedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary> Ca tiếp theo </summary>
         public string TargetShiftName { get; set; } = string.Empty;

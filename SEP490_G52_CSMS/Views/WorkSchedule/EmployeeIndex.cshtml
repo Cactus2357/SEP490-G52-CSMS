@@ -21,47 +21,53 @@
     }
     .attendance-toggle-link {
         cursor: pointer;
-        user-select: none;
+        transition: all 0.2s ease;
         display: inline-block;
-        transition: opacity 0.15s ease;
+        padding: 2px 4px;
+        border-radius: 4px;
     }
     .attendance-toggle-link:hover {
+        background-color: rgba(13, 110, 253, 0.1);
         text-decoration: underline !important;
-        opacity: 0.85;
     }
 </style>
 
-<div class="container-fluid mt-3 px-4 pb-5">
-    <!-- Header Section -->
-    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
-        <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div>
-                <span class="text-muted small">Cá nhân / Lịch làm việc</span>
-                <h4 class="fw-bold m-0 text-dark">LỊCH LÀM VIỆC CỦA TÔI</h4>
-            </div>
-            <div class="fs-6 text-dark">
-                Nhân viên: <span class="fw-bold text-primary">@Model.FullName</span>
-            </div>
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                <i class="bi bi-calendar3-week text-primary me-2"></i>LỊCH LÀM VIỆC CỦA BẠN
+            </h1>
+            <p class="text-muted small mb-0">Theo dõi ca làm việc cá nhân và trạng thái điểm danh trong tuần</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-action="EmployeeIndex" asp-route-weekStart="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")" 
+               class="btn btn-outline-secondary btn-sm px-3 shadow-xs">
+                <i class="bi bi-chevron-left me-1"></i>Tuần trước
+            </a>
+            <a asp-action="EmployeeIndex" 
+               class="btn btn-outline-primary btn-sm px-3 shadow-xs fw-semibold">
+                Tuần này
+            </a>
+            <a asp-action="EmployeeIndex" asp-route-weekStart="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")" 
+               class="btn btn-outline-secondary btn-sm px-3 shadow-xs">
+                Tuần sau<i class="bi bi-chevron-right ms-1"></i>
+            </a>
         </div>
     </div>
 
-    <!-- Select Week Card -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
-        <div class="card-body p-3">
-            <form id="weekForm" method="get" asp-action="EmployeeIndex" class="d-flex align-items-center gap-2 m-0">
-                <div class="input-group" style="max-width: 380px;">
-                    <span class="input-group-text bg-light text-secondary"><i class="bi bi-calendar-week"></i></span>
-                    <input type="date" name="weekStart" class="form-control" 
-                           value="@Model.WeekStart.ToString("yyyy-MM-dd")" 
-                           onchange="document.getElementById('weekForm').submit();" />
-                    <span class="input-group-text bg-white text-dark fw-semibold">đến @Model.WeekEnd.ToString("dd/MM/yyyy")</span>
-                </div>
-            </form>
+    <!-- Main Schedule Card -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <span class="fw-bold text-dark">
+                <i class="bi bi-calendar-range text-secondary me-2"></i>
+                Tuần từ @Model.WeekStart.ToString("dd/MM/yyyy") đến @Model.WeekEnd.ToString("dd/MM/yyyy")
+            </span>
+            <span class="badge bg-light text-dark border px-3 py-2">
+                <i class="bi bi-person-fill me-1 text-primary"></i>@Model.FullName
+            </span>
         </div>
-    </div>
-
-    <!-- Balanced Schedule Matrix Grid (Today Highlighted) -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle text-center mb-0 schedule-table" style="table-layout: fixed; min-width: 980px;">
                 <thead class="table-light">
@@ -129,7 +135,7 @@
                                                 <i class="bi bi-check-lg me-1"></i>(Đã điểm danh)
                                                 @if (detail.CheckInTime.HasValue)
                                                 {
-                                                    <div class="text-muted fw-normal" style="font-size: 0.75rem;">@detail.CheckInTime.Value.ToString("HH:mm")</div>
+                                                    <div class="text-muted fw-normal" style="font-size: 0.75rem;">@detail.CheckInTime.Value.ToLocalTime().ToString("HH:mm")</div>
                                                 }
                                             </div>
                                         }

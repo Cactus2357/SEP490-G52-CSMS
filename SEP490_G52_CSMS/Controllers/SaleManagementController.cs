@@ -382,7 +382,7 @@ namespace SEP490_G52_CSMS.Controllers
             var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
-            string txCode = "QR-MANUAL-" + DateTime.Now.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
+            string txCode = "QR-MANUAL-" + DateTime.UtcNow.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
             order.PaymentStatus = "TransferSuccessPending";
             order.BankTransactionCode = txCode;
             order.PaymentMethod = $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{order.TotalAmount:N0}đ)";

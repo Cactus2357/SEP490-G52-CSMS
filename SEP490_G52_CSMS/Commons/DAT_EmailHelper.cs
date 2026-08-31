@@ -78,7 +78,7 @@ CSMS System Administrator";
 
                 string filePath = Path.Combine(webRootPath, "sent_emails.txt");
                 string logContent = $"========================================\n" +
-                                    $"Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n" +
+                                    $"Date: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n" +
                                     $"To: {recipientEmail}\n" +
                                     $"Subject: {subject}\n" +
                                     $"Body:\n{body}\n" +

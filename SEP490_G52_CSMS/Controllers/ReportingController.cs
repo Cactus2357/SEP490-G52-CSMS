@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
 
@@ -45,13 +46,13 @@ namespace SEP490_G52_CSMS.Controllers
             DateTime selectedMonth;
             if (string.IsNullOrEmpty(dateRange))
             {
-                selectedMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                selectedMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
             }
             else
             {
                 if (!DateTime.TryParse(dateRange + "-01", out selectedMonth))
                 {
-                    selectedMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                    selectedMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
                 }
             }
             vm.SelectedMonth = selectedMonth.ToString("yyyy-MM");

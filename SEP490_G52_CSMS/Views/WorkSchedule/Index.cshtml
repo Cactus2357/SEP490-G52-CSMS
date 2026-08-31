@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Quản lý lịch làm việc";
     var dayNames = new[] { "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật" };
-    var nowTime = DateTime.Now.TimeOfDay;
+    var nowTime = DateTime.UtcNow.TimeOfDay;
 }
 
 <style>
@@ -58,94 +58,111 @@
 
                 <span class="input-group-text bg-white fw-semibold">
                     Tuần này: @Model.WeekStart.ToString("dd/MM") - @Model.WeekEnd.ToString("dd/MM/yyyy")
-                </span>
-
-                <a class="btn btn-outline-secondary"
-                   href="@Url.Action("Index", new { weekStart = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd") })">
-                    &rsaquo;
-                </a>
-            </div>
-
-            @if (Model.Shifts.Count > 0)
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                <i class="bi bi-calendar3 text-primary me-2"></i>LỊCH LÀM VIỆC CHI NHÁNH
+            </h1>
+            <p class="text-muted small mb-0">Theo dõi toàn bộ ca trực và nhân viên được phân công trong tuần</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
             {
-                <a class="btn btn-outline-success rounded-pill px-3 fw-bold" href="@Url.Action("ExportExcel", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
-                    <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+                <a asp-action="Manage" asp-route-weekStart="@Model.WeekStart.ToString("yyyy-MM-dd")" 
+                   class="btn btn-primary btn-sm px-3 shadow-xs fw-semibold">
+                    <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa lịch tuần này
                 </a>
             }
+            <a asp-action="ExportExcel" asp-route-weekStart="@Model.WeekStart.ToString("yyyy-MM-dd")" 
+               class="btn btn-outline-success btn-sm px-3 shadow-xs">
+                <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
+            </a>
+            <div class="vr mx-1"></div>
+            <a asp-action="Index" asp-route-weekStart="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")" 
+               class="btn btn-outline-secondary btn-sm px-3 shadow-xs">
+                <i class="bi bi-chevron-left me-1"></i>Tuần trước
+            </a>
+            <a asp-action="Index" 
+               class="btn btn-outline-primary btn-sm px-3 shadow-xs fw-semibold">
+                Tuần này
+            </a>
+            <a asp-action="Index" asp-route-weekStart="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")" 
+               class="btn btn-outline-secondary btn-sm px-3 shadow-xs">
+                Tuần sau<i class="bi bi-chevron-right ms-1"></i>
+            </a>
         </div>
     </div>
 
-    @if (Model.Shifts.Count == 0)
-    {
-        <div class="alert alert-warning rounded-3 shadow-sm mb-4">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>Chưa có ca làm việc nào được cấu hình trong hệ thống.
+    <!-- Main Schedule Card -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <span class="fw-bold text-dark">
+                <i class="bi bi-calendar-range text-secondary me-2"></i>
+                Tuần từ @Model.WeekStart.ToString("dd/MM/yyyy") đến @Model.WeekEnd.ToString("dd/MM/yyyy")
+            </span>
+            <span class="badge bg-light text-secondary border px-3 py-2">
+                Tổng cộng: @Model.Assignments.Values.Sum(v => v.Count) lượt phân công
+            </span>
         </div>
-    }
-    else
-    {
-        <!-- Weekly Schedule Matrix Grid (Today Highlight + Colored Employee Roles) -->
-        <div class="card border-0 shadow-sm rounded-3 mb-4">
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm align-middle text-center mb-0 schedule-table" style="table-layout: fixed; min-width: 980px;">
-                    <thead class="table-light">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm align-middle text-center mb-0 schedule-table" style="table-layout: fixed; min-width: 980px;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 160px;" class="text-start ps-3 py-2">Ca Làm Việc</th>
+                        @for (var d = 0; d < 7; d++)
+                        {
+                            var dayDate = Model.WeekStart.AddDays(d);
+                            bool isToday = dayDate.Date == DateTime.Today;
+
+                            <th style="width: 12.14%;" class="py-2 @(isToday ? "today-header" : "")">
+                                <div class="fw-bold @(isToday ? "text-primary" : "text-dark")">
+                                    @dayNames[d]
+                                </div>
+                                <div class="small fw-normal @(isToday ? "text-primary fw-bold" : "text-muted")">@dayDate.ToString("dd/MM")</div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var shift in Model.Shifts)
+                    {
                         <tr>
-                            <th style="width: 160px;" class="text-start ps-3 py-2">Ca Làm Việc</th>
+                            <td class="bg-body-tertiary text-start ps-3 py-3">
+                                <strong class="text-dark">@(shift.ShiftName ?? "Ca ?")</strong><br />
+                                <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @(shift.EndTime.Hours == 23 && shift.EndTime.Minutes >= 59 ? "24:00" : shift.EndTime.ToString(@"hh\:mm")))</small>
+                            </td>
                             @for (var d = 0; d < 7; d++)
                             {
-                                var dayDate = Model.WeekStart.AddDays(d);
-                                bool isToday = dayDate.Date == DateTime.Today;
+                                var date = Model.WeekStart.AddDays(d);
+                                bool isToday = date.Date == DateTime.Today;
+                                var key = (shift.ShiftId, date.Date);
+                                var hasAssignments = Model.Assignments.TryGetValue(key, out var employees) && employees.Count > 0;
 
-                                <th style="width: 12.14%;" class="py-2 @(isToday ? "today-header" : "")">
-                                    <div class="fw-bold @(isToday ? "text-primary" : "text-dark")">
-                                        @dayNames[d]
-                                        @* @if (isToday)
-                                        {
-                                            <span class="badge bg-primary rounded-pill ms-1" style="font-size: 0.65rem;">Hôm nay</span>
-                                        } *@
-                                    </div>
-                                    <div class="small fw-normal @(isToday ? "text-primary fw-bold" : "text-muted")">@dayDate.ToString("dd/MM")</div>
-                                </th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var shift in Model.Shifts)
-                        {
-                            <tr>
-                                <td class="bg-body-tertiary text-start ps-3 py-3">
-                                    <strong class="text-dark">@(shift.ShiftName ?? "Ca ?")</strong><br />
-                                    <small class="text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @(shift.EndTime.Hours == 23 && shift.EndTime.Minutes >= 59 ? "24:00" : shift.EndTime.ToString(@"hh\:mm")))</small>
-                                </td>
-                                @for (var d = 0; d < 7; d++)
+                                bool isCurrentTimeInShift = isToday && (nowTime >= shift.StartTime && nowTime <= shift.EndTime);
+                                double progressPct = 0;
+                                if (isCurrentTimeInShift)
                                 {
-                                    var date = Model.WeekStart.AddDays(d);
-                                    bool isToday = date.Date == DateTime.Today;
-                                    var key = (shift.ShiftId, date.Date);
-                                    var hasAssignments = Model.Assignments.TryGetValue(key, out var employees) && employees.Count > 0;
+                                    double totalMins = (shift.EndTime - shift.StartTime).TotalMinutes;
+                                    if (totalMins <= 0) totalMins += 1440;
+                                    double elapsedMins = (nowTime - shift.StartTime).TotalMinutes;
+                                    progressPct = Math.Clamp((elapsedMins / totalMins) * 100.0, 5.0, 95.0);
+                                }
 
-                                    bool isCurrentTimeInShift = isToday && (nowTime >= shift.StartTime && nowTime <= shift.EndTime);
-                                    double progressPct = 0;
-                                    if (isCurrentTimeInShift)
+                                <td class="text-start p-2 align-top position-relative @(isToday ? "today-cell" : "")">
+                                    @if (isCurrentTimeInShift)
                                     {
-                                        double totalMins = (shift.EndTime - shift.StartTime).TotalMinutes;
-                                        if (totalMins <= 0) totalMins += 1440;
-                                        double elapsedMins = (nowTime - shift.StartTime).TotalMinutes;
-                                        progressPct = Math.Clamp((elapsedMins / totalMins) * 100.0, 5.0, 95.0);
+                                        <div class="position-absolute w-100" style="top: @(progressPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; left: 0; right: 0; z-index: 10; pointer-events: none;" title="Thời gian hiện tại: @DateTime.Now.ToString("HH:mm")">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded-circle shadow-sm" style="width: 8px; height: 8px; margin-left: -4px; flex-shrink: 0;"></div>
+                                                <div class="bg-primary flex-grow-1" style="height: 2px; opacity: 0.85;"></div>
+                                            </div>
+                                        </div>
                                     }
 
-                                    <td class="text-start p-2 align-top position-relative @(isToday ? "today-cell" : "")">
-                                        @if (isCurrentTimeInShift)
-                                        {
-                                            <div class="position-absolute w-100" style="top: @(progressPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; left: 0; right: 0; z-index: 10; pointer-events: none;" title="Thời gian hiện tại: @DateTime.Now.ToString("HH:mm")">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="bg-primary rounded-circle shadow-sm" style="width: 8px; height: 8px; margin-left: -4px; flex-shrink: 0;"></div>
-                                                    <div class="bg-primary flex-grow-1" style="height: 2px; opacity: 0.85;"></div>
-                                                </div>
-                                            </div>
-                                        }
-
-                                        @if (hasAssignments)
-                                        {
+                                    @if (hasAssignments)
+                                    {
                                             @foreach (var emp in employees!)
                                             {
                                                 var roleStr = emp.Role ?? "";

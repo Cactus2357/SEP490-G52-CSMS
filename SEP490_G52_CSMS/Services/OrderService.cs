@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
@@ -92,7 +93,7 @@ namespace SEP490_G52_CSMS.Services
             order.RefundAmount = effectiveRefund;
             order.RefundReason = reason;
             order.RefundMethod = "Cash";
-            order.RefundedAt = DateTime.Now;
+            order.RefundedAt = DateTime.UtcNow;
 
             bool isPartial = (effectiveRefund < order.TotalAmount);
             if (isPartial)
@@ -247,7 +248,7 @@ namespace SEP490_G52_CSMS.Services
                 order.RefundAmount += refundDiff;
                 order.RefundReason = $"[Đổi món] Đơn gốc: {oldTotal:N0}đ, Đơn mới: {newTotal:N0}đ. Hoàn thừa: {refundDiff:N0}đ. Lý do: {reason ?? "Đổi món do thiếu nguyên liệu"}";
                 order.RefundMethod = "Cash";
-                order.RefundedAt = DateTime.Now;
+                order.RefundedAt = DateTime.UtcNow;
 
                 if (activeHandover != null)
                 {

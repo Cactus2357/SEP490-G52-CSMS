@@ -1,3 +1,4 @@
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.ViewModels;
@@ -79,7 +80,7 @@ namespace SEP490_G52_CSMS.Services
                 Reason = model.Reason,
                 LeaveShifts = model.LeaveShifts,
                 Status = "Pending",
-                SubmittedAt = DateTime.Now
+                SubmittedAt = DateTime.UtcNow
             };
 
             await _repository.AddLeaveRequestAsync(request);

@@ -105,7 +105,7 @@ namespace SEP490_G52_CSMS.Controllers
                 BranchId = request.BranchId,
                 Status = "Active",
                 EmploymentType = "Full-time",
-                DateOfBirth = DateTime.Today,
+                DateOfBirth = DateTime.Today.AddYears(-25),
                 Address = string.Empty,
                 PhoneNumber = string.Empty,
                 CitizenId = string.Empty
@@ -118,7 +118,7 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 BranchId = request.BranchId,
                 ManagerId = employee.EmployeeId,
-                AppointedDate = DateTime.Now
+                AppointedDate = DateTime.UtcNow
             });
             _context.SaveChanges();
 
@@ -347,7 +347,7 @@ namespace SEP490_G52_CSMS.Controllers
 
                 // Safely update branch_managers table
                 var existingMappings = _context.BranchManagers.Where(bm => bm.ManagerId == id).ToList();
-                var appointedDate = DateTime.Now;
+                var appointedDate = DateTime.UtcNow;
                 if (existingMappings.Any())
                 {
                     appointedDate = existingMappings.First().AppointedDate;
@@ -451,7 +451,7 @@ namespace SEP490_G52_CSMS.Controllers
             _context.SaveChanges();
 
             // Log details
-            Console.WriteLine($"[BRANCH MANAGER DEACTIVATION LOG] Employee ID: {request.EmployeeId}, Username: {manager.Username}, Time: {DateTime.Now}, Reason: {request.Reason}, Notes: {request.Notes}");
+            Console.WriteLine($"[BRANCH MANAGER DEACTIVATION LOG] Employee ID: {request.EmployeeId}, Username: {manager.Username}, Time: {DateTime.UtcNow} UTC, Reason: {request.Reason}, Notes: {request.Notes}");
 
             return Json(new { success = true });
         }

@@ -161,32 +161,32 @@ namespace SEP490_G52_CSMS.Services
         {
             var today = DateTime.Today;
 
-            var roster = await _cashHandoverRepository.GetCurrentRosterAsync(model.CashierId, today);
-            if (roster == null)
-            {
-                return OperationResult.Fail("Bạn không có lịch trực ca hôm nay tại chi nhánh. Chỉ thu ngân có lịch làm việc mới được mở ca.");
-            }
-
             var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.CashierId);
+            var roster = await _cashHandoverRepository.GetCurrentRosterAsync(model.CashierId, today);
             var branchId = roster?.BranchId ?? cashierEmployee?.BranchId ?? model.BranchId;
 
-            // 1. KIỂM TRA ĐÃ ĐÓNG CA CUỐI NGÀY HÔM NAY CHƯA
+            if (roster == null)
+            {
+                return OperationResult.Fail("Bạn không có lịch phân công ca làm việc tại chi nhánh hôm nay. Vui lòng kiểm tra lại Lịch làm việc.");
+            }
+
+            // 1. Kiểm tra ngày hôm nay tại chi nhánh đã thực hiện Đóng ca cuối ngày chưa
             var isDayClosed = await _cashHandoverRepository.IsDayClosedAsync(branchId, today);
             if (isDayClosed)
             {
-                return OperationResult.Fail("Ca làm việc cuối ngày hôm nay tại chi nhánh đã được Đóng ca (chốt sổ ngày). Quầy thu ngân đã khóa sổ, không thể mở thêm ca mới trong ngày hôm nay.");
+                return OperationResult.Fail("Chi nhánh đã thực hiện Đóng ca cuối ngày hôm nay. Không thể mở thêm ca mới.");
             }
 
-            // 2. KIỂM TRA CA NÀY HÔM NAY ĐÃ BỊ ĐÓNG CHƯA
+            // 2. Kiểm tra ca làm việc cụ thể này hôm nay đã từng bị đóng (Closed) chưa
             var specificClosed = await _cashHandoverRepository.GetClosedHandoverByShiftAsync(branchId, model.ShiftId, today);
             if (specificClosed != null)
             {
-                return OperationResult.Fail($"Ca làm việc {roster.FixedShift?.ShiftName ?? "này"} hôm nay tại chi nhánh đã được thực hiện và chốt đóng. Không thể mở lại ca đã đóng.");
+                return OperationResult.Fail($"Ca làm việc {roster.FixedShift?.ShiftName ?? "này"} hôm nay đã được chốt đóng ca. Không thể mở lại.");
             }
 
-            // 3. KIỂM TRA ĐÃ CÓ CA ACTIVE HÔM NAY TẠI CHI NHÁNH CHƯA
-            var activeShiftHandover = await _cashHandoverRepository.GetActiveHandoverByShiftAsync(branchId, model.ShiftId, today);
-            if (activeShiftHandover != null)
+            // 3. Kiểm tra xem ca làm việc này đã có ai mở (Active) chưa
+            var existingShiftActive = await _cashHandoverRepository.GetActiveHandoverByShiftAsync(branchId, model.ShiftId, today);
+            if (existingShiftActive != null)
             {
                 return OperationResult.Fail("Ca làm việc này tại chi nhánh đã được mở. Không thể tạo ca trùng lặp.");
             }
@@ -257,7 +257,7 @@ namespace SEP490_G52_CSMS.Services
                 IsPasswordConfirmed = false,
                 HandoverType = handoverType,
                 Status = CashHandoverConstants.ActiveStatus,
-                OpenedAt = DateTime.Now,
+                OpenedAt = DateTime.UtcNow,
             };
 
             await _cashHandoverRepository.AddHandoverAsync(handover);
@@ -394,7 +394,7 @@ namespace SEP490_G52_CSMS.Services
 
             // Tính toán doanh thu và hoàn tiền chính xác đến thời điểm đóng ca
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
-                handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.Now);
+                handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
             var theoretical = handover.InitialCash + cashRev - cashRefunds;
             var discrepancy = model.ActualCash - theoretical;
@@ -415,7 +415,7 @@ namespace SEP490_G52_CSMS.Services
             handover.IsPasswordConfirmed = true;
             handover.HandoverType = model.IsSelfHandover ? "SelfHandover" : CashHandoverConstants.HandoverTypeMidShift;
             handover.Status = CashHandoverConstants.ClosedStatus;
-            handover.ClosedAt = DateTime.Now;
+            handover.ClosedAt = DateTime.UtcNow;
 
             await _cashHandoverRepository.UpdateHandoverAsync(handover);
             await _cashHandoverRepository.SyncAttendanceOnCloseShiftAsync(handover.OutgoingCashierId, handover.ShiftId, handover.HandoverDate);
@@ -442,7 +442,7 @@ namespace SEP490_G52_CSMS.Services
                         IsPasswordConfirmed = false,
                         HandoverType = CashHandoverConstants.HandoverTypeMidShift,
                         Status = CashHandoverConstants.ActiveStatus,
-                        OpenedAt = DateTime.Now
+                        OpenedAt = DateTime.UtcNow
                     };
                     await _cashHandoverRepository.AddHandoverAsync(nextHandover);
                     await _cashHandoverRepository.SyncAttendanceOnOpenShiftAsync(model.IncomingCashierId.Value, nextShift.ShiftId, handover.HandoverDate);
@@ -545,7 +545,7 @@ namespace SEP490_G52_CSMS.Services
             }
 
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
-                handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.Now);
+                handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
             var theoretical = handover.InitialCash + cashRev - cashRefunds;
             var discrepancy = model.ActualCash - theoretical;
@@ -566,7 +566,7 @@ namespace SEP490_G52_CSMS.Services
             handover.IsPasswordConfirmed = true;
             handover.HandoverType = CashHandoverConstants.HandoverTypeLastShift;
             handover.Status = CashHandoverConstants.ClosedStatus;
-            handover.ClosedAt = DateTime.Now;
+            handover.ClosedAt = DateTime.UtcNow;
 
             await _cashHandoverRepository.UpdateHandoverAsync(handover);
             await _cashHandoverRepository.SyncAttendanceOnCloseShiftAsync(handover.OutgoingCashierId, handover.ShiftId, handover.HandoverDate);
@@ -626,7 +626,7 @@ namespace SEP490_G52_CSMS.Services
             }
 
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
-                handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.Now);
+                handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
             var theoretical = handover.InitialCash + cashRev - cashRefunds;
             var discrepancy = model.ActualCash - theoretical;
@@ -645,7 +645,7 @@ namespace SEP490_G52_CSMS.Services
             handover.IsPasswordConfirmed = true;
             handover.HandoverType = CashHandoverConstants.HandoverTypeEmergency;
             handover.Status = CashHandoverConstants.ClosedStatus;
-            handover.ClosedAt = DateTime.Now;
+            handover.ClosedAt = DateTime.UtcNow;
 
             await _cashHandoverRepository.UpdateHandoverAsync(handover);
             await _cashHandoverRepository.SyncAttendanceOnCloseShiftAsync(handover.OutgoingCashierId, handover.ShiftId, handover.HandoverDate);
@@ -668,7 +668,7 @@ namespace SEP490_G52_CSMS.Services
                 HandoverType = CashHandoverConstants.HandoverTypeEmergency,
                 Notes = $"Tiếp quản ca từ {handover.OutgoingCashier?.FullName} do nghỉ đột xuất.",
                 Status = CashHandoverConstants.ActiveStatus,
-                OpenedAt = DateTime.Now
+                OpenedAt = DateTime.UtcNow
             };
 
             await _cashHandoverRepository.AddHandoverAsync(continueHandover);
@@ -750,7 +750,7 @@ namespace SEP490_G52_CSMS.Services
                     }
                     else // Status == Closed
                     {
-                        actionTime = ch.ClosedAt?.ToString("HH:mm dd/MM/yyyy") ?? ch.OpenedAt.ToString("HH:mm dd/MM/yyyy");
+                        actionTime = (ch.ClosedAt ?? ch.OpenedAt).ToString("HH:mm dd/MM/yyyy");
 
                         if (ch.HandoverType == CashHandoverConstants.HandoverTypeLastShift)
                         {
@@ -759,11 +759,11 @@ namespace SEP490_G52_CSMS.Services
                             hasOutgoing = true;
                             outgoingName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
                             hasIncoming = !string.IsNullOrWhiteSpace(ch.DelivererName);
-                            incomingName = !string.IsNullOrWhiteSpace(ch.DelivererName) ? $"{ch.DelivererName} (Người nhận tiền)" : "-";
+                            incomingName = !string.IsNullOrWhiteSpace(ch.DelivererName) ? ch.DelivererName : "-";
                         }
                         else if (ch.HandoverType == CashHandoverConstants.HandoverTypeEmergency)
                         {
-                            sessionType = "Bàn giao đột xuất";
+                            sessionType = "Bàn giao đột xuất giữa ca";
                             actionTimeType = "Bàn giao lúc";
                             hasOutgoing = true;
                             outgoingName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
@@ -772,7 +772,7 @@ namespace SEP490_G52_CSMS.Services
                         }
                         else if (ch.HandoverType == "SelfHandover")
                         {
-                            sessionType = "Giao ca liên tiếp (Cùng NV)";
+                            sessionType = "Chuyển tiếp ca liên tiếp";
                             actionTimeType = "Bàn giao lúc";
                             hasOutgoing = true;
                             outgoingName = ch.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel;
@@ -793,19 +793,20 @@ namespace SEP490_G52_CSMS.Services
                     return new HandoverHistoryItemViewModel
                     {
                         HandoverId = ch.HandoverId,
-                        HandoverDate = ch.HandoverDate.ToString("dd/MM/yyyy"),
                         ShiftName = ch.FixedShift?.ShiftName ?? "-",
+                        ShiftTimeRange = ch.FixedShift != null ? FormatShiftTimeRange(ch.FixedShift) : "-",
+                        HandoverDate = ch.HandoverDate.ToString("dd/MM/yyyy"),
                         ActionTime = actionTime,
                         ActionTimeType = actionTimeType,
-                        OutgoingCashierName = outgoingName,
-                        IncomingCashierName = incomingName,
                         HasOutgoing = hasOutgoing,
+                        OutgoingCashierName = outgoingName,
                         HasIncoming = hasIncoming,
+                        IncomingCashierName = incomingName,
                         InitialCash = ch.InitialCash.ToString("N0") + " đ",
-                        MachineCashRevenue = isActive ? "-" : ch.MachineCashRevenue.ToString("N0") + " đ",
-                        BankTransferRevenue = isActive ? "-" : ch.BankTransferRevenue.ToString("N0") + " đ",
-                        CashRefundAmount = isActive ? "-" : ch.CashRefundAmount.ToString("N0") + " đ",
-                        TheoreticalCash = isActive ? "-" : theoretical.ToString("N0") + " đ",
+                        MachineCashRevenue = (ch.MachineCashRevenue >= 0 ? "+" : "") + ch.MachineCashRevenue.ToString("N0") + " đ",
+                        BankTransferRevenue = ch.BankTransferRevenue.ToString("N0") + " đ",
+                        CashRefundAmount = (ch.CashRefundAmount > 0 ? "-" : "") + ch.CashRefundAmount.ToString("N0") + " đ",
+                        TheoreticalCash = theoretical.ToString("N0") + " đ",
                         ActualCash = isActive ? "-" : ch.ActualCash.ToString("N0") + " đ",
                         Discrepancy = isActive ? "-" : ((discrepancy >= 0 ? "+" : "") + discrepancy.ToString("N0") + " đ"),
                         Status = ch.Status,

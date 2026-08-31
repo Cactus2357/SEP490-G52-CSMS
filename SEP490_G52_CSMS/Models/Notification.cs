@@ -22,7 +22,7 @@ namespace SEP490_G52_CSMS.Models
         public string Message { get; set; } = string.Empty;
 
         [Column("created_time")]
-        public DateTime CreatedTime { get; set; } = DateTime.Now;
+        public DateTime CreatedTime { get; set; } = DateTime.UtcNow;
 
         [Column("is_read")]
         public bool IsRead { get; set; } = false;

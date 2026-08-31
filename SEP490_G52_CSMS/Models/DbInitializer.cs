@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
@@ -176,14 +177,14 @@ namespace SEP490_G52_CSMS.Models
                     {
                         var mgr = employeesByBranch[branchId].FirstOrDefault(e => e.Role == "BranchManager");
                         if (mgr != null)
-                            newManagerLinks.Add(new BranchManager { BranchId = branchId, ManagerId = mgr.EmployeeId, AppointedDate = DateTime.Now.AddMonths(-_rng.Next(1, 24)) });
+                            newManagerLinks.Add(new BranchManager { BranchId = branchId, ManagerId = mgr.EmployeeId, AppointedDate = DateTime.UtcNow.AddMonths(-_rng.Next(1, 24)) });
                     }
                 }
                 context.BranchManagers.AddRange(newManagerLinks);
                 context.SaveChanges();
 
                 // ---------- 5. WEEKLY ROSTER GRID + ATTENDANCE LOGS ----------
-                var today = DateTime.Today;
+                var today = DateTime.UtcNow.Date;
                 var startDate = today.AddDays(-10); // 10 days: 5 past-with-attendance, 5 future/no-attendance
                 var rosterEntries = new List<WeeklyRosterGrid>();
 

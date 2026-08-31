@@ -73,7 +73,7 @@ namespace SEP490_G52_CSMS.Models.Core
         public bool IsSePayActive { get; set; } = true;
 
         [Column("updated_at")]
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey("BranchId")]
         public virtual Branch? Branch { get; set; }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Attendance;
@@ -604,7 +605,7 @@ namespace SEP490_G52_CSMS.Repositories
                     {
                         RosterId = roster.RosterId,
                         EmployeeId = employeeId,
-                        CheckInTime = DateTime.Now,
+                        CheckInTime = DateTime.UtcNow,
                         IsFaceCheckInValid = true,
                         CheckInStatus = "OnTime",
                         CheckOutTime = null,
@@ -615,7 +616,7 @@ namespace SEP490_G52_CSMS.Repositories
                 }
                 else
                 {
-                    if (log.CheckInTime == null) log.CheckInTime = DateTime.Now;
+                    if (log.CheckInTime == null) log.CheckInTime = DateTime.UtcNow;
                     log.CheckInStatus = "OnTime";
                     log.CheckOutTime = null;
                     log.CheckOutStatus = "NotYetCheckOut";
@@ -638,7 +639,7 @@ namespace SEP490_G52_CSMS.Repositories
 
                 if (log != null)
                 {
-                    log.CheckOutTime = DateTime.Now;
+                    log.CheckOutTime = DateTime.UtcNow;
                     log.CheckOutStatus = "CheckedOut";
                     _context.AttendanceLogs.Update(log);
                     await _context.SaveChangesAsync();

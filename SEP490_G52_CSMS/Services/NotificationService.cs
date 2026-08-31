@@ -20,7 +20,7 @@ namespace SEP490_G52_CSMS.Services
             {
                 Title = evt.Title,
                 Message = evt.Message,
-                CreatedTime = DateTime.Now,
+                CreatedTime = DateTime.UtcNow,
                 IsRead = false,
                 RecipientUserId = evt.RecipientUserId,
                 RecipientRole = evt.RecipientRole,

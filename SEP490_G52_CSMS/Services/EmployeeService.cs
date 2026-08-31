@@ -44,7 +44,7 @@ namespace SEP490_G52_CSMS.Services
                 var employmentType = dto.EmploymentType?.Trim() ?? "Full-time";
                 var branchId = dto.BranchId?.Trim() ?? "";
                 var address = !string.IsNullOrWhiteSpace(dto.Address) ? dto.Address.Trim() : "Chưa cập nhật";
-                var dob = dto.DateOfBirth ?? DateTime.Today.AddYears(-20);
+                var dob = dto.DateOfBirth ?? DateTime.UtcNow.Date.AddYears(-20);
 
                 // Basic validations
                 if (string.IsNullOrWhiteSpace(fullName))
@@ -361,7 +361,7 @@ namespace SEP490_G52_CSMS.Services
             foreach (var roster in rosters)
             {
                 bool isUncompleted = false;
-                if (roster.AssignmentDate.Date > DateTime.Today)
+                if (roster.AssignmentDate.Date > DateTime.UtcNow.Date)
                 {
                     isUncompleted = true;
                 }
@@ -405,7 +405,7 @@ namespace SEP490_G52_CSMS.Services
             employee.Status = "Inactive";
             await _repository.UpdateAsync(employee);
 
-            Console.WriteLine($"[DEACTIVATION LOG] Employee ID: {employeeId}, Username: {employee.Username}, Time: {DateTime.Now}, Reason: {reason}, Notes: {notes}");
+            Console.WriteLine($"[DEACTIVATION LOG] Employee ID: {employeeId}, Username: {employee.Username}, Time: {DateTime.UtcNow} UTC, Reason: {reason}, Notes: {notes}");
 
             return true;
         }
