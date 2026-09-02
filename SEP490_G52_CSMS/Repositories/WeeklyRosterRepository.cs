@@ -24,7 +24,7 @@ namespace SEP490_G52_CSMS.Repositories
         {
             return await _context.WeeklyRosterGrids.AnyAsync(x =>
                 x.BranchId == branchId &&
-                x.AssignmentDate == assignmentDate &&
+                x.AssignmentDate.Date == assignmentDate.Date &&
                 x.ShiftId == shiftId);
         }
 

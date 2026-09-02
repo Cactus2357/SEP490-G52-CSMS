@@ -27,6 +27,8 @@ namespace SEP490_G52_CSMS.Services
 
         public string EmployeeName { get; set; }
 
+        public string? Username { get; set; }
+
         public string Role { get; set; }
     }
 
@@ -58,45 +60,52 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<string> CreateAsync(CreateRosterVM vm)
         {
-            if (vm.EmployeeIds.Count == 0)
-                return "Require at least one employee.";
-
-            bool exists = await _repository.ExistsAsync(vm.BranchId, vm.AssignmentDate, vm.ShiftId);
-
-            if (exists) return "This shift has already been created.";
-
-            List<WeeklyRosterGrid> rosters = vm.EmployeeIds
-                .Select(id => new WeeklyRosterGrid
-                {
-                    BranchId = vm.BranchId,
-                    AssignmentDate = vm.AssignmentDate,
-                    ShiftId = vm.ShiftId,
-                    EmployeeId = id
-                })
-                .ToList();
-
-            await _repository.AddRangeAsync(rosters);
-
-            await _repository.SaveAsync();
-
-            return "Success";
+            return await UpsertAsync(vm);
         }
 
         public async Task<string> UpdateAsync(CreateRosterVM vm)
         {
-            if (vm.EmployeeIds.Count == 0)
-                return "Require at least one employee.";
+            return await UpsertAsync(vm);
+        }
+
+        public async Task<string> UpsertAsync(CreateRosterVM vm)
+        {
+            if (vm == null || string.IsNullOrWhiteSpace(vm.BranchId))
+                return "Invalid request.";
 
             var existingRosters = await _repository.GetRosterForShiftAsync(vm.BranchId, vm.AssignmentDate, vm.ShiftId);
 
-            if (existingRosters.Count == 0)
+            // Case 1: Empty or cleared employee list -> remove existing if any
+            if (vm.EmployeeIds == null || vm.EmployeeIds.Count == 0)
             {
-                return "This shift has not been created yet.";
+                if (existingRosters.Count > 0)
+                {
+                    _repository.RemoveRange(existingRosters);
+                    await _repository.SaveAsync();
+                }
+                return "Success";
             }
 
-            var existingEmployeeIds = existingRosters.Select(r => r.EmployeeId).ToList();
             var newEmployeeIds = vm.EmployeeIds.Distinct().ToList();
 
+            // Case 2: Shift does not exist yet -> Create new rosters
+            if (existingRosters.Count == 0)
+            {
+                var rostersToAdd = newEmployeeIds.Select(id => new WeeklyRosterGrid
+                {
+                    BranchId = vm.BranchId,
+                    AssignmentDate = vm.AssignmentDate.Date,
+                    ShiftId = vm.ShiftId,
+                    EmployeeId = id
+                }).ToList();
+
+                await _repository.AddRangeAsync(rostersToAdd);
+                await _repository.SaveAsync();
+                return "Success";
+            }
+
+            // Case 3: Shift already exists -> Update / Synchronize
+            var existingEmployeeIds = existingRosters.Select(r => r.EmployeeId).ToList();
             var toRemove = existingRosters.Where(r => !newEmployeeIds.Contains(r.EmployeeId)).ToList();
             var toAddIds = newEmployeeIds.Where(id => !existingEmployeeIds.Contains(id)).ToList();
 
@@ -110,7 +119,7 @@ namespace SEP490_G52_CSMS.Services
                 var rostersToAdd = toAddIds.Select(id => new WeeklyRosterGrid
                 {
                     BranchId = vm.BranchId,
-                    AssignmentDate = vm.AssignmentDate,
+                    AssignmentDate = vm.AssignmentDate.Date,
                     ShiftId = vm.ShiftId,
                     EmployeeId = id
                 }).ToList();
@@ -139,6 +148,7 @@ namespace SEP490_G52_CSMS.Services
                     ShiftId = row.ShiftId,
                     EmployeeId = row.EmployeeId,
                     EmployeeName = row.Employee?.FullName ?? $"NV#{row.EmployeeId}",
+                    Username = row.Employee?.Username,
                     Role = row.Employee?.Role ?? ""
                 })
                 // Defensive: a stray row outside 0..6 (bad data / timezone edge case)

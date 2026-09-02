@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Quản lý lịch làm việc";
     var dayNames = new[] { "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật" };
-    var nowTime = DateTime.UtcNow.TimeOfDay;
+    var nowTime = DateTime.Now.TimeOfDay;
 }
 
 <style>
@@ -24,40 +24,6 @@
     }
 </style>
 
-<div class="container-fluid mt-3 px-4 pb-5">
-    <!-- Header Section -->
-    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
-        <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div>
-                <span class="text-muted small">Chi nhánh / Lịch làm việc</span>
-                <h4 class="fw-bold m-0 text-dark">QUẢN LÝ LỊCH LÀM VIỆC</h4>
-            </div>
-
-            @if (User.IsInRole("BranchManager"))
-            {
-                <div class="d-flex align-items-center gap-2">
-                    <a class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
-                        <i class="bi bi-plus-lg me-1"></i>Thêm lịch mới
-                    </a>
-                    <a class="btn btn-outline-secondary rounded-pill px-3 fw-bold" href="@Url.Action("Manage", new { weekStart = Model.WeekStart.ToString("yyyy-MM-dd") })">
-                        <i class="bi bi-pencil me-1"></i>Cập nhật lịch làm
-                    </a>
-                </div>
-            }
-        </div>
-    </div>
-
-    <!-- Week Navigation Card -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
-        <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div class="input-group" style="width: auto;">
-                <a class="btn btn-outline-secondary"
-                   href="@Url.Action("Index", new { weekStart = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd") })">
-                    &lsaquo;
-                </a>
-
-                <span class="input-group-text bg-white fw-semibold">
-                    Tuần này: @Model.WeekStart.ToString("dd/MM") - @Model.WeekEnd.ToString("dd/MM/yyyy")
 <div class="container-fluid px-4 py-3">
     <!-- Header -->
     <div class="d-flex align-items-center justify-content-between mb-4">
@@ -71,27 +37,29 @@
             @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
             {
                 <a asp-action="Manage" asp-route-weekStart="@Model.WeekStart.ToString("yyyy-MM-dd")" 
-                   class="btn btn-primary btn-sm px-3 shadow-xs fw-semibold">
+                   class="btn btn-primary btn-sm px-3 shadow-sm fw-semibold">
                     <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa lịch tuần này
                 </a>
             }
             <a asp-action="ExportExcel" asp-route-weekStart="@Model.WeekStart.ToString("yyyy-MM-dd")" 
-               class="btn btn-outline-success btn-sm px-3 shadow-xs">
+               class="btn btn-outline-success btn-sm px-3">
                 <i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel
             </a>
             <div class="vr mx-1"></div>
-            <a asp-action="Index" asp-route-weekStart="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")" 
-               class="btn btn-outline-secondary btn-sm px-3 shadow-xs">
-                <i class="bi bi-chevron-left me-1"></i>Tuần trước
-            </a>
-            <a asp-action="Index" 
-               class="btn btn-outline-primary btn-sm px-3 shadow-xs fw-semibold">
-                Tuần này
-            </a>
-            <a asp-action="Index" asp-route-weekStart="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")" 
-               class="btn btn-outline-secondary btn-sm px-3 shadow-xs">
-                Tuần sau<i class="bi bi-chevron-right ms-1"></i>
-            </a>
+            <div class="btn-group shadow-xs" role="group">
+                <a asp-action="Index" asp-route-weekStart="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")" 
+                   class="btn btn-outline-secondary btn-sm px-3">
+                    <i class="bi bi-chevron-left me-1"></i>Tuần trước
+                </a>
+                <a asp-action="Index" 
+                   class="btn btn-outline-primary btn-sm px-3 fw-semibold">
+                    Tuần này
+                </a>
+                <a asp-action="Index" asp-route-weekStart="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")" 
+                   class="btn btn-outline-secondary btn-sm px-3">
+                    Tuần sau<i class="bi bi-chevron-right ms-1"></i>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -170,7 +138,7 @@
                                                                    roleStr.Contains("Bartender") || roleStr.Contains("Barista") || roleStr.Contains("Pha chế") ? "text-success" :
                                                                    roleStr.Contains("Busser") || roleStr.Contains("Vệ sinh") ? "text-warning-emphasis" : "text-dark";
 
-                                                <div class="employee-entry small mb-1 fw-semibold @roleColor">
+                                                <div class="employee-entry small mb-1 fw-semibold @roleColor" title="@(!string.IsNullOrWhiteSpace(emp.Username) ? $"@{emp.Username}" : "")">
                                                     <i class="bi bi-person-fill me-1"></i>@(emp.FullName ?? $"NV#{emp.EmployeeId}")
                                                 </div>
                                             }
@@ -195,5 +163,4 @@
             <span class="text-success fw-semibold"><i class="bi bi-person-fill me-1"></i>Pha chế (Bartender/Barista)</span>
             <span class="text-warning-emphasis fw-semibold"><i class="bi bi-person-fill me-1"></i>Phục vụ/Vệ sinh (Busser/Staff)</span>
         </div>
-    }
 </div>

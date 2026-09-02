@@ -77,7 +77,12 @@ namespace SEP490_G52_CSMS.Controllers
                 Assignments = rosterEntries
                     .Where(r => r.Employee != null)
                     .GroupBy(r => (r.ShiftId, r.AssignmentDate.Date))
-                    .ToDictionary(g => g.Key, g => g.Select(r => r.Employee!).ToList())
+                    .ToDictionary(
+                        g => g.Key, 
+                        g => g.Select(r => r.Employee!)
+                              .OrderBy(e => e.Role == "Cashier" ? 0 : (e.Role == "Bartender" || e.Role == "Barista" ? 1 : 2))
+                              .ThenBy(e => e.FullName)
+                              .ToList())
             };
 
             return View(vm);
@@ -158,6 +163,28 @@ namespace SEP490_G52_CSMS.Controllers
             return View(vm);
         }
 
+        private async Task<bool> IsShiftInPastAsync(DateTime assignmentDate, int shiftId)
+        {
+            var today = DateTime.Today;
+            if (assignmentDate.Date < today)
+            {
+                return true;
+            }
+            if (assignmentDate.Date == today)
+            {
+                var shift = await _context.FixedShifts.FindAsync(shiftId);
+                if (shift != null)
+                {
+                    var nowTime = DateTime.Now.TimeOfDay;
+                    if (nowTime > shift.EndTime)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         [HttpPost]
         [Authorize(Roles = "BranchManager")]
         public async Task<IActionResult> AddWorkSchedule([FromBody] CreateRosterVM vm)
@@ -171,6 +198,11 @@ namespace SEP490_G52_CSMS.Controllers
             if (vm.BranchId != loggedInBranchId)
             {
                 return Forbid();
+            }
+
+            if (await IsShiftInPastAsync(vm.AssignmentDate, vm.ShiftId))
+            {
+                return BadRequest("Không thể thêm lịch làm việc cho ca đã kết thúc trong quá khứ.");
             }
 
             string result = await _service.CreateAsync(vm);
@@ -198,6 +230,11 @@ namespace SEP490_G52_CSMS.Controllers
                 return Forbid();
             }
 
+            if (await IsShiftInPastAsync(vm.AssignmentDate, vm.ShiftId))
+            {
+                return BadRequest("Không thể chỉnh sửa lịch làm việc cho ca đã kết thúc trong quá khứ.");
+            }
+
             string result = await _service.UpdateAsync(vm);
 
             if (result != "Success")
@@ -206,6 +243,49 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             return Ok(result);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "BranchManager")]
+        public async Task<IActionResult> SaveWorkScheduleBatch([FromBody] List<CreateRosterVM> vms)
+        {
+            if (vms == null || vms.Count == 0)
+            {
+                return BadRequest("Không có dữ liệu ca làm việc để lưu.");
+            }
+
+            var loggedInBranchId = await GetUserBranchIdAsync();
+            var errors = new List<string>();
+            int savedCount = 0;
+
+            foreach (var vm in vms)
+            {
+                if (vm == null || string.IsNullOrWhiteSpace(vm.BranchId))
+                    continue;
+
+                if (vm.BranchId != loggedInBranchId)
+                    continue;
+
+                if (await IsShiftInPastAsync(vm.AssignmentDate, vm.ShiftId))
+                    continue; // Skip past shifts silently
+
+                string result = await _service.UpsertAsync(vm);
+                if (result == "Success")
+                {
+                    savedCount++;
+                }
+                else
+                {
+                    errors.Add($"{vm.AssignmentDate:dd/MM/yyyy} (Ca {vm.ShiftId}): {result}");
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                return BadRequest(string.Join("; ", errors));
+            }
+
+            return Ok(new { success = true, savedCount });
         }
 
         [HttpGet]
