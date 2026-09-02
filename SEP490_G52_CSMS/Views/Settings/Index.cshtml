@@ -26,42 +26,39 @@
                 <span class="badge bg-primary fs-6 px-3 py-2">Chi nhánh: @Model.BranchId</span>
             </div>
 
-            <!-- Navigation Tabs -->
-            <div class="card border shadow-sm">
-                <div class="card-header bg-light p-0 border-bottom">
-                    <ul class="nav nav-tabs card-header-tabs m-0 border-0" id="settingsTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-3 px-4 fw-bold @(activeTab == "general" ? "active text-primary border-top border-3 border-primary" : "text-secondary")"
-                                    id="general-tab" data-bs-toggle="tab" data-bs-target="#tab-general"
-                                    type="button" role="tab" aria-controls="tab-general"
-                                    aria-selected="@(activeTab == "general" ? "true" : "false")">
-                                <i class="bi bi-building me-2"></i>Cài Đặt Chung Chi Nhánh
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-3 px-4 fw-bold @(activeTab == "sepay" ? "active text-primary border-top border-3 border-primary" : "text-secondary")"
-                                    id="sepay-tab" data-bs-toggle="tab" data-bs-target="#tab-sepay"
-                                    type="button" role="tab" aria-controls="tab-sepay"
-                                    aria-selected="@(activeTab == "sepay" ? "true" : "false")">
-                                <i class="bi bi-qr-code-scan me-2"></i>Tài Khoản Ngân Hàng & SePay
-                            </button>
-                        </li>
-                    </ul>
-                </div>
+            <!-- Navigation Tabs (Bootstrap Navs & Tabs) -->
+            <ul class="nav nav-tabs mb-4" id="settingsTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold px-4 py-2 @(activeTab == "general" ? "active" : "")"
+                            id="general-tab" data-bs-toggle="tab" data-bs-target="#tab-general"
+                            type="button" role="tab" aria-controls="tab-general"
+                            aria-selected="@(activeTab == "general" ? "true" : "false")">
+                        <i class="bi bi-building me-2"></i>Cài Đặt Chung Chi Nhánh
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold px-4 py-2 @(activeTab == "sepay" ? "active" : "")"
+                            id="sepay-tab" data-bs-toggle="tab" data-bs-target="#tab-sepay"
+                            type="button" role="tab" aria-controls="tab-sepay"
+                            aria-selected="@(activeTab == "sepay" ? "true" : "false")">
+                        <i class="bi bi-qr-code-scan me-2"></i>Tài Khoản Ngân Hàng & SePay
+                    </button>
+                </li>
+            </ul>
 
-                <div class="card-body p-4">
-                    <div class="tab-content" id="settingsTabContent">
+            <div class="tab-content" id="settingsTabContent">
 
-                        <!-- =========================================================
-                             TAB 1: CÀI ĐẶT CHUNG CHI NHÁNH
-                        ========================================================== -->
-                        <div class="tab-pane fade @(activeTab == "general" ? "show active" : "")"
-                             id="tab-general" role="tabpanel" aria-labelledby="general-tab">
+                <!-- =========================================================
+                     TAB 1: CÀI ĐẶT CHUNG CHI NHÁNH
+                ========================================================== -->
+                <div class="tab-pane fade @(activeTab == "general" ? "show active" : "")"
+                     id="tab-general" role="tabpanel" aria-labelledby="general-tab">
+                    <div class="card border shadow-sm rounded-3">
+                        <div class="card-body p-4">
                             <form asp-action="SaveGeneralSettings" method="post">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" asp-for="SettingId" />
                                 <input type="hidden" asp-for="BranchId" />
-                                <!-- FIX 2: hidden field so the controller knows which tab to redirect back to -->
                                 <input type="hidden" name="activeTab" value="general" />
 
                                 <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom">
@@ -108,17 +105,20 @@
                                 </div>
                             </form>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- =========================================================
-                             TAB 2: TÀI KHOẢN NGÂN HÀNG & SEPAY CONFIG
-                        ========================================================== -->
-                        <div class="tab-pane fade @(activeTab == "sepay" ? "show active" : "")"
-                             id="tab-sepay" role="tabpanel" aria-labelledby="sepay-tab">
+                <!-- =========================================================
+                     TAB 2: TÀI KHOẢN NGÂN HÀNG & SEPAY CONFIG
+                ========================================================== -->
+                <div class="tab-pane fade @(activeTab == "sepay" ? "show active" : "")"
+                     id="tab-sepay" role="tabpanel" aria-labelledby="sepay-tab">
+                    <div class="card border shadow-sm rounded-3">
+                        <div class="card-body p-4">
                             <form asp-action="SaveSePay" method="post" class="needs-validation" novalidate>
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" asp-for="SettingId" />
                                 <input type="hidden" asp-for="BranchId" />
-                                <!-- FIX 2: hidden field so the controller knows which tab to redirect back to -->
                                 <input type="hidden" name="activeTab" value="sepay" />
 
                                 <!-- Section 1: Bank Info -->
@@ -159,8 +159,8 @@
                                 <!-- Section 2: SePay API & Webhook Settings -->
                                 <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between">
                                     <span><i class="bi bi-key-fill me-2"></i>2. Cấu Hình Cổng Tự Động SePay.vn</span>
-                                    <button type="button" class="btn btn-sm btn-outline-info rounded-circle px-2 py-0 fw-bold" data-bs-toggle="modal" data-bs-target="#sepayGuideModal" title="Hướng dẫn chi tiết cài đặt SePay">
-                                        <i class="bi bi-question-lg"></i> Hướng dẫn
+                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#sepayGuideModal" title="Hướng dẫn chi tiết cài đặt SePay">
+                                        <i class="bi bi-question-circle me-1"></i>Hướng dẫn
                                     </button>
                                 </h6>
 
@@ -237,9 +237,9 @@
                                 </div>
                             </form>
                         </div>
-
                     </div>
                 </div>
+
             </div>
         </div>
     </div>

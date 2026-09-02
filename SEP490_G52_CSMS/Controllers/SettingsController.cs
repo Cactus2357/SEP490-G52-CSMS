@@ -44,7 +44,7 @@ namespace SEP490_G52_CSMS.Controllers
             return firstBranch?.BranchId ?? "CB001";
         }
 
-        public async Task<IActionResult> Index(string activeTab = "sepay")
+        public async Task<IActionResult> Index(string activeTab = "general")
         {
             DbInitializer.EnsureTablesCreated(_context);
             var branchId = await GetUserBranchIdAsync();
