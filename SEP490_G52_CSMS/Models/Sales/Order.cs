@@ -25,6 +25,14 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Column("total_amount")]
         public decimal TotalAmount { get; set; }
 
+        /// <summary> Số tiền thực thu bằng tiền mặt (dùng cho thanh toán đơn hoặc kết hợp) </summary>
+        [Column("cash_amount")]
+        public decimal CashAmount { get; set; } = 0;
+
+        /// <summary> Số tiền thực thu qua chuyển khoản (dùng cho thanh toán đơn hoặc kết hợp) </summary>
+        [Column("bank_amount")]
+        public decimal BankAmount { get; set; } = 0;
+
         [Column("payment_method")]
         [StringLength(200)]
         public string? PaymentMethod { get; set; }

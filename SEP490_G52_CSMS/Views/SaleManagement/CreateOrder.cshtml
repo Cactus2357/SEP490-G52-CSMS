@@ -15,6 +15,8 @@
     .cart-card-body { flex: 1; display: flex; flex-direction: column; padding: 1rem; overflow: hidden; }
     .cart-items-wrapper { flex: 1; overflow-y: auto; }
     .cart-card-footer { padding-top: 1rem; border-top: 1px solid var(--border-color); }
+    .product-item-card { transition: all 0.15s ease-in-out; cursor: pointer; }
+    .product-item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
 </style>
 
 <div class="create-order-container pt-2">
@@ -112,7 +114,9 @@
                     @foreach (var product in Model.MenuProducts)
                     {
                         <div class="col-xl-6 col-12 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
-                            <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white" style="min-height: 90px; height: auto;">
+                            <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white product-item-card"
+                                 style="min-height: 90px; height: auto;"
+                                 onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>
                                 @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
                                 {
                                     <img src="@product.ImageUrl" alt="@product.ProductName"
@@ -131,7 +135,7 @@
                                 </div>
                                 <div style="flex-shrink: 0;">
                                     <button type="button" class="btn btn-primary btn-sm fw-semibold px-2.5 py-1 shadow-sm"
-                                        onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>Thêm</button>
+                                        onclick='event.stopPropagation(); addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>Thêm</button>
                                 </div>
                             </div>
                         </div>
@@ -202,7 +206,7 @@
 
 <!-- Modal 1: Payment Method Selection -->
 <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 950px;">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom py-3 bg-light">
                 <h4 class="modal-title fw-extrabold text-dark fs-4"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h4>
@@ -226,9 +230,9 @@
                     </table>
                 </div>
 
-                <div class="d-flex align-items-center justify-content-between bg-light-subtle p-3 rounded-3 mb-4 border">
-                    <h5 class="fw-bold mb-0 text-secondary fs-4">TỔNG TIỀN ĐƠN HÀNG:</h5>
-                    <div class="fs-2 fw-bold text-success mb-0" id="reviewTotalAmount">0 đ</div>
+                <div class="d-flex align-items-center justify-content-between bg-light-subtle px-3 py-2.5 rounded-3 mb-4 border">
+                    <span class="fw-semibold text-secondary fs-5 mb-0">Tổng tiền đơn hàng:</span>
+                    <div class="fs-5 fw-bold text-success font-monospace mb-0" id="reviewTotalAmount">0 đ</div>
                 </div>
 
                 <!-- Cash Payment Details Section (Hidden until "Tiền mặt" is clicked) -->
@@ -242,22 +246,22 @@
                     <div class="row g-3 align-items-center mb-3">
                         <div class="col-md-6">
                             <label for="customerCashInput" class="form-label fw-bold text-dark fs-5">Tiền khách đưa (VNĐ): <span class="text-danger">*</span></label>
-                            <input type="number" id="customerCashInput" class="form-control form-control-lg fs-3 fw-bold text-primary py-2" placeholder="Nhập số tiền..." oninput="calculateCashChange()" step="1000" min="0" />
+                            <input type="text" id="customerCashInput" class="form-control form-control-lg fs-4 fw-bold text-primary font-monospace py-2" placeholder="Nhập số tiền..." oninput="onCustomerCashInput(this)" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-dark fs-5">Tiền thừa trả khách:</label>
-                            <div class="form-control form-control-lg fs-3 fw-bold bg-light py-2" id="changeAmountDisplay">0 đ</div>
+                            <div class="form-control form-control-lg fs-4 fw-bold bg-light font-monospace py-2" id="changeAmountDisplay">0 đ</div>
                         </div>
                     </div>
 
                     <!-- Quick Cash Entry Shortcuts -->
                     <div class="d-flex flex-wrap gap-2 align-items-center pt-2">
                         <span class="fs-6 fw-bold text-muted me-2">Gợi ý nhanh:</span>
-                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash('exact')">Vừa đủ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(50000)">50.000đ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(100000)">100.000đ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(200000)">200.000đ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-5 fw-semibold rounded-pill px-3 py-1" onclick="setQuickCash(500000)">500.000đ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash('exact')">Vừa đủ</button>
+                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(50000)">50.000</button>
+                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(100000)">100.000</button>
+                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(200000)">200.000</button>
+                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(500000)">500.000</button>
                     </div>
                 </div>
 
@@ -570,27 +574,42 @@
             $('#changeAmountDisplay').text('0 đ').removeClass('text-danger text-success').addClass('text-dark');
         }
 
+        function getCustomerCashValue() {
+            var valStr = ($('#customerCashInput').val() || '').replace(/\D/g, '');
+            return parseFloat(valStr) || 0;
+        }
+
+        function onCustomerCashInput(el) {
+            var raw = el.value.replace(/\D/g, '');
+            if (raw === '') {
+                el.value = '';
+            } else {
+                var num = parseInt(raw, 10);
+                el.value = num.toLocaleString('vi-VN');
+            }
+            calculateCashChange();
+        }
+
         function selectCashPaymentMode() {
             // Hide transfer button and show cash input section
             $('#btnChooseBankTransfer').addClass('d-none');
             $('#btnChooseCash').addClass('d-none');
             $('#cashPaymentSection').removeClass('d-none');
             $('#btnConfirmCashSubmit').removeClass('d-none');
-            $('#customerCashInput').focus();
+            setTimeout(() => {
+                $('#customerCashInput').focus().select();
+            }, 150);
             calculateCashChange();
         }
 
         function setQuickCash(val) {
-            if (val === 'exact') {
-                $('#customerCashInput').val(currentOrderTotalAmount);
-            } else {
-                $('#customerCashInput').val(val);
-            }
+            var num = (val === 'exact') ? currentOrderTotalAmount : val;
+            $('#customerCashInput').val(num.toLocaleString('vi-VN'));
             calculateCashChange();
         }
 
         function calculateCashChange() {
-            var given = parseFloat($('#customerCashInput').val()) || 0;
+            var given = getCustomerCashValue();
             var change = given - currentOrderTotalAmount;
             var changeEl = $('#changeAmountDisplay');
 
@@ -606,7 +625,7 @@
         }
 
         function confirmCashPaymentSubmit() {
-            var given = parseFloat($('#customerCashInput').val()) || 0;
+            var given = getCustomerCashValue();
             if (given < currentOrderTotalAmount) {
                 var missing = currentOrderTotalAmount - given;
                 showToast('Tiền khách đưa chưa đủ để thanh toán (còn thiếu ' + missing.toLocaleString('vi-VN') + ' đ)!', 'warning');
@@ -663,7 +682,7 @@
             }
 
             var recipient = document.getElementById("recipientName").value.trim();
-            var given = parseFloat($('#customerCashInput').val()) || 0;
+            var given = getCustomerCashValue();
             var change = Math.max(0, given - currentOrderTotalAmount);
 
             var payload = {

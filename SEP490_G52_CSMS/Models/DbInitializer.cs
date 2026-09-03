@@ -921,6 +921,16 @@ namespace SEP490_G52_CSMS.Models
                         ALTER TABLE [orders] ADD [refunded_at] datetime2 NULL;
                     END
 
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'cash_amount')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [cash_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'bank_amount')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [bank_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                    END
+
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('cash_handovers') AND name = 'cash_refund_amount')
                     BEGIN
                         ALTER TABLE [cash_handovers] ADD [cash_refund_amount] decimal(18,2) NOT NULL DEFAULT 0;

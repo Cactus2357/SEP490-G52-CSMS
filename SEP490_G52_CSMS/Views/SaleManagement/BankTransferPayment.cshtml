@@ -43,7 +43,8 @@
                                 <tr>
                                     <th class="ps-4">Tên Sản Phẩm</th>
                                     <th>Size</th>
-                                    <th>Số Lượng</th>
+                                    <th class="text-end">Đơn Giá</th>
+                                    <th class="text-center">Số Lượng</th>
                                     <th class="text-end pe-4">Thành Tiền</th>
                                 </tr>
                             </thead>
@@ -56,11 +57,27 @@
                                         <td>
                                             <span class="badge bg-light text-dark border px-2 py-1">@item.Size</span>
                                         </td>
-                                        <td class="fw-semibold">@item.Quantity</td>
-                                        <td class="text-end pe-4 fw-semibold text-secondary">@itemTotal.ToString("N0") đ</td>
+                                        <td class="text-end fw-medium text-secondary font-monospace">@item.UnitPrice.ToString("N0") đ</td>
+                                        <td class="text-center fw-semibold">@item.Quantity</td>
+                                        <td class="text-end pe-4 fw-semibold text-secondary font-monospace">@itemTotal.ToString("N0") đ</td>
                                     </tr>
                                 }
                             </tbody>
+                            <tfoot class="border-top">
+                                <tr>
+                                    <td colspan="4" class="ps-4 text-secondary fw-semibold">Tạm tính:</td>
+                                    <td class="text-end pe-4 fw-bold text-dark font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
+                                </tr>
+                                <!-- Mục dự phòng cho Chiết khấu / Giảm giá sau này -->
+                                <tr class="d-none" id="discountSummaryRow">
+                                    <td colspan="4" class="ps-4 text-secondary fw-semibold">Chiết khấu / Giảm giá:</td>
+                                    <td class="text-end pe-4 fw-bold text-danger font-monospace" id="discountSummaryValue">-0 đ</td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td colspan="4" class="ps-4 fw-bold fs-5 text-dark">Tổng tiền cần thanh toán:</td>
+                                    <td class="text-end pe-4 fw-bold fs-4 text-success font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -71,14 +88,13 @@
         <div class="col-md-5 ps-4">
             <div class="card border shadow-sm bg-white">
                 <div class="card-body p-4 text-center">
-                    <h6 class="text-uppercase text-secondary fw-bold mb-2">TỔNG TIỀN CẦN THANH TOÁN</h6>
-                    <h2 class="fw-bold text-success mb-3">@Model.TotalAmount.ToString("N0") đ</h2>
-                    
-                    <div class="border rounded d-inline-block p-3 mb-3 bg-light shadow-sm">
+                    <!-- Section QR Code chiếm chiều cao tối đa -->
+                    <div class="d-flex flex-column align-items-center justify-content-center border rounded p-3 mb-3 bg-light shadow-sm" style="min-height: 310px;">
                         <img id="qrCodeImg" 
                              src="@qrUrl" 
                              alt="Mã QR Chuyển khoản Ngân hàng (SePay)" 
-                             style="width: 240px; height: 240px; object-fit: contain; border-radius: 4px;" />
+                             class="img-fluid"
+                             style="max-height: 290px; width: auto; object-fit: contain; border-radius: 6px;" />
                     </div>
 
                     <!-- SePay Bank Transfer Info Card -->
@@ -105,16 +121,109 @@
                         <i class="bi bi-info-circle-fill me-2"></i>Tự động xác nhận qua cổng <strong>SePay</strong> khi tài khoản nhận đủ tiền.
                     </div>
 
+                    <!-- Partial Payment Alert (Hidden by default, shown when customer paid partially) -->
+                    <div id="partialPaymentAlert" class="alert alert-warning border-warning d-none text-start mb-3 p-3 shadow-sm rounded-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-3 me-2"></i>
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark">KHÁCH ĐÃ CHUYỂN KHOẢN 1 PHẦN</h6>
+                                <small class="text-secondary">Chưa nhận đủ tổng giá trị đơn hàng</small>
+                            </div>
+                        </div>
+                        <div class="bg-white p-2 rounded border mb-2 small">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Đã nhận chuyển khoản:</span>
+                                <strong class="text-success" id="partialReceivedBankDisplay">0 đ</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Còn thiếu cần thu:</span>
+                                <strong class="text-danger fs-6" id="partialRemainingDisplay">0 đ</strong>
+                            </div>
+                            <div class="d-flex justify-content-between" id="partialTxCodeRow">
+                                <span class="text-muted">Mã GD SePay:</span>
+                                <strong class="text-dark" id="partialTxCodeDisplay">-</strong>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-warning fw-bold text-dark py-2 shadow-sm" onclick="openCollectRemainingCashModal()">
+                                <i class="bi bi-cash-stack me-1"></i>Thu tiền mặt phần còn thiếu (<span id="btnRemainingAmountText">0 đ</span>)
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-success fw-bold py-2.5 shadow-sm" onclick="confirmManualBankTransfer()">
-                            <i class="bi bi-qr-code-scan me-2"></i>Xác nhận đã nhận chuyển khoản (QR Giấy / Thủ công)
+                            <i class="bi bi-qr-code-scan me-2"></i>Xác nhận đã nhận chuyển khoản
                         </button>
                         
                         <button type="button" class="btn btn-outline-danger fw-semibold py-2 mt-1" onclick="cancelPayment()">
-                            <i class="bi bi-x-circle me-2"></i>Hủy giao dịch / Quay lại
+                            <i class="bi bi-x-circle me-2"></i>Hủy giao dịch
+                        </button>
+
+                        <button type="button" class="visually-hidden-focusable btn btn-sm btn-outline-warning mt-1" onclick="simulatePartialTransferTest()" title="Dành cho kiểm thử / demo">
+                            <i class="bi bi-lightning-charge me-1"></i>[Test] Giả lập khách chuyển khoản 1 phần (50%)
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thu tiền mặt phần còn thiếu (Split Payment) -->
+<div class="modal fade" id="collectRemainingCashModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 720px;">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-cash-coin me-2"></i>Tiền Mặt Còn Thiếu
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-light border mb-3">
+                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                        <span class="text-muted">Tổng giá trị đơn hàng:</span>
+                        <strong class="text-dark font-monospace text-end">@Model.TotalAmount.ToString("N0") đ</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                        <span class="text-muted">Đã nhận chuyển khoản:</span>
+                        <strong class="text-success font-monospace text-end" id="modalReceivedBank">0 đ</strong>
+                    </div>
+                    <hr class="my-1" />
+                    <div class="d-flex justify-content-between align-items-baseline fs-5">
+                        <span class="fw-bold text-danger">Tiền mặt cần thu:</span>
+                        <strong class="fw-bold text-danger font-monospace text-end" id="modalRemainingCash">0 đ</strong>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tiền khách đưa:</label>
+                    <div class="input-group input-group-lg">
+                        <input type="text" id="splitCustomerCashInput" class="form-control fw-bold text-primary font-monospace" placeholder="0" oninput="onSplitCustomerCashInput(this)" />
+                        <span class="input-group-text">đ</span>
+                    </div>
+                    <div class="d-flex gap-1 mt-2 flex-wrap" id="quickCashButtons">
+                        <!-- Fast cash buttons generated dynamically -->
+                    </div>
+                </div>
+
+                <div class="bg-light p-3 rounded border text-start mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-secondary">Tiền thối lại cho khách:</span>
+                        <span class="fs-4 fw-bold text-success font-monospace text-end" id="splitChangeAmountDisplay">0 đ</span>
+                    </div>
+                </div>
+
+                <div id="splitCashError" class="alert alert-danger py-2 small d-none">
+                    <i class="bi bi-exclamation-circle me-1"></i>Tiền khách đưa chưa đủ số tiền cần thu!
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary px-4 fw-bold" id="btnSubmitSplitPayment" onclick="confirmAndSubmitSplitPayment()">
+                    <i class="bi bi-check2-circle me-1"></i>Xác nhận
+                </button>
             </div>
         </div>
     </div>
@@ -151,12 +260,26 @@
 
 @section Scripts {
     <script>
+        // Hàm định dạng số tiền chuẩn VNĐ (vd: 12500 -> "12.500")
+        function formatCurrency(amount) {
+            if (amount === null || amount === undefined || isNaN(amount)) return '0';
+            return new Intl.NumberFormat('vi-VN').format(Math.round(amount));
+        }
+
+        // Hàm định dạng số tiền kèm ký hiệu đ (vd: 12500 -> "12.500 đ")
+        function formatMoney(amount) {
+            return formatCurrency(amount) + ' đ';
+        }
+
         var orderId = '@Model.OrderId';
         var totalAmount = @Model.TotalAmount;
         var recipientName = '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.RecipientName))';
         var orderItems = @Html.Raw(itemsJson);
         var qrCodeUrl = document.getElementById('qrCodeImg').src;
         var currentBankTxCode = '';
+
+        var currentBankAmount = 0;
+        var currentRemainingAmount = totalAmount;
 
         // Sync order details and QR code with Customer Monitor immediately on load
         try {
@@ -177,15 +300,21 @@
             fetch('@Url.Action("CheckPaymentStatus", "SaleManagement")?orderId=' + orderId)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success && data.paymentStatus === 'TransferSuccessPending') {
+                    if (!data.success) return;
+
+                    if (data.paymentStatus === 'TransferSuccessPending') {
                         clearInterval(pollInterval);
                         
                         var recAmount = data.receivedAmount || totalAmount;
-                        var formattedAmount = new Intl.NumberFormat('vi-VN').format(recAmount) + ' đ';
+                        var formattedAmount = formatMoney(recAmount);
                         document.getElementById('receivedAmountDisplay').innerText = formattedAmount;
 
                         currentBankTxCode = data.bankTransactionCode || ('MBB-' + Date.now().toString().slice(-6));
                         document.getElementById('bankTxCodeDisplay').innerText = currentBankTxCode;
+
+                        // Hide partial payment alert if previously shown
+                        var partialEl = document.getElementById('partialPaymentAlert');
+                        if (partialEl) partialEl.classList.add('d-none');
 
                         // Sync paid status and received amount to Customer Monitor
                         localStorage.setItem('customer_display_state', JSON.stringify({
@@ -198,15 +327,216 @@
                         // Show cashier modal
                         var successModal = new bootstrap.Modal(document.getElementById('transferSuccessModal'));
                         successModal.show();
+                    } else if (data.paymentStatus === 'PartiallyPaid') {
+                        currentBankAmount = data.bankAmount || 0;
+                        currentRemainingAmount = data.remainingAmount || Math.max(0, totalAmount - currentBankAmount);
+                        currentBankTxCode = data.bankTransactionCode || '';
+
+                        // Show Partial Payment Alert
+                        var alertEl = document.getElementById('partialPaymentAlert');
+                        if (alertEl) {
+                            alertEl.classList.remove('d-none');
+                            document.getElementById('partialReceivedBankDisplay').innerText = formatMoney(currentBankAmount);
+                            document.getElementById('partialRemainingDisplay').innerText = formatMoney(currentRemainingAmount);
+                            document.getElementById('btnRemainingAmountText').innerText = formatMoney(currentRemainingAmount);
+                            if (currentBankTxCode) {
+                                document.getElementById('partialTxCodeDisplay').innerText = currentBankTxCode;
+                            }
+                        }
+
+                        // Update dynamic QR Code image for the remaining amount
+                        if (currentRemainingAmount > 0) {
+                            var newQrUrl = 'https://qr.sepay.vn/img?acc=@accountNumber&bank=@bankCode&amount=' + Math.round(currentRemainingAmount) + '&des=' + encodeURIComponent('@transferContent');
+                            document.getElementById('qrCodeImg').src = newQrUrl;
+                        }
+
+                        // Sync remaining amount to Customer Monitor
+                        try {
+                            localStorage.setItem('customer_display_state', JSON.stringify({
+                                mode: 'BankTransfer',
+                                orderId: orderId,
+                                recipientName: recipientName,
+                                total: currentRemainingAmount,
+                                items: orderItems,
+                                qrCodeUrl: document.getElementById('qrCodeImg').src,
+                                note: 'Đã nhận CK: ' + formatMoney(currentBankAmount)
+                            }));
+                        } catch(e) {}
                     }
                 })
                 .catch(err => console.error("Error polling payment status:", err));
         }, 2000);
 
+        // Auto focus input when modal is shown
+        document.addEventListener('DOMContentLoaded', function() {
+            var splitModalEl = document.getElementById('collectRemainingCashModal');
+            if (splitModalEl) {
+                splitModalEl.addEventListener('shown.bs.modal', function () {
+                    var inp = document.getElementById('splitCustomerCashInput');
+                    if (inp) {
+                        inp.focus();
+                        inp.select();
+                    }
+                });
+            }
+        });
+
+        function getSplitCustomerCashValue() {
+            var valStr = (document.getElementById('splitCustomerCashInput').value || '').replace(/\D/g, '');
+            return parseFloat(valStr) || 0;
+        }
+
+        function onSplitCustomerCashInput(el) {
+            var raw = el.value.replace(/\D/g, '');
+            if (raw === '') {
+                el.value = '';
+            } else {
+                var num = parseInt(raw, 10);
+                el.value = formatCurrency(num);
+            }
+            calculateSplitChange();
+        }
+
+        function openCollectRemainingCashModal() {
+            document.getElementById('modalReceivedBank').innerText = formatMoney(currentBankAmount);
+            document.getElementById('modalRemainingCash').innerText = formatMoney(currentRemainingAmount);
+
+            var cashInput = document.getElementById('splitCustomerCashInput');
+            cashInput.value = formatCurrency(currentRemainingAmount);
+
+            // Generate quick cash buttons (bỏ dấu đ)
+            var quickContainer = document.getElementById('quickCashButtons');
+            quickContainer.innerHTML = '';
+            var suggestions = [currentRemainingAmount];
+            [20000, 50000, 100000, 200000, 500000].forEach(val => {
+                if (val > currentRemainingAmount && !suggestions.includes(val)) suggestions.push(val);
+            });
+            suggestions.sort((a, b) => a - b).forEach(val => {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-sm btn-outline-secondary font-monospace';
+                btn.innerText = formatCurrency(val);
+                btn.onclick = function() {
+                    cashInput.value = formatCurrency(val);
+                    calculateSplitChange();
+                };
+                quickContainer.appendChild(btn);
+            });
+
+            calculateSplitChange();
+            var m = new bootstrap.Modal(document.getElementById('collectRemainingCashModal'));
+            m.show();
+        }
+
+        function calculateSplitChange() {
+            var cash = getSplitCustomerCashValue();
+            var change = Math.max(0, cash - currentRemainingAmount);
+            document.getElementById('splitChangeAmountDisplay').innerText = formatMoney(change);
+
+            var errEl = document.getElementById('splitCashError');
+            var btnSubmit = document.getElementById('btnSubmitSplitPayment');
+            if (cash < currentRemainingAmount) {
+                errEl.classList.remove('d-none');
+                btnSubmit.disabled = true;
+            } else {
+                errEl.classList.add('d-none');
+                btnSubmit.disabled = false;
+            }
+        }
+
+        function confirmAndSubmitSplitPayment() {
+            var cash = getSplitCustomerCashValue();
+            if (cash < currentRemainingAmount) {
+                showToast("Tiền khách đưa chưa đủ!", "danger");
+                return;
+            }
+
+            showConfirmModal(
+                'Xác nhận thu tiền mặt',
+                'Xác nhận đã thu ' + formatMoney(currentRemainingAmount) + ' tiền mặt từ khách hàng và hoàn tất đơn hàng?',
+                function() {
+                    submitSplitPayment();
+                },
+                'Xác nhận',
+                'Hủy'
+            );
+        }
+
+        function submitSplitPayment() {
+            var cash = getSplitCustomerCashValue();
+            if (cash < currentRemainingAmount) {
+                showToast("Tiền khách đưa chưa đủ!", "danger");
+                return;
+            }
+            var change = Math.max(0, cash - currentRemainingAmount);
+
+            var payload = {
+                orderId: orderId,
+                cashAmount: currentRemainingAmount,
+                bankAmount: currentBankAmount,
+                customerCash: cash,
+                changeAmount: change,
+                bankTransactionCode: currentBankTxCode
+            };
+
+            fetch('@Url.Action("CompleteSplitPayment", "SaleManagement")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    clearInterval(pollInterval);
+                    var m = bootstrap.Modal.getInstance(document.getElementById('collectRemainingCashModal'));
+                    if (m) m.hide();
+
+                    showToast("Thanh toán kết hợp thành công! Đã chuyển đơn hàng sang Pha chế.", "success");
+                    localStorage.removeItem('csms_cart');
+
+                    // Reset Customer Monitor
+                    try {
+                        localStorage.setItem('customer_display_state', JSON.stringify({
+                            mode: 'PaidSuccess',
+                            orderId: orderId,
+                            receivedAmount: formatMoney(totalAmount),
+                            bankTransactionCode: currentBankTxCode
+                        }));
+                    } catch(e) {}
+
+                    setTimeout(() => {
+                        window.location.href = '@Url.Action("CreateOrder", "SaleManagement")';
+                    }, 1000);
+                } else {
+                    showToast("Lỗi: " + data.message, "danger");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Lỗi kết nối máy chủ.", "danger");
+            });
+        }
+
+        function simulatePartialTransferTest() {
+            var partialAmount = Math.round(totalAmount / 2);
+            fetch('@Url.Action("SimulatePartialTransfer", "SaleManagement")?orderId=' + orderId + '&amount=' + partialAmount, {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast("Đã giả lập nhận chuyển khoản 1 phần: " + formatMoney(partialAmount), "info");
+                } else {
+                    showToast("Lỗi: " + data.message, "danger");
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
         function confirmManualBankTransfer() {
             showConfirmModal(
                 'Xác nhận đã nhận tiền chuyển khoản',
-                'Xác nhận khách hàng đã chuyển khoản thành công qua <strong>QR Giấy / Ngân hàng</strong> (trường hợp SePay bị chậm hoặc chuyển thủ công)?',
+                'Xác nhận khách hàng đã chuyển khoản thành công (trường hợp SePay bị chậm hoặc chuyển thủ công)?',
                 function() {
                     fetch('@Url.Action("SimulateBankTransferSuccess", "SaleManagement")?orderId=' + orderId, {
                         method: 'POST'
@@ -228,6 +558,11 @@
         }
 
         function cancelPayment() {
+            if (currentBankAmount > 0) {
+                showToast("Đơn hàng đã nhận " + formatMoney(currentBankAmount) + " chuyển khoản từ khách. Vui lòng thu nốt tiền mặt hoặc thực hiện hoàn tiền!", "warning");
+                return;
+            }
+
             showConfirmModal(
                 'Hủy giao dịch',
                 'Xác nhận hủy giao dịch chuyển khoản này và quay lại màn hình chọn phương thức thanh toán?',

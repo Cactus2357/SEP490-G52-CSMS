@@ -398,8 +398,8 @@ namespace SEP490_G52_CSMS.Controllers
             var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
-            decimal receivedAmount = order.TotalAmount;
-            if (!string.IsNullOrEmpty(order.PaymentMethod) && order.PaymentMethod.Contains("Đã nhận:"))
+            decimal receivedBankAmount = order.BankAmount;
+            if (receivedBankAmount == 0 && !string.IsNullOrEmpty(order.PaymentMethod) && order.PaymentMethod.Contains("Đã nhận:"))
             {
                 var match = Regex.Match(order.PaymentMethod, @"Đã nhận:([\d\.,]+)đ?");
                 if (match.Success)
@@ -407,17 +407,100 @@ namespace SEP490_G52_CSMS.Controllers
                     string numStr = match.Groups[1].Value.Replace(".", "").Replace(",", "");
                     if (decimal.TryParse(numStr, out decimal parsed))
                     {
-                        receivedAmount = parsed;
+                        receivedBankAmount = parsed;
                     }
                 }
             }
 
+            decimal remainingAmount = Math.Max(0, order.TotalAmount - receivedBankAmount);
+
             return Json(new { 
                 success = true, 
                 paymentStatus = order.PaymentStatus,
-                receivedAmount = receivedAmount,
+                totalAmount = order.TotalAmount,
+                receivedAmount = receivedBankAmount > 0 ? receivedBankAmount : order.TotalAmount,
+                bankAmount = receivedBankAmount,
+                remainingAmount = remainingAmount,
                 bankTransactionCode = order.BankTransactionCode
             });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CompleteSplitPayment([FromBody] SplitPaymentSubmissionModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.OrderId))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu thanh toán không hợp lệ." });
+            }
+
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = message });
+            }
+
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == model.OrderId);
+            if (order == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy đơn hàng." });
+            }
+
+            if (order.PaymentStatus == "Paid" || order.PaymentStatus == "Completed")
+            {
+                return BadRequest(new { success = false, message = "Đơn hàng này đã được thanh toán hoàn tất." });
+            }
+
+            decimal bankAmount = model.BankAmount > 0 ? model.BankAmount : order.BankAmount;
+            decimal cashAmount = model.CashAmount > 0 ? model.CashAmount : Math.Max(0, order.TotalAmount - bankAmount);
+
+            bool result = await _orderService.ProcessSplitPaymentAsync(
+                model.OrderId,
+                cashAmount,
+                bankAmount,
+                model.CustomerCash,
+                model.ChangeAmount,
+                model.BankTransactionCode ?? order.BankTransactionCode
+            );
+
+            if (result)
+            {
+                return Json(new { 
+                    success = true, 
+                    orderId = order.OrderId,
+                    cashAmount = cashAmount,
+                    bankAmount = bankAmount,
+                    message = "Thanh toán kết hợp thành công!" 
+                });
+            }
+
+            return BadRequest(new { success = false, message = "Không thể xử lý thanh toán kết hợp." });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SimulatePartialTransfer(string orderId, decimal amount)
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            if (order == null) return NotFound(new { success = false, message = "Order not found" });
+
+            string txCode = "MBB-" + DateTime.Now.ToString("HHmmss");
+            order.BankAmount += amount;
+            order.BankTransactionCode = txCode;
+
+            if (order.BankAmount >= (order.TotalAmount - 1))
+            {
+                order.PaymentStatus = "TransferSuccessPending";
+                order.PaymentMethod = $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{order.BankAmount:N0}đ)";
+            }
+            else
+            {
+                order.PaymentStatus = "PartiallyPaid";
+                order.PaymentMethod = $"Bank Transfer 1 phần (Xác nhận thủ công #{txCode} - Đã nhận:{order.BankAmount:N0}đ)";
+            }
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, bankAmount = order.BankAmount, remainingAmount = Math.Max(0, order.TotalAmount - order.BankAmount) });
         }
 
         [HttpPost]
@@ -426,11 +509,19 @@ namespace SEP490_G52_CSMS.Controllers
             if (!string.IsNullOrEmpty(orderId))
             {
                 var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.OrderId == orderId);
-                if (order != null && (order.PaymentStatus == "Unpaid" || order.PaymentStatus == "Cancelled"))
+                if (order != null)
                 {
-                    _context.OrderItems.RemoveRange(order.OrderItems);
-                    _context.Orders.Remove(order);
-                    await _context.SaveChangesAsync();
+                    if (order.PaymentStatus == "PartiallyPaid" || order.BankAmount > 0)
+                    {
+                        return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.BankAmount:N0}đ chuyển khoản từ khách hàng. Không thể hủy đơn trực tiếp mà phải xử lý thu nốt hoặc hoàn tiền!" });
+                    }
+
+                    if (order.PaymentStatus == "Unpaid" || order.PaymentStatus == "Cancelled")
+                    {
+                        _context.OrderItems.RemoveRange(order.OrderItems);
+                        _context.Orders.Remove(order);
+                        await _context.SaveChangesAsync();
+                    }
                 }
             }
             return Json(new { success = true });
@@ -549,6 +640,16 @@ namespace SEP490_G52_CSMS.Controllers
     {
         public decimal CustomerCash { get; set; }
         public decimal ChangeAmount { get; set; }
+    }
+
+    public class SplitPaymentSubmissionModel
+    {
+        public string OrderId { get; set; } = string.Empty;
+        public decimal CashAmount { get; set; }
+        public decimal BankAmount { get; set; }
+        public decimal? CustomerCash { get; set; }
+        public decimal? ChangeAmount { get; set; }
+        public string? BankTransactionCode { get; set; }
     }
 
     public class OrderItemSubmission

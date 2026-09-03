@@ -204,9 +204,9 @@ namespace SEP490_G52_CSMS.Controllers
 
             Order? order = null;
 
-            // 1. Direct match: Check if textToSearch contains any active unpaid order's OrderId
+            // 1. Direct match: Check if textToSearch contains any active unpaid or partially paid order's OrderId
             var unpaidOrders = await _context.Orders
-                .Where(o => o.PaymentStatus == "Unpaid")
+                .Where(o => o.PaymentStatus == "Unpaid" || o.PaymentStatus == "PartiallyPaid")
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(50)
                 .ToListAsync();
@@ -253,7 +253,10 @@ namespace SEP490_G52_CSMS.Controllers
                 paymentDetail = paymentDetail.Substring(0, 200);
             }
 
-            if (receivedAmount >= (order.TotalAmount - 1))
+            order.BankAmount += receivedAmount;
+            order.BankTransactionCode = refCode;
+
+            if (order.BankAmount >= (order.TotalAmount - 1))
             {
                 order.PaymentStatus = "TransferSuccessPending";
                 order.PaymentMethod = paymentDetail;
@@ -263,7 +266,11 @@ namespace SEP490_G52_CSMS.Controllers
             }
             else
             {
-                return Json(new { success = false, message = $"Transfer amount {receivedAmount:N0}đ is less than required total {order.TotalAmount:N0}đ" });
+                order.PaymentStatus = "PartiallyPaid";
+                order.PaymentMethod = $"CK SePay 1 phần ({refCode}) - Đã nhận:{order.BankAmount:N0}đ";
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, isPartial = true, message = $"Partial transfer of {receivedAmount:N0}đ recorded. Total received: {order.BankAmount:N0}đ, Remaining: {(order.TotalAmount - order.BankAmount):N0}đ" });
             }
         }
     }

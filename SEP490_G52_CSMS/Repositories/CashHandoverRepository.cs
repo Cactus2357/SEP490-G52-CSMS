@@ -374,12 +374,14 @@ namespace SEP490_G52_CSMS.Repositories
                 .ToList();
 
             decimal cashRevenue = completedOrders
-                .Where(o => !string.IsNullOrEmpty(o.PaymentMethod) && o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase))
-                .Sum(o => o.TotalAmount);
+                .Sum(o => o.CashAmount > 0 
+                    ? o.CashAmount 
+                    : (!string.IsNullOrEmpty(o.PaymentMethod) && o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase) ? o.TotalAmount : 0));
 
             decimal bankRevenue = completedOrders
-                .Where(o => !string.IsNullOrEmpty(o.PaymentMethod) && !o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase))
-                .Sum(o => o.TotalAmount);
+                .Sum(o => o.BankAmount > 0 
+                    ? o.BankAmount 
+                    : (!string.IsNullOrEmpty(o.PaymentMethod) && !o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase) ? o.TotalAmount : 0));
 
             decimal cashRefunds = orders
                 .Where(o => o.RefundAmount > 0 && (string.IsNullOrEmpty(o.RefundMethod) || o.RefundMethod.Equals("Cash", StringComparison.OrdinalIgnoreCase)))

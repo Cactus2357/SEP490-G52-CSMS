@@ -99,8 +99,8 @@ namespace SEP490_G52_CSMS.Controllers
             foreach (var b in branches)
             {
                 var bOrders = allMonthOrders.Where(o => o.BranchId == b.BranchId).ToList();
-                var cashRevenue = bOrders.Where(o => o.PaymentMethod == "Cash").Sum(o => o.TotalAmount);
-                var transferRevenue = bOrders.Where(o => o.PaymentMethod != "Cash").Sum(o => o.TotalAmount);
+                var cashRevenue = bOrders.Sum(o => o.CashAmount > 0 ? o.CashAmount : (o.PaymentMethod == "Cash" ? o.TotalAmount : 0));
+                var transferRevenue = bOrders.Sum(o => o.BankAmount > 0 ? o.BankAmount : (o.PaymentMethod != "Cash" ? o.TotalAmount : 0));
 
                 vm.TableData.Add(new RevenueGridRow
                 {

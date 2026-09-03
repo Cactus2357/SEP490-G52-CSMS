@@ -59,11 +59,57 @@ namespace SEP490_G52_CSMS.Services
             {
                 decimal change = changeAmount ?? Math.Max(0, customerCash.Value - order.TotalAmount);
                 order.PaymentMethod = $"Cash (Đưa:{customerCash.Value:N0}đ - Thừa:{change:N0}đ)";
+                order.CashAmount = order.TotalAmount;
+                order.BankAmount = 0;
+            }
+            else if (paymentMethod == "Cash")
+            {
+                order.PaymentMethod = paymentMethod;
+                order.CashAmount = order.TotalAmount;
+                order.BankAmount = 0;
             }
             else
             {
                 order.PaymentMethod = paymentMethod;
+                order.CashAmount = 0;
+                order.BankAmount = order.TotalAmount;
             }
+
+            if (!string.IsNullOrEmpty(bankTransactionCode))
+            {
+                order.BankTransactionCode = bankTransactionCode;
+            }
+
+            order.PaymentStatus = "Paid";
+            order.BrewingStatus = "Waiting for Brewing";
+
+            await _orderRepo.UpdateOrderAsync(order);
+
+            // [BR-Inventory] Tự động trừ tồn kho theo Recipe ngay khi thanh toán thành công
+            if (order.OrderItems != null && order.OrderItems.Any())
+            {
+                await DeductInventoryForItemsAsync(order.BranchId, order.OrderItems.Select(oi => (oi.VariantId, oi.Quantity)));
+            }
+
+            return true;
+        }
+
+        public async Task<bool> ProcessSplitPaymentAsync(string orderId, decimal cashAmount, decimal bankAmount, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null)
+        {
+            var order = await _orderRepo.GetOrderByIdAsync(orderId);
+            if (order == null || order.PaymentStatus == "Paid") return false;
+
+            order.CashAmount = cashAmount;
+            order.BankAmount = bankAmount;
+
+            string cashDetail = "";
+            if (customerCash.HasValue && customerCash > 0)
+            {
+                decimal change = changeAmount ?? Math.Max(0, customerCash.Value - cashAmount);
+                cashDetail = $" (Đưa:{customerCash.Value:N0}đ - Thừa:{change:N0}đ)";
+            }
+
+            order.PaymentMethod = $"Split (CK:{bankAmount:N0}đ + TM:{cashAmount:N0}đ{cashDetail})";
 
             if (!string.IsNullOrEmpty(bankTransactionCode))
             {
