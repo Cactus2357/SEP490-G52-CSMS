@@ -226,7 +226,18 @@ namespace SEP490_G52_CSMS.Controllers
                 UnitPrice = i.UnitPrice
             }).ToList();
 
-            var order = await _orderService.CreateOrderAsync(recipient, branchId, cashierId, orderItems);
+            var order = await _orderService.CreateOrderAsync(
+                recipient, 
+                branchId, 
+                cashierId, 
+                orderItems,
+                model.TableNumber,
+                model.CustomerName,
+                model.SubtotalAmount,
+                model.DiscountAmount,
+                model.TradeDiscountAmount,
+                model.OrderNotes);
+
             if (order == null || string.IsNullOrEmpty(order.OrderId))
             {
                 return BadRequest(new { success = false, message = "Không thể khởi tạo đơn hàng." });
@@ -267,7 +278,18 @@ namespace SEP490_G52_CSMS.Controllers
                 UnitPrice = i.UnitPrice
             }).ToList();
 
-            var order = await _orderService.CreateOrderAsync(recipient, branchId, cashierId, orderItems);
+            var order = await _orderService.CreateOrderAsync(
+                recipient, 
+                branchId, 
+                cashierId, 
+                orderItems,
+                model.TableNumber,
+                model.CustomerName,
+                model.SubtotalAmount,
+                model.DiscountAmount,
+                model.TradeDiscountAmount,
+                model.OrderNotes);
+
             if (order == null || string.IsNullOrEmpty(order.OrderId))
             {
                 return BadRequest(new { success = false, message = "Không thể khởi tạo đơn hàng." });
@@ -278,6 +300,47 @@ namespace SEP490_G52_CSMS.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, orderId = order.OrderId });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetReceiptData(string orderId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                return BadRequest(new { success = false, message = "Mã đơn hàng không hợp lệ." });
+            }
+
+            var detail = await _orderService.GetOrderDetailsAsync(orderId.Trim());
+            if (detail == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy đơn hàng." });
+            }
+
+            return Json(new
+            {
+                success = true,
+                orderId = detail.OrderId,
+                branchName = detail.BranchName,
+                branchAddress = detail.BranchAddress,
+                branchPhone = detail.BranchPhone,
+                cashierName = detail.CashierName,
+                orderTime = detail.OrderTime.ToString("dd/MM/yyyy HH:mm"),
+                tableNumber = detail.TableNumber,
+                customerName = detail.CustomerName,
+                orderNotes = detail.OrderNotes,
+                items = detail.Items.Select(i => new
+                {
+                    productName = i.ProductName,
+                    size = i.Size,
+                    quantity = i.Quantity,
+                    unitPrice = i.UnitPrice,
+                    amount = i.Amount
+                }),
+                subtotalAmount = detail.SubtotalAmount,
+                discountAmount = detail.DiscountAmount,
+                tradeDiscountAmount = detail.TradeDiscountAmount,
+                totalAmount = detail.TotalAmount
+            });
         }
 
         [HttpPost]
@@ -632,6 +695,12 @@ namespace SEP490_G52_CSMS.Controllers
     public class OrderSubmissionModel
     {
         public string RecipientName { get; set; } = "";
+        public string? TableNumber { get; set; }
+        public string? CustomerName { get; set; }
+        public decimal? SubtotalAmount { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public decimal? TradeDiscountAmount { get; set; }
+        public string? OrderNotes { get; set; }
         public string? IdempotencyKey { get; set; }
         public List<OrderItemSubmission> Items { get; set; } = new List<OrderItemSubmission>();
     }

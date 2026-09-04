@@ -17,6 +17,38 @@
     .cart-card-footer { padding-top: 1rem; border-top: 1px solid var(--border-color); }
     .product-item-card { transition: all 0.15s ease-in-out; cursor: pointer; }
     .product-item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+    .cart-item-row { transition: background-color 0.15s ease-in-out; }
+    .cart-item-row:hover { background-color: rgba(var(--bs-primary-rgb), 0.08) !important; }
+    .cart-item-row td { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
+
+    @@media print {
+        body * {
+            visibility: hidden !important;
+        }
+        #k80ReceiptContainer, #k80ReceiptContainer * {
+            visibility: visible !important;
+        }
+        #k80ReceiptContainer {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 76mm !important;
+            margin: 0 !important;
+            padding: 2mm 3mm !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #fff !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+            color: #000 !important;
+            z-index: 999999 !important;
+        }
+        @@page {
+            size: 80mm auto;
+            margin: 0;
+        }
+    }
 </style>
 
 <div class="create-order-container pt-2">
@@ -158,7 +190,7 @@
                 </div>
                 <div class="cart-card-body">
                     <div class="cart-items-wrapper">
-                        <table class="table align-middle" id="cartTable">
+                        <table class="table table-hover align-middle mb-0 cart-table-hover" id="cartTable">
                             <thead>
                                 <tr class="border-bottom text-muted small">
                                     <th>Tên</th>
@@ -174,14 +206,54 @@
                     </div>
 
                     <div class="cart-card-footer">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-semibold mb-0 text-secondary">Tổng tiền:</h5>
-                            <h3 class="fw-bold text-success mb-0" id="totalAmount">0 đ</h3>
+                        <!-- Vị trí / Bàn -->
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Vị trí / Bàn:</label>
+                            <input type="text" id="orderTableNumber" class="form-control form-control-sm fw-semibold" placeholder="Mang về" oninput="updateRecipientNameCombined()">
                         </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold text-secondary small">Người nhận:</label>
-                            <input type="text" id="recipientName" class="form-control" placeholder="Nhập tên người nhận (Tùy chọn)...">
+
+                        <!-- Khách hàng & Ghi chú -->
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold text-secondary small mb-1">Khách hàng:</label>
+                                <input type="text" id="orderCustomerName" class="form-control form-control-sm" placeholder="Khách lẻ" oninput="updateRecipientNameCombined()">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold text-secondary small mb-1">Ghi chú:</label>
+                                <input type="text" id="orderNotesInput" class="form-control form-control-sm" placeholder="Ít đá, mang bánh trước...">
+                            </div>
                         </div>
+
+                        <!-- Hidden recipientName for backwards compatibility -->
+                        <input type="hidden" id="recipientName" value="Mang về - Khách lẻ">
+
+                        <!-- Bảng tài chính: Tạm tính, Giảm giá, Chiết khấu, TỔNG CỘNG -->
+                        <div class="bg-light p-2 rounded border mb-2" style="font-size: 0.88rem;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-secondary">Tạm tính:</span>
+                                <span class="fw-semibold text-dark font-monospace" id="cartSubtotalAmount">0 đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-secondary">Giảm giá (VNĐ):</span>
+                                <input type="text" id="cartDiscountInput" class="form-control form-control-sm text-end font-monospace py-0 px-2" style="width: 115px; height: 26px;" placeholder="0" oninput="onDiscountOrTradeDiscountChange(this)">
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-secondary">Chiết khấu (VNĐ):</span>
+                                <input type="text" id="cartTradeDiscountInput" class="form-control form-control-sm text-end font-monospace py-0 px-2" style="width: 115px; height: 26px;" placeholder="0" oninput="onDiscountOrTradeDiscountChange(this)">
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-1 border-top">
+                                <strong class="text-dark">TỔNG CỘNG:</strong>
+                                <strong class="text-success fs-5 font-monospace" id="totalAmount">0 đ</strong>
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="autoPrintReceiptCheck" checked>
+                            <label class="form-check-label small text-secondary fw-semibold" for="autoPrintReceiptCheck">
+                                <i class="bi bi-printer me-1"></i>Tự động in hóa đơn sau thanh toán
+                            </label>
+                        </div>
+
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-outline-secondary w-50 fw-semibold" onclick="cancelOrder()">Hủy</button>
                             @if (ViewBag.NotInShift == true)
@@ -206,79 +278,182 @@
 
 <!-- Modal 1: Payment Method Selection -->
 <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 950px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl" style="max-width: 950px;">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom py-3 bg-light">
-                <h4 class="modal-title fw-extrabold text-dark fs-4"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h4>
+            <div class="modal-header border-bottom py-2 bg-light">
+                <h5 class="modal-title fw-bold text-dark mb-0"><i class="bi bi-credit-card me-2 text-primary"></i>Xác nhận phương thức thanh toán</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="table-responsive mb-3" style="max-height: 280px; overflow-y: auto;">
+            <div class="modal-body p-3">
+                <div class="table-responsive mb-3 border rounded" style="max-height: 240px; overflow-y: auto;">
                     <table class="table table-hover align-middle mb-0" id="reviewCartTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="fs-5 fw-bold">Tên sản phẩm</th>
-                                <th class="fs-5 fw-bold">Size</th>
-                                <th class="text-center fs-5 fw-bold">Số lượng</th>
-                                <th class="text-end fs-5 fw-bold">Đơn giá</th>
-                                <th class="text-end pe-3 fs-5 fw-bold">Thành tiền</th>
+                                <th class="ps-4">Tên Sản Phẩm</th>
+                                <th>Size</th>
+                                <th class="text-end">Đơn Giá</th>
+                                <th class="text-center">Số Lượng</th>
+                                <th class="text-end pe-4">Thành Tiền</th>
                             </tr>
                         </thead>
-                        <tbody id="reviewCartBody" class="fs-5">
+                        <tbody id="reviewCartBody">
                             <!-- Filled by JS -->
                         </tbody>
                     </table>
                 </div>
 
-                <div class="d-flex align-items-center justify-content-between bg-light-subtle px-3 py-2.5 rounded-3 mb-4 border">
-                    <span class="fw-semibold text-secondary fs-5 mb-0">Tổng tiền đơn hàng:</span>
-                    <div class="fs-5 fw-bold text-success font-monospace mb-0" id="reviewTotalAmount">0 đ</div>
+                <!-- Financial Summary in Review Modal with generous padding-inline -->
+                <div class="bg-light px-4 py-3 rounded border mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1.5">
+                        <span class="text-secondary fw-semibold">Tạm tính:</span>
+                        <span class="fw-semibold text-dark font-monospace" id="reviewSubtotalAmount">0 đ</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1.5 d-none text-danger" id="reviewDiscountRow">
+                        <span class="fw-semibold">Giảm giá:</span>
+                        <span class="fw-bold font-monospace" id="reviewDiscountAmount">-0 đ</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1.5 d-none text-danger" id="reviewTradeDiscountRow">
+                        <span class="fw-semibold">Chiết khấu:</span>
+                        <span class="fw-bold font-monospace" id="reviewTradeDiscountAmount">-0 đ</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                        <strong class="text-dark">TỔNG TIỀN ĐƠN HÀNG:</strong>
+                        <strong class="fs-5 fw-bold text-success font-monospace mb-0" id="reviewTotalAmount">0 đ</strong>
+                    </div>
                 </div>
 
                 <!-- Cash Payment Details Section (Hidden until "Tiền mặt" is clicked) -->
-                <div id="cashPaymentSection" class="d-none border border-primary border-2 rounded-3 p-4 bg-white mb-4 shadow-sm">
-                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                        <h5 class="fw-bold text-primary mb-0 fs-4"><i class="bi bi-cash-stack me-2"></i>Chi tiết thanh toán tiền mặt</h5>
-                        <button type="button" class="btn btn-outline-primary btn-sm fs-6 fw-bold px-3" id="btnShowTransferAgain" onclick="resetCashPaymentMode()">
+                <div id="cashPaymentSection" class="d-none border border-primary rounded p-3 bg-white mb-3 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                        <h6 class="fw-bold text-primary mb-0"><i class="bi bi-cash-stack me-1"></i>Chi tiết thanh toán tiền mặt</h6>
+                        <button type="button" class="btn btn-outline-primary btn-sm fw-semibold py-1 px-2.5" id="btnShowTransferAgain" onclick="resetCashPaymentMode()">
                             <i class="bi bi-arrow-left-right me-1"></i>Đổi sang Chuyển khoản
                         </button>
                     </div>
-                    <div class="row g-3 align-items-center mb-3">
+                    <div class="row g-2 align-items-center mb-2">
                         <div class="col-md-6">
-                            <label for="customerCashInput" class="form-label fw-bold text-dark fs-5">Tiền khách đưa (VNĐ): <span class="text-danger">*</span></label>
-                            <input type="text" id="customerCashInput" class="form-control form-control-lg fs-4 fw-bold text-primary font-monospace py-2" placeholder="Nhập số tiền..." oninput="onCustomerCashInput(this)" />
+                            <label for="customerCashInput" class="form-label fw-bold text-dark small mb-1">Tiền khách đưa (VNĐ): <span class="text-danger">*</span></label>
+                            <input type="text" id="customerCashInput" class="form-control fw-bold text-primary font-monospace py-1.5" placeholder="Nhập số tiền..." oninput="onCustomerCashInput(this)" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark fs-5">Tiền thừa trả khách:</label>
-                            <div class="form-control form-control-lg fs-4 fw-bold bg-light font-monospace py-2" id="changeAmountDisplay">0 đ</div>
+                            <label class="form-label fw-bold text-dark small mb-1">Tiền thừa trả khách:</label>
+                            <div class="form-control fw-bold bg-light font-monospace py-1.5" id="changeAmountDisplay">0 đ</div>
                         </div>
                     </div>
 
-                    <!-- Quick Cash Entry Shortcuts -->
-                    <div class="d-flex flex-wrap gap-2 align-items-center pt-2">
-                        <span class="fs-6 fw-bold text-muted me-2">Gợi ý nhanh:</span>
-                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash('exact')">Vừa đủ</button>
-                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(50000)">50.000</button>
-                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(100000)">100.000</button>
-                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(200000)">200.000</button>
-                        <button type="button" class="btn btn-outline-secondary fs-6 fw-semibold rounded-pill px-3 py-1 font-monospace" onclick="setQuickCash(500000)">500.000</button>
+                    <!-- Quick Cash Entry Shortcuts (margin giữa các nút, không round pill) -->
+                    <div class="d-flex flex-wrap gap-2 align-items-center mt-2 mb-1">
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold font-monospace px-3 py-1.5" onclick="setQuickCash('exact')">Vừa đủ</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold font-monospace px-3 py-1.5" onclick="setQuickCash(50000)">50.000</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold font-monospace px-3 py-1.5" onclick="setQuickCash(100000)">100.000</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold font-monospace px-3 py-1.5" onclick="setQuickCash(200000)">200.000</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold font-monospace px-3 py-1.5" onclick="setQuickCash(500000)">500.000</button>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                    <button type="button" class="btn btn-outline-secondary px-4 py-2 fs-5 fw-bold" data-bs-dismiss="modal">Quay lại</button>
+                <!-- Action buttons (bỏ border-top / hr) -->
+                <div class="d-flex justify-content-between align-items-center pt-2">
+                    <button type="button" class="btn btn-outline-secondary px-3.5 py-1.5 fw-semibold" data-bs-dismiss="modal">Quay lại</button>
                     <div class="d-flex gap-2" id="paymentOptionsContainer">
-                        <button type="button" class="btn btn-success px-4 py-2 fs-4 fw-bold shadow-sm" id="btnChooseCash" onclick="selectCashPaymentMode()">
-                            <i class="bi bi-cash me-2"></i>Tiền mặt
+                        <button type="button" class="btn btn-success px-4 py-1.5 fw-bold shadow-sm" id="btnChooseCash" onclick="selectCashPaymentMode()">
+                            <i class="bi bi-cash me-1.5"></i>Tiền mặt
                         </button>
-                        <button type="button" class="btn btn-primary px-4 py-2 fs-4 fw-bold shadow-sm" id="btnChooseBankTransfer" onclick="initiateBankTransfer()">
-                            <i class="bi bi-qr-code-scan me-2"></i>Chuyển khoản
+                        <button type="button" class="btn btn-primary px-4 py-1.5 fw-bold shadow-sm" id="btnChooseBankTransfer" onclick="initiateBankTransfer()">
+                            <i class="bi bi-qr-code-scan me-1.5"></i>Chuyển khoản
                         </button>
-                        <button type="button" class="btn btn-success px-4 py-2 fs-4 fw-bold shadow-sm d-none" id="btnConfirmCashSubmit" onclick="confirmCashPaymentSubmit()">
-                            <i class="bi bi-check-circle me-2"></i>Xác nhận thanh toán tiền mặt
+                        <button type="button" class="btn btn-success px-4 py-1.5 fw-bold shadow-sm d-none" id="btnConfirmCashSubmit" onclick="confirmCashPaymentSubmit()">
+                            <i class="bi bi-check-circle me-1.5"></i>Xác nhận thanh toán tiền mặt
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Preview & In Hóa Đơn K80 -->
+<div class="modal fade" id="receiptPrintModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="modal-title fw-bold text-dark mb-0">
+                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Order (K80)
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-light d-flex justify-content-center">
+                <!-- Printable K80 Receipt Container -->
+                <div id="k80ReceiptContainer" class="bg-white p-3 shadow-sm border border-secondary border-opacity-25" style="width: 320px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.35; color: #000;">
+                    <!-- Store Header -->
+                    <div class="text-center pb-2 mb-2 border-bottom border-dark">
+                        <div class="fw-bold text-uppercase fs-6">CSMS COFFEE</div>
+                        <div>Chi nhánh: <span id="recBranchName">Hà Đông</span></div>
+                        <div class="small">Địa chỉ: <span id="recBranchAddress">123 Nguyễn Trãi, Thanh Xuân, Hà Nội</span></div>
+                        <div class="small">SĐT: <span id="recBranchPhone">0988.888.888</span></div>
+                    </div>
+
+                    <!-- Order Info -->
+                    <div class="pb-2 mb-2 border-bottom border-dark">
+                        <div class="d-flex justify-content-between">
+                            <span>Mã đơn: <strong id="recOrderId">MH260903-001</strong></span>
+                            <span id="recOrderTime">03/09/2026 10:30</span>
+                        </div>
+                        <div>Thu ngân: <span id="recCashierName">QuânVQ</span></div>
+                        <div class="mt-1">
+                            <strong>Vị trí / Bàn: <span id="recTableNumber" class="text-uppercase">Bàn 05</span></strong>
+                        </div>
+                        <div>Khách hàng: <span id="recCustomerName">Anh Tuấn</span></div>
+                        <div id="recNotesRow" class="d-none">
+                            Ghi chú: <em id="recOrderNotes">Ít ngọt</em>
+                        </div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <table class="w-100 mb-2 border-bottom border-dark" style="font-size: 12px;">
+                        <thead>
+                            <tr class="border-bottom border-dark">
+                                <th class="text-start py-1">Món</th>
+                                <th class="text-center py-1" style="width: 30px;">SL</th>
+                                <th class="text-end py-1" style="width: 60px;">Đ.Giá</th>
+                                <th class="text-end py-1" style="width: 70px;">T.Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recItemsBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+
+                    <!-- Financial Summary (4 mục rõ ràng) -->
+                    <div class="pb-2 mb-2 border-bottom border-dark">
+                        <div class="d-flex justify-content-between">
+                            <span>Tạm tính:</span>
+                            <span id="recSubtotal" class="font-monospace">140.000 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-danger d-none" id="recDiscountRow">
+                            <span>Giảm giá:</span>
+                            <span id="recDiscount" class="font-monospace">-0 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-danger d-none" id="recTradeDiscountRow">
+                            <span>Chiết khấu:</span>
+                            <span id="recTradeDiscount" class="font-monospace">-0 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold fs-6 mt-1 pt-1 border-top border-dark">
+                            <span>TỔNG CỘNG:</span>
+                            <span id="recTotal" class="font-monospace">140.000 đ</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="text-center pt-1">
+                        <div>Cảm ơn quý khách &amp; Hẹn gặp lại!</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2 bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-sm px-3 fw-bold" onclick="triggerBrowserPrint()">
+                    <i class="bi bi-printer me-1"></i>In hóa đơn (Print)
+                </button>
             </div>
         </div>
     </div>
@@ -407,26 +582,34 @@
                 var itemTotal = item.quantity * item.unitPrice;
                 total += itemTotal;
 
-                // Toggle badges for sizes
-                var sizeOptions = item.variants.map(v => 
-                    `<span class="badge ${v.variantId == item.selectedVariantId ? 'bg-primary' : 'bg-light text-dark border'} mx-0.5" style="cursor:pointer;" 
-                        onclick="changeSize('${item.cartId}', ${v.variantId}, ${v.sellingPrice})">${v.sizeVariant}</span>`
-                ).join('');
+                // Toggle size radio buttons with btn-check in a btn-group
+                var sizeRadios = item.variants.map(v => {
+                    var radioId = `size_radio_${item.cartId}_${v.variantId}`;
+                    var isChecked = v.variantId == item.selectedVariantId ? 'checked' : '';
+                    return `
+                        <input type="radio" class="btn-check" name="size_group_${item.cartId}" id="${radioId}" autocomplete="off" ${isChecked}
+                            onchange="changeSize('${item.cartId}', ${v.variantId}, ${v.sellingPrice})">
+                        <label class="btn btn-outline-primary py-0 px-2 fw-semibold" for="${radioId}" style="font-size: 0.75rem; height: 26px; line-height: 24px;">${v.sizeVariant}</label>
+                    `;
+                }).join('');
+                var sizeGroup = `<div class="btn-group btn-group-sm" role="group" aria-label="Size radio group">${sizeRadios}</div>`;
 
                 html += `
-                    <tr>
-                        <td class="align-middle border-0 py-3 fw-semibold text-dark">${item.name}</td>
-                        <td class="align-middle border-0 py-3 text-secondary text-nowrap">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
-                        <td class="align-middle border-0 py-3 text-end fw-bold text-success text-nowrap">${itemTotal.toLocaleString('vi-VN')} đ</td>
-                        <td class="align-middle border-0 py-3 text-end">
-                            <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
-                                <div>${sizeOptions}</div>
-                                <div>
-                                    <input type="number" class="form-control form-control-sm text-center" style="width: 70px;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
+                    <tr class="cart-item-row">
+                        <td class="align-middle border-bottom py-1.5 fw-semibold text-dark small">${item.name}</td>
+                        <td class="align-middle border-bottom py-1.5 text-secondary text-nowrap small font-monospace">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td class="align-middle border-bottom py-1.5 text-end fw-bold text-success text-nowrap small font-monospace">${itemTotal.toLocaleString('vi-VN')} đ</td>
+                        <td class="align-middle border-bottom py-1.5 text-end">
+                            <div class="d-flex align-items-center justify-content-end">
+                                <div class="me-2">${sizeGroup}</div>
+                                <div class="me-2">
+                                    <input type="number" class="form-control form-control-sm text-center font-monospace py-0 px-1" style="width: 52px; height: 26px; font-size: 0.85rem;" value="${item.quantity}" min="1" onchange="updateQuantity('${item.cartId}', this.value)">
                                 </div>
-                                <button class="btn btn-sm btn-outline-danger px-2" onclick="removeFromCart('${item.cartId}')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="height: 26px; line-height: 24px;" onclick="removeFromCart('${item.cartId}')" title="Xóa món">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -434,7 +617,47 @@
             });
 
             tbody.innerHTML = html;
-            document.getElementById("totalAmount").innerText = total.toLocaleString('vi-VN') + " đ";
+            updateOrderTotals();
+        }
+
+        function updateRecipientNameCombined() {
+            var tableInput = document.getElementById("orderTableNumber")?.value;
+            var table = (tableInput && tableInput.trim() !== '') ? tableInput.trim() : 'Mang về';
+            var custInput = document.getElementById("orderCustomerName")?.value;
+            var customer = (custInput && custInput.trim() !== '') ? custInput.trim() : 'Khách lẻ';
+            var combined = table + ' - ' + customer;
+            var recEl = document.getElementById("recipientName");
+            if (recEl) recEl.value = combined;
+        }
+
+        function getRawNumberFromInput(id) {
+            var el = document.getElementById(id);
+            if (!el) return 0;
+            var val = (el.value || '').replace(/\D/g, '');
+            return parseFloat(val) || 0;
+        }
+
+        function onDiscountOrTradeDiscountChange(el) {
+            if (el) {
+                var raw = el.value.replace(/\D/g, '');
+                el.value = raw === '' ? '' : parseInt(raw, 10).toLocaleString('vi-VN');
+            }
+            updateOrderTotals();
+        }
+
+        function updateOrderTotals() {
+            var subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+            var discount = getRawNumberFromInput('cartDiscountInput');
+            var tradeDiscount = getRawNumberFromInput('cartTradeDiscountInput');
+            var total = Math.max(0, subtotal - discount - tradeDiscount);
+            currentOrderTotalAmount = total;
+
+            var subEl = document.getElementById("cartSubtotalAmount");
+            if (subEl) subEl.innerText = subtotal.toLocaleString('vi-VN') + " đ";
+
+            var totEl = document.getElementById("totalAmount");
+            if (totEl) totEl.innerText = total.toLocaleString('vi-VN') + " đ";
+
             localStorage.setItem('csms_cart', JSON.stringify(cart));
 
             // Sync with Customer Monitor if open
@@ -442,6 +665,9 @@
                 localStorage.setItem('customer_display_state', JSON.stringify({
                     mode: 'Cart',
                     cart: cart,
+                    subtotal: subtotal,
+                    discount: discount,
+                    tradeDiscount: tradeDiscount,
                     total: total
                 }));
             } catch (e) {
@@ -480,7 +706,12 @@
                     'Bạn có chắc muốn hủy đơn hàng này không?',
                     function() {
                         cart = [];
-                        document.getElementById("recipientName").value = "";
+                        document.getElementById("orderTableNumber").value = "";
+                        document.getElementById("orderCustomerName").value = "";
+                        document.getElementById("orderNotesInput").value = "";
+                        document.getElementById("cartDiscountInput").value = "";
+                        document.getElementById("cartTradeDiscountInput").value = "";
+                        updateRecipientNameCombined();
                         renderCart();
                         localStorage.removeItem('csms_cart');
                     }
@@ -495,10 +726,16 @@
         }
 
         function syncCustomerMonitor(mode = 'Cart', extraData = {}) {
-            var total = cart.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+            var subtotal = cart.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+            var discount = getRawNumberFromInput('cartDiscountInput');
+            var tradeDiscount = getRawNumberFromInput('cartTradeDiscountInput');
+            var total = Math.max(0, subtotal - discount - tradeDiscount);
             var payload = {
                 mode: mode,
                 cart: cart,
+                subtotal: subtotal,
+                discount: discount,
+                tradeDiscount: tradeDiscount,
                 total: total,
                 timestamp: new Date().getTime(),
                 ...extraData
@@ -539,27 +776,57 @@
 
         function renderReviewCarts() {
             var html = '';
-            var total = 0;
+            var subtotal = 0;
             cart.forEach((item) => {
                 var itemTotal = item.quantity * item.unitPrice;
-                total += itemTotal;
+                subtotal += itemTotal;
                 var selectedSize = item.variants.find(v => v.variantId === item.selectedVariantId).sizeVariant;
 
                 html += `
                     <tr>
-                        <td class="fw-bold text-dark fs-4">${item.name}</td>
-                        <td><span class="badge bg-secondary-subtle text-dark fs-5">${selectedSize}</span></td>
-                        <td class="text-center fw-bold fs-4">${item.quantity}</td>
-                        <td class="text-end fs-4">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
-                        <td class="text-end pe-3 fw-bold text-success fs-4">${itemTotal.toLocaleString('vi-VN')} đ</td>
+                        <td class="ps-4 fw-semibold text-dark">${item.name}</td>
+                        <td><span class="badge bg-light text-dark border px-2 py-1">${selectedSize}</span></td>
+                        <td class="text-end fw-medium text-secondary font-monospace">${item.unitPrice.toLocaleString('vi-VN')} đ</td>
+                        <td class="text-center fw-semibold">${item.quantity}</td>
+                        <td class="text-end pe-4 fw-semibold text-secondary font-monospace">${itemTotal.toLocaleString('vi-VN')} đ</td>
                     </tr>
                 `;
             });
+
+            var discount = getRawNumberFromInput('cartDiscountInput');
+            var tradeDiscount = getRawNumberFromInput('cartTradeDiscountInput');
+            var total = Math.max(0, subtotal - discount - tradeDiscount);
             currentOrderTotalAmount = total;
+
             document.getElementById("reviewCartBody").innerHTML = html;
             
+            var subEl = document.getElementById("reviewSubtotalAmount");
+            if (subEl) subEl.innerText = subtotal.toLocaleString('vi-VN') + " đ";
+
+            var discRow = document.getElementById("reviewDiscountRow");
+            if (discRow) {
+                if (discount > 0) {
+                    discRow.classList.remove('d-none');
+                    document.getElementById("reviewDiscountAmount").innerText = '-' + discount.toLocaleString('vi-VN') + " đ";
+                } else {
+                    discRow.classList.add('d-none');
+                }
+            }
+
+            var tradeRow = document.getElementById("reviewTradeDiscountRow");
+            if (tradeRow) {
+                if (tradeDiscount > 0) {
+                    tradeRow.classList.remove('d-none');
+                    document.getElementById("reviewTradeDiscountAmount").innerText = '-' + tradeDiscount.toLocaleString('vi-VN') + " đ";
+                } else {
+                    tradeRow.classList.add('d-none');
+                }
+            }
+
             var tStr = total.toLocaleString('vi-VN') + " đ";
             document.getElementById("reviewTotalAmount").innerText = tStr;
+
+            updateRecipientNameCombined();
 
             // Reset cash payment mode options
             resetCashPaymentMode();
@@ -591,7 +858,6 @@
         }
 
         function selectCashPaymentMode() {
-            // Hide transfer button and show cash input section
             $('#btnChooseBankTransfer').addClass('d-none');
             $('#btnChooseCash').addClass('d-none');
             $('#cashPaymentSection').removeClass('d-none');
@@ -648,9 +914,21 @@
                 return;
             }
 
-            var recipient = document.getElementById("recipientName").value.trim();
+            var table = (document.getElementById("orderTableNumber")?.value || 'Mang về').trim();
+            var customer = (document.getElementById("orderCustomerName")?.value || 'Khách lẻ').trim();
+            var notes = (document.getElementById("orderNotesInput")?.value || '').trim();
+            var subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+            var discount = getRawNumberFromInput('cartDiscountInput');
+            var tradeDiscount = getRawNumberFromInput('cartTradeDiscountInput');
+
             var payload = {
-                recipientName: recipient,
+                recipientName: table + ' - ' + customer,
+                tableNumber: table,
+                customerName: customer,
+                subtotalAmount: subtotal,
+                discountAmount: discount,
+                tradeDiscountAmount: tradeDiscount,
+                orderNotes: notes,
                 items: cart.map(i => ({ variantId: i.selectedVariantId, quantity: i.quantity, unitPrice: i.unitPrice }))
             };
             
@@ -681,12 +959,23 @@
                 return;
             }
 
-            var recipient = document.getElementById("recipientName").value.trim();
+            var table = (document.getElementById("orderTableNumber")?.value || 'Mang về').trim();
+            var customer = (document.getElementById("orderCustomerName")?.value || 'Khách lẻ').trim();
+            var notes = (document.getElementById("orderNotesInput")?.value || '').trim();
+            var subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+            var discount = getRawNumberFromInput('cartDiscountInput');
+            var tradeDiscount = getRawNumberFromInput('cartTradeDiscountInput');
             var given = getCustomerCashValue();
             var change = Math.max(0, given - currentOrderTotalAmount);
 
             var payload = {
-                recipientName: recipient,
+                recipientName: table + ' - ' + customer,
+                tableNumber: table,
+                customerName: customer,
+                subtotalAmount: subtotal,
+                discountAmount: discount,
+                tradeDiscountAmount: tradeDiscount,
+                orderNotes: notes,
                 customerCash: given,
                 changeAmount: change,
                 items: cart.map(i => ({ variantId: i.selectedVariantId, quantity: i.quantity, unitPrice: i.unitPrice }))
@@ -705,17 +994,23 @@
                     
                     showToast("Thanh toán tiền mặt thành công! Đơn hàng đã được chuyển xuống bộ phận Pha chế.");
 
-                    if (document.getElementById("autoPrintReceiptCheck") && document.getElementById("autoPrintReceiptCheck").checked) {
-                        openReceiptModal(data.orderId, recipient, cart, currentOrderTotalAmount, given, change, "Tiền mặt");
-                    }
+                    var savedOrderId = data.orderId;
 
                     // Reset cart state
                     cart = [];
                     localStorage.removeItem('csms_cart');
                     cartIdempotencyKey = null;
-                    document.getElementById("recipientName").value = '';
+                    document.getElementById("orderTableNumber").value = "";
+                    document.getElementById("orderCustomerName").value = '';
+                    document.getElementById("orderNotesInput").value = '';
+                    document.getElementById("cartDiscountInput").value = '';
+                    document.getElementById("cartTradeDiscountInput").value = '';
+                    updateRecipientNameCombined();
                     renderCart();
                     syncCustomerMonitor('PaidSuccess');
+
+                    // Open receipt preview & print
+                    openReceiptModal(savedOrderId);
                 } else {
                     showToast("Thanh toán thất bại: " + data.message, true);
                 }
@@ -724,6 +1019,90 @@
                 console.error("Payment error:", err);
                 showToast("Lỗi kết nối máy chủ.", true);
             });
+        }
+
+        function openReceiptModal(orderId) {
+            if (!orderId) return;
+
+            fetch('@Url.Action("GetReceiptData", "SaleManagement")?orderId=' + encodeURIComponent(orderId))
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        showToast("Không thể tải thông tin hóa đơn: " + data.message, true);
+                        return;
+                    }
+
+                    document.getElementById('recBranchName').innerText = data.branchName || 'CSMS';
+                    document.getElementById('recBranchAddress').innerText = data.branchAddress || '';
+                    document.getElementById('recBranchPhone').innerText = data.branchPhone || '';
+                    document.getElementById('recOrderId').innerText = data.orderId;
+                    document.getElementById('recOrderTime').innerText = data.orderTime;
+                    document.getElementById('recCashierName').innerText = data.cashierName;
+                    document.getElementById('recTableNumber').innerText = data.tableNumber || 'Mang về';
+                    document.getElementById('recCustomerName').innerText = data.customerName || 'Khách lẻ';
+
+                    var notesRow = document.getElementById('recNotesRow');
+                    if (data.orderNotes && data.orderNotes.trim() !== '') {
+                        notesRow.classList.remove('d-none');
+                        document.getElementById('recOrderNotes').innerText = data.orderNotes;
+                    } else {
+                        notesRow.classList.add('d-none');
+                    }
+
+                    var itemsHtml = '';
+                    (data.items || []).forEach(item => {
+                        itemsHtml += `
+                            <tr>
+                                <td class="py-1">
+                                    <div class="fw-semibold">${item.productName}</div>
+                                    <div class="small text-muted">Size: ${item.size}</div>
+                                </td>
+                                <td class="text-center py-1 font-monospace">${item.quantity}</td>
+                                <td class="text-end py-1 font-monospace">${item.unitPrice.toLocaleString('vi-VN')}</td>
+                                <td class="text-end py-1 font-monospace">${item.amount.toLocaleString('vi-VN')}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('recItemsBody').innerHTML = itemsHtml;
+
+                    document.getElementById('recSubtotal').innerText = data.subtotalAmount.toLocaleString('vi-VN') + ' đ';
+
+                    var discRow = document.getElementById('recDiscountRow');
+                    if (data.discountAmount > 0) {
+                        discRow.classList.remove('d-none');
+                        document.getElementById('recDiscount').innerText = '-' + data.discountAmount.toLocaleString('vi-VN') + ' đ';
+                    } else {
+                        discRow.classList.add('d-none');
+                    }
+
+                    var tradeDiscRow = document.getElementById('recTradeDiscountRow');
+                    if (data.tradeDiscountAmount > 0) {
+                        tradeDiscRow.classList.remove('d-none');
+                        document.getElementById('recTradeDiscount').innerText = '-' + data.tradeDiscountAmount.toLocaleString('vi-VN') + ' đ';
+                    } else {
+                        tradeDiscRow.classList.add('d-none');
+                    }
+
+                    document.getElementById('recTotal').innerText = data.totalAmount.toLocaleString('vi-VN') + ' đ';
+
+                    var modal = new bootstrap.Modal(document.getElementById('receiptPrintModal'));
+                    modal.show();
+
+                    var autoPrintCheck = document.getElementById('autoPrintReceiptCheck');
+                    if (autoPrintCheck && autoPrintCheck.checked) {
+                        setTimeout(() => {
+                            triggerBrowserPrint();
+                        }, 500);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast("Lỗi khi tải dữ liệu hóa đơn.", true);
+                });
+        }
+
+        function triggerBrowserPrint() {
+            window.print();
         }
 
         function confirmLogoutForFaceCheckin() {

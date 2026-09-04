@@ -49,6 +49,33 @@ namespace SEP490_G52_CSMS.Models.Sales
         [StringLength(100)]
         public string? RecipientName { get; set; }
 
+        /// <summary> Vị trí / Số bàn (VD: Bàn 05, Mang về) </summary>
+        [Column("table_number")]
+        [StringLength(50)]
+        public string? TableNumber { get; set; }
+
+        /// <summary> Tên khách hàng </summary>
+        [Column("customer_name")]
+        [StringLength(100)]
+        public string? CustomerName { get; set; }
+
+        /// <summary> Tiền tạm tính trước khi áp dụng giảm giá & chiết khấu </summary>
+        [Column("subtotal_amount")]
+        public decimal SubtotalAmount { get; set; } = 0;
+
+        /// <summary> Số tiền giảm giá (voucher, chương trình khuyến mãi) </summary>
+        [Column("discount_amount")]
+        public decimal DiscountAmount { get; set; } = 0;
+
+        /// <summary> Số tiền chiết khấu (chiết khấu % / khách quen) </summary>
+        [Column("trade_discount_amount")]
+        public decimal TradeDiscountAmount { get; set; } = 0;
+
+        /// <summary> Ghi chú của thu ngân cho đơn hàng </summary>
+        [Column("order_notes")]
+        [StringLength(255)]
+        public string? OrderNotes { get; set; }
+
         /// <summary> Mã giao dịch ngân hàng (đối soát chuyển khoản) </summary>
         [Column("bank_transaction_code")]
         [StringLength(100)]

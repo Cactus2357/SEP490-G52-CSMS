@@ -21,7 +21,17 @@ namespace SEP490_G52_CSMS.Services
             _notificationService = notificationService;
         }
 
-        public async Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items)
+        public async Task<Order> CreateOrderAsync(
+            string recipientName, 
+            string branchId, 
+            int cashierId, 
+            List<OrderItem> items, 
+            string? tableNumber = null, 
+            string? customerName = null, 
+            decimal? subtotalAmount = null, 
+            decimal? discountAmount = null, 
+            decimal? tradeDiscountAmount = null, 
+            string? orderNotes = null)
         {
             var date = DateTime.Now;
             if (date.TimeOfDay < TimeSpan.FromHours(6))
@@ -32,12 +42,25 @@ namespace SEP490_G52_CSMS.Services
             int countToday = await _orderRepo.GetOrdersCountByDateAsync(date);
             string orderId = $"MH{date:yyMMdd}-{(countToday + 1):D3}";
 
-            decimal totalAmount = items.Sum(i => i.Quantity * i.UnitPrice);
+            decimal subtotal = subtotalAmount ?? items.Sum(i => i.Quantity * i.UnitPrice);
+            decimal discount = discountAmount ?? 0;
+            decimal tradeDiscount = tradeDiscountAmount ?? 0;
+            decimal totalAmount = Math.Max(0, subtotal - discount - tradeDiscount);
+
+            var finalCustomer = !string.IsNullOrWhiteSpace(customerName) ? customerName.Trim() : (string.IsNullOrWhiteSpace(recipientName) ? "Khách lẻ" : recipientName.Trim());
+            var finalTable = !string.IsNullOrWhiteSpace(tableNumber) ? tableNumber.Trim() : "Mang về";
+            var combinedRecipient = $"{finalTable} - {finalCustomer}";
 
             var order = new Order
             {
                 OrderId = orderId,
-                RecipientName = recipientName,
+                RecipientName = combinedRecipient,
+                TableNumber = finalTable,
+                CustomerName = finalCustomer,
+                SubtotalAmount = subtotal,
+                DiscountAmount = discount,
+                TradeDiscountAmount = tradeDiscount,
+                OrderNotes = orderNotes,
                 BranchId = branchId,
                 CashierId = cashierId,
                 CreatedAt = date,
@@ -597,6 +620,16 @@ namespace SEP490_G52_CSMS.Services
             {
                 OrderId = order.OrderId,
                 RecipientName = order.RecipientName ?? "",
+                TableNumber = !string.IsNullOrWhiteSpace(order.TableNumber) ? order.TableNumber : (order.RecipientName?.Contains(" - ") == true ? order.RecipientName.Split(" - ")[0] : "Mang về"),
+                CustomerName = !string.IsNullOrWhiteSpace(order.CustomerName) ? order.CustomerName : (order.RecipientName?.Contains(" - ") == true ? order.RecipientName.Split(" - ")[1] : (order.RecipientName ?? "Khách lẻ")),
+                SubtotalAmount = order.SubtotalAmount > 0 ? order.SubtotalAmount : order.TotalAmount,
+                DiscountAmount = order.DiscountAmount,
+                TradeDiscountAmount = order.TradeDiscountAmount,
+                OrderNotes = order.OrderNotes,
+                BranchName = order.Branch?.BranchName ?? "CSMS",
+                BranchAddress = order.Branch?.Address ?? "",
+                BranchPhone = order.Branch?.PhoneNumber ?? "",
+                CashierName = order.Cashier?.FullName ?? $"Thu ngân #{order.CashierId}",
                 OrderTime = order.CreatedAt,
                 PaymentMethod = order.PaymentMethod ?? "",
                 BankTransactionCode = order.BankTransactionCode,

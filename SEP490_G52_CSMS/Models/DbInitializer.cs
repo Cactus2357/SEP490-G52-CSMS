@@ -931,6 +931,36 @@ namespace SEP490_G52_CSMS.Models
                         ALTER TABLE [orders] ADD [bank_amount] decimal(18,2) NOT NULL DEFAULT 0;
                     END
 
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'table_number')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [table_number] nvarchar(50) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'customer_name')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [customer_name] nvarchar(100) NULL;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'subtotal_amount')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [subtotal_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'discount_amount')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [discount_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'trade_discount_amount')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [trade_discount_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'order_notes')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [order_notes] nvarchar(255) NULL;
+                    END
+
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('cash_handovers') AND name = 'cash_refund_amount')
                     BEGIN
                         ALTER TABLE [cash_handovers] ADD [cash_refund_amount] decimal(18,2) NOT NULL DEFAULT 0;

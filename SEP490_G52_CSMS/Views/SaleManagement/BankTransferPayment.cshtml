@@ -24,18 +24,58 @@
     var itemsJson = System.Text.Json.JsonSerializer.Serialize(itemList);
 }
 
+<style>
+    @@media print {
+        body * {
+            visibility: hidden !important;
+        }
+        #k80ReceiptContainer, #k80ReceiptContainer * {
+            visibility: visible !important;
+        }
+        #k80ReceiptContainer {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 76mm !important;
+            margin: 0 !important;
+            padding: 2mm 3mm !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #fff !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+            color: #000 !important;
+            z-index: 999999 !important;
+        }
+        @@page {
+            size: 80mm auto;
+            margin: 0;
+        }
+    }
+</style>
+
 <div class="container-fluid mt-3 pb-5">
     <div class="row g-4">
         <!-- Left Column: Order Review -->
         <div class="col-md-7 border-end pe-4">
-            <div class="d-flex align-items-center mb-3">
+            <div class="d-flex align-items-center mb-2">
                 <h3 class="fw-bold text-dark mb-0">ĐƠN HÀNG BẠN ĐÃ CHỌN</h3>
                 <span class="badge bg-secondary ms-3 px-2.5 py-1.5 fw-semibold text-white">Mã Đơn: @Model.OrderId</span>
             </div>
             
-            <p class="text-muted">Nhân viên & Khách hàng vui lòng kiểm tra danh sách sản phẩm bên dưới trước khi thực hiện chuyển khoản.</p>
+            <div class="d-flex flex-wrap gap-3 align-items-center mb-2 text-secondary small">
+                <span><i class="bi bi-geo-alt me-1 text-primary"></i><strong>Vị trí / Bàn:</strong> @Model.TableNumber</span>
+                <span><i class="bi bi-person me-1 text-primary"></i><strong>Khách hàng:</strong> @Model.CustomerName</span>
+                @if (!string.IsNullOrWhiteSpace(Model.OrderNotes))
+                {
+                    <span><i class="bi bi-chat-left-text me-1 text-primary"></i><strong>Ghi chú:</strong> @Model.OrderNotes</span>
+                }
+            </div>
 
-            <div class="card border shadow-sm mt-4">
+            <p class="text-muted small">Nhân viên &amp; Khách hàng vui lòng kiểm tra danh sách sản phẩm bên dưới trước khi thực hiện chuyển khoản.</p>
+
+            <div class="card border shadow-sm mt-3">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0" id="orderItemsTable">
@@ -66,15 +106,24 @@
                             <tfoot class="border-top">
                                 <tr>
                                     <td colspan="4" class="ps-4 text-secondary fw-semibold">Tạm tính:</td>
-                                    <td class="text-end pe-4 fw-bold text-dark font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
+                                    <td class="text-end pe-4 fw-bold text-dark font-monospace">@Model.SubtotalAmount.ToString("N0") đ</td>
                                 </tr>
-                                <!-- Mục dự phòng cho Chiết khấu / Giảm giá sau này -->
-                                <tr class="d-none" id="discountSummaryRow">
-                                    <td colspan="4" class="ps-4 text-secondary fw-semibold">Chiết khấu / Giảm giá:</td>
-                                    <td class="text-end pe-4 fw-bold text-danger font-monospace" id="discountSummaryValue">-0 đ</td>
-                                </tr>
+                                @if (Model.DiscountAmount > 0)
+                                {
+                                    <tr>
+                                        <td colspan="4" class="ps-4 text-secondary fw-semibold">Giảm giá:</td>
+                                        <td class="text-end pe-4 fw-bold text-danger font-monospace">-@Model.DiscountAmount.ToString("N0") đ</td>
+                                    </tr>
+                                }
+                                @if (Model.TradeDiscountAmount > 0)
+                                {
+                                    <tr>
+                                        <td colspan="4" class="ps-4 text-secondary fw-semibold">Chiết khấu:</td>
+                                        <td class="text-end pe-4 fw-bold text-danger font-monospace">-@Model.TradeDiscountAmount.ToString("N0") đ</td>
+                                    </tr>
+                                }
                                 <tr class="table-light">
-                                    <td colspan="4" class="ps-4 fw-bold fs-5 text-dark">Tổng tiền cần thanh toán:</td>
+                                    <td colspan="4" class="ps-4 fw-bold fs-5 text-dark">TỔNG TIỀN CẦN THANH TOÁN:</td>
                                     <td class="text-end pe-4 fw-bold fs-4 text-success font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
                                 </tr>
                             </tfoot>
@@ -251,8 +300,101 @@
                 </div>
             </div>
             <p class="text-secondary mb-4 fs-5">Hệ thống đã ghi nhận mã giao dịch ngân hàng để đối soát. Vui lòng bấm bên dưới để hoàn tất.</p>
-            <div class="d-grid gap-2 col-8 mx-auto">
-                <button type="button" class="btn btn-success py-3 fs-4 fw-bold shadow-sm" onclick="confirmPaymentReceived()">XÁC NHẬN ĐÃ NHẬN TIỀN</button>
+            <div class="d-grid gap-2 col-10 mx-auto">
+                <button type="button" class="btn btn-outline-primary py-2.5 fs-5 fw-bold shadow-sm" onclick="printReceiptFromTransfer()">
+                    <i class="bi bi-printer me-2"></i>IN HÓA ĐƠN / PHIẾU ORDER
+                </button>
+                <button type="button" class="btn btn-success py-2.5 fs-5 fw-bold shadow-sm" onclick="confirmPaymentReceived()">
+                    <i class="bi bi-check2-circle me-2"></i>HOÀN TẤT ĐƠN &amp; QUAY VỀ POS
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Preview & In Hóa Đơn K80 -->
+<div class="modal fade" id="receiptPrintModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="modal-title fw-bold text-dark mb-0">
+                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Order (K80)
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-light d-flex justify-content-center">
+                <!-- Printable K80 Receipt Container -->
+                <div id="k80ReceiptContainer" class="bg-white p-3 shadow-sm border border-secondary border-opacity-25" style="width: 320px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.35; color: #000;">
+                    <!-- Store Header -->
+                    <div class="text-center pb-2 mb-2 border-bottom border-dark">
+                        <div class="fw-bold text-uppercase fs-6">CSMS COFFEE</div>
+                        <div>Chi nhánh: <span id="recBranchName">Hà Đông</span></div>
+                        <div class="small">Địa chỉ: <span id="recBranchAddress">123 Nguyễn Trãi, Thanh Xuân, Hà Nội</span></div>
+                        <div class="small">SĐT: <span id="recBranchPhone">0988.888.888</span></div>
+                    </div>
+
+                    <!-- Order Info -->
+                    <div class="pb-2 mb-2 border-bottom border-dark">
+                        <div class="d-flex justify-content-between">
+                            <span>Mã đơn: <strong id="recOrderId">MH260903-001</strong></span>
+                            <span id="recOrderTime">03/09/2026 10:30</span>
+                        </div>
+                        <div>Thu ngân: <span id="recCashierName">QuânVQ</span></div>
+                        <div class="mt-1">
+                            <strong>Vị trí / Bàn: <span id="recTableNumber" class="text-uppercase">Bàn 05</span></strong>
+                        </div>
+                        <div>Khách hàng: <span id="recCustomerName">Anh Tuấn</span></div>
+                        <div id="recNotesRow" class="d-none">
+                            Ghi chú: <em id="recOrderNotes">Ít ngọt</em>
+                        </div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <table class="w-100 mb-2 border-bottom border-dark" style="font-size: 12px;">
+                        <thead>
+                            <tr class="border-bottom border-dark">
+                                <th class="text-start py-1">Món</th>
+                                <th class="text-center py-1" style="width: 30px;">SL</th>
+                                <th class="text-end py-1" style="width: 60px;">Đ.Giá</th>
+                                <th class="text-end py-1" style="width: 70px;">T.Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recItemsBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+
+                    <!-- Financial Summary (4 mục rõ ràng) -->
+                    <div class="pb-2 mb-2 border-bottom border-dark">
+                        <div class="d-flex justify-content-between">
+                            <span>Tạm tính:</span>
+                            <span id="recSubtotal" class="font-monospace">140.000 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-danger d-none" id="recDiscountRow">
+                            <span>Giảm giá:</span>
+                            <span id="recDiscount" class="font-monospace">-0 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-danger d-none" id="recTradeDiscountRow">
+                            <span>Chiết khấu:</span>
+                            <span id="recTradeDiscount" class="font-monospace">-0 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold fs-6 mt-1 pt-1 border-top border-dark">
+                            <span>TỔNG CỘNG:</span>
+                            <span id="recTotal" class="font-monospace">140.000 đ</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="text-center pt-1">
+                        <div>Cảm ơn quý khách &amp; Hẹn gặp lại!</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2 bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-sm px-3 fw-bold" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>In hóa đơn (Print)
+                </button>
             </div>
         </div>
     </div>
@@ -615,6 +757,77 @@
                 console.error("Failed to complete payment receipt:", err);
                 showToast("Lỗi kết nối máy chủ.", "danger");
             });
+        }
+
+        function printReceiptFromTransfer() {
+            fetch('@Url.Action("GetReceiptData", "SaleManagement")?orderId=' + encodeURIComponent(orderId))
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        showToast("Không thể tải thông tin hóa đơn: " + data.message, "danger");
+                        return;
+                    }
+
+                    document.getElementById('recBranchName').innerText = data.branchName || 'CSMS';
+                    document.getElementById('recBranchAddress').innerText = data.branchAddress || '';
+                    document.getElementById('recBranchPhone').innerText = data.branchPhone || '';
+                    document.getElementById('recOrderId').innerText = data.orderId;
+                    document.getElementById('recOrderTime').innerText = data.orderTime;
+                    document.getElementById('recCashierName').innerText = data.cashierName;
+                    document.getElementById('recTableNumber').innerText = data.tableNumber || 'Mang về';
+                    document.getElementById('recCustomerName').innerText = data.customerName || 'Khách lẻ';
+
+                    var notesRow = document.getElementById('recNotesRow');
+                    if (data.orderNotes && data.orderNotes.trim() !== '') {
+                        notesRow.classList.remove('d-none');
+                        document.getElementById('recOrderNotes').innerText = data.orderNotes;
+                    } else {
+                        notesRow.classList.add('d-none');
+                    }
+
+                    var itemsHtml = '';
+                    (data.items || []).forEach(item => {
+                        itemsHtml += `
+                            <tr>
+                                <td class="py-1">
+                                    <div class="fw-semibold">${item.productName}</div>
+                                    <div class="small text-muted">Size: ${item.size}</div>
+                                </td>
+                                <td class="text-center py-1 font-monospace">${item.quantity}</td>
+                                <td class="text-end py-1 font-monospace">${item.unitPrice.toLocaleString('vi-VN')}</td>
+                                <td class="text-end py-1 font-monospace">${item.amount.toLocaleString('vi-VN')}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('recItemsBody').innerHTML = itemsHtml;
+
+                    document.getElementById('recSubtotal').innerText = data.subtotalAmount.toLocaleString('vi-VN') + ' đ';
+
+                    var discRow = document.getElementById('recDiscountRow');
+                    if (data.discountAmount > 0) {
+                        discRow.classList.remove('d-none');
+                        document.getElementById('recDiscount').innerText = '-' + data.discountAmount.toLocaleString('vi-VN') + ' đ';
+                    } else {
+                        discRow.classList.add('d-none');
+                    }
+
+                    var tradeDiscRow = document.getElementById('recTradeDiscountRow');
+                    if (data.tradeDiscountAmount > 0) {
+                        tradeDiscRow.classList.remove('d-none');
+                        document.getElementById('recTradeDiscount').innerText = '-' + data.tradeDiscountAmount.toLocaleString('vi-VN') + ' đ';
+                    } else {
+                        tradeDiscRow.classList.add('d-none');
+                    }
+
+                    document.getElementById('recTotal').innerText = data.totalAmount.toLocaleString('vi-VN') + ' đ';
+
+                    var modal = new bootstrap.Modal(document.getElementById('receiptPrintModal'));
+                    modal.show();
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast("Lỗi khi tải dữ liệu hóa đơn.", "danger");
+                });
         }
     </script>
 }

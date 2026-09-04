@@ -5,7 +5,7 @@ namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public interface IOrderService
     {
-        Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items);
+        Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items, string? tableNumber = null, string? customerName = null, decimal? subtotalAmount = null, decimal? discountAmount = null, decimal? tradeDiscountAmount = null, string? orderNotes = null);
         Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null);
         Task<bool> ProcessSplitPaymentAsync(string orderId, decimal cashAmount, decimal bankAmount, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null);
         Task<bool> ProcessRefundCashAsync(string orderId, decimal refundAmount, string reason, int cashierId);

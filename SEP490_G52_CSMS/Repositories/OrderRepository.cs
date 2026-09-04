@@ -24,6 +24,8 @@ namespace SEP490_G52_CSMS.Repositories
         public async Task<Order?> GetOrderByIdAsync(string orderId)
         {
             return await _context.Orders
+                .Include(o => o.Branch)
+                .Include(o => o.Cashier)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.MasterProduct)

@@ -71,6 +71,16 @@ namespace SEP490_G52_CSMS.Models.ViewModels
     {
         public string OrderId { get; set; } = null!;
         public string RecipientName { get; set; } = null!;
+        public string? TableNumber { get; set; }
+        public string? CustomerName { get; set; }
+        public decimal SubtotalAmount { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal TradeDiscountAmount { get; set; }
+        public string? OrderNotes { get; set; }
+        public string? BranchName { get; set; }
+        public string? BranchAddress { get; set; }
+        public string? BranchPhone { get; set; }
+        public string? CashierName { get; set; }
         public DateTime OrderTime { get; set; }
         public string PaymentMethod { get; set; } = "";
         public string? BankTransactionCode { get; set; }

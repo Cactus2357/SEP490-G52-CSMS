@@ -4,7 +4,12 @@
     <h5 class="fw-bold mb-0 text-uppercase text-dark">
         <i class="bi bi-receipt me-2 text-primary"></i>Chi Tiết Đơn Hàng
     </h5>
-    <span class="badge bg-primary px-2.5 py-1.5 fw-bold">@Model.OrderId</span>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary px-2.5 py-1.5 fw-bold">@Model.OrderId</span>
+        <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" onclick="printReceiptFromHistory('@Model.OrderId')" title="In hóa đơn / Phiếu order">
+            <i class="bi bi-printer me-1"></i>In Phiếu
+        </button>
+    </div>
 </div>
 <div class="card-body p-4 d-flex flex-column" style="flex: 1; overflow-y: auto;">
     <!-- Hidden data storage for safe JS consumption -->
@@ -22,9 +27,20 @@
 
     <div class="mb-3 flex-shrink-0">
         <div class="row mb-2">
-            <div class="col-4 text-muted small">- Khách hàng:</div>
-            <div class="col-8 fw-semibold text-dark">@(string.IsNullOrEmpty(Model.RecipientName) ? "Khách vãng lai" : Model.RecipientName)</div>
+            <div class="col-4 text-muted small">- Vị trí / Bàn:</div>
+            <div class="col-8 fw-bold text-primary">@(!string.IsNullOrWhiteSpace(Model.TableNumber) ? Model.TableNumber : "Mang về")</div>
         </div>
+        <div class="row mb-2">
+            <div class="col-4 text-muted small">- Khách hàng:</div>
+            <div class="col-8 fw-semibold text-dark">@(!string.IsNullOrWhiteSpace(Model.CustomerName) ? Model.CustomerName : "Khách lẻ")</div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.OrderNotes))
+        {
+            <div class="row mb-2">
+                <div class="col-4 text-muted small">- Ghi chú:</div>
+                <div class="col-8 fst-italic text-secondary">@Model.OrderNotes</div>
+            </div>
+        }
         <div class="row mb-2">
             <div class="col-4 text-muted small">- Thời gian:</div>
             <div class="col-8 text-secondary">@Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</div>
@@ -145,9 +161,29 @@
         </table>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mt-3 flex-shrink-0">
-        <h5 class="fw-semibold mb-0">Tổng tiền:</h5>
-        <h4 class="fw-bold text-success mb-0">@Model.TotalAmount.ToString("N0") đ</h4>
+    <div class="bg-light p-3 rounded mt-3 flex-shrink-0 border">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-secondary small">Tạm tính:</span>
+            <span class="fw-semibold text-dark font-monospace">@Model.SubtotalAmount.ToString("N0") đ</span>
+        </div>
+        @if (Model.DiscountAmount > 0)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-secondary small">Giảm giá:</span>
+                <span class="fw-semibold text-danger font-monospace">-@Model.DiscountAmount.ToString("N0") đ</span>
+            </div>
+        }
+        @if (Model.TradeDiscountAmount > 0)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-secondary small">Chiết khấu:</span>
+                <span class="fw-semibold text-danger font-monospace">-@Model.TradeDiscountAmount.ToString("N0") đ</span>
+            </div>
+        }
+        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+            <h6 class="fw-bold text-dark mb-0">TỔNG CỘNG:</h6>
+            <h4 class="fw-bold text-success font-monospace mb-0">@Model.TotalAmount.ToString("N0") đ</h4>
+        </div>
     </div>
 
     @{
