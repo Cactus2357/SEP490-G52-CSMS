@@ -59,6 +59,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string PaymentStatus { get; set; } = null!;
         public string BrewingStatus { get; set; } = null!;
         public decimal TotalAmount { get; set; }
+        public decimal CashAmount { get; set; }
+        public decimal BankAmount { get; set; }
         public decimal RefundAmount { get; set; }
         public string? RefundReason { get; set; }
         public string DisplayStatus { get; set; } = null!;
@@ -87,6 +89,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string PaymentStatus { get; set; } = "";
         public string DisplayStatus { get; set; } = null!;
         public decimal TotalAmount { get; set; }
+        public decimal CashAmount { get; set; }
+        public decimal BankAmount { get; set; }
         public decimal RefundAmount { get; set; }
         public string? RefundReason { get; set; }
         public string? RefundMethod { get; set; }

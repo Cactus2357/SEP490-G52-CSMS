@@ -483,6 +483,22 @@ namespace SEP490_G52_CSMS.Services
                 {
                     orders = orders.Where(o => o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount && o.BrewingStatus != "Missing Ingredients");
                 }
+                else if (status == "Đang chờ pha chế")
+                {
+                    orders = orders.Where(o => o.PaymentStatus == "Paid" && (o.BrewingStatus == "Waiting for Brewing" || o.BrewingStatus == "Waiting") && o.BrewingStatus != "Missing Ingredients");
+                }
+                else if (status == "Đang pha chế")
+                {
+                    orders = orders.Where(o => o.PaymentStatus == "Paid" && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing") && o.BrewingStatus != "Missing Ingredients");
+                }
+                else if (status == "Chờ thanh toán")
+                {
+                    orders = orders.Where(o => o.PaymentStatus == "Unpaid" && o.BrewingStatus != "Cancelled / Refunded" && o.RefundAmount == 0);
+                }
+                else if (status == "Thanh toán 1 phần")
+                {
+                    orders = orders.Where(o => o.PaymentStatus == "PartiallyPaid" && o.BrewingStatus != "Cancelled / Refunded");
+                }
                 else if (status == "Đang xử lý")
                 {
                     orders = orders.Where(o => o.BrewingStatus != "Completed" && o.BrewingStatus != "Done"
@@ -523,11 +539,17 @@ namespace SEP490_G52_CSMS.Services
                     bool isPartialRefund = (!isMissing && o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount);
                     bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount));
                     bool isDone = !isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+                    bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "Unpaid");
+                    bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "PartiallyPaid");
+                    bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing");
 
-                    string displayStatus = isMissing ? "thiếu nguyên liệu (chờ xử lý)" :
+                    string displayStatus = isMissing ? "Thiếu nguyên liệu (chờ xử lý)" :
                                            (isPartialRefund ? "Hoàn tiền 1 phần" :
                                            (isCancelled ? "Đã hủy / Hoàn tiền" :
-                                           (isDone ? "đã hoàn thành" : "đang xử lý")));
+                                           (isDone ? "Đã hoàn thành" :
+                                           (isUnpaid ? "Chờ thanh toán" :
+                                           (isPartiallyPaid ? "Thanh toán 1 phần" :
+                                           (isBrewing ? "Đang pha chế" : "Đang chờ pha chế"))))));
 
                     return new OrderSummaryViewModel
                     {
@@ -539,6 +561,8 @@ namespace SEP490_G52_CSMS.Services
                         PaymentStatus = o.PaymentStatus,
                         BrewingStatus = o.BrewingStatus,
                         TotalAmount = o.TotalAmount,
+                        CashAmount = o.CashAmount,
+                        BankAmount = o.BankAmount,
                         RefundAmount = o.RefundAmount,
                         RefundReason = o.RefundReason,
                         DisplayStatus = displayStatus,
@@ -598,12 +622,17 @@ namespace SEP490_G52_CSMS.Services
             bool isPartialRefund = (!isMissing && order.RefundAmount > 0 && order.RefundAmount < order.TotalAmount);
             bool isCancelled = (!isMissing && (order.BrewingStatus == "Cancelled / Refunded" || order.PaymentStatus == "Cancelled" || order.RefundAmount >= order.TotalAmount));
             bool isDone = !isCancelled && !isMissing && !isPartialRefund && (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done");
+            bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (order.PaymentStatus == "Unpaid");
+            bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (order.PaymentStatus == "PartiallyPaid");
+            bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isUnpaid && !isPartiallyPaid && (order.BrewingStatus == "Brewing in Progress" || order.BrewingStatus == "Brewing");
 
-            string displayStatus = isMissing ? "thiếu nguyên liệu (chờ xử lý)" :
+            string displayStatus = isMissing ? "Thiếu nguyên liệu (chờ xử lý)" :
                                    (isPartialRefund ? "Hoàn tiền 1 phần" :
                                    (isCancelled ? "Đã hủy / Hoàn tiền" :
-                                   (isDone ? "đã hoàn thành" :
-                                   (order.BrewingStatus == "Waiting for Brewing" ? "đang chờ pha chế" : "đang trong quá trình pha chế"))));
+                                   (isDone ? "Đã hoàn thành" :
+                                   (isUnpaid ? "Chờ thanh toán" :
+                                   (isPartiallyPaid ? "Thanh toán 1 phần" :
+                                   (isBrewing ? "Đang pha chế" : "Đang chờ pha chế"))))));
 
             decimal missingAmount = 0;
             if (isMissing && !string.IsNullOrEmpty(order.RefundReason) && order.RefundReason.Contains("Ước tính hoàn:"))
@@ -636,6 +665,8 @@ namespace SEP490_G52_CSMS.Services
                 PaymentStatus = order.PaymentStatus,
                 DisplayStatus = displayStatus,
                 TotalAmount = order.TotalAmount,
+                CashAmount = order.CashAmount,
+                BankAmount = order.BankAmount,
                 RefundAmount = order.RefundAmount,
                 RefundReason = order.RefundReason,
                 RefundMethod = order.RefundMethod,

@@ -590,6 +590,32 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new { success = true });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> CancelUnpaidOrder(string orderId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                return BadRequest(new { success = false, message = "Mã đơn hàng không hợp lệ." });
+            }
+
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            if (order == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy đơn hàng." });
+            }
+
+            if (order.PaymentStatus != "Unpaid")
+            {
+                return BadRequest(new { success = false, message = "Chỉ có thể hủy trực tiếp các đơn chưa thanh toán." });
+            }
+
+            order.PaymentStatus = "Cancelled";
+            order.BrewingStatus = "Cancelled / Refunded";
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Đã hủy đơn hàng chưa thanh toán." });
+        }
+
         public async Task<IActionResult> OrderHistory(string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1)
         {
             var branchId = await GetUserBranchIdAsync();

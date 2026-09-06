@@ -68,9 +68,12 @@
                             <label class="form-label fw-semibold text-secondary small mb-1">Trạng thái</label>
                             <select name="status" class="form-select form-select-sm" onchange="document.getElementById('filterForm').submit()">
                                 <option value="Tất cả" selected="@(Model.StatusFilter == "Tất cả")">Tất cả</option>
+                                <option value="Đang chờ pha chế" selected="@(Model.StatusFilter == "Đang chờ pha chế")">Đang chờ pha chế</option>
+                                <option value="Đang pha chế" selected="@(Model.StatusFilter == "Đang pha chế")">Đang pha chế</option>
+                                <option value="Chờ thanh toán" selected="@(Model.StatusFilter == "Chờ thanh toán")">Chờ thanh toán</option>
+                                <option value="Thanh toán 1 phần" selected="@(Model.StatusFilter == "Thanh toán 1 phần")">Thanh toán 1 phần</option>
                                 <option value="Thiếu nguyên liệu / Chờ xử lý" selected="@(Model.StatusFilter == "Thiếu nguyên liệu / Chờ xử lý" || Model.StatusFilter == "Thiếu nguyên liệu")">Thiếu nguyên liệu (Chờ xử lý)</option>
                                 <option value="Hoàn tiền 1 phần" selected="@(Model.StatusFilter == "Hoàn tiền 1 phần" || Model.StatusFilter == "Hoàn tiền một phần")">Hoàn tiền 1 phần</option>
-                                <option value="Đang xử lý" selected="@(Model.StatusFilter == "Đang xử lý")">Đang xử lý</option>
                                 <option value="Đã hoàn thành" selected="@(Model.StatusFilter == "Đã hoàn thành")">Đã hoàn thành</option>
                                 <option value="Đã hủy / Hoàn tiền" selected="@(Model.StatusFilter == "Đã hủy / Hoàn tiền" || Model.StatusFilter == "Đã hủy")">Đã hủy / Hoàn tiền</option>
                             </select>
@@ -134,8 +137,17 @@
                                     bool isMissing = o.IsMissingIngredients || o.BrewingStatus == "Missing Ingredients";
                                     bool isPartialRefund = (!isMissing && (o.DisplayStatus == "Hoàn tiền 1 phần" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount)));
                                     bool isCancelled = (!isMissing && !isPartialRefund && (o.DisplayStatus.Contains("hủy") || o.DisplayStatus.Contains("Hoàn tiền") || o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount));
-                                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && (o.DisplayStatus == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
-                                    string rowStyle = isMissing ? "table-danger fw-semibold" : (isPartialRefund ? "table-warning" : (isCancelled ? "table-light text-muted" : (isDone ? "table-success" : "table-light")));
+                                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && (o.DisplayStatus.ToLower() == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+                                    bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "Unpaid" || o.DisplayStatus == "Chờ thanh toán");
+                                    bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "PartiallyPaid" || o.DisplayStatus == "Thanh toán 1 phần");
+                                    bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing" || o.DisplayStatus == "Đang pha chế");
+
+                                    string rowStyle = isMissing ? "table-danger fw-semibold" : 
+                                                     (isPartialRefund ? "table-warning" : 
+                                                     (isCancelled ? "table-light text-muted" : 
+                                                     (isDone ? "table-success" : 
+                                                     (isUnpaid ? "table-secondary" :
+                                                     (isPartiallyPaid ? "table-info" : "table-light")))));
 
                                     <tr class="history-order-row @rowStyle" data-order-id="@o.OrderId" onclick="loadOrderDetails('@o.OrderId')">
                                         <td class="ps-3 text-secondary">@stt</td>
@@ -167,10 +179,28 @@
                                                     <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
                                                 </span>
                                             }
+                                            else if (isUnpaid)
+                                            {
+                                                <span class="badge bg-secondary text-white px-2.5 py-1 rounded-pill">
+                                                    <i class="bi bi-hourglass-split me-1"></i>Chờ thanh toán
+                                                </span>
+                                            }
+                                            else if (isPartiallyPaid)
+                                            {
+                                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2.5 py-1 rounded-pill fw-semibold">
+                                                    <i class="bi bi-pie-chart-fill me-1"></i>Thanh toán 1 phần
+                                                </span>
+                                            }
+                                            else if (isBrewing)
+                                            {
+                                                <span class="badge bg-primary text-white px-2.5 py-1 rounded-pill">
+                                                    <i class="bi bi-cup-hot-fill me-1"></i>Đang pha chế
+                                                </span>
+                                            }
                                             else
                                             {
                                                 <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill">
-                                                    <i class="bi bi-clock-history me-1"></i>Đang xử lý
+                                                    <i class="bi bi-clock-history me-1"></i>Đang chờ pha chế
                                                 </span>
                                             }
                                         </td>
@@ -556,6 +586,37 @@
                     .catch(err => {
                         console.error(err);
                         showToast('Lỗi khi gửi yêu cầu hoàn tiền.', 'danger');
+                    });
+                }
+            );
+        }
+
+        function cancelUnpaidOrder(orderId) {
+            if (!orderId) return;
+
+            var confirmMsg = `Bạn có chắc chắn muốn <strong>hủy đơn hàng ${orderId}</strong>?<br><br><span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Đơn hàng chưa thanh toán nên sẽ không phát sinh tiền hoàn trả.</span>`;
+
+            showConfirmModal(
+                'Xác nhận hủy đơn chưa thanh toán',
+                confirmMsg,
+                function() {
+                    fetch('@Url.Action("CancelUnpaidOrder", "SaleManagement")?orderId=' + encodeURIComponent(orderId), {
+                        method: 'POST'
+                    })
+                    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+                    .then(res => {
+                        if (res.body.success) {
+                            showToast(res.body.message || 'Đã hủy đơn hàng thành công!', 'success');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 600);
+                        } else {
+                            showToast(res.body.message || 'Thất bại khi hủy đơn hàng.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Lỗi khi gửi yêu cầu hủy đơn hàng.', 'danger');
                     });
                 }
             );
