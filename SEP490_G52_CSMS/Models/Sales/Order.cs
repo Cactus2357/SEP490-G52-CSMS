@@ -25,14 +25,6 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Column("total_amount")]
         public decimal TotalAmount { get; set; }
 
-        /// <summary> Số tiền thực thu bằng tiền mặt (dùng cho thanh toán đơn hoặc kết hợp) </summary>
-        [Column("cash_amount")]
-        public decimal CashAmount { get; set; } = 0;
-
-        /// <summary> Số tiền thực thu qua chuyển khoản (dùng cho thanh toán đơn hoặc kết hợp) </summary>
-        [Column("bank_amount")]
-        public decimal BankAmount { get; set; } = 0;
-
         [Column("payment_method")]
         [StringLength(200)]
         public string? PaymentMethod { get; set; }
@@ -76,29 +68,6 @@ namespace SEP490_G52_CSMS.Models.Sales
         [StringLength(255)]
         public string? OrderNotes { get; set; }
 
-        /// <summary> Mã giao dịch ngân hàng (đối soát chuyển khoản) </summary>
-        [Column("bank_transaction_code")]
-        [StringLength(100)]
-        public string? BankTransactionCode { get; set; }
-
-        /// <summary> Số tiền đã hoàn (nếu phát sinh hủy/thiếu nguyên liệu) </summary>
-        [Column("refund_amount")]
-        public decimal RefundAmount { get; set; } = 0;
-
-        /// <summary> Lý do hoàn tiền </summary>
-        [Column("refund_reason")]
-        [StringLength(255)]
-        public string? RefundReason { get; set; }
-
-        /// <summary> Phương thức hoàn tiền: Cash / BankTransfer </summary>
-        [Column("refund_method")]
-        [StringLength(50)]
-        public string? RefundMethod { get; set; }
-
-        /// <summary> Thời điểm hoàn tiền </summary>
-        [Column("refunded_at")]
-        public DateTime? RefundedAt { get; set; }
-
         [ForeignKey("BranchId")]
         public virtual Core.Branch? Branch { get; set; }
 
@@ -106,5 +75,63 @@ namespace SEP490_G52_CSMS.Models.Sales
         public virtual Employees.Employee? Cashier { get; set; }
 
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new HashSet<OrderItem>();
+
+        /// <summary> Danh sách các giao dịch thanh toán / hoàn tiền thuộc đơn hàng </summary>
+        public virtual ICollection<Payment> Payments { get; set; } = new HashSet<Payment>();
+
+        // ==================== HELPER COMPUTED PROPERTIES ([NotMapped]) ====================
+        /// <summary> Tổng số tiền thực thu thành công (cả tiền mặt & chuyển khoản) </summary>
+        [NotMapped]
+        public decimal PaidAmount => Payments?.Where(p => p.Status == "Success" && p.PaymentType == "Payment").Sum(p => p.Amount) ?? 0;
+
+        /// <summary> Tổng tiền mặt đã thu </summary>
+        [NotMapped]
+        public decimal CashPaid => Payments?.Where(p => p.Status == "Success" && p.PaymentType == "Payment" && p.PaymentMethod == "Cash").Sum(p => p.Amount) ?? 0;
+
+        /// <summary> Tổng tiền chuyển khoản đã thu </summary>
+        [NotMapped]
+        public decimal BankPaid => Payments?.Where(p => p.Status == "Success" && p.PaymentType == "Payment" && p.PaymentMethod != "Cash").Sum(p => p.Amount) ?? 0;
+
+        /// <summary> Tổng số tiền đã hoàn trả cho khách </summary>
+        [NotMapped]
+        public decimal RefundedAmount => Payments?.Where(p => p.Status == "Success" && p.PaymentType == "Refund").Sum(p => p.Amount) ?? 0;
+
+        /// <summary> Số tiền còn thiếu cần thanh toán </summary>
+        [NotMapped]
+        public decimal RemainingAmount => Math.Max(0, TotalAmount - PaidAmount);
+
+        /// <summary> Mã giao dịch chuyển khoản mới nhất </summary>
+        [NotMapped]
+        public string? LatestBankTransactionCode => Payments?.OrderByDescending(p => p.CreatedAt).FirstOrDefault(p => !string.IsNullOrEmpty(p.TransactionCode))?.TransactionCode;
+
+        /// <summary> Lý do hoàn tiền mới nhất </summary>
+        [NotMapped]
+        public string? LatestRefundReason => Payments?.OrderByDescending(p => p.CreatedAt).FirstOrDefault(p => p.PaymentType == "Refund" && !string.IsNullOrEmpty(p.Notes))?.Notes;
+
+        /// <summary> Thời điểm hoàn tiền mới nhất </summary>
+        [NotMapped]
+        public DateTime? LatestRefundedAt => Payments?.OrderByDescending(p => p.CreatedAt).FirstOrDefault(p => p.PaymentType == "Refund")?.CreatedAt;
+
+        // ==================== BACKWARD-COMPATIBLE READ-ONLY ALIASES ====================
+        [NotMapped]
+        public decimal CashAmount => CashPaid;
+
+        [NotMapped]
+        public decimal BankAmount => BankPaid;
+
+        [NotMapped]
+        public decimal RefundAmount => RefundedAmount;
+
+        [NotMapped]
+        public string? BankTransactionCode => LatestBankTransactionCode;
+
+        [NotMapped]
+        public string? RefundReason => LatestRefundReason;
+
+        [NotMapped]
+        public string? RefundMethod => Payments?.OrderByDescending(p => p.CreatedAt).FirstOrDefault(p => p.PaymentType == "Refund")?.PaymentMethod;
+
+        [NotMapped]
+        public DateTime? RefundedAt => LatestRefundedAt;
     }
 }

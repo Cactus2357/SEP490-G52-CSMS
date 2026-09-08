@@ -285,7 +285,6 @@
                             <span>Mã đơn: <strong id="recOrderId">MH260903-001</strong></span>
                             <span id="recOrderTime">03/09/2026 10:30</span>
                         </div>
-                        <div>Thu ngân: <span id="recCashierName">QuânVQ</span></div>
                         <div class="mt-1">
                             <strong>Vị trí / Bàn: <span id="recTableNumber" class="text-uppercase">Bàn 05</span></strong>
                         </div>
@@ -299,10 +298,11 @@
                     <table class="w-100 mb-2 border-bottom border-dark" style="font-size: 12px;">
                         <thead>
                             <tr class="border-bottom border-dark">
+                                <th class="text-center py-1" style="width: 25px;">STT</th>
                                 <th class="text-start py-1">Món</th>
-                                <th class="text-center py-1" style="width: 30px;">SL</th>
-                                <th class="text-end py-1" style="width: 60px;">Đ.Giá</th>
-                                <th class="text-end py-1" style="width: 70px;">T.Tiền</th>
+                                <th class="text-center py-1" style="width: 28px;">SL</th>
+                                <th class="text-end py-1" style="width: 58px;">Đ.Giá</th>
+                                <th class="text-end py-1" style="width: 68px;">T.Tiền</th>
                             </tr>
                         </thead>
                         <tbody id="recItemsBody">
@@ -936,7 +936,9 @@
                     document.getElementById('recBranchPhone').innerText = data.branchPhone || '';
                     document.getElementById('recOrderId').innerText = data.orderId;
                     document.getElementById('recOrderTime').innerText = data.orderTime;
-                    document.getElementById('recCashierName').innerText = data.cashierName;
+                    if (document.getElementById('recCashierName')) {
+                        document.getElementById('recCashierName').innerText = data.cashierName;
+                    }
                     document.getElementById('recTableNumber').innerText = data.tableNumber || 'Mang về';
                     document.getElementById('recCustomerName').innerText = data.customerName || 'Khách lẻ';
 
@@ -949,9 +951,10 @@
                     }
 
                     var itemsHtml = '';
-                    (data.items || []).forEach(item => {
+                    (data.items || []).forEach((item, idx) => {
                         itemsHtml += `
                             <tr>
+                                <td class="text-center py-1 text-muted font-monospace">${idx + 1}</td>
                                 <td class="py-1">
                                     <div class="fw-semibold">${item.productName}</div>
                                     <div class="small text-muted">Size: ${item.size}</div>

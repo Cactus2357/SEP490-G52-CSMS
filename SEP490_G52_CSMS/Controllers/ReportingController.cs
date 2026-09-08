@@ -93,6 +93,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             // 3. Table Data Grid (Per Branch Overview)
             var allMonthOrders = await _context.Orders
+                .Include(o => o.Payments)
                 .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
                 .ToListAsync();
 

@@ -11,7 +11,7 @@ using SEP490_G52_CSMS.Models.ViewModels;
 
 namespace SEP490_G52_CSMS.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "BranchManager")]
     public class SettingsController : Controller
     {
         private readonly CSMSAppDbContext _context;
@@ -206,6 +206,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             // 1. Direct match: Check if textToSearch contains any active unpaid or partially paid order's OrderId
             var unpaidOrders = await _context.Orders
+                .Include(o => o.Payments)
                 .Where(o => o.PaymentStatus == "Unpaid" || o.PaymentStatus == "PartiallyPaid")
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(50)
@@ -229,7 +230,9 @@ namespace SEP490_G52_CSMS.Controllers
                 foreach (Match match in matches)
                 {
                     string extractedId = match.Value.ToUpper();
-                    order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == extractedId || o.OrderId.Replace("-", "") == extractedId.Replace("-", ""));
+                    order = await _context.Orders
+                        .Include(o => o.Payments)
+                        .FirstOrDefaultAsync(o => o.OrderId == extractedId || o.OrderId.Replace("-", "") == extractedId.Replace("-", ""));
                     if (order != null) break;
                 }
             }
@@ -253,10 +256,26 @@ namespace SEP490_G52_CSMS.Controllers
                 paymentDetail = paymentDetail.Substring(0, 200);
             }
 
-            order.BankAmount += receivedAmount;
-            order.BankTransactionCode = refCode;
+            var payment = new Payment
+            {
+                OrderId = order.OrderId,
+                BranchId = order.BranchId,
+                CashierId = order.CashierId,
+                PaymentType = "Payment",
+                PaymentMethod = "BankTransfer",
+                Amount = receivedAmount,
+                TransactionCode = refCode,
+                Status = "Success",
+                Notes = paymentDetail,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.Payments.AddAsync(payment);
+            order.Payments.Add(payment);
 
-            if (order.BankAmount >= (order.TotalAmount - 1))
+            decimal totalBankReceived = order.BankPaid;
+            decimal totalPaid = order.PaidAmount;
+
+            if (totalPaid >= (order.TotalAmount - 1))
             {
                 order.PaymentStatus = "TransferSuccessPending";
                 order.PaymentMethod = paymentDetail;
@@ -267,10 +286,10 @@ namespace SEP490_G52_CSMS.Controllers
             else
             {
                 order.PaymentStatus = "PartiallyPaid";
-                order.PaymentMethod = $"CK SePay 1 phần ({refCode}) - Đã nhận:{order.BankAmount:N0}đ";
+                order.PaymentMethod = $"CK SePay 1 phần ({refCode}) - Đã nhận:{totalBankReceived:N0}đ";
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, isPartial = true, message = $"Partial transfer of {receivedAmount:N0}đ recorded. Total received: {order.BankAmount:N0}đ, Remaining: {(order.TotalAmount - order.BankAmount):N0}đ" });
+                return Json(new { success = true, isPartial = true, message = $"Partial transfer of {receivedAmount:N0}đ recorded. Total received: {totalBankReceived:N0}đ, Remaining: {(order.TotalAmount - totalPaid):N0}đ" });
             }
         }
     }

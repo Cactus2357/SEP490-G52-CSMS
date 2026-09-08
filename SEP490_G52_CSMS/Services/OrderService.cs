@@ -78,35 +78,43 @@ namespace SEP490_G52_CSMS.Services
             var order = await _orderRepo.GetOrderByIdAsync(orderId);
             if (order == null || order.PaymentStatus == "Paid") return false;
 
-            if (paymentMethod == "Cash" && customerCash.HasValue && customerCash > 0)
+            decimal? tendered = null;
+            decimal? change = null;
+            string actualMethod = paymentMethod ?? "Cash";
+
+            if (actualMethod == "Cash" && customerCash.HasValue && customerCash > 0)
             {
-                decimal change = changeAmount ?? Math.Max(0, customerCash.Value - order.TotalAmount);
-                order.PaymentMethod = $"Cash (Đưa:{customerCash.Value:N0}đ - Thừa:{change:N0}đ)";
-                order.CashAmount = order.TotalAmount;
-                order.BankAmount = 0;
-            }
-            else if (paymentMethod == "Cash")
-            {
-                order.PaymentMethod = paymentMethod;
-                order.CashAmount = order.TotalAmount;
-                order.BankAmount = 0;
+                tendered = customerCash.Value;
+                change = changeAmount ?? Math.Max(0, customerCash.Value - order.TotalAmount);
+                order.PaymentMethod = $"Cash (Đưa:{tendered.Value:N0}đ - Thừa:{change.Value:N0}đ)";
             }
             else
             {
-                order.PaymentMethod = paymentMethod;
-                order.CashAmount = 0;
-                order.BankAmount = order.TotalAmount;
+                order.PaymentMethod = actualMethod;
             }
 
-            if (!string.IsNullOrEmpty(bankTransactionCode))
+            // Ghi nhận bản ghi thanh toán vào bảng payments
+            var payment = new Payment
             {
-                order.BankTransactionCode = bankTransactionCode;
-            }
+                PaymentId = $"PAY-{order.OrderId}-{DateTime.UtcNow:HHmmss}-{Random.Shared.Next(100, 999)}",
+                OrderId = order.OrderId!,
+                BranchId = order.BranchId,
+                CashierId = order.CashierId,
+                PaymentType = "Payment",
+                PaymentMethod = actualMethod,
+                Amount = order.TotalAmount,
+                Status = "Success",
+                TransactionCode = bankTransactionCode,
+                CustomerCash = tendered,
+                ChangeAmount = change,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Payments.Add(payment);
 
             order.PaymentStatus = "Paid";
             order.BrewingStatus = "Waiting for Brewing";
 
-            await _orderRepo.UpdateOrderAsync(order);
+            await _context.SaveChangesAsync();
 
             // [BR-Inventory] Tự động trừ tồn kho theo Recipe ngay khi thanh toán thành công
             if (order.OrderItems != null && order.OrderItems.Any())
@@ -122,27 +130,60 @@ namespace SEP490_G52_CSMS.Services
             var order = await _orderRepo.GetOrderByIdAsync(orderId);
             if (order == null || order.PaymentStatus == "Paid") return false;
 
-            order.CashAmount = cashAmount;
-            order.BankAmount = bankAmount;
-
             string cashDetail = "";
+            decimal? tendered = null;
+            decimal? change = null;
             if (customerCash.HasValue && customerCash > 0)
             {
-                decimal change = changeAmount ?? Math.Max(0, customerCash.Value - cashAmount);
-                cashDetail = $" (Đưa:{customerCash.Value:N0}đ - Thừa:{change:N0}đ)";
+                tendered = customerCash.Value;
+                change = changeAmount ?? Math.Max(0, customerCash.Value - cashAmount);
+                cashDetail = $" (Đưa:{tendered.Value:N0}đ - Thừa:{change.Value:N0}đ)";
             }
 
             order.PaymentMethod = $"Split (CK:{bankAmount:N0}đ + TM:{cashAmount:N0}đ{cashDetail})";
 
-            if (!string.IsNullOrEmpty(bankTransactionCode))
+            // Ghi nhận 2 bản ghi thanh toán độc lập vào bảng payments:
+            // 1. Chuyển khoản
+            if (bankAmount > 0)
             {
-                order.BankTransactionCode = bankTransactionCode;
+                _context.Payments.Add(new Payment
+                {
+                    PaymentId = $"PAY-{order.OrderId}-BNK-{DateTime.UtcNow:HHmmss}",
+                    OrderId = order.OrderId!,
+                    BranchId = order.BranchId,
+                    CashierId = order.CashierId,
+                    PaymentType = "Payment",
+                    PaymentMethod = "BankTransfer",
+                    Amount = bankAmount,
+                    Status = "Success",
+                    TransactionCode = bankTransactionCode,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            // 2. Tiền mặt
+            if (cashAmount > 0)
+            {
+                _context.Payments.Add(new Payment
+                {
+                    PaymentId = $"PAY-{order.OrderId}-CSH-{DateTime.UtcNow:HHmmss}",
+                    OrderId = order.OrderId!,
+                    BranchId = order.BranchId,
+                    CashierId = order.CashierId,
+                    PaymentType = "Payment",
+                    PaymentMethod = "Cash",
+                    Amount = cashAmount,
+                    Status = "Success",
+                    CustomerCash = tendered,
+                    ChangeAmount = change,
+                    CreatedAt = DateTime.UtcNow
+                });
             }
 
             order.PaymentStatus = "Paid";
             order.BrewingStatus = "Waiting for Brewing";
 
-            await _orderRepo.UpdateOrderAsync(order);
+            await _context.SaveChangesAsync();
 
             // [BR-Inventory] Tự động trừ tồn kho theo Recipe ngay khi thanh toán thành công
             if (order.OrderItems != null && order.OrderItems.Any())
@@ -159,10 +200,21 @@ namespace SEP490_G52_CSMS.Services
             if (order == null) return false;
 
             decimal effectiveRefund = refundAmount > 0 ? refundAmount : order.TotalAmount;
-            order.RefundAmount = effectiveRefund;
-            order.RefundReason = reason;
-            order.RefundMethod = "Cash";
-            order.RefundedAt = DateTime.UtcNow;
+
+            // Ghi nhận bản ghi hoàn tiền vào bảng payments
+            _context.Payments.Add(new Payment
+            {
+                PaymentId = $"REF-{order.OrderId}-{DateTime.UtcNow:HHmmss}",
+                OrderId = order.OrderId!,
+                BranchId = order.BranchId,
+                CashierId = cashierId,
+                PaymentType = "Refund",
+                PaymentMethod = "Cash",
+                Amount = effectiveRefund,
+                Status = "Success",
+                Notes = reason,
+                CreatedAt = DateTime.UtcNow
+            });
 
             bool isPartial = (effectiveRefund < order.TotalAmount);
             if (isPartial)
@@ -182,7 +234,7 @@ namespace SEP490_G52_CSMS.Services
                 }
             }
 
-            await _orderRepo.UpdateOrderAsync(order);
+            await _context.SaveChangesAsync();
 
             // Cập nhật dòng tiền mặt của ca hiện tại nếu có ca đang mở
             if (!string.IsNullOrEmpty(order.BranchId))
@@ -253,7 +305,7 @@ namespace SEP490_G52_CSMS.Services
             string missingNames = string.Join(", ", missingItems.Select(oi => $"{oi.ProductVariant?.MasterProduct?.ProductName} ({oi.ProductVariant?.SizeVariant} x{oi.Quantity})"));
 
             order.BrewingStatus = "Missing Ingredients";
-            order.RefundReason = $"[Báo thiếu NL: {missingNames}] Lý do: {reason ?? "Hết nguyên liệu pha chế"}. (Ước tính hoàn: {missingTotalAmount:N0}đ)";
+            order.OrderNotes = $"[Báo thiếu NL: {missingNames}] Lý do: {reason ?? "Hết nguyên liệu pha chế"}. (Ước tính hoàn: {missingTotalAmount:N0}đ)";
 
             // Hoàn trả lại nguyên liệu của các món bị thiếu vào kho chi nhánh
             await RestoreInventoryForItemsAsync(order.BranchId, missingItems.Select(oi => (oi.VariantId, oi.Quantity)));
@@ -314,10 +366,22 @@ namespace SEP490_G52_CSMS.Services
             {
                 // Tổng mới < Tổng cũ -> Hoàn lại phần tiền thừa cho khách
                 refundDiff = Math.Abs(diff);
-                order.RefundAmount += refundDiff;
-                order.RefundReason = $"[Đổi món] Đơn gốc: {oldTotal:N0}đ, Đơn mới: {newTotal:N0}đ. Hoàn thừa: {refundDiff:N0}đ. Lý do: {reason ?? "Đổi món do thiếu nguyên liệu"}";
-                order.RefundMethod = "Cash";
-                order.RefundedAt = DateTime.UtcNow;
+                string refundNotes = $"[Đổi món] Đơn gốc: {oldTotal:N0}đ, Đơn mới: {newTotal:N0}đ. Hoàn thừa: {refundDiff:N0}đ. Lý do: {reason ?? "Đổi món do thiếu nguyên liệu"}";
+
+                var refundPayment = new Payment
+                {
+                    OrderId = order.OrderId,
+                    BranchId = order.BranchId,
+                    CashierId = cashierId,
+                    PaymentType = "Refund",
+                    PaymentMethod = "Cash",
+                    Amount = refundDiff,
+                    Status = "Success",
+                    Notes = refundNotes,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _context.Payments.AddAsync(refundPayment);
+                order.Payments.Add(refundPayment);
 
                 if (activeHandover != null)
                 {
@@ -331,6 +395,21 @@ namespace SEP490_G52_CSMS.Services
                 additionalAmount = diff;
                 string addPayStr = paymentMethod == "Cash" ? "Tiền mặt" : "Chuyển khoản";
                 order.PaymentMethod = $"{order.PaymentMethod} + Thu thêm {addPayStr} ({additionalAmount:N0}đ)";
+
+                var addPayment = new Payment
+                {
+                    OrderId = order.OrderId,
+                    BranchId = order.BranchId,
+                    CashierId = cashierId,
+                    PaymentType = "Payment",
+                    PaymentMethod = paymentMethod == "Cash" ? "Cash" : "BankTransfer",
+                    Amount = additionalAmount,
+                    Status = "Success",
+                    Notes = $"[Đổi món] Thu thêm: {additionalAmount:N0}đ ({addPayStr})",
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _context.Payments.AddAsync(addPayment);
+                order.Payments.Add(addPayment);
 
                 if (activeHandover != null)
                 {
@@ -635,9 +714,10 @@ namespace SEP490_G52_CSMS.Services
                                    (isBrewing ? "Đang pha chế" : "Đang chờ pha chế"))))));
 
             decimal missingAmount = 0;
-            if (isMissing && !string.IsNullOrEmpty(order.RefundReason) && order.RefundReason.Contains("Ước tính hoàn:"))
+            string? missingNote = order.OrderNotes ?? order.RefundReason;
+            if (isMissing && !string.IsNullOrEmpty(missingNote) && missingNote.Contains("Ước tính hoàn:"))
             {
-                var match = System.Text.RegularExpressions.Regex.Match(order.RefundReason, @"Ước tính hoàn:\s*([\d\.,]+)đ");
+                var match = System.Text.RegularExpressions.Regex.Match(missingNote, @"Ước tính hoàn:\s*([\d\.,]+)đ");
                 if (match.Success)
                 {
                     string numStr = match.Groups[1].Value.Replace(".", "").Replace(",", "");
@@ -673,7 +753,7 @@ namespace SEP490_G52_CSMS.Services
                 RefundedAt = order.RefundedAt,
                 IsMissingIngredients = isMissing,
                 MissingItemsAmount = missingAmount > 0 ? missingAmount : order.TotalAmount,
-                MissingIngredientsDetail = order.RefundReason,
+                MissingIngredientsDetail = missingNote,
                 Items = order.OrderItems.Select(oi => new OrderItemViewModel
                 {
                     VariantId = oi.VariantId,

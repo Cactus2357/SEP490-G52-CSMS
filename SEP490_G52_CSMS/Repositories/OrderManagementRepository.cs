@@ -26,6 +26,7 @@ namespace SEP490_G52_CSMS.Repositories
         {
             var query = _context.Orders
                 .Include(o => o.Cashier)
+                .Include(o => o.Payments)
                 .Include(o => o.OrderItems)
                 .AsNoTracking();
 
@@ -104,6 +105,7 @@ namespace SEP490_G52_CSMS.Repositories
         {
             var query = _context.Orders
                 .Include(o => o.Cashier)
+                .Include(o => o.Payments)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductVariant)
                         .ThenInclude(pv => pv.MasterProduct)

@@ -896,39 +896,29 @@ namespace SEP490_G52_CSMS.Models
                         ALTER TABLE [orders] ALTER COLUMN [payment_method] nvarchar(200) NULL;
                     END
 
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'bank_transaction_code')
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'payments')
                     BEGIN
-                        ALTER TABLE [orders] ADD [bank_transaction_code] nvarchar(100) NULL;
-                    END
-
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refund_amount')
-                    BEGIN
-                        ALTER TABLE [orders] ADD [refund_amount] decimal(18,2) NOT NULL DEFAULT 0;
-                    END
-
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refund_reason')
-                    BEGIN
-                        ALTER TABLE [orders] ADD [refund_reason] nvarchar(255) NULL;
-                    END
-
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refund_method')
-                    BEGIN
-                        ALTER TABLE [orders] ADD [refund_method] nvarchar(50) NULL;
-                    END
-
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'refunded_at')
-                    BEGIN
-                        ALTER TABLE [orders] ADD [refunded_at] datetime2 NULL;
-                    END
-
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'cash_amount')
-                    BEGIN
-                        ALTER TABLE [orders] ADD [cash_amount] decimal(18,2) NOT NULL DEFAULT 0;
-                    END
-
-                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'bank_amount')
-                    BEGIN
-                        ALTER TABLE [orders] ADD [bank_amount] decimal(18,2) NOT NULL DEFAULT 0;
+                        CREATE TABLE [payments] (
+                            [payment_id] nvarchar(50) NOT NULL,
+                            [order_id] nvarchar(50) NOT NULL,
+                            [branch_id] nvarchar(20) NULL,
+                            [cashier_id] int NULL,
+                            [payment_type] nvarchar(20) NOT NULL DEFAULT 'Payment',
+                            [payment_method] nvarchar(50) NOT NULL,
+                            [amount] decimal(18,2) NOT NULL,
+                            [status] nvarchar(20) NOT NULL DEFAULT 'Success',
+                            [transaction_code] nvarchar(100) NULL,
+                            [customer_cash] decimal(18,2) NULL,
+                            [change_amount] decimal(18,2) NULL,
+                            [notes] nvarchar(255) NULL,
+                            [created_at] datetime2 NOT NULL DEFAULT GETDATE(),
+                            CONSTRAINT [PK_payments] PRIMARY KEY ([payment_id]),
+                            CONSTRAINT [FK_payments_orders] FOREIGN KEY ([order_id]) REFERENCES [orders]([order_id]) ON DELETE NO ACTION,
+                            CONSTRAINT [FK_payments_branches] FOREIGN KEY ([branch_id]) REFERENCES [branches]([branch_id]),
+                            CONSTRAINT [FK_payments_employees] FOREIGN KEY ([cashier_id]) REFERENCES [employees]([employee_id])
+                        );
+                        CREATE INDEX [IX_payments_order_id] ON [payments]([order_id]);
+                        CREATE INDEX [IX_payments_created_at] ON [payments]([created_at]);
                     END
 
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'table_number')
@@ -1006,6 +996,20 @@ namespace SEP490_G52_CSMS.Models
                             FROM [weekly_roster_grids]
                         )
                         DELETE FROM CTE WHERE rn > 1;
+                    END
+
+                    -- Đảm bảo FK giữa payments và orders là NO ACTION (không delete cascade, không đổi sang null)
+                    IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_payments_orders' AND delete_referential_action_desc = 'CASCADE')
+                    BEGIN
+                        ALTER TABLE [payments] DROP CONSTRAINT [FK_payments_orders];
+                        ALTER TABLE [payments] ADD CONSTRAINT [FK_payments_orders] FOREIGN KEY ([order_id]) REFERENCES [orders]([order_id]) ON DELETE NO ACTION;
+                    END
+
+                    -- Đảm bảo FK giữa orders và employees là NO ACTION (không delete cascade, không đổi sang null)
+                    IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_orders_employees_cashier_id' AND delete_referential_action_desc = 'CASCADE')
+                    BEGIN
+                        ALTER TABLE [orders] DROP CONSTRAINT [FK_orders_employees_cashier_id];
+                        ALTER TABLE [orders] ADD CONSTRAINT [FK_orders_employees_cashier_id] FOREIGN KEY ([cashier_id]) REFERENCES [employees]([employee_id]) ON DELETE NO ACTION;
                     END");
             }
             catch { }

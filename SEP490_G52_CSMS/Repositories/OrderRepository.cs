@@ -26,6 +26,7 @@ namespace SEP490_G52_CSMS.Repositories
             return await _context.Orders
                 .Include(o => o.Branch)
                 .Include(o => o.Cashier)
+                .Include(o => o.Payments)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.MasterProduct)
@@ -35,6 +36,7 @@ namespace SEP490_G52_CSMS.Repositories
         public async Task<IEnumerable<Order>> GetAllOrdersAsync()
         {
             return await _context.Orders
+                .Include(o => o.Payments)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.MasterProduct)
@@ -58,6 +60,7 @@ namespace SEP490_G52_CSMS.Repositories
         public async Task<IEnumerable<Order>> GetOrdersByStatusAsync(string paymentStatus, string brewingStatus, string? branchId = null)
         {
             var query = _context.Orders
+                .Include(o => o.Payments)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.MasterProduct)

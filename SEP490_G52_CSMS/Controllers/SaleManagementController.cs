@@ -442,13 +442,32 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> SimulateBankTransferSuccess(string orderId)
         {
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            var order = await _context.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
             string txCode = "QR-MANUAL-" + DateTime.UtcNow.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
             order.PaymentStatus = "TransferSuccessPending";
-            order.BankTransactionCode = txCode;
             order.PaymentMethod = $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{order.TotalAmount:N0}đ)";
+
+            var cashierId = await GetUserCashierIdAsync();
+            var branchId = await GetUserBranchIdAsync();
+
+            var payment = new Payment
+            {
+                OrderId = order.OrderId,
+                BranchId = branchId,
+                CashierId = cashierId,
+                PaymentType = "Payment",
+                PaymentMethod = "BankTransfer",
+                Amount = order.TotalAmount,
+                TransactionCode = txCode,
+                Status = "Success",
+                Notes = order.PaymentMethod,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.Payments.AddAsync(payment);
+            order.Payments.Add(payment);
+
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, transactionCode = txCode });
@@ -458,10 +477,10 @@ namespace SEP490_G52_CSMS.Controllers
         public async Task<IActionResult> CheckPaymentStatus(string orderId)
         {
             DbInitializer.EnsureTablesCreated(_context);
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            var order = await _context.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
-            decimal receivedBankAmount = order.BankAmount;
+            decimal receivedBankAmount = order.BankPaid;
             if (receivedBankAmount == 0 && !string.IsNullOrEmpty(order.PaymentMethod) && order.PaymentMethod.Contains("Đã nhận:"))
             {
                 var match = Regex.Match(order.PaymentMethod, @"Đã nhận:([\d\.,]+)đ?");
@@ -484,7 +503,7 @@ namespace SEP490_G52_CSMS.Controllers
                 receivedAmount = receivedBankAmount > 0 ? receivedBankAmount : order.TotalAmount,
                 bankAmount = receivedBankAmount,
                 remainingAmount = remainingAmount,
-                bankTransactionCode = order.BankTransactionCode
+                bankTransactionCode = order.LatestBankTransactionCode
             });
         }
 
@@ -504,7 +523,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest(new { success = false, message = message });
             }
 
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == model.OrderId);
+            var order = await _context.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.OrderId == model.OrderId);
             if (order == null)
             {
                 return NotFound(new { success = false, message = "Không tìm thấy đơn hàng." });
@@ -515,7 +534,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest(new { success = false, message = "Đơn hàng này đã được thanh toán hoàn tất." });
             }
 
-            decimal bankAmount = model.BankAmount > 0 ? model.BankAmount : order.BankAmount;
+            decimal bankAmount = model.BankAmount > 0 ? model.BankAmount : order.BankPaid;
             decimal cashAmount = model.CashAmount > 0 ? model.CashAmount : Math.Max(0, order.TotalAmount - bankAmount);
 
             bool result = await _orderService.ProcessSplitPaymentAsync(
@@ -524,7 +543,7 @@ namespace SEP490_G52_CSMS.Controllers
                 bankAmount,
                 model.CustomerCash,
                 model.ChangeAmount,
-                model.BankTransactionCode ?? order.BankTransactionCode
+                model.BankTransactionCode ?? order.LatestBankTransactionCode
             );
 
             if (result)
@@ -544,26 +563,45 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> SimulatePartialTransfer(string orderId, decimal amount)
         {
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
+            var order = await _context.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
             string txCode = "MBB-" + DateTime.Now.ToString("HHmmss");
-            order.BankAmount += amount;
-            order.BankTransactionCode = txCode;
+            var cashierId = await GetUserCashierIdAsync();
+            var branchId = await GetUserBranchIdAsync();
 
-            if (order.BankAmount >= (order.TotalAmount - 1))
+            var payment = new Payment
+            {
+                OrderId = order.OrderId,
+                BranchId = branchId,
+                CashierId = cashierId,
+                PaymentType = "Payment",
+                PaymentMethod = "BankTransfer",
+                Amount = amount,
+                TransactionCode = txCode,
+                Status = "Success",
+                Notes = $"Bank Transfer mô phỏng #{txCode}",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.Payments.AddAsync(payment);
+            order.Payments.Add(payment);
+
+            decimal totalBank = order.BankPaid;
+            decimal totalPaid = order.PaidAmount;
+
+            if (totalPaid >= (order.TotalAmount - 1))
             {
                 order.PaymentStatus = "TransferSuccessPending";
-                order.PaymentMethod = $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{order.BankAmount:N0}đ)";
+                order.PaymentMethod = $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{totalBank:N0}đ)";
             }
             else
             {
                 order.PaymentStatus = "PartiallyPaid";
-                order.PaymentMethod = $"Bank Transfer 1 phần (Xác nhận thủ công #{txCode} - Đã nhận:{order.BankAmount:N0}đ)";
+                order.PaymentMethod = $"Bank Transfer 1 phần (Xác nhận thủ công #{txCode} - Đã nhận:{totalBank:N0}đ)";
             }
 
             await _context.SaveChangesAsync();
-            return Json(new { success = true, bankAmount = order.BankAmount, remainingAmount = Math.Max(0, order.TotalAmount - order.BankAmount) });
+            return Json(new { success = true, bankAmount = totalBank, remainingAmount = Math.Max(0, order.TotalAmount - totalPaid) });
         }
 
         [HttpPost]
@@ -571,12 +609,12 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (!string.IsNullOrEmpty(orderId))
             {
-                var order = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.OrderId == orderId);
+                var order = await _context.Orders.Include(o => o.Payments).Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.OrderId == orderId);
                 if (order != null)
                 {
-                    if (order.PaymentStatus == "PartiallyPaid" || order.BankAmount > 0)
+                    if (order.PaymentStatus == "PartiallyPaid" || order.BankPaid > 0)
                     {
-                        return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.BankAmount:N0}đ chuyển khoản từ khách hàng. Không thể hủy đơn trực tiếp mà phải xử lý thu nốt hoặc hoàn tiền!" });
+                        return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.BankPaid:N0}đ chuyển khoản từ khách hàng. Không thể hủy đơn trực tiếp mà phải xử lý thu nốt hoặc hoàn tiền!" });
                     }
 
                     if (order.PaymentStatus == "Unpaid" || order.PaymentStatus == "Cancelled")

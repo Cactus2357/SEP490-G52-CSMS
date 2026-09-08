@@ -355,6 +355,7 @@ namespace SEP490_G52_CSMS.Repositories
         public async Task<(decimal cashRevenue, decimal bankRevenue, decimal cashRefunds)> GetShiftSalesStatsAsync(string branchId, int? cashierId, DateTime openedAt, DateTime? closedAt)
         {
             var query = _context.Orders
+                .Include(o => o.Payments)
                 .Where(o => o.BranchId == branchId 
                          && o.CreatedAt >= openedAt 
                          && (o.PaymentStatus == "Paid" || o.PaymentStatus == "Partially Refunded"));

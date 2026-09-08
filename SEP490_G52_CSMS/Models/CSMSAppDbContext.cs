@@ -25,6 +25,7 @@ namespace SEP490_G52_CSMS.Models
         public DbSet<MenuDetail> MenuDetails { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Payment> Payments { get; set; }
         public DbSet<Material> Materials { get; set; }
         public DbSet<Recipe> Recipes { get; set; }
         public DbSet<MaterialCategory> MaterialCategories { get; set; }
@@ -139,7 +140,46 @@ namespace SEP490_G52_CSMS.Models
             modelBuilder.Entity<Order>(entity =>
             {
                 entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
-                entity.Property(e => e.RefundAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.SubtotalAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.TradeDiscountAmount).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(o => o.Branch)
+                      .WithMany()
+                      .HasForeignKey(o => o.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(o => o.Cashier)
+                      .WithMany()
+                      .HasForeignKey(o => o.CashierId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(o => o.Payments)
+                      .WithOne(p => p.Order)
+                      .HasForeignKey(p => p.OrderId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Payment>(entity =>
+            {
+                entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.CustomerCash).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.ChangeAmount).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(p => p.Order)
+                      .WithMany(o => o.Payments)
+                      .HasForeignKey(p => p.OrderId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.Branch)
+                      .WithMany()
+                      .HasForeignKey(p => p.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.Cashier)
+                      .WithMany()
+                      .HasForeignKey(p => p.CashierId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<OrderItem>(entity =>
