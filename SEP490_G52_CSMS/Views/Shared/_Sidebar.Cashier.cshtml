@@ -32,6 +32,13 @@
 </li>
 
 <li class="menu-item">
+    <a asp-controller="Brewing" asp-action="ProductAvailability" class="menu-link @ActiveIf("Brewing", "ProductAvailability")" title="Tình trạng món / Hết hàng">
+        <i class="bi bi-cup-straw"></i>
+        <span>Tình trạng món</span>
+    </a>
+</li>
+
+<li class="menu-item">
     <a asp-controller="CashHandover" asp-action="Index" class="menu-link @ActiveIf("CashHandover")" title="Đóng, Mở/Bàn giao ca">
         <i class="bi bi-clock-history"></i>
         <span>Đóng, Mở/Bàn giao ca</span>

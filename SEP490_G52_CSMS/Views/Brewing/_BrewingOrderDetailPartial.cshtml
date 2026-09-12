@@ -47,6 +47,11 @@
 
     <div class="d-flex justify-content-between mt-5">
         <button type="button" class="btn btn-outline-dark rounded-0 px-4 fw-bold" data-bs-dismiss="modal">quay lại</button>
-        <button type="button" class="btn btn-outline-dark rounded-0 px-4 fw-bold" onclick="startBrewing()">Pha chế</button>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary rounded-0 px-3 fw-bold shadow-sm" onclick="openDeliverySlipModal('@Model.OrderId')">
+                <i class="bi bi-printer me-1"></i>In Phiếu Giao
+            </button>
+            <button type="button" class="btn btn-outline-dark rounded-0 px-4 fw-bold" onclick="startBrewing()">Pha chế</button>
+        </div>
     </div>
 </div>

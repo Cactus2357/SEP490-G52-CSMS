@@ -127,23 +127,35 @@
         <div class="catalog-column">
             <div class="catalog-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
                 <h3 class="fw-bold text-dark mb-0">Tạo đơn hàng</h3>
-                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm" onclick="openCustomerMonitor()">
-                    <i class="bi bi-display me-1"></i> Mở màn hình phụ (Khách)
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <a asp-controller="Brewing" asp-action="ProductAvailability" class="btn btn-outline-danger btn-sm fw-semibold shadow-sm" title="Xem và cập nhật tình trạng món hết hàng">
+                        <i class="bi bi-slash-circle me-1"></i> Quản lý món hết
+                    </a>
+                    <button type="button" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm" onclick="openCustomerMonitor()">
+                        <i class="bi bi-display me-1"></i> Mở màn hình phụ (Khách)
+                    </button>
+                </div>
             </div>
             
-            <div class="catalog-search-bar d-flex align-items-center gap-2 mb-3 w-100">
-                <div class="position-relative flex-grow-1">
+            <div class="catalog-search-bar d-flex align-items-center gap-2 mb-3 w-100 flex-wrap flex-md-nowrap">
+                <div class="position-relative flex-grow-1" style="min-width: 180px;">
                     <i class="bi bi-search position-absolute" style="left: 12px; top: 10px; color: #6c757d;"></i>
                     <input type="text" id="productSearch" class="form-control ps-5" placeholder="Tìm kiếm sản phẩm..." onkeyup="filterProducts()">
                 </div>
-                <div style="width: 160px; flex-shrink: 0;">
+                <div style="width: 150px; flex-shrink: 0;">
                     <select id="categoryFilter" class="form-select fw-semibold" onchange="filterProducts()">
                         <option value="">Tất cả loại</option>
                         @foreach (var cat in Model.Categories)
                         {
                             <option value="@cat.CategoryId">@cat.CategoryName</option>
                         }
+                    </select>
+                </div>
+                <div style="width: 155px; flex-shrink: 0;">
+                    <select id="statusFilter" class="form-select fw-semibold border-secondary-subtle" onchange="filterProducts()">
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="available">🟢 Đang phục vụ</option>
+                        <option value="unavailable">🔴 Tạm hết món</option>
                     </select>
                 </div>
             </div>
@@ -153,7 +165,7 @@
                     @foreach (var product in Model.MenuProducts)
                     {
                         bool isProductAvailable = product.IsAvailable;
-                        <div class="col-xl-6 col-12 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
+                        <div class="col-xl-6 col-12 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()" data-available="@(isProductAvailable ? "true" : "false")">
                             <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white product-item-card @(!isProductAvailable ? "product-unavailable" : "")"
                                  style="min-height: 90px; height: auto;"
                                  onclick='handleCardClick(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)), @(isProductAvailable ? "true" : "false"))'>
@@ -426,19 +438,37 @@
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
                 <h6 class="modal-title fw-bold text-dark mb-0">
-                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Order (K80)
+                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Giao (K80)
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-3 bg-light d-flex justify-content-center">
+            <div class="modal-body p-3 bg-light d-flex flex-column align-items-center">
+                <!-- Dual Mode Toggle -->
+                <div class="btn-group btn-group-sm mb-3 w-100 shadow-sm" role="group">
+                    <button type="button" class="btn btn-primary fw-semibold" id="btnModeReceipt" onclick="switchReceiptMode('receipt')">
+                        <i class="bi bi-receipt me-1"></i>Hóa đơn thanh toán
+                    </button>
+                    <button type="button" class="btn btn-outline-primary fw-semibold" id="btnModeDelivery" onclick="switchReceiptMode('delivery')">
+                        <i class="bi bi-ticket-detailed me-1"></i>Phiếu giao đồ (kẹp khay)
+                    </button>
+                </div>
+
                 <!-- Printable K80 Receipt Container -->
                 <div id="k80ReceiptContainer" class="bg-white p-3 shadow-sm border border-secondary border-opacity-25" style="width: 320px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.35; color: #000;">
                     <!-- Store Header -->
                     <div class="text-center pb-2 mb-2 border-bottom border-dark">
                         <div class="fw-bold text-uppercase fs-6">CSMS COFFEE</div>
-                        <div>Chi nhánh: <span id="recBranchName">Hà Đông</span></div>
+                        <div id="recDocTitle" class="fw-bold text-uppercase mt-1" style="font-size: 14px; letter-spacing: 0.5px;">HÓA ĐƠN THANH TOÁN</div>
+                        <div class="small mt-1">Chi nhánh: <span id="recBranchName">Hà Đông</span></div>
                         <div class="small">Địa chỉ: <span id="recBranchAddress">123 Nguyễn Trãi, Thanh Xuân, Hà Nội</span></div>
                         <div class="small">SĐT: <span id="recBranchPhone">0988.888.888</span></div>
+                    </div>
+
+                    <!-- Delivery Box (prominent for delivery slip mode) -->
+                    <div id="recDeliveryBadgeBox" class="p-2 mb-2 text-center border border-2 border-dark rounded d-none" style="background-color: #f8f9fa;">
+                        <div class="small text-uppercase fw-bold text-secondary" style="font-size: 11px;">VỊ TRÍ PHỤC VỤ</div>
+                        <div id="recDeliveryTableBadge" class="fs-4 fw-bolder text-uppercase text-dark my-1">BÀN 05</div>
+                        <div class="small text-muted" id="recDeliveryCustomerBadge">Khách: Anh Tuấn</div>
                     </div>
 
                     <!-- Order Info -->
@@ -447,12 +477,12 @@
                             <span>Mã đơn: <strong id="recOrderId">MH260903-001</strong></span>
                             <span id="recOrderTime">03/09/2026 10:30</span>
                         </div>
-                        <div class="mt-1">
+                        <div class="mt-1" id="recStandardTableRow">
                             <strong>Vị trí / Bàn: <span id="recTableNumber" class="text-uppercase">Bàn 05</span></strong>
                         </div>
-                        <div>Khách hàng: <span id="recCustomerName">Anh Tuấn</span></div>
-                        <div id="recNotesRow" class="d-none">
-                            Ghi chú: <em id="recOrderNotes">Ít ngọt</em>
+                        <div id="recStandardCustRow">Khách hàng: <span id="recCustomerName">Anh Tuấn</span></div>
+                        <div id="recNotesRow" class="d-none mt-1 p-1 border border-secondary border-opacity-50 rounded" style="background: #fff8e1;">
+                            <strong>Ghi chú:</strong> <em id="recOrderNotes">Ít ngọt</em>
                         </div>
                     </div>
 
@@ -462,9 +492,9 @@
                             <tr class="border-bottom border-dark">
                                 <th class="text-center py-1" style="width: 25px;">STT</th>
                                 <th class="text-start py-1">Món</th>
-                                <th class="text-center py-1" style="width: 28px;">SL</th>
-                                <th class="text-end py-1" style="width: 58px;">Đ.Giá</th>
-                                <th class="text-end py-1" style="width: 68px;">T.Tiền</th>
+                                <th class="text-center py-1" style="width: 32px;">SL</th>
+                                <th class="text-end py-1 rec-price-col" style="width: 58px;">Đ.Giá</th>
+                                <th class="text-end py-1 rec-price-col" style="width: 68px;">T.Tiền</th>
                             </tr>
                         </thead>
                         <tbody id="recItemsBody">
@@ -472,8 +502,8 @@
                         </tbody>
                     </table>
 
-                    <!-- Financial Summary (4 mục rõ ràng) -->
-                    <div class="pb-2 mb-2 border-bottom border-dark">
+                    <!-- Financial Summary (Hidden in Delivery Mode) -->
+                    <div class="pb-2 mb-2 border-bottom border-dark" id="recFinancialSection">
                         <div class="d-flex justify-content-between">
                             <span>Tạm tính:</span>
                             <span id="recSubtotal" class="font-monospace">140.000 đ</span>
@@ -488,7 +518,7 @@
                         </div>
                     </div>
 
-                    <!-- Payment details in receipt -->
+                    <!-- Payment details in receipt (Hidden in Delivery Mode) -->
                     <div class="pb-2 mb-2 border-bottom border-dark" id="recPaymentSection" style="font-size: 12px;">
                         <div class="d-flex justify-content-between">
                             <span>Hình thức TT:</span>
@@ -504,17 +534,30 @@
                         </div>
                     </div>
 
+                    <!-- Delivery Summary (Shown only in Delivery Mode) -->
+                    <div id="recDeliveryTotalItemsBox" class="pb-2 mb-2 border-bottom border-dark d-none">
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Tổng số món:</span>
+                            <span id="recTotalItemsCount">0 món</span>
+                        </div>
+                    </div>
+
                     <!-- Footer -->
-                    <div class="text-center pt-1">
+                    <div class="text-center pt-1" id="recFooterText">
                         <div>Cảm ơn quý khách &amp; Hẹn gặp lại!</div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer py-2 bg-light d-flex justify-content-between">
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary btn-sm px-3 fw-bold" onclick="triggerBrowserPrint()">
-                    <i class="bi bi-printer me-1"></i>In hóa đơn (Print)
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-dark btn-sm fw-semibold" onclick="switchReceiptMode(currentReceiptMode === 'receipt' ? 'delivery' : 'receipt')">
+                        <i class="bi bi-arrow-repeat me-1"></i><span id="btnToggleModeLabel">Đổi sang Phiếu giao</span>
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm px-3 fw-bold" onclick="triggerBrowserPrint()">
+                        <i class="bi bi-printer me-1"></i>In ngay (Print)
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -654,19 +697,22 @@
         }
 
         function filterProducts() {
-            var search = document.getElementById("productSearch").value.toLowerCase();
-            var cat = document.getElementById("categoryFilter").value;
+            var search = (document.getElementById("productSearch")?.value || "").toLowerCase();
+            var cat = document.getElementById("categoryFilter")?.value || "";
+            var status = document.getElementById("statusFilter")?.value || "all";
             var cards = document.querySelectorAll('.product-card');
             var visibleCount = 0;
 
             cards.forEach(card => {
-                var cName = card.getAttribute('data-name');
-                var cCat = card.getAttribute('data-category');
+                var cName = card.getAttribute('data-name') || "";
+                var cCat = card.getAttribute('data-category') || "";
+                var cAvail = card.getAttribute('data-available') || "true";
                 
                 var matchSearch = cName.includes(search);
                 var matchCat = cat === "" || cCat === cat;
+                var matchStatus = (status === "all") || (status === "available" && cAvail === "true") || (status === "unavailable" && cAvail === "false");
 
-                if (matchSearch && matchCat) {
+                if (matchSearch && matchCat && matchStatus) {
                     card.classList.remove('d-none');
                     visibleCount++;
                 } else {
@@ -683,6 +729,7 @@
 
         function handleCardClick(pId, pName, variants, isAvailable) {
             if (!isAvailable) {
+                showToast("⚠️ Món [" + pName + "] hiện đã hết hàng / tạm ngưng phục vụ! Vui lòng chọn món khác.", true);
                 return;
             }
             addToCart(pId, pName, variants);
@@ -1440,6 +1487,51 @@
             });
         }
 
+        var currentReceiptMode = 'receipt';
+        function switchReceiptMode(mode) {
+            currentReceiptMode = mode;
+            var btnRec = document.getElementById('btnModeReceipt');
+            var btnDel = document.getElementById('btnModeDelivery');
+            var toggleLabel = document.getElementById('btnToggleModeLabel');
+            var docTitle = document.getElementById('recDocTitle');
+            var badgeBox = document.getElementById('recDeliveryBadgeBox');
+            var stdTableRow = document.getElementById('recStandardTableRow');
+            var stdCustRow = document.getElementById('recStandardCustRow');
+            var finSec = document.getElementById('recFinancialSection');
+            var paySec = document.getElementById('recPaymentSection');
+            var delTotalBox = document.getElementById('recDeliveryTotalItemsBox');
+            var footerText = document.getElementById('recFooterText');
+            var priceCols = document.querySelectorAll('.rec-price-col');
+
+            if (mode === 'delivery') {
+                if (btnRec) { btnRec.className = 'btn btn-outline-primary fw-semibold'; }
+                if (btnDel) { btnDel.className = 'btn btn-primary fw-semibold'; }
+                if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Hóa đơn'; }
+                if (docTitle) { docTitle.innerText = 'PHIẾU GIAO ĐỒ (DELIVERY TICKET)'; }
+                if (badgeBox) { badgeBox.classList.remove('d-none'); }
+                if (stdTableRow) { stdTableRow.classList.add('d-none'); }
+                if (stdCustRow) { stdCustRow.classList.add('d-none'); }
+                if (finSec) { finSec.classList.add('d-none'); }
+                if (paySec) { paySec.classList.add('d-none'); }
+                if (delTotalBox) { delTotalBox.classList.remove('d-none'); }
+                if (footerText) { footerText.innerHTML = '<div>CSMS - Vui lòng kiểm tra đủ món trước khi giao!</div>'; }
+                priceCols.forEach(el => el.classList.add('d-none'));
+            } else {
+                if (btnRec) { btnRec.className = 'btn btn-primary fw-semibold'; }
+                if (btnDel) { btnDel.className = 'btn btn-outline-primary fw-semibold'; }
+                if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Phiếu giao'; }
+                if (docTitle) { docTitle.innerText = 'HÓA ĐƠN THANH TOÁN'; }
+                if (badgeBox) { badgeBox.classList.add('d-none'); }
+                if (stdTableRow) { stdTableRow.classList.remove('d-none'); }
+                if (stdCustRow) { stdCustRow.classList.remove('d-none'); }
+                if (finSec) { finSec.classList.remove('d-none'); }
+                if (paySec) { paySec.classList.remove('d-none'); }
+                if (delTotalBox) { delTotalBox.classList.add('d-none'); }
+                if (footerText) { footerText.innerHTML = '<div>Cảm ơn quý khách &amp; Hẹn gặp lại!</div>'; }
+                priceCols.forEach(el => el.classList.remove('d-none'));
+            }
+        }
+
         function openReceiptModal(orderId) {
             if (!orderId) return;
 
@@ -1462,6 +1554,16 @@
                     document.getElementById('recTableNumber').innerText = data.tableNumber || 'Mang về';
                     document.getElementById('recCustomerName').innerText = data.customerName || 'Khách lẻ';
 
+                    // Update Delivery ticket specific info
+                    var delTableBadge = document.getElementById('recDeliveryTableBadge');
+                    if (delTableBadge) {
+                        delTableBadge.innerText = (data.tableNumber && data.tableNumber.trim() !== '') ? data.tableNumber : 'MANG VỀ';
+                    }
+                    var delCustBadge = document.getElementById('recDeliveryCustomerBadge');
+                    if (delCustBadge) {
+                        delCustBadge.innerText = 'Khách: ' + (data.customerName || 'Khách lẻ');
+                    }
+
                     var notesRow = document.getElementById('recNotesRow');
                     if (data.orderNotes && data.orderNotes.trim() !== '') {
                         notesRow.classList.remove('d-none');
@@ -1471,7 +1573,9 @@
                     }
 
                     var itemsHtml = '';
+                    var totalItemsCount = 0;
                     (data.items || []).forEach((item, idx) => {
+                        totalItemsCount += (item.quantity || 1);
                         itemsHtml += `
                             <tr>
                                 <td class="text-center py-1 text-muted font-monospace">${idx + 1}</td>
@@ -1479,13 +1583,18 @@
                                     <div class="fw-semibold">${item.productName}</div>
                                     <div class="small text-muted">Size: ${item.size}</div>
                                 </td>
-                                <td class="text-center py-1 font-monospace">${item.quantity}</td>
-                                <td class="text-end py-1 font-monospace">${item.unitPrice.toLocaleString('vi-VN')}</td>
-                                <td class="text-end py-1 font-monospace">${item.amount.toLocaleString('vi-VN')}</td>
+                                <td class="text-center py-1 font-monospace fw-bold">${item.quantity}</td>
+                                <td class="text-end py-1 font-monospace rec-price-col">${item.unitPrice.toLocaleString('vi-VN')}</td>
+                                <td class="text-end py-1 font-monospace rec-price-col">${item.amount.toLocaleString('vi-VN')}</td>
                             </tr>
                         `;
                     });
                     document.getElementById('recItemsBody').innerHTML = itemsHtml;
+
+                    var totalItemsEl = document.getElementById('recTotalItemsCount');
+                    if (totalItemsEl) {
+                        totalItemsEl.innerText = totalItemsCount + ' món';
+                    }
 
                     document.getElementById('recSubtotal').innerText = data.subtotalAmount.toLocaleString('vi-VN') + ' đ';
 
@@ -1500,7 +1609,6 @@
                     } else {
                         discRow.classList.add('d-none');
                     }
-
 
                     document.getElementById('recTotal').innerText = data.totalAmount.toLocaleString('vi-VN') + ' đ';
 
@@ -1530,7 +1638,14 @@
                             if (splitBankRow) splitBankRow.classList.add('d-none');
                         }
                     }
-                    modal.show();
+
+                    switchReceiptMode('receipt');
+
+                    var modalEl = document.getElementById('receiptPrintModal');
+                    if (modalEl) {
+                        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                        modal.show();
+                    }
 
                     var autoPrintCheck = document.getElementById('autoPrintReceiptCheck');
                     if (autoPrintCheck && autoPrintCheck.checked) {

@@ -9,7 +9,7 @@ using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
-    [Authorize(Roles = "Bartender,Barista,BranchManager,RManager")]
+    [Authorize(Roles = "Bartender,Barista,BranchManager,RManager,Cashier")]
     public class BrewingController : Controller
     {
         private readonly IOrderService _orderService;
@@ -46,13 +46,14 @@ namespace SEP490_G52_CSMS.Controllers
 
         private int GetUserId()
         {
-            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int id);
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(userIdStr, out int id);
             return id;
         }
 
         private async Task<(bool isEligible, string reasonCode, string message)> CheckBartenderEligibilityAsync(int bartenderId, string branchId)
         {
-            if (User.IsInRole("RManager") || User.IsInRole("BranchManager"))
+            if (User.IsInRole("RManager") || User.IsInRole("BranchManager") || User.IsInRole("Cashier"))
             {
                 return (true, "Eligible", "Hợp lệ");
             }
@@ -111,6 +112,7 @@ namespace SEP490_G52_CSMS.Controllers
             return (true, "Eligible", "Hợp lệ");
         }
 
+        [Authorize(Roles = "Bartender,Barista,BranchManager,RManager")]
         public async Task<IActionResult> Index()
         {
             var branchId = await GetUserBranchIdAsync();

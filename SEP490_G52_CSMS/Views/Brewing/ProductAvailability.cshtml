@@ -137,9 +137,18 @@
                     <i class="bi bi-journal-text me-2"></i>Quản lý thực đơn
                 </a>
             }
-            <a asp-controller="Brewing" asp-action="Index" class="btn btn-outline-primary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
-                <i class="bi bi-cup-hot me-2"></i>Màn hình pha chế
-            </a>
+            @if (User.IsInRole("Cashier"))
+            {
+                <a asp-controller="SaleManagement" asp-action="CreateOrder" class="btn btn-primary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
+                    <i class="bi bi-cart3 me-2"></i>Quay lại bán hàng (POS)
+                </a>
+            }
+            @if (User.IsInRole("Bartender") || User.IsInRole("Barista") || User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+            {
+                <a asp-controller="Brewing" asp-action="Index" class="btn btn-outline-primary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
+                    <i class="bi bi-cup-hot me-2"></i>Màn hình pha chế
+                </a>
+            }
         </div>
     </div>
 
