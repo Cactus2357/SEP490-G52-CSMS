@@ -73,7 +73,7 @@
                                 <input type="text" id="initialCashDisplay"
                                        class="form-control form-control-lg fw-semibold @(Model.IsFirstShift ? "" : "bg-light")"
                                        placeholder="VD: 3.000.000"
-                                       value="@(Model.IsFirstShift ? "" : Model.InitialCash.ToString("N0"))"
+                                       value="@(Model.InitialCash > 0 ? Model.InitialCash.ToString("N0") : "")"
                                        @(Model.IsFirstShift ? "" : "readonly")
                                        inputmode="numeric" autocomplete="off" />
                                 <span class="input-group-text bg-light fw-semibold">đ</span>
@@ -83,23 +83,29 @@
                             <span asp-validation-for="InitialCash" class="text-danger small"></span>
                         </div>
 
-                        <div class="d-grid">
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-lg flex-fill">
+                                <i class="bi bi-arrow-left me-2"></i>Quay lại
+                            </a>
                             @if (Model.IsTimeToOpen)
                             {
-                                <button type="submit" class="btn btn-primary btn-lg" id="confirmBtn">
+                                <button type="submit" class="btn btn-primary btn-lg flex-fill" id="confirmBtn">
                                     <i class="bi bi-check2-circle me-2"></i>Xác nhận mở ca
                                 </button>
                             }
                             else
                             {
-                                <button type="button" class="btn btn-secondary btn-lg" disabled>
+                                <button type="button" class="btn btn-secondary btn-lg flex-fill" disabled>
                                     <i class="bi bi-clock me-2"></i>Chưa đến giờ mở ca
                                 </button>
-                                <div class="text-danger small mt-2 text-center">
-                                    Bạn không có ca trực nào được lên lịch cho hôm nay hoặc chưa đến giờ nhận ca (chỉ cho phép mở sớm tối đa 5 phút).
-                                </div>
                             }
                         </div>
+                        @if (!Model.IsTimeToOpen)
+                        {
+                            <div class="text-danger small mt-2 text-center">
+                                Bạn không có ca trực nào được lên lịch cho hôm nay hoặc chưa đến giờ nhận ca (chỉ cho phép mở sớm tối đa 30 phút).
+                            </div>
+                        }
                     </div>
                 </div>
             </div>

@@ -358,7 +358,7 @@ namespace SEP490_G52_CSMS.Repositories
                 .Include(o => o.Payments)
                 .Where(o => o.BranchId == branchId 
                          && o.CreatedAt >= openedAt 
-                         && (o.PaymentStatus == "Paid" || o.PaymentStatus == "Partially Refunded"));
+                         && (o.PaymentStatus == "Paid" || o.PaymentStatus == "Partially Refunded" || o.PaymentStatus == "TransferSuccessPending"));
 
             if (closedAt.HasValue)
             {
@@ -367,19 +367,20 @@ namespace SEP490_G52_CSMS.Repositories
 
             var orders = await query.ToListAsync();
 
-            // CHỈ CÓ ĐƠN HOÀN THÀNH HOẶC HOÀN TIỀN 1 PHẦN MỚI TÍNH DOANH THU LÚC BÀN GIAO / ĐÓNG CA
-            var completedOrders = orders
-                .Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done" || o.BrewingStatus == "Delivered" || o.BrewingStatus == "Partially Refunded" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount))
+            // MỌI ĐƠN HÀNG ĐÃ THANH TOÁN TRONG CA ĐỀU ĐƯỢC TÍNH VÀO DOANH THU CA (KHÔNG PHỤ THUỘC TRẠNG THÁI PHA CHẾ)
+            var validPaidOrders = orders
+                .Where(o => o.PaymentStatus != "Cancelled"
+                         && o.PaymentStatus != "Refunded"
                          && o.BrewingStatus != "Cancelled / Refunded"
-                         && o.PaymentStatus != "Cancelled")
+                         && !(o.RefundAmount > 0 && o.RefundAmount >= o.TotalAmount))
                 .ToList();
 
-            decimal cashRevenue = completedOrders
+            decimal cashRevenue = validPaidOrders
                 .Sum(o => o.CashAmount > 0 
                     ? o.CashAmount 
                     : (!string.IsNullOrEmpty(o.PaymentMethod) && o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase) ? o.TotalAmount : 0));
 
-            decimal bankRevenue = completedOrders
+            decimal bankRevenue = validPaidOrders
                 .Sum(o => o.BankAmount > 0 
                     ? o.BankAmount 
                     : (!string.IsNullOrEmpty(o.PaymentMethod) && !o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase) ? o.TotalAmount : 0));

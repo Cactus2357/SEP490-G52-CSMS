@@ -133,6 +133,8 @@
                                 data-theoretical="@item.TheoreticalCash"
                                 data-actual="@item.ActualCash"
                                 data-discrepancy="@item.Discrepancy"
+                                data-retained="@item.RetainedCash"
+                                data-deposited="@item.DepositedCash"
                                 data-deliverer="@(item.DelivererName ?? "")"
                                 data-emergency-reason="@(item.EmergencyReason ?? "")"
                                 data-notes="@(item.Notes ?? "")"
@@ -331,6 +333,14 @@
                                             <td class="ps-3 py-2.5 fw-bold">Chênh lệch két (Thực tế - Lý thuyết):</td>
                                             <td class="pe-3 py-2.5 text-end fw-bold fs-5" id="modalDiscrepancy">–</td>
                                         </tr>
+                                        <tr class="border-top d-none table-info" id="modalRetainedRow">
+                                            <td class="ps-3 py-2 text-dark fw-semibold"><i class="bi bi-safe me-1"></i>Tiền giữ lại két cho sáng mai:</td>
+                                            <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" id="modalRetained">–</td>
+                                        </tr>
+                                        <tr class="border-top d-none table-warning" id="modalDepositedRow">
+                                            <td class="ps-3 py-2 text-dark fw-semibold"><i class="bi bi-cash-stack me-1"></i>Tiền nộp về két tổng / chủ quán:</td>
+                                            <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" id="modalDeposited">–</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -423,14 +433,32 @@
             document.getElementById('modalDeliverer').textContent = deliverer || '–';
             
             document.getElementById('modalInitial').textContent = initial;
-            document.getElementById('modalRevenue').textContent = '+' + revenue;
+            document.getElementById('modalRevenue').textContent = (revenue.startsWith('+') || revenue.startsWith('-')) ? revenue : ('+' + revenue);
             document.getElementById('modalBank').textContent = bank;
-            document.getElementById('modalRefund').textContent = '-' + refund;
+            document.getElementById('modalRefund').textContent = (refund.startsWith('+') || refund.startsWith('-')) ? refund : ('-' + refund);
             document.getElementById('modalTheoretical').textContent = theoretical;
             document.getElementById('modalActual').textContent = actual;
             document.getElementById('modalActionTime').textContent = `${actionTime} (${actionType})`;
             document.getElementById('modalOpenedAt').textContent = openedAt;
             document.getElementById('modalClosedAt').textContent = closedAt;
+
+            const retained = row.dataset.retained || '0 đ';
+            const deposited = row.dataset.deposited || '0 đ';
+            const isClosing = sessionType.toLowerCase().includes('đóng ca');
+
+            const retainedRow = document.getElementById('modalRetainedRow');
+            const depositedRow = document.getElementById('modalDepositedRow');
+            if (retainedRow && depositedRow) {
+                if (isClosing) {
+                    retainedRow.classList.remove('d-none');
+                    depositedRow.classList.remove('d-none');
+                    document.getElementById('modalRetained').textContent = retained;
+                    document.getElementById('modalDeposited').textContent = deposited;
+                } else {
+                    retainedRow.classList.add('d-none');
+                    depositedRow.classList.add('d-none');
+                }
+            }
 
             const discEl = document.getElementById('modalDiscrepancy');
             discEl.textContent = discrepancy;

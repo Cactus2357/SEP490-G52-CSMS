@@ -193,8 +193,11 @@
                             <small class="text-muted d-block mt-1">Người nhận ca nhập mật khẩu đăng nhập cá nhân để xác thực nhận bàn giao.</small>
                         </div>
 
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-success btn-lg" id="submitHandoverBtn">
+                        <div class="d-flex gap-2 mt-4">
+                            <a asp-controller="SaleManagement" asp-action="CreateOrder" class="btn btn-outline-secondary btn-lg flex-fill">
+                                <i class="bi bi-x-circle me-2"></i>Hủy / Bán hàng tiếp
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg flex-fill" id="submitHandoverBtn">
                                 <i class="bi bi-send-check me-2"></i>Ký Xác Nhận Bàn Giao Ca
                             </button>
                         </div>

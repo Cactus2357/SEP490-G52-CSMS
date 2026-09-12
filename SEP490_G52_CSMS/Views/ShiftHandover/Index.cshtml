@@ -118,6 +118,9 @@
             <div>
                 <div class="kpi-label">Tổng Doanh Thu Hôm Nay</div>
                 <div class="kpi-value text-success">@FormatMoney(Model.TotalRevenueToday)</div>
+                <small class="text-muted d-block" style="font-size: 0.75rem;">
+                    TM: @FormatMoney(Model.TotalCashRevenueToday) | CK: @FormatMoney(Model.TotalBankRevenueToday)
+                </small>
             </div>
         </div>
 
@@ -158,7 +161,7 @@
                     <th style="width: 8%;">Ca Trực</th>
                     <th style="width: 14%;">Người Giao</th>
                     <th style="width: 14%;">Người Nhận</th>
-                    <th style="width: 12%;">Doanh Thu POS</th>
+                    <th style="width: 14%;">Doanh Thu Ca</th>
                     <th style="width: 12%;">Tiền Lý Thuyết</th>
                     <th style="width: 17%;">Tiền Kiểm Kê</th>
                     <th style="width: 17%;">Chênh Lệch</th>
@@ -200,7 +203,10 @@
                             </td>
                             <td><span class="fw-medium">@(h.OutgoingCashier?.FullName ?? "?")</span></td>
                             <td><span class="fw-medium">@(h.IncomingCashier?.FullName ?? "?")</span></td>
-                            <td class="fw-bold text-success">+@FormatMoney(h.MachineCashRevenue)</td>
+                            <td class="fw-bold text-success">
+                                <div>+@FormatMoney(h.MachineCashRevenue + h.BankTransferRevenue)</div>
+                                <small class="text-muted d-block" style="font-size: 0.72rem;">TM: @FormatMoney(h.MachineCashRevenue) | CK: @FormatMoney(h.BankTransferRevenue)</small>
+                            </td>
                             <td class="fw-semibold">@FormatMoney(h.TheoreticalCash)</td>
                             <td class="fw-bold text-dark">@FormatMoney(h.ActualCash)</td>
                             <td class="@(isMatched ? "text-secondary" : "text-danger fw-bold")">

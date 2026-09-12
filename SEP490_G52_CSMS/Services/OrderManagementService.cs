@@ -18,7 +18,7 @@ namespace SEP490_G52_CSMS.Services
         {
             bool isMissing = (o.BrewingStatus == "Missing Ingredients");
             bool isPartialRefund = (!isMissing && o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount);
-            bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.PaymentStatus == "Cancelled" || o.PaymentStatus == "Canceled" || o.RefundAmount >= o.TotalAmount));
+            bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.PaymentStatus == "Cancelled" || o.PaymentStatus == "Canceled" || (o.RefundAmount > 0 && o.RefundAmount >= o.TotalAmount)));
             bool isDelivered = !isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Delivered");
             bool isDone = !isCancelled && !isMissing && !isPartialRefund && !isDelivered && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
             bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid");

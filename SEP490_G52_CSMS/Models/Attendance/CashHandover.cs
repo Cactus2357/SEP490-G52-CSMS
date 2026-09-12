@@ -50,6 +50,14 @@ namespace SEP490_G52_CSMS.Models.Attendance
         [Column("actual_cash")]
         public decimal ActualCash { get; set; }
 
+        /// <summary> Tiền lưu lại két cho sáng hôm sau (khi đóng ca cuối ngày) </summary>
+        [Column("retained_cash")]
+        public decimal RetainedCash { get; set; } = 0;
+
+        /// <summary> Tiền nộp về két tổng / chủ quán (khi đóng ca cuối ngày) </summary>
+        [Column("deposited_cash")]
+        public decimal DepositedCash { get; set; } = 0;
+
         /// <summary> Loại giao ca: FirstShift / MidShift / LastShift / Emergency </summary>
         [Column("handover_type")]
         [StringLength(50)]

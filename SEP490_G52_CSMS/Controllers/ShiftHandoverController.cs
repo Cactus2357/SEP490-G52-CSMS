@@ -69,7 +69,9 @@ namespace SEP490_G52_CSMS.Controllers
                 closingInfo = allRows.Last();
             }
 
-            var totalRevenueToday = dayHandovers.Sum(h => h.MachineCashRevenue);
+            var totalCashRevenueToday = dayHandovers.Sum(h => h.MachineCashRevenue);
+            var totalBankRevenueToday = dayHandovers.Sum(h => h.BankTransferRevenue);
+            var totalRevenueToday = totalCashRevenueToday + totalBankRevenueToday;
             var totalVarianceToday = dayHandovers.Where(h => h.Status == CashHandoverConstants.ClosedStatus).Sum(h => h.ActualCash - h.TheoreticalCash);
             var handedOverCount = dayHandovers.Count(h => h.Status == CashHandoverConstants.ClosedStatus);
             var emergencyCount = dayHandovers.Count(h => h.HandoverType == CashHandoverConstants.HandoverTypeEmergency);
@@ -104,6 +106,8 @@ namespace SEP490_G52_CSMS.Controllers
                 OpeningInfo = openingInfo,
                 ClosingInfo = closingInfo,
                 TotalRevenueToday = totalRevenueToday,
+                TotalCashRevenueToday = totalCashRevenueToday,
+                TotalBankRevenueToday = totalBankRevenueToday,
                 HandedOverCount = handedOverCount,
                 EmergencyCount = emergencyCount,
                 TotalShiftsConfigured = allShifts.Count,
@@ -158,6 +162,8 @@ namespace SEP490_G52_CSMS.Controllers
         public HandoverRowVM? ClosingInfo { get; set; }
 
         public decimal TotalRevenueToday { get; set; }
+        public decimal TotalCashRevenueToday { get; set; }
+        public decimal TotalBankRevenueToday { get; set; }
         public int HandedOverCount { get; set; }
         public int EmergencyCount { get; set; }
         public int TotalShiftsConfigured { get; set; }

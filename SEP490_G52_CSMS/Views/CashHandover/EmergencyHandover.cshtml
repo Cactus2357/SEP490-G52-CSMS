@@ -199,8 +199,11 @@
                             <span asp-validation-for="IncomingPassword" class="text-danger small"></span>
                         </div>
 
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-danger btn-lg" id="submitEmergencyBtn">
+                        <div class="d-flex gap-2 mt-4">
+                            <a asp-action="Handover" class="btn btn-outline-secondary btn-lg flex-fill">
+                                <i class="bi bi-x-circle me-2"></i>Hủy / Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg flex-fill" id="submitEmergencyBtn">
                                 <i class="bi bi-shield-exclamation me-2"></i>Xác Nhận Bàn Giao Đột Xuất
                             </button>
                         </div>

@@ -28,6 +28,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string CashRefundAmount { get; set; } = string.Empty;
         public string TheoreticalCash { get; set; } = string.Empty;
         public string ActualCash { get; set; } = string.Empty;
+        public string RetainedCash { get; set; } = string.Empty;
+        public string DepositedCash { get; set; } = string.Empty;
         public string Discrepancy { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string OpenedAt { get; set; } = string.Empty;
