@@ -32,6 +32,13 @@
 </li>
 
 <li class="menu-item">
+    <a asp-controller="Brewing" asp-action="ProductAvailability" class="menu-link @ActiveIf("Brewing", "ProductAvailability")" title="Quản lý sản phẩm">
+        <i class="bi bi-box-seam"></i>
+        <span>Quản lý sản phẩm</span>
+    </a>
+</li>
+
+<li class="menu-item">
     <a asp-controller="LeaveRequest" asp-action="Index" class="menu-link @ActiveIf("LeaveRequest")" title="Xin nghỉ phép">
         <i class="bi bi-calendar-x"></i>
         <span>Xin nghỉ phép</span>

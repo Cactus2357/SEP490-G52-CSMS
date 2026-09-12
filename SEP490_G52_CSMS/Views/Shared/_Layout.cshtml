@@ -646,66 +646,98 @@
         const currentUserRole = '@(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")';
         const rolePages = {
             "RManager": [
+                { name: "Trang chủ", url: "/Home" },
                 { name: "Quản lý - quản lý chi nhánh", url: "/BranchManager" },
                 { name: "Quản lý chi nhánh", url: "/Branch" },
                 { name: "Quản lý danh mục", url: "/ProductCategories" },
                 { name: "Quản lý sản phẩm", url: "/Product" },
                 { name: "Báo cáo doanh thu", url: "/Reporting/Revenue" },
                 { name: "Xuất file báo cáo", url: "/Reporting/Export" },
+                { name: "Quản lý nhân viên", url: "/Employee" },
+                { name: "Quản lý thực đơn", url: "/MenuManagement" },
+                { name: "Quản lý đơn đặt hàng", url: "/OrderManagement" },
+                { name: "Quản lý voucher", url: "/VoucherManagement" },
+                { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
+                { name: "Quản lý nguyên liệu kho", url: "/Warehouse/Index" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "WManager": [
+                { name: "Trang chủ", url: "/Home" },
                 { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
                 { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
                 { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "WarehouseManager": [
+                { name: "Trang chủ", url: "/Home" },
                 { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
                 { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
                 { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "BranchManager": [
+                { name: "Trang chủ", url: "/Home" },
                 { name: "Quản lý nhân viên", url: "/Employee" },
                 { name: "Quản lý lịch làm việc", url: "/WorkSchedule" },
-                { name: "Quản lý nghỉ phép", url: "/LeaveRequest/ManagerIndex" },
                 { name: "Quản lý thực đơn", url: "/MenuManagement" },
+                { name: "Quản lý nghỉ phép", url: "/LeaveRequest/ManagerIndex" },
                 { name: "Quản lý đổi ca", url: "/ShiftChange" },
                 { name: "Bàn giao ca", url: "/ShiftHandover" },
                 { name: "Quản lý đơn đặt hàng", url: "/OrderManagement" },
+                { name: "Quản lý voucher", url: "/VoucherManagement" },
+                { name: "Cài đặt chung", url: "/Settings" },
                 { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
                 { name: "Đặt hàng kho", url: "/BranchWarehouse/CreateRequest" },
-                { name: "Lịch sử đặt", url: "/BranchWarehouse/RequestHistory" },
+                { name: "Lịch sử đặt hàng", url: "/BranchWarehouse/RequestHistory" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "Cashier": [
-                { name: "Bán hàng POS (Tạo đơn)", url: "/SaleManagement/CreateOrder" },
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Bán hàng", url: "/SaleManagement/CreateOrder" },
                 { name: "Lịch sử đơn hàng", url: "/SaleManagement/OrderHistory" },
-                { name: "Kết ca & Kiểm đếm tiền", url: "/CashHandover" },
+                { name: "Đóng, Mở/Bàn giao ca", url: "/CashHandover" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
                 { name: "Xin nghỉ phép", url: "/LeaveRequest" },
-                { name: "Yêu cầu đổi ca", url: "/ShiftChange/EmployeeIndex" },
-                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "Bartender": [
-                { name: "Danh sách đơn pha chế", url: "/Brewing" },
-                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Danh sách đơn hàng", url: "/Brewing" },
+                { name: "Quản lý sản phẩm", url: "/Brewing/ProductAvailability" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
                 { name: "Xin nghỉ phép", url: "/LeaveRequest" },
-                { name: "Chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "Barista": [
-                { name: "Danh sách đơn pha chế", url: "/Brewing" },
-                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Danh sách đơn hàng", url: "/Brewing" },
+                { name: "Quản lý sản phẩm", url: "/Brewing/ProductAvailability" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
                 { name: "Xin nghỉ phép", url: "/LeaveRequest" },
-                { name: "Chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "Busser": [
-                { name: "Lịch làm việc", url: "/WorkSchedule" },
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
                 { name: "Xin nghỉ phép", url: "/LeaveRequest" },
-                { name: "Chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Staff": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Employee": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ]
         };

@@ -96,5 +96,57 @@ namespace SEP490_G52_CSMS.Repositories
                 .Where(pv => pv.ProductId == productId)
                 .ToListAsync();
         }
+
+        public async Task<BranchMenu?> GetActiveMenuWithDetailsAsync(string branchId)
+        {
+            return await _context.BranchMenus
+                .Include(m => m.MenuDetails)
+                    .ThenInclude(md => md.ProductVariant)
+                        .ThenInclude(pv => pv.MasterProduct)
+                            .ThenInclude(mp => mp.ProductCategory)
+                .Include(m => m.MenuDetails)
+                    .ThenInclude(md => md.Updater)
+                .FirstOrDefaultAsync(m => m.BranchId == branchId && m.IsActive);
+        }
+
+        public async Task<bool> UpdateMenuDetailsAvailabilityAsync(int menuId, int productId, bool isAvailable, int updatedByEmployeeId)
+        {
+            var details = await _context.MenuDetails
+                .Include(md => md.ProductVariant)
+                .Where(md => md.MenuId == menuId && md.ProductVariant != null && md.ProductVariant.ProductId == productId)
+                .ToListAsync();
+
+            var now = DateTime.UtcNow;
+
+            if (!details.Any())
+            {
+                var variants = await _context.ProductVariants.Where(pv => pv.ProductId == productId).ToListAsync();
+                if (!variants.Any()) return false;
+
+                foreach (var v in variants)
+                {
+                    _context.MenuDetails.Add(new MenuDetail
+                    {
+                        MenuId = menuId,
+                        VariantId = v.VariantId,
+                        IsAvailable = isAvailable,
+                        UpdatedBy = updatedByEmployeeId,
+                        UpdatedAt = now
+                    });
+                }
+            }
+            else
+            {
+                foreach (var d in details)
+                {
+                    d.IsAvailable = isAvailable;
+                    d.UpdatedBy = updatedByEmployeeId;
+                    d.UpdatedAt = now;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

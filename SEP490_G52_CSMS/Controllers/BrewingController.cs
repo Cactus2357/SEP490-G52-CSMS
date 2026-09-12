@@ -13,11 +13,13 @@ namespace SEP490_G52_CSMS.Controllers
     public class BrewingController : Controller
     {
         private readonly IOrderService _orderService;
+        private readonly IMenuService _menuService;
         private readonly CSMSAppDbContext _context;
 
-        public BrewingController(IOrderService orderService, CSMSAppDbContext context)
+        public BrewingController(IOrderService orderService, IMenuService menuService, CSMSAppDbContext context)
         {
             _orderService = orderService;
+            _menuService = menuService;
             _context = context;
         }
 
@@ -253,6 +255,20 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (ok)
             {
+                if (model.AutoInactiveProducts && model.MissingVariantIds != null && model.MissingVariantIds.Any())
+                {
+                    var productIds = await _context.ProductVariants
+                        .Where(pv => model.MissingVariantIds.Contains(pv.VariantId))
+                        .Select(pv => pv.ProductId)
+                        .Distinct()
+                        .ToListAsync();
+
+                    foreach (var pid in productIds)
+                    {
+                        await _menuService.SetProductAvailabilityAsync(branchId, pid, false, userId);
+                    }
+                }
+
                 return Json(new { 
                     success = true, 
                     message = $"Đã ghi nhận báo thiếu nguyên liệu cho đơn {model.OrderId} và gửi thông báo tới Thu ngân." 
@@ -260,6 +276,46 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             return BadRequest(new { success = false, message = "Không thể gửi báo cáo thiếu nguyên liệu cho đơn hàng này." });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ProductAvailability(string? search, int? categoryId, string? status)
+        {
+            var branchId = await GetUserBranchIdAsync();
+            var userId = GetUserId();
+
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(userId, branchId);
+            if (!isEligible)
+            {
+                ViewBag.NotInShift = true;
+                ViewBag.ReasonCode = reasonCode;
+                ViewBag.NotInShiftMessage = message;
+                return View(new BartenderProductAvailabilityViewModel { BranchId = branchId });
+            }
+
+            var vm = await _menuService.GetBranchProductAvailabilityAsync(branchId, search, categoryId, status);
+            return View(vm);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleProductAvailability(int productId)
+        {
+            var branchId = await GetUserBranchIdAsync();
+            var userId = GetUserId();
+
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(userId, branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = message });
+            }
+
+            var (success, msg, newState) = await _menuService.ToggleProductAvailabilityAsync(branchId, productId, userId);
+            if (success)
+            {
+                return Json(new { success = true, message = msg, newState = newState });
+            }
+
+            return BadRequest(new { success = false, message = msg });
         }
     }
 }

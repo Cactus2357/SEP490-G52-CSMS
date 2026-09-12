@@ -305,6 +305,16 @@
                     </label>
                     <textarea id="modalMissingReason" class="form-control" rows="3" placeholder="Ví dụ: Hết sữa tươi thanh trùng, hết trân châu đen..."></textarea>
                 </div>
+
+                <div class="form-check mt-3 pt-2 border-top">
+                    <input class="form-check-input" type="checkbox" id="modalAutoInactiveProduct" checked />
+                    <label class="form-check-label fw-semibold text-danger small" for="modalAutoInactiveProduct" style="cursor: pointer;">
+                        <i class="bi bi-slash-circle me-1"></i>Tự động khóa món (chuyển sang [Tạm hết]) trên hệ thống bán hàng của Thu ngân
+                    </label>
+                    <div class="text-muted" style="font-size: 0.75rem; margin-left: 1.5rem;">
+                        Hệ thống sẽ cập nhật trạng thái các món này thành [Tạm hết] để quầy Thu ngân không bán nữa.
+                    </div>
+                </div>
             </div>
             <div class="modal-footer bg-light py-3 px-4 border-top">
                 <button type="button" class="btn btn-secondary rounded px-3" data-bs-dismiss="modal">Đóng</button>
@@ -1175,6 +1185,8 @@
                 return;
             }
 
+            const autoInactive = document.getElementById('modalAutoInactiveProduct')?.checked ?? false;
+
             showConfirmModal(
                 'Xác nhận báo thiếu nguyên liệu',
                 `Gửi báo cáo thiếu nguyên liệu cho <strong>${selectedVariantIds.length} món</strong> của đơn <strong>${orderId}</strong> tới Thu ngân?`,
@@ -1186,7 +1198,8 @@
                         data: JSON.stringify({
                             orderId: orderId,
                             missingVariantIds: selectedVariantIds,
-                            reason: reason
+                            reason: reason,
+                            autoInactiveProducts: autoInactive
                         }),
                         success: function (res) {
                             if (missingModalInstance) missingModalInstance.hide();

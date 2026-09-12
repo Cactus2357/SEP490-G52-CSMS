@@ -94,6 +94,61 @@ namespace SEP490_G52_CSMS.Controllers
             return Ok(result);
         }
 
+        [HttpGet("api/sale/product-availability")]
+        public async Task<IActionResult> GetProductAvailabilityStatus()
+        {
+            var branchId = await GetUserBranchIdAsync();
+            var activeMenu = await _menuRepo.GetActiveMenuWithDetailsAsync(branchId);
+            if (activeMenu?.MenuDetails == null)
+            {
+                return Ok(new { unavailableProductIds = new List<int>(), unavailableVariantIds = new List<int>() });
+            }
+
+            var unavailableVariants = activeMenu.MenuDetails.Where(md => !md.IsAvailable).ToList();
+            var unavailableVariantIds = unavailableVariants.Select(md => md.VariantId).ToList();
+
+            var groupedByProduct = activeMenu.MenuDetails
+                .Where(md => md.ProductVariant != null)
+                .GroupBy(md => md.ProductVariant!.ProductId)
+                .ToList();
+
+            var unavailableProductIds = new List<int>();
+            foreach (var grp in groupedByProduct)
+            {
+                if (grp.All(md => !md.IsAvailable))
+                {
+                    unavailableProductIds.Add(grp.Key);
+                }
+            }
+
+            return Ok(new { unavailableProductIds, unavailableVariantIds });
+        }
+
+        private async Task<(bool isValid, string? errorMessage)> ValidateCartItemsAvailabilityAsync(string branchId, IEnumerable<int> variantIds)
+        {
+            var activeMenu = await _menuRepo.GetActiveMenuWithDetailsAsync(branchId);
+            if (activeMenu?.MenuDetails != null)
+            {
+                var unavailableDetails = activeMenu.MenuDetails
+                    .Where(md => !md.IsAvailable)
+                    .ToList();
+
+                if (unavailableDetails.Any())
+                {
+                    var unavailableVariantIds = unavailableDetails.Select(md => md.VariantId).ToHashSet();
+                    var offendingVariantId = variantIds.FirstOrDefault(vid => unavailableVariantIds.Contains(vid));
+                    if (offendingVariantId > 0)
+                    {
+                        var offDetail = unavailableDetails.First(md => md.VariantId == offendingVariantId);
+                        string prodName = offDetail.ProductVariant?.MasterProduct?.ProductName ?? "Sản phẩm";
+                        string size = offDetail.ProductVariant?.SizeVariant ?? "";
+                        return (false, $"Món [{prodName} ({size})] hiện đã tạm hết nguyên liệu (Bartender đã khóa món). Vui lòng chọn món khác hoặc xóa khỏi giỏ hàng!");
+                    }
+                }
+            }
+            return (true, null);
+        }
+
         public async Task<IActionResult> CreateOrder()
         {
             var branchId = await GetUserBranchIdAsync();
@@ -173,6 +228,18 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 if (master.ProductVariants == null || !master.ProductVariants.Any()) continue;
 
+                var variants = master.ProductVariants.Select(pv =>
+                {
+                    var md = menu?.MenuDetails?.FirstOrDefault(d => d.VariantId == pv.VariantId);
+                    return new SaleVariantViewModel
+                    {
+                        VariantId = pv.VariantId,
+                        SizeVariant = pv.SizeVariant ?? "S",
+                        SellingPrice = pv.SellingPrice,
+                        IsAvailable = md == null || md.IsAvailable
+                    };
+                }).ToList();
+
                 var pvm = new SaleProductViewModel
                 {
                     ProductId = master.ProductId,
@@ -180,15 +247,13 @@ namespace SEP490_G52_CSMS.Controllers
                     CategoryId = master.CategoryId,
                     CategoryName = master.ProductCategory?.CategoryName ?? "Other",
                     ImageUrl = master.ImageUrl ?? "",
-                    Variants = master.ProductVariants.Select(pv => new SaleVariantViewModel
-                    {
-                        VariantId = pv.VariantId,
-                        SizeVariant = pv.SizeVariant ?? "S",
-                        SellingPrice = pv.SellingPrice
-                    }).ToList()
+                    Variants = variants,
+                    IsAvailable = variants.Any(v => v.IsAvailable)
                 };
 
-                var def = pvm.Variants.FirstOrDefault(v => v.SizeVariant == "S") ?? pvm.Variants.FirstOrDefault();
+                var def = pvm.Variants.FirstOrDefault(v => v.IsAvailable && v.SizeVariant == "S") 
+                          ?? pvm.Variants.FirstOrDefault(v => v.IsAvailable) 
+                          ?? pvm.Variants.FirstOrDefault();
                 if (def != null)
                 {
                     pvm.DefaultVariantId = def.VariantId;
@@ -237,6 +302,12 @@ namespace SEP490_G52_CSMS.Controllers
             if (!isEligible)
             {
                 return BadRequest(new { success = false, message = message });
+            }
+
+            var (isCartValid, availabilityError) = await ValidateCartItemsAvailabilityAsync(branchId, model.Items.Select(i => i.VariantId));
+            if (!isCartValid)
+            {
+                return BadRequest(new { success = false, message = availabilityError });
             }
 
             var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
@@ -292,6 +363,12 @@ namespace SEP490_G52_CSMS.Controllers
                 if (!isEligible)
                 {
                     return BadRequest(new { success = false, message = message });
+                }
+
+                var (isCartValid, availabilityError) = await ValidateCartItemsAvailabilityAsync(branchId, model.Items.Select(i => i.VariantId));
+                if (!isCartValid)
+                {
+                    return BadRequest(new { success = false, message = availabilityError });
                 }
 
                 var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();

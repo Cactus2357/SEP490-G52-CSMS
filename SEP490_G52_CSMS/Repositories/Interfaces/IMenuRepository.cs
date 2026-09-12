@@ -13,5 +13,7 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         Task<List<ProductCategory>> GetProductCategoriesAsync();
         Task SetActiveMenuAsync(string branchId, int activeMenuId);
         Task<List<ProductVariant>> GetProductVariantsByProductIdAsync(int productId);
+        Task<BranchMenu?> GetActiveMenuWithDetailsAsync(string branchId);
+        Task<bool> UpdateMenuDetailsAvailabilityAsync(int menuId, int productId, bool isAvailable, int updatedByEmployeeId);
     }
 }

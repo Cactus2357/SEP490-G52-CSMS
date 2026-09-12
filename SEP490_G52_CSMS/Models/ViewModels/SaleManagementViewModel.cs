@@ -25,6 +25,10 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int DefaultVariantId { get; set; }
         public decimal DefaultPrice { get; set; }
 
+        public bool IsAvailable { get; set; } = true;
+        public DateTime? UpdatedAt { get; set; }
+        public string? UpdatedByName { get; set; }
+
         // All variants for this product
         public List<SaleVariantViewModel> Variants { get; set; } = new List<SaleVariantViewModel>();
     }
@@ -34,6 +38,38 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int VariantId { get; set; }
         public string SizeVariant { get; set; } = null!;
         public decimal SellingPrice { get; set; }
+        public bool IsAvailable { get; set; } = true;
+    }
+
+    public class BartenderProductAvailabilityViewModel
+    {
+        public string BranchId { get; set; } = string.Empty;
+        public string BranchName { get; set; } = string.Empty;
+        public string? SearchQuery { get; set; }
+        public int? SelectedCategoryId { get; set; }
+        public string StatusFilter { get; set; } = "all";
+        public List<SaleCategoryViewModel> Categories { get; set; } = new List<SaleCategoryViewModel>();
+
+        public int TotalProducts { get; set; }
+        public int AvailableProducts { get; set; }
+        public int OutOfStockProducts { get; set; }
+
+        public List<BartenderProductItemViewModel> Products { get; set; } = new List<BartenderProductItemViewModel>();
+    }
+
+    public class BartenderProductItemViewModel
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        public decimal DefaultPrice { get; set; }
+        public string SizeAndPrice { get; set; } = string.Empty;
+        public bool IsAvailable { get; set; } = true;
+        public DateTime? UpdatedAt { get; set; }
+        public string? UpdatedByName { get; set; }
+        public List<SaleVariantViewModel> Variants { get; set; } = new List<SaleVariantViewModel>();
     }
 
     public class OrderHistoryViewModel
@@ -125,6 +161,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string OrderId { get; set; } = string.Empty;
         public List<int> MissingVariantIds { get; set; } = new List<int>();
         public string? Reason { get; set; }
+        public bool AutoInactiveProducts { get; set; } = false;
     }
 
     /// <summary>

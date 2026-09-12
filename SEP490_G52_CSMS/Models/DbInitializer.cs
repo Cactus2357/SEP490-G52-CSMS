@@ -1047,6 +1047,23 @@ namespace SEP490_G52_CSMS.Models
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'voucher_code')
                     BEGIN
                         ALTER TABLE [orders] ADD [voucher_code] NVARCHAR(50) NULL;
+                    END
+
+                    -- Đảm bảo các cột is_available, updated_by, updated_at trên menu_details
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('menu_details') AND name = 'is_available')
+                    BEGIN
+                        ALTER TABLE [menu_details] ADD [is_available] BIT NOT NULL DEFAULT 1;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('menu_details') AND name = 'updated_by')
+                    BEGIN
+                        ALTER TABLE [menu_details] ADD [updated_by] INT NULL;
+                        ALTER TABLE [menu_details] ADD CONSTRAINT [FK_menu_details_employees_updated_by] FOREIGN KEY ([updated_by]) REFERENCES [employees]([employee_id]) ON DELETE NO ACTION;
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('menu_details') AND name = 'updated_at')
+                    BEGIN
+                        ALTER TABLE [menu_details] ADD [updated_at] DATETIME2 NULL;
                     END");
             }
             catch { }

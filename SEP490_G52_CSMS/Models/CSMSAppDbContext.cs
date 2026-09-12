@@ -104,7 +104,14 @@ namespace SEP490_G52_CSMS.Models
                 .OnDelete(DeleteBehavior.Restrict);
             // Cấu hình các Composite Key (Khóa phức hợp nhiều trường)
             modelBuilder.Entity<BranchManager>().HasKey(bm => new { bm.BranchId, bm.ManagerId });
-            modelBuilder.Entity<MenuDetail>().HasKey(md => new { md.MenuId, md.VariantId });
+            modelBuilder.Entity<MenuDetail>(entity =>
+            {
+                entity.HasKey(md => new { md.MenuId, md.VariantId });
+                entity.HasOne(md => md.Updater)
+                      .WithMany()
+                      .HasForeignKey(md => md.UpdatedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
             modelBuilder.Entity<OrderItem>().HasKey(oi => new { oi.OrderId, oi.VariantId });
 
             // Cấu hình Unique Constraints (Ràng buộc duy nhất)

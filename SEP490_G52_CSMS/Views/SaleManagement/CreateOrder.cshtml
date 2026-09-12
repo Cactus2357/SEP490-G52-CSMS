@@ -22,6 +22,8 @@
     .cart-card-footer { padding-top: 1rem; border-top: 1px solid var(--border-color); }
     .product-item-card { transition: all 0.15s ease-in-out; cursor: pointer; }
     .product-item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+    .product-unavailable { opacity: 0.55; cursor: not-allowed !important; background-color: #f8f9fa !important; }
+    .product-unavailable:hover { transform: none !important; box-shadow: none !important; }
     .cart-item-row { transition: background-color 0.15s ease-in-out; }
     .cart-item-row:hover { background-color: rgba(var(--bs-primary-rgb), 0.08) !important; }
     .cart-item-row td { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
@@ -150,10 +152,11 @@
                 <div class="row g-2" id="productGrid">
                     @foreach (var product in Model.MenuProducts)
                     {
+                        bool isProductAvailable = product.IsAvailable;
                         <div class="col-xl-6 col-12 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()">
-                            <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white product-item-card"
+                            <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white product-item-card @(!isProductAvailable ? "product-unavailable" : "")"
                                  style="min-height: 90px; height: auto;"
-                                 onclick='addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>
+                                 onclick='handleCardClick(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)), @(isProductAvailable ? "true" : "false"))'>
                                 @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
                                 {
                                     <img src="@product.ImageUrl" alt="@product.ProductName"
@@ -167,7 +170,15 @@
                                     </div>
                                 }
                                 <div class="flex-grow-1 min-width-0 me-2">
-                                    <div class="fw-bold text-dark text-truncate small" title="@product.ProductName">@product.ProductName</div>
+                                    <div class="d-flex align-items-center flex-wrap">
+                                        <span class="fw-bold text-dark text-truncate small me-2" title="@product.ProductName">@product.ProductName</span>
+                                        @if (!isProductAvailable)
+                                        {
+                                            <span class="badge bg-danger text-white px-2 py-0.5 fw-semibold" style="font-size: 0.65rem;">
+                                                <i class="bi bi-slash-circle me-1"></i>Tạm hết
+                                            </span>
+                                        }
+                                    </div>
                                     <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
                                         <span class="text-secondary small fw-medium">@product.DefaultPrice.ToString("N0") đ</span>
                                         @if (product.Variants != null && product.Variants.Any())
@@ -176,15 +187,23 @@
                                                 @for (int vi = 0; vi < product.Variants.Count; vi++)
                                                 {
                                                     var v = product.Variants[vi];
-                                                    <span class="px-1.5 py-0.5 bg-light text-secondary fw-semibold @(vi > 0 ? "border-start border-secondary-subtle" : "")">@v.SizeVariant</span>
+                                                    bool vAvail = v.IsAvailable;
+                                                    <span class="px-1.5 py-0.5 bg-light fw-semibold @(vi > 0 ? "border-start border-secondary-subtle" : "") @(vAvail ? "text-secondary" : "text-danger text-decoration-line-through")">@v.SizeVariant</span>
                                                 }
                                             </div>
                                         }
                                     </div>
                                 </div>
                                 <div style="flex-shrink: 0;">
-                                    <button type="button" class="btn btn-primary btn-sm fw-semibold px-2.5 py-1 shadow-sm"
-                                        onclick='event.stopPropagation(); addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>Thêm</button>
+                                    @if (isProductAvailable)
+                                    {
+                                        <button type="button" class="btn btn-primary btn-sm fw-semibold px-2.5 py-1 shadow-sm"
+                                            onclick='event.stopPropagation(); addToCart(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)))'>Thêm</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-secondary btn-sm fw-semibold px-2 py-1 opacity-75" disabled title="Món tạm hết nguyên liệu">Hết</button>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -662,13 +681,25 @@
             }
         }
 
+        function handleCardClick(pId, pName, variants, isAvailable) {
+            if (!isAvailable) {
+                return;
+            }
+            addToCart(pId, pName, variants);
+        }
+
         function addToCart(pId, pName, variants) {
             if (@(ViewBag.NotInShift == true ? "true" : "false")) {
                 showToast("Bạn hiện không ở trong ca làm việc nên không thể bán hàng.", "warning");
                 return;
             }
 
-            var defVariant = variants.find(v => v.sizeVariant === "S") || variants[0];
+            var availableVariants = variants.filter(v => v.isAvailable !== false);
+            if (!availableVariants || availableVariants.length === 0) {
+                return;
+            }
+
+            var defVariant = availableVariants.find(v => v.sizeVariant === "S") || availableVariants[0];
             var cartId = Date.now().toString(); 
             cart.push({
                 cartId: cartId,
@@ -696,10 +727,15 @@
                 var sizeRadios = item.variants.map(v => {
                     var radioId = `size_radio_${item.cartId}_${v.variantId}`;
                     var isChecked = v.variantId == item.selectedVariantId ? 'checked' : '';
+                    var isDisabled = v.isAvailable === false ? 'disabled' : '';
+                    var labelStyle = v.isAvailable === false 
+                        ? 'font-size: 0.75rem; height: 26px; line-height: 24px; text-decoration: line-through; opacity: 0.55;' 
+                        : 'font-size: 0.75rem; height: 26px; line-height: 24px;';
+                    var titleAttr = v.isAvailable === false ? 'title="Hết nguyên liệu cho size này"' : '';
                     return `
-                        <input type="radio" class="btn-check" name="size_group_${item.cartId}" id="${radioId}" autocomplete="off" ${isChecked}
+                        <input type="radio" class="btn-check" name="size_group_${item.cartId}" id="${radioId}" autocomplete="off" ${isChecked} ${isDisabled}
                             onchange="changeSize('${item.cartId}', ${v.variantId}, ${v.sellingPrice})">
-                        <label class="btn btn-outline-primary py-0 px-2 fw-semibold" for="${radioId}" style="font-size: 0.75rem; height: 26px; line-height: 24px;">${v.sizeVariant}</label>
+                        <label class="btn btn-outline-primary py-0 px-2 fw-semibold" for="${radioId}" style="${labelStyle}" ${titleAttr}>${v.sizeVariant}</label>
                     `;
                 }).join('');
                 var sizeGroup = `<div class="btn-group btn-group-sm" role="group" aria-label="Size radio group">${sizeRadios}</div>`;
@@ -1524,5 +1560,23 @@
                 'Hủy'
             );
         }
+
+        // Periodically poll product availability status (every 12s) to keep POS in sync with bartender
+        setInterval(function() {
+            fetch('/api/sale/product-availability')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data) return;
+                    const unavailVids = new Set(data.unavailableVariantIds || []);
+                    let warned = false;
+                    cart.forEach(item => {
+                        if (unavailVids.has(item.selectedVariantId) && !warned) {
+                            showToast(`⚠️ Món [${item.name}] vừa được Bartender cập nhật tạm hết nguyên liệu!`, 'warning');
+                            warned = true;
+                        }
+                    });
+                })
+                .catch(() => {});
+        }, 12000);
     </script>
 }
