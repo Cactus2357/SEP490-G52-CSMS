@@ -155,6 +155,9 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 orderId = o.OrderId,
                 recipientName = string.IsNullOrWhiteSpace(o.RecipientName) ? "Khách lẻ" : o.RecipientName,
+                tableNumber = o.TableNumber,
+                customerName = o.CustomerName,
+                orderNotes = o.OrderNotes,
                 orderTime = o.OrderTime.ToString("dd/MM/yyyy HH:mm"),
                 orderTimeRaw = o.OrderTime.ToString("o"),
                 brewingStatus = o.BrewingStatus,
@@ -167,10 +170,37 @@ namespace SEP490_G52_CSMS.Controllers
                     size = item.Size,
                     quantity = item.Quantity,
                     unitPrice = item.UnitPrice,
-                    amount = item.Amount
+                    amount = item.Amount,
+                    isCompleted = item.IsCompleted
                 })
             });
             return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleOrderItem(string orderId, int variantId, bool? isCompleted)
+        {
+            var branchId = await GetUserBranchIdAsync();
+            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(GetUserId(), branchId);
+            if (!isEligible)
+            {
+                return BadRequest(new { success = false, message = message });
+            }
+
+            var result = await _orderService.ToggleOrderItemBrewingAsync(orderId, variantId, isCompleted);
+            if (result.Success)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = result.Message,
+                    orderCompleted = result.OrderCompleted,
+                    completedItems = result.CompletedItems,
+                    totalItems = result.TotalItems
+                });
+            }
+
+            return BadRequest(new { success = false, message = result.Message });
         }
 
         [HttpPost]

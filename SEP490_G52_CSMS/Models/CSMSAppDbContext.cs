@@ -212,6 +212,7 @@ namespace SEP490_G52_CSMS.Models
 
             modelBuilder.Entity<OrderItem>(entity =>
             {
+                entity.HasKey(e => new { e.OrderId, e.VariantId });
                 entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
             });
 

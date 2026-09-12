@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Sales
 {
@@ -21,6 +21,9 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Required]
         [Column("unit_price")]
         public decimal UnitPrice { get; set; }
+
+        [Column("is_completed")]
+        public bool IsCompleted { get; set; } = false;
 
         [ForeignKey("OrderId")]
         public virtual Order? Order { get; set; }

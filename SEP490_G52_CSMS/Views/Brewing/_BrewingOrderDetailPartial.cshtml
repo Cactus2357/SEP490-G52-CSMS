@@ -3,9 +3,24 @@
 <div class="mb-4">
     <h4 class="fw-bold mb-4 text-center">CHI TIẾT ĐƠN HÀNG</h4>
     <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">Mã đơn hàng :</span> @Model.OrderId</div>
-    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">người dùng:</span> @Model.RecipientName</div>
-    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">thời gian :</span> @Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</div>
-    <div class="mb-4"><span class="fw-bold" style="width: 150px; display: inline-block;">trạng thái :</span> @Model.DisplayStatus</div>
+    <div class="mb-2">
+        <span class="fw-bold" style="width: 150px; display: inline-block;">Vị trí / Bàn :</span>
+        @if (!string.IsNullOrWhiteSpace(Model.TableNumber) && Model.TableNumber != "Mang về")
+        {
+            <span class="badge bg-success fs-6"><i class="bi bi-geo-alt-fill me-1"></i>Bàn @Model.TableNumber</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary fs-6"><i class="bi bi-bag-check-fill me-1"></i>Mang về</span>
+        }
+    </div>
+    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">Khách hàng :</span> @(string.IsNullOrWhiteSpace(Model.CustomerName) ? Model.RecipientName : Model.CustomerName)</div>
+    @if (!string.IsNullOrWhiteSpace(Model.OrderNotes))
+    {
+        <div class="mb-2 alert alert-warning py-1 px-2 small text-danger fw-bold"><i class="bi bi-chat-left-dots-fill me-1"></i>Ghi chú: @Model.OrderNotes</div>
+    }
+    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">Thời gian :</span> @Model.OrderTime.ToString("dd/MM/yyyy HH:mm")</div>
+    <div class="mb-4"><span class="fw-bold" style="width: 150px; display: inline-block;">Trạng thái :</span> @Model.DisplayStatus</div>
 
     <table class="table table-bordered border-dark text-center">
         <thead class="table-light border-dark">

@@ -322,8 +322,64 @@ namespace SEP490_G52_CSMS.Services
             }
 
             order.BrewingStatus = "Completed";
+            if (order.OrderItems != null)
+            {
+                foreach (var oi in order.OrderItems)
+                {
+                    oi.IsCompleted = true;
+                }
+            }
             await _orderRepo.UpdateOrderAsync(order);
             return true;
+        }
+
+        public async Task<(bool Success, string Message, bool OrderCompleted, int CompletedItems, int TotalItems)> ToggleOrderItemBrewingAsync(string orderId, int variantId, bool? targetStatus = null)
+        {
+            var order = await _orderRepo.GetOrderByIdAsync(orderId);
+            if (order == null)
+            {
+                return (false, "Đơn hàng không tồn tại.", false, 0, 0);
+            }
+
+            var item = order.OrderItems?.FirstOrDefault(oi => oi.VariantId == variantId);
+            if (item == null)
+            {
+                return (false, "Món không tồn tại trong đơn hàng.", false, 0, 0);
+            }
+
+            bool newStatus = targetStatus.HasValue ? targetStatus.Value : !item.IsCompleted;
+            item.IsCompleted = newStatus;
+
+            int totalItems = order.OrderItems?.Count ?? 0;
+            int completedItems = order.OrderItems?.Count(oi => oi.IsCompleted) ?? 0;
+            bool allCompleted = totalItems > 0 && completedItems == totalItems;
+
+            if (allCompleted)
+            {
+                if (order.BrewingStatus != "Completed" && order.BrewingStatus != "Done")
+                {
+                    order.BrewingStatus = "Completed";
+                }
+            }
+            else
+            {
+                if (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done")
+                {
+                    order.BrewingStatus = "Brewing in Progress";
+                }
+                else if (order.BrewingStatus == "Waiting for Brewing" && completedItems > 0)
+                {
+                    order.BrewingStatus = "Brewing in Progress";
+                }
+            }
+
+            await _orderRepo.UpdateOrderAsync(order);
+
+            string msg = allCompleted
+                ? "Đơn hàng đã hoàn thành tất cả các món!"
+                : (newStatus ? "Đã đánh dấu món hoàn thành." : "Đã chuyển món về đang pha chế.");
+
+            return (true, msg, allCompleted, completedItems, totalItems);
         }
 
         public async Task<bool> ReportMissingIngredientsAsync(string orderId, List<int> missingVariantIds, string? reason, int bartenderUserId)
@@ -732,6 +788,9 @@ namespace SEP490_G52_CSMS.Services
             {
                 OrderId = o.OrderId,
                 RecipientName = string.IsNullOrWhiteSpace(o.RecipientName) ? "Khách lẻ" : o.RecipientName,
+                TableNumber = o.TableNumber,
+                CustomerName = o.CustomerName,
+                OrderNotes = o.OrderNotes,
                 OrderTime = o.CreatedAt,
                 PaymentMethod = o.PaymentMethod ?? "",
                 BankTransactionCode = o.BankTransactionCode,
@@ -747,7 +806,8 @@ namespace SEP490_G52_CSMS.Services
                     ProductName = oi.ProductVariant?.MasterProduct?.ProductName ?? "",
                     Size = oi.ProductVariant?.SizeVariant ?? "",
                     Quantity = oi.Quantity,
-                    UnitPrice = oi.UnitPrice
+                    UnitPrice = oi.UnitPrice,
+                    IsCompleted = oi.IsCompleted
                 }).ToList()
             });
         }
@@ -824,7 +884,8 @@ namespace SEP490_G52_CSMS.Services
                     ProductName = oi.ProductVariant?.MasterProduct?.ProductName ?? "",
                     Size = oi.ProductVariant?.SizeVariant ?? "",
                     Quantity = oi.Quantity,
-                    UnitPrice = oi.UnitPrice
+                    UnitPrice = oi.UnitPrice,
+                    IsCompleted = oi.IsCompleted
                 }).ToList()
             };
         }

@@ -419,6 +419,37 @@
             updateOrderCardProgress(orderId);
             syncBatchItemCheckboxes(orderId, variantId, isChecked);
             updateTotalFraction();
+
+            // Gọi API backend lưu trạng thái hoàn thành của món
+            $.ajax({
+                url: '/Brewing/ToggleOrderItem',
+                type: 'POST',
+                data: { orderId: orderId, variantId: variantId, isCompleted: isChecked },
+                success: function (res) {
+                    if (res && res.orderCompleted) {
+                        // Nếu đơn hoàn thành 100%, xóa keys và reload danh sách đơn
+                        const keysToRemove = Array.from(checkedItemKeys).filter(k => k.startsWith(`${orderId}_`));
+                        keysToRemove.forEach(k => checkedItemKeys.delete(k));
+                        saveCheckedState();
+                        expandedOrderIds.delete(orderId);
+                        fetchLiveOrders();
+                    }
+                },
+                error: function (xhr) {
+                    // Nếu lỗi thì revert lại trạng thái giao diện
+                    if (isChecked) {
+                        checkedItemKeys.delete(key);
+                    } else {
+                        checkedItemKeys.add(key);
+                    }
+                    saveCheckedState();
+                    updateOrderCardProgress(orderId);
+                    syncBatchItemCheckboxes(orderId, variantId, !isChecked);
+                    updateTotalFraction();
+                    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể cập nhật trạng thái món.';
+                    showAppAlert(msg, 'Thông báo lỗi');
+                }
+            });
         }
 
         function toggleSelectAllOrder(orderId, isChecked) {
@@ -431,18 +462,18 @@
                 return;
             }
 
-            order.items.forEach(it => {
-                const key = `${orderId}_${it.variantId}`;
-                if (isChecked) {
-                    checkedItemKeys.add(key);
-                } else {
-                    checkedItemKeys.delete(key);
-                }
-            });
-            saveCheckedState();
-            updateOrderCardProgress(orderId);
-            renderBatchView(rawOrdersList);
-            updateTotalFraction();
+            if (isChecked) {
+                // Tích chọn toàn bộ -> Hoàn thành toàn bộ đơn
+                executeCompleteOrder(orderId);
+            } else {
+                // Hủy tích chọn toàn bộ
+                order.items.forEach(it => {
+                    const key = `${orderId}_${it.variantId}`;
+                    if (checkedItemKeys.has(key)) {
+                        toggleItemCheck(orderId, it.variantId, false);
+                    }
+                });
+            }
         }
 
         function toggleSelectAllBatch(variantId, isChecked) {
@@ -452,19 +483,12 @@
             relevantOrders.forEach(o => {
                 const isBrewing = (o.brewingStatus === 'Brewing in Progress');
                 if (isBrewing) {
-                    const key = `${o.orderId}_${variantId}`;
-                    if (isChecked) {
-                        checkedItemKeys.add(key);
-                    } else {
-                        checkedItemKeys.delete(key);
+                    const isCurrentChecked = checkedItemKeys.has(`${o.orderId}_${variantId}`);
+                    if (isCurrentChecked !== isChecked) {
+                        toggleItemCheck(o.orderId, variantId, isChecked);
                     }
-                    updateOrderCardProgress(o.orderId);
                 }
             });
-
-            saveCheckedState();
-            renderBatchView(rawOrdersList);
-            updateTotalFraction();
         }
 
         function handleRowClick(event, orderId, variantId, isBrewing) {
@@ -704,7 +728,19 @@
                                 <span class="badge ${orderStyle.badgeClass} rounded px-2 py-1">#${index + 1}</span>
                                 <h6 class="fw-bold mb-0 text-primary">${o.orderId}</h6>
                                 <span class="text-muted">|</span>
-                                <span class="fw-bold text-dark">${o.recipientName}</span>
+                                ${o.tableNumber && o.tableNumber.trim() !== '' && o.tableNumber !== 'Mang về' ? `
+                                    <span class="badge bg-success text-white px-2.5 py-1.5 fs-6 shadow-sm">
+                                        <i class="bi bi-geo-alt-fill me-1"></i>Bàn ${o.tableNumber}
+                                    </span>
+                                ` : `
+                                    <span class="badge bg-secondary text-white px-2.5 py-1.5 fs-6 shadow-sm">
+                                        <i class="bi bi-bag-check-fill me-1"></i>Mang về
+                                    </span>
+                                `}
+                                <span class="fw-bold text-dark fs-6">${o.recipientName}</span>
+                                ${o.customerName && o.customerName !== o.recipientName ? `
+                                    <span class="text-secondary small">(${o.customerName})</span>
+                                ` : ''}
                                 <span class="text-secondary small">
                                     <i class="bi bi-clock me-1"></i>${o.orderTime} 
                                     ${timeAgoText ? `<span class="badge bg-light text-secondary border ms-1">${timeAgoText}</span>` : ''}
@@ -727,6 +763,13 @@
                                     <i class="bi bi-exclamation-triangle-fill me-1"></i>Báo thiếu NL
                                 </button>
                             </div>
+
+                            ${o.orderNotes ? `
+                                <div class="w-100 mt-1 alert alert-warning py-1.5 px-3 mb-0 small text-danger fw-bold border-0 rounded d-flex align-items-center gap-2">
+                                    <i class="bi bi-chat-left-dots-fill fs-6"></i>
+                                    <span>Ghi chú đơn hàng: ${o.orderNotes}</span>
+                                </div>
+                            ` : ''}
                         </div>
 
                         <!-- Mini Progress summary if brewing -->
@@ -933,6 +976,9 @@
                     recipeGroup.ordersList.push({
                         orderId: o.orderId,
                         recipientName: o.recipientName,
+                        customerName: o.customerName,
+                        tableNumber: o.tableNumber,
+                        orderNotes: o.orderNotes,
                         orderTime: o.orderTime,
                         orderTimeRaw: o.orderTimeRaw,
                         brewingStatus: o.brewingStatus,
@@ -1014,11 +1060,26 @@
                                                  title="${isBrewing ? 'Click vào dòng này để tích/hủy tích làm xong' : ''}">
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
                                                     <div class="overflow-hidden">
-                                                        <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                                        <div class="d-flex align-items-center flex-wrap gap-1.5 mb-1">
                                                             <span class="badge ${ordStyle.badgeClass} rounded px-2 py-0.5 small fw-bold">#${ord.orderRank}</span>
                                                             <strong class="text-primary small">${ord.orderId}</strong>
+                                                            ${ord.tableNumber && ord.tableNumber.trim() !== '' && ord.tableNumber !== 'Mang về' ? `
+                                                                <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-1.5 small fw-bold">
+                                                                    <i class="bi bi-geo-alt-fill me-0.5"></i>Bàn ${ord.tableNumber}
+                                                                </span>
+                                                            ` : `
+                                                                <span class="badge bg-secondary-subtle text-secondary border py-0.5 px-1.5 small fw-bold">
+                                                                    <i class="bi bi-bag-check-fill me-0.5"></i>Mang về
+                                                                </span>
+                                                            `}
                                                             <span class="text-dark small fw-semibold">${ord.recipientName}</span>
+                                                            ${ord.customerName && ord.customerName !== ord.recipientName ? `<span class="text-secondary small">(${ord.customerName})</span>` : ''}
                                                         </div>
+                                                        ${ord.orderNotes ? `
+                                                            <div class="text-danger small fw-bold mb-1" style="font-size: 0.75rem;">
+                                                                <i class="bi bi-chat-left-dots-fill me-1"></i>${ord.orderNotes}
+                                                            </div>
+                                                        ` : ''}
                                                         <div class="text-secondary small" style="font-size: 0.75rem;">
                                                             ${ord.orderTime} ${timeAgo ? `(${timeAgo})` : ''}
                                                         </div>
@@ -1223,6 +1284,19 @@
                 type: 'GET',
                 success: function (orders) {
                     rawOrdersList = orders || [];
+
+                    // Đồng bộ checkedItemKeys với trạng thái IsCompleted lưu từ Database
+                    checkedItemKeys.clear();
+                    rawOrdersList.forEach(o => {
+                        if (o.items) {
+                            o.items.forEach(it => {
+                                if (it.isCompleted) {
+                                    checkedItemKeys.add(`${o.orderId}_${it.variantId}`);
+                                }
+                            });
+                        }
+                    });
+                    saveCheckedState();
 
                     if (rawOrdersList.length > 0 && expandedOrderIds.size === 0) {
                         expandedOrderIds.add(rawOrdersList[0].orderId);

@@ -82,5 +82,16 @@ namespace SEP490_G52_CSMS.Repositories
 
             return await query.OrderBy(o => o.CreatedAt).ToListAsync();
         }
+
+        public async Task<bool> UpdateOrderItemCompletionAsync(string orderId, int variantId, bool isCompleted)
+        {
+            var item = await _context.OrderItems
+                .FirstOrDefaultAsync(oi => oi.OrderId == orderId && oi.VariantId == variantId);
+            if (item == null) return false;
+
+            item.IsCompleted = isCompleted;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

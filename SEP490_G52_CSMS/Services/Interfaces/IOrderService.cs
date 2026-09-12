@@ -17,5 +17,6 @@ namespace SEP490_G52_CSMS.Services.Interfaces
         Task<IEnumerable<OrderSummaryViewModel>> GetWaitingAndBrewingOrdersAsync(string? branchId = null);
         Task<SaleOrderDetailViewModel?> GetOrderDetailsAsync(string orderId);
         Task<(bool success, string message)> MarkOrderAsDeliveredAsync(string orderId);
+        Task<(bool Success, string Message, bool OrderCompleted, int CompletedItems, int TotalItems)> ToggleOrderItemBrewingAsync(string orderId, int variantId, bool? targetStatus = null);
     }
 }
