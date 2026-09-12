@@ -444,12 +444,12 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest(new { success = false, message = $"Chỉ thu ngân đang trong ca làm việc chính thức mới được phép thực hiện hoàn tiền! ({message})" });
             }
 
-            bool result = await _orderService.ProcessRefundCashAsync(model.OrderId, model.RefundAmount, model.Reason ?? "Hoàn tiền do thiếu nguyên liệu/hủy món", cashierId);
-            if (result)
+            var (success, refundMsg) = await _orderService.ProcessRefundCashAsync(model.OrderId, model.RefundAmount, model.Reason ?? "Hoàn tiền do thiếu nguyên liệu/hủy món", cashierId);
+            if (success)
             {
-                return Json(new { success = true, message = "Đã hoàn tiền mặt thành công. Số tiền đã được trừ vào dòng tiền mặt của ca hiện tại." });
+                return Json(new { success = true, message = refundMsg });
             }
-            return BadRequest(new { success = false, message = "Không thể xử lý hoàn tiền cho đơn hàng này." });
+            return BadRequest(new { success = false, message = refundMsg });
         }
 
         [HttpGet]
@@ -680,6 +680,12 @@ namespace SEP490_G52_CSMS.Controllers
                 var order = await _context.Orders.Include(o => o.Payments).Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.OrderId == orderId);
                 if (order != null)
                 {
+                    var now = order.CreatedAt.Kind == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now;
+                    if ((now - order.CreatedAt).TotalHours > 24)
+                    {
+                        return BadRequest(new { success = false, message = "Không thể hủy đơn hàng đã tạo quá 1 ngày (quá 24 giờ)." });
+                    }
+
                     if (order.PaymentStatus == "PartiallyPaid" || order.BankPaid > 0 || order.CashPaid > 0)
                     {
                         return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.PaidAmount:N0}đ thanh toán từ khách hàng. Không thể hủy đơn trực tiếp mà phải xử lý hoàn tất hoặc hoàn tiền!" });
@@ -708,6 +714,12 @@ namespace SEP490_G52_CSMS.Controllers
             if (order == null)
             {
                 return NotFound(new { success = false, message = "Không tìm thấy đơn hàng." });
+            }
+
+            var now = order.CreatedAt.Kind == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now;
+            if ((now - order.CreatedAt).TotalHours > 24)
+            {
+                return BadRequest(new { success = false, message = "Không thể hủy đơn hàng đã tạo quá 1 ngày (quá 24 giờ)." });
             }
 
             if (order.PaymentStatus != "Unpaid")

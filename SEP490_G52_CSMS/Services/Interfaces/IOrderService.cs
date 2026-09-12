@@ -8,7 +8,7 @@ namespace SEP490_G52_CSMS.Services.Interfaces
         Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items, string? tableNumber = null, string? customerName = null, decimal? subtotalAmount = null, decimal? discountAmount = null, decimal? tradeDiscountAmount = null, string? orderNotes = null, string? voucherCode = null);
         Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null);
         Task<bool> ProcessSplitPaymentAsync(string orderId, decimal cashAmount, decimal bankAmount, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null);
-        Task<bool> ProcessRefundCashAsync(string orderId, decimal refundAmount, string reason, int cashierId);
+        Task<(bool success, string message)> ProcessRefundCashAsync(string orderId, decimal refundAmount, string reason, int cashierId);
         Task<bool> StartBrewingAsync(string orderId);
         Task<bool> CompleteBrewingAsync(string orderId);
         Task<bool> ReportMissingIngredientsAsync(string orderId, List<int> missingVariantIds, string? reason, int bartenderUserId);

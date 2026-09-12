@@ -28,9 +28,9 @@
                 
                 <div class="col-md-3">
                     <label class="form-label fw-semibold text-secondary">Khoảng ngày</label>
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center">
                         <input type="date" name="fromDate" class="form-control" value="@Model.FromDate?.ToString("yyyy-MM-dd")" placeholder="Từ ngày" />
-                        <span class="text-muted small">đến</span>
+                        <span class="text-muted small px-3">đến</span>
                         <input type="date" name="toDate" class="form-control" value="@Model.ToDate?.ToString("yyyy-MM-dd")" placeholder="Đến ngày" />
                     </div>
                 </div>
@@ -39,10 +39,15 @@
                     <label class="form-label fw-semibold text-secondary">Trạng thái</label>
                     <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit()">
                         <option value="Tất cả" selected="@(Model.FilterStatus == "Tất cả")">Tất cả trạng thái</option>
-                        <option value="Đã giao hàng" selected="@(Model.FilterStatus == "Đã giao hàng")">Đã giao hàng</option>
-                        <option value="Hoàn thành" selected="@(Model.FilterStatus == "Hoàn thành")">Hoàn thành</option>
-                        <option value="Đang xử lý" selected="@(Model.FilterStatus == "Đang xử lý")">Đang xử lý</option>
-                        <option value="Đã hủy" selected="@(Model.FilterStatus == "Đã hủy")">Đã hủy</option>
+                        <option value="Đang chờ pha chế" selected="@(Model.FilterStatus == "Đang chờ pha chế")">Đang chờ pha chế</option>
+                        <option value="Đang pha chế" selected="@(Model.FilterStatus == "Đang pha chế")">Đang pha chế</option>
+                        <option value="Đã pha chế xong" selected="@(Model.FilterStatus == "Đã pha chế xong")">Đã pha chế xong</option>
+                        <option value="Đã giao hàng" selected="@(Model.FilterStatus == "Đã giao hàng" || Model.FilterStatus == "Hoàn thành" || Model.FilterStatus == "Đã hoàn thành")">Đã giao hàng</option>
+                        <option value="Chờ thanh toán" selected="@(Model.FilterStatus == "Chờ thanh toán")">Chờ thanh toán</option>
+                        <option value="Thanh toán 1 phần" selected="@(Model.FilterStatus == "Thanh toán 1 phần")">Thanh toán 1 phần</option>
+                        <option value="Thiếu nguyên liệu" selected="@(Model.FilterStatus == "Thiếu nguyên liệu" || Model.FilterStatus == "Thiếu nguyên liệu / Chờ xử lý")">Thiếu nguyên liệu</option>
+                        <option value="Hoàn tiền 1 phần" selected="@(Model.FilterStatus == "Hoàn tiền 1 phần")">Hoàn tiền 1 phần</option>
+                        <option value="Đã hủy" selected="@(Model.FilterStatus == "Đã hủy" || Model.FilterStatus == "Đã hủy / Hoàn tiền")">Đã hủy / Hoàn tiền</option>
                     </select>
                 </div>
 
@@ -98,34 +103,64 @@
                                     @item.TotalAmount.ToString("N0")đ
                                 </td>
                                 <td class="text-center">
-                                     @if (item.Status == "Đã giao hàng")
+                                    @if (item.Status == "Đã giao hàng" || item.Status == "Hoàn thành" || item.Status == "Đã hoàn thành")
                                     {
                                         <span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill fw-semibold">
                                             <i class="bi bi-box-seam me-1"></i>Đã giao hàng
                                         </span>
                                     }
-                                    else if (item.Status == "Hoàn thành")
+                                    else if (item.Status == "Đã pha chế xong")
                                     {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5">
-                                            <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
+                                        <span class="badge bg-primary text-white px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            <i class="bi bi-check2-circle me-1"></i>Đã pha chế xong
+                                        </span>
+                                    }
+                                    else if (item.Status == "Đang pha chế")
+                                    {
+                                        <span class="badge bg-primary text-white px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            <i class="bi bi-cup-hot-fill me-1"></i>Đang pha chế
+                                        </span>
+                                    }
+                                    else if (item.Status == "Đang chờ pha chế")
+                                    {
+                                        <span class="badge bg-warning text-dark px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            <i class="bi bi-clock-history me-1"></i>Đang chờ pha chế
+                                        </span>
+                                    }
+                                    else if (item.Status == "Chờ thanh toán")
+                                    {
+                                        <span class="badge bg-secondary text-white px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            <i class="bi bi-hourglass-split me-1"></i>Chờ thanh toán
+                                        </span>
+                                    }
+                                    else if (item.Status == "Thanh toán 1 phần")
+                                    {
+                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            <i class="bi bi-pie-chart-fill me-1"></i>Thanh toán 1 phần
+                                        </span>
+                                    }
+                                    else if (item.Status == "Thiếu nguyên liệu")
+                                    {
+                                        <span class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            <i class="bi bi-exclamation-octagon-fill me-1"></i>Thiếu nguyên liệu
                                         </span>
                                     }
                                     else if (item.Status == "Hoàn tiền 1 phần")
                                     {
-                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5">
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5 rounded-pill fw-semibold">
                                             <i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn tiền 1 phần
                                         </span>
                                     }
                                     else if (item.Status == "Đã hủy")
                                     {
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5">
+                                        <span class="badge bg-secondary text-white px-2.5 py-1.5 rounded-pill fw-semibold">
                                             <i class="bi bi-x-circle-fill me-1"></i>Đã hủy
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5">
-                                            <i class="bi bi-clock-history me-1"></i>Đang xử lý
+                                        <span class="badge bg-secondary-subtle text-secondary px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            @item.Status
                                         </span>
                                     }
                                 </td>

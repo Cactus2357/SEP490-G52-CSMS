@@ -70,22 +70,21 @@
                                 <option value="Tất cả" selected="@(Model.StatusFilter == "Tất cả")">Tất cả</option>
                                 <option value="Đang chờ pha chế" selected="@(Model.StatusFilter == "Đang chờ pha chế")">Đang chờ pha chế</option>
                                 <option value="Đang pha chế" selected="@(Model.StatusFilter == "Đang pha chế")">Đang pha chế</option>
-                                <option value="Đã pha chế xong" selected="@(Model.StatusFilter == "Đã pha chế xong")">Đã pha chế xong (Chờ giao)</option>
-                                <option value="Đã giao hàng" selected="@(Model.StatusFilter == "Đã giao hàng")">Đã giao hàng</option>
+                                <option value="Đã pha chế xong" selected="@(Model.StatusFilter == "Đã pha chế xong")">Đã pha chế xong</option>
+                                <option value="Đã giao hàng" selected="@(Model.StatusFilter == "Đã giao hàng" || Model.StatusFilter == "Đã hoàn thành" || Model.StatusFilter == "Hoàn thành")">Đã giao hàng</option>
                                 <option value="Chờ thanh toán" selected="@(Model.StatusFilter == "Chờ thanh toán")">Chờ thanh toán</option>
                                 <option value="Thanh toán 1 phần" selected="@(Model.StatusFilter == "Thanh toán 1 phần")">Thanh toán 1 phần</option>
-                                <option value="Thiếu nguyên liệu / Chờ xử lý" selected="@(Model.StatusFilter == "Thiếu nguyên liệu / Chờ xử lý" || Model.StatusFilter == "Thiếu nguyên liệu")">Thiếu nguyên liệu (Chờ xử lý)</option>
+                                <option value="Thiếu nguyên liệu" selected="@(Model.StatusFilter == "Thiếu nguyên liệu" || Model.StatusFilter == "Thiếu nguyên liệu / Chờ xử lý")">Thiếu nguyên liệu</option>
                                 <option value="Hoàn tiền 1 phần" selected="@(Model.StatusFilter == "Hoàn tiền 1 phần" || Model.StatusFilter == "Hoàn tiền một phần")">Hoàn tiền 1 phần</option>
-                                <option value="Đã hoàn thành" selected="@(Model.StatusFilter == "Đã hoàn thành")">Đã hoàn thành</option>
-                                <option value="Đã hủy / Hoàn tiền" selected="@(Model.StatusFilter == "Đã hủy / Hoàn tiền" || Model.StatusFilter == "Đã hủy")">Đã hủy / Hoàn tiền</option>
+                                <option value="Đã hủy" selected="@(Model.StatusFilter == "Đã hủy" || Model.StatusFilter == "Đã hủy / Hoàn tiền")">Đã hủy / Hoàn tiền</option>
                             </select>
                         </div>
                         
                         <div class="col-sm-6">
                             <label class="form-label fw-semibold text-secondary small mb-1">Khoảng thời gian</label>
-                            <div class="d-flex align-items-center gap-1.5">
+                            <div class="d-flex align-items-center">
                                 <input type="date" name="fromDate" class="form-control form-control-sm" value="@Model.FromDate?.ToString("yyyy-MM-dd")">
-                                <span class="text-muted small">đến</span>
+                                <span class="text-muted small px-3">đến</span>
                                 <input type="date" name="toDate" class="form-control form-control-sm" value="@Model.ToDate?.ToString("yyyy-MM-dd")">
                             </div>
                         </div>
@@ -101,6 +100,28 @@
                                 <span class="input-group-text bg-light text-secondary"><i class="bi bi-search"></i></span>
                                 <input type="text" name="search" class="form-control" placeholder="Tìm theo mã đơn hàng hoặc tên khách hàng..." value="@Model.SearchKeyword">
                             </div>
+                        </div>
+
+                        <!-- Quick Filter Buttons -->
+                        <div class="col-12 mt-2 pt-2 border-top d-flex align-items-center flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold @(Model.StatusFilter == "Tất cả" ? "btn-dark text-white shadow-sm" : "btn-outline-secondary")" style="font-size: 0.78rem;" onclick="quickFilterStatus('Tất cả')">
+                                Tất cả
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold @(Model.StatusFilter == "Đang chờ pha chế" ? "btn-warning text-dark shadow-sm" : "btn-outline-warning text-dark")" style="font-size: 0.78rem;" onclick="quickFilterStatus('Đang chờ pha chế')">
+                                <i class="bi bi-clock-history me-1"></i>Chờ pha chế
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold @(Model.StatusFilter == "Đang pha chế" ? "btn-primary text-white shadow-sm" : "btn-outline-primary")" style="font-size: 0.78rem;" onclick="quickFilterStatus('Đang pha chế')">
+                                <i class="bi bi-cup-hot me-1"></i>Đang pha chế
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold @(Model.StatusFilter == "Đã pha chế xong" ? "btn-info text-white shadow-sm" : "btn-outline-info text-dark")" style="font-size: 0.78rem;" onclick="quickFilterStatus('Đã pha chế xong')">
+                                <i class="bi bi-check2-circle me-1"></i>Đã pha xong
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold @(Model.StatusFilter == "Đã giao hàng" || Model.StatusFilter == "Đã hoàn thành" || Model.StatusFilter == "Hoàn thành" ? "btn-success text-white shadow-sm" : "btn-outline-success")" style="font-size: 0.78rem;" onclick="quickFilterStatus('Đã giao hàng')">
+                                <i class="bi bi-box-seam me-1"></i>Đã giao hàng
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 fw-semibold @(Model.StatusFilter == "Thiếu nguyên liệu" || Model.StatusFilter == "Thiếu nguyên liệu / Chờ xử lý" ? "btn-danger text-white shadow-sm" : "btn-outline-danger")" style="font-size: 0.78rem;" onclick="quickFilterStatus('Thiếu nguyên liệu')">
+                                <i class="bi bi-exclamation-octagon me-1"></i>Thiếu NL
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -135,7 +156,7 @@
                                 for (int i = 0; i < Model.Orders.Count; i++)
                                 {
                                     var o = Model.Orders[i];
-                                    var stt = (Model.CurrentPage - 1) * 10 + i + 1;
+                                    var stt = (Model.CurrentPage - 1) * Model.PageSize + i + 1;
                                     bool isMissing = o.IsMissingIngredients || o.BrewingStatus == "Missing Ingredients";
                                     bool isPartialRefund = (!isMissing && (o.DisplayStatus == "Hoàn tiền 1 phần" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount)));
                                     bool isCancelled = (!isMissing && !isPartialRefund && (o.DisplayStatus.Contains("hủy") || o.DisplayStatus.Contains("Hoàn tiền") || o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount));
@@ -215,17 +236,9 @@
                                             }
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex align-items-center justify-content-center gap-2">
-                                                @if (isDone)
-                                                {
-                                                    <button type="button" class="btn btn-sm btn-success py-0.5 px-2 fw-semibold shadow-sm" style="font-size: 0.78rem;" onclick="event.stopPropagation(); markDeliveredOrder('@o.OrderId')" title="Xác nhận đã giao hàng cho khách">
-                                                        <i class="bi bi-box-seam me-1"></i>Giao hàng
-                                                    </button>
-                                                }
-                                                <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="event.stopPropagation(); loadOrderDetails('@o.OrderId')">
-                                                    Chi tiết
-                                                </button>
-                                            </div>
+                                            <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="event.stopPropagation(); loadOrderDetails('@o.OrderId')">
+                                                Chi tiết
+                                            </button>
                                         </td>
                                     </tr>
                                 }
@@ -1050,6 +1063,14 @@
                     });
                 }
             );
+        }
+
+        function quickFilterStatus(status) {
+            const select = document.querySelector('select[name="status"]');
+            if (select) {
+                select.value = status;
+                document.getElementById('filterForm').submit();
+            }
         }
     </script>
 }

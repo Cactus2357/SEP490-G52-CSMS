@@ -47,7 +47,7 @@ namespace SEP490_G52_CSMS.Controllers
                 branchName = "Toàn hệ thống (RManager)";
             }
 
-            var model = await _orderManagementService.GetOrderManagementListAsync(branchId, branchName, searchCashier, status, fromDate, toDate, cursor, direction, 10);
+            var model = await _orderManagementService.GetOrderManagementListAsync(branchId, branchName, searchCashier, status, fromDate, toDate, cursor, direction, 15);
             return View(model);
         }
 

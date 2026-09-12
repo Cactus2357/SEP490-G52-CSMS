@@ -46,6 +46,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         // Pagination
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
+        public int PageSize { get; set; } = 15;
 
         public List<OrderSummaryViewModel> Orders { get; set; } = new List<OrderSummaryViewModel>();
     }

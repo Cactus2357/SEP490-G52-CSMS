@@ -16,15 +16,24 @@ namespace SEP490_G52_CSMS.Services
 
         private string MapStatus(Order o)
         {
-            if (o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount)
-                return "Đã hủy";
-            if (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount && o.BrewingStatus != "Missing Ingredients")
-                return "Hoàn tiền 1 phần";
-            if (o.BrewingStatus == "Delivered")
-                return "Đã giao hàng";
-            if (o.PaymentStatus == "Paid" || o.BrewingStatus == "Done" || o.BrewingStatus == "Completed")
-                return "Hoàn thành";
-            return "Đang xử lý";
+            bool isMissing = (o.BrewingStatus == "Missing Ingredients");
+            bool isPartialRefund = (!isMissing && o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount);
+            bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.PaymentStatus == "Cancelled" || o.PaymentStatus == "Canceled" || o.RefundAmount >= o.TotalAmount));
+            bool isDelivered = !isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Delivered");
+            bool isDone = !isCancelled && !isMissing && !isPartialRefund && !isDelivered && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+            bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid");
+            bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "PartiallyPaid");
+            bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing");
+
+            if (isMissing) return "Thiếu nguyên liệu";
+            if (isPartialRefund) return "Hoàn tiền 1 phần";
+            if (isCancelled) return "Đã hủy";
+            if (isDelivered) return "Đã giao hàng";
+            if (isDone) return "Đã pha chế xong";
+            if (isUnpaid) return "Chờ thanh toán";
+            if (isPartiallyPaid) return "Thanh toán 1 phần";
+            if (isBrewing) return "Đang pha chế";
+            return "Đang chờ pha chế";
         }
 
         public async Task<OrderManagementListViewModel> GetOrderManagementListAsync(
@@ -36,7 +45,7 @@ namespace SEP490_G52_CSMS.Services
             DateTime? toDate = null,
             string? cursor = null,
             string direction = "next",
-            int pageSize = 10)
+            int pageSize = 15)
         {
             DateTime? cursorDate = null;
             if (!string.IsNullOrEmpty(cursor) && long.TryParse(cursor, out long ticks))

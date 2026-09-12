@@ -235,10 +235,16 @@ namespace SEP490_G52_CSMS.Services
             return true;
         }
 
-        public async Task<bool> ProcessRefundCashAsync(string orderId, decimal refundAmount, string reason, int cashierId)
+        public async Task<(bool success, string message)> ProcessRefundCashAsync(string orderId, decimal refundAmount, string reason, int cashierId)
         {
             var order = await _orderRepo.GetOrderByIdAsync(orderId);
-            if (order == null) return false;
+            if (order == null) return (false, "Không tìm thấy đơn hàng.");
+
+            var now = order.CreatedAt.Kind == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now;
+            if ((now - order.CreatedAt).TotalHours > 24)
+            {
+                return (false, "Không thể hủy đơn hoặc hoàn tiền cho đơn hàng đã tạo quá 1 ngày (quá 24 giờ).");
+            }
 
             decimal effectiveRefund = refundAmount > 0 ? refundAmount : order.TotalAmount;
 
@@ -292,7 +298,7 @@ namespace SEP490_G52_CSMS.Services
                 }
             }
 
-            return true;
+            return (true, "Đã hoàn tiền mặt thành công. Số tiền đã được trừ vào dòng tiền mặt của ca hiện tại.");
         }
 
         public async Task<bool> StartBrewingAsync(string orderId)
@@ -385,6 +391,12 @@ namespace SEP490_G52_CSMS.Services
             if (order == null)
             {
                 return (false, "Không tìm thấy đơn hàng cần sửa.", 0, 0);
+            }
+
+            var now = order.CreatedAt.Kind == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now;
+            if ((now - order.CreatedAt).TotalHours > 24)
+            {
+                return (false, "Không thể sửa đơn hoặc đổi món/hoàn tiền cho đơn hàng đã tạo quá 1 ngày (quá 24 giờ).", 0, 0);
             }
 
             if (newItems == null || !newItems.Any())
@@ -626,18 +638,13 @@ namespace SEP490_G52_CSMS.Services
                                             && o.BrewingStatus != "Partially Refunded"
                                             && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
                 }
-                else if (status == "Đã giao hàng")
+                else if (status == "Đã giao hàng" || status == "Đã hoàn thành" || status == "Hoàn thành")
                 {
                     orders = orders.Where(o => o.BrewingStatus == "Delivered" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
                 }
                 else if (status == "Đã pha chế xong")
                 {
-                    orders = orders.Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done")
-                                            && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
-                }
-                else if (status == "Đã hoàn thành")
-                {
-                    orders = orders.Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done" || o.BrewingStatus == "Delivered")
+                    orders = orders.Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done") && o.BrewingStatus != "Delivered"
                                             && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
                 }
                 else if (status == "Đã hủy" || status == "Đã hủy / Hoàn tiền")
@@ -646,7 +653,7 @@ namespace SEP490_G52_CSMS.Services
                 }
             }
 
-            int pageSize = 10;
+            int pageSize = 15;
             int totalOrders = orders.Count();
             int totalPages = (int)Math.Ceiling(totalOrders / (double)pageSize);
             if (page < 1) page = 1;
@@ -662,6 +669,7 @@ namespace SEP490_G52_CSMS.Services
                 SearchKeyword = search ?? "",
                 CurrentPage = page,
                 TotalPages = totalPages,
+                PageSize = pageSize,
                 Orders = pagedOrders.Select(o =>
                 {
                     bool isMissing = (o.BrewingStatus == "Missing Ingredients");
@@ -842,6 +850,11 @@ namespace SEP490_G52_CSMS.Services
             if (order.BrewingStatus == "Delivered")
             {
                 return (true, "Đơn hàng đã ở trạng thái [Đã giao hàng] trước đó.");
+            }
+
+            if (order.BrewingStatus != "Completed" && order.BrewingStatus != "Done")
+            {
+                return (false, "Chỉ khi đơn hàng đã pha chế xong mới được cập nhật đã giao cho khách.");
             }
 
             order.BrewingStatus = "Delivered";
