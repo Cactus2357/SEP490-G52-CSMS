@@ -95,6 +95,10 @@ builder.Services.AddScoped<IVoucherService, VoucherService>();
 // File Storage (S3 / Local fallback)
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
+// Warehouse & Branch Supply Request
+builder.Services.AddScoped<IWarehouseSupplyRepository, WarehouseSupplyRepository>();
+builder.Services.AddScoped<IWarehouseSupplyService, WarehouseSupplyService>();
+
 var app = builder.Build();
 
 // Seed database

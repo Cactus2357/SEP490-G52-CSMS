@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services;
 using SEP490_G52_CSMS.Services.Interfaces;
 
@@ -14,11 +15,16 @@ namespace SEP490_G52_CSMS.Controllers
     {
         private readonly CSMSAppDbContext _context;
         private readonly INotificationService _notificationService;
+        private readonly IWarehouseSupplyService _warehouseSupplyService;
 
-        public WarehouseController(CSMSAppDbContext context, INotificationService notificationService)
+        public WarehouseController(
+            CSMSAppDbContext context, 
+            INotificationService notificationService,
+            IWarehouseSupplyService warehouseSupplyService)
         {
             _context = context;
             _notificationService = notificationService;
+            _warehouseSupplyService = warehouseSupplyService;
         }
 
         [HttpGet]
@@ -483,38 +489,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return RedirectToAction("ExportRequests", new { fromDate = defaultFrom.ToString("yyyy-MM-dd"), toDate = defaultTo.ToString("yyyy-MM-dd"), status = status });
             }
 
-            var query = _context.BranchSupplyRequests
-                .Include(r => r.Branch)
-                .Where(r => r.RequestDate.Date >= filterFrom.Date && r.RequestDate.Date <= filterTo.Date);
-
-            if (!string.IsNullOrEmpty(status) && status != "Tất cả")
-            {
-                query = query.Where(r => r.Status == status);
-            }
-
-            int pageSize = 10;
-            int totalItems = await query.CountAsync();
-            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-            if (page < 1) page = 1;
-            if (page > totalPages && totalPages > 0) page = totalPages;
-
-            var list = await query
-                .OrderByDescending(r => r.Status == "Chờ duyệt" ? 1 : 0)
-                .ThenByDescending(r => r.RequestDate)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var viewModel = new ExportRequestsViewModel
-            {
-                Requests = list,
-                FromDate = filterFrom,
-                ToDate = filterTo,
-                SelectedStatus = status,
-                CurrentPage = page,
-                TotalPages = totalPages
-            };
-
+            var viewModel = await _warehouseSupplyService.GetExportRequestsAsync(filterFrom, filterTo, status, page, 10);
             return View(viewModel);
         }
 
@@ -569,59 +544,9 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> GetBranchRequestDetails(string code)
         {
-            var req = await _context.BranchSupplyRequests
-                .Include(r => r.Branch)
-                .Include(r => r.Items)
-                .ThenInclude(i => i.Material)
-                .FirstOrDefaultAsync(r => r.RequestCode == code);
-
-            if (req == null) return NotFound();
-
-            var bManager = await _context.Employees
-                .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && (e.Role == "BranchManager" || e.Role == "RManager"));
-
-            var itemsResult = req.Items.Select(i => new
-            {
-                materialId = i.MaterialId,
-                materialName = i.Material?.MaterialName ?? "",
-                category = i.Material?.Category ?? "",
-                materialKind = i.Material?.MaterialKind ?? "",
-                storageUnit = i.Material?.StorageUnit ?? "",
-                quantityRequested = i.QuantityRequested.ToString("G29"),
-                quantityReleased = i.QuantityReleased.HasValue ? i.QuantityReleased.Value.ToString("G29") : "",
-                centralStock = i.Material?.StockQuantity.ToString("G29") ?? "0",
-                quantityReceived = i.QuantityReceived.HasValue ? i.QuantityReceived.Value.ToString("G29") : null,
-                quantityAccepted = i.QuantityAccepted.HasValue ? i.QuantityAccepted.Value.ToString("G29") : null,
-                quantityDefective = i.QuantityDefective.HasValue ? i.QuantityDefective.Value.ToString("G29") : null,
-                defectType = i.DefectType ?? "",
-                defectNote = i.DefectNote ?? "",
-                defectImageUrl = i.DefectImageUrl ?? ""
-            });
-
-            return Json(new
-            {
-                requestCode = req.RequestCode,
-                status = req.Status,
-                requestDate = req.RequestDate.ToString("dd/MM/yyyy HH:mm"),
-                expectedDeliveryDate = req.ExpectedDeliveryDate.HasValue ? req.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy") : null,
-                branchName = req.Branch?.BranchName ?? "",
-                creatorName = !string.IsNullOrWhiteSpace(req.ReceiverName) ? req.ReceiverName : (bManager?.FullName ?? "Quản lý chi nhánh"),
-                creatorPhone = !string.IsNullOrWhiteSpace(req.ReceiverPhone) ? req.ReceiverPhone : (bManager?.PhoneNumber ?? "Không có"),
-                receiverName = req.ReceiverName ?? (bManager?.FullName ?? ""),
-                receiverPhone = req.ReceiverPhone ?? (bManager?.PhoneNumber ?? ""),
-                requestNote = req.RequestNote ?? "",
-                approvedBy = req.ApprovedBy ?? "",
-                approvedDate = req.ApprovedDate.HasValue ? req.ApprovedDate.Value.ToString("dd/MM/yyyy HH:mm") : null,
-                delivererName = req.DelivererName ?? "",
-                delivererPhone = req.DelivererPhone ?? "",
-                deliveryProvider = req.DeliveryProvider ?? "",
-                receivedDate = req.ReceivedDate.HasValue ? req.ReceivedDate.Value.ToString("dd/MM/yyyy HH:mm") : null,
-                inspectedBy = req.InspectedBy ?? "",
-                inspectedAt = req.InspectedAt.HasValue ? req.InspectedAt.Value.ToString("dd/MM/yyyy HH:mm") : null,
-                inspectionStatus = req.InspectionStatus ?? "",
-                warehouseNote = req.WarehouseNote ?? "",
-                items = itemsResult
-            });
+            var details = await _warehouseSupplyService.GetRequestDetailsJsonAsync(code);
+            if (details == null) return NotFound();
+            return Json(details);
         }
 
         [HttpPost]
@@ -629,137 +554,31 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (model == null) return Json(new { success = false, message = "Dữ liệu trống." });
 
-            var req = await _context.BranchSupplyRequests
-                .Include(r => r.Items)
-                .ThenInclude(i => i.Material)
-                .FirstOrDefaultAsync(r => r.RequestCode == model.RequestCode);
-
-            if (req == null) return Json(new { success = false, message = "Đơn hàng không tồn tại." });
-            if (req.Status != "Chờ duyệt") return Json(new { success = false, message = "Chỉ có thể cập nhật số lượng khi đơn ở trạng thái Chờ duyệt." });
-
-            foreach (var item in model.Items)
-            {
-                var reqItem = req.Items.FirstOrDefault(i => i.MaterialId == item.MaterialId);
-                if (reqItem != null && reqItem.Material != null)
-                {
-                    if (item.QuantityReleased > reqItem.Material.StockQuantity)
-                    {
-                        return Json(new { success = false, message = $"Số lượng thực xuất của \"{reqItem.Material.MaterialName}\" vượt quá tồn kho hiện có ({reqItem.Material.StockQuantity.ToString("G29")} {reqItem.Material.StorageUnit})." });
-                    }
-                    reqItem.QuantityReleased = item.QuantityReleased;
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.WarehouseNote))
-            {
-                req.WarehouseNote = model.WarehouseNote.Trim();
-            }
-
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Cập nhật số lượng thực xuất thành công!" });
+            var result = await _warehouseSupplyService.UpdateReleasedQuantitiesAsync(model.RequestCode, model.Items, model.WarehouseNote);
+            return Json(new { success = result.Success, message = result.Message });
         }
 
         [HttpPost]
         public async Task<IActionResult> ApproveRequestAndPrepare(string code)
         {
-            var req = await _context.BranchSupplyRequests
-                .Include(r => r.Items)
-                .FirstOrDefaultAsync(r => r.RequestCode == code);
-
-            if (req == null) return Json(new { success = false, message = "Đơn hàng không tồn tại." });
-            if (req.Status != "Chờ duyệt") return Json(new { success = false, message = "Trạng thái không hợp lệ." });
-
-            bool hasReleasedValues = req.Items.Any(i => i.QuantityReleased.HasValue);
-            if (!hasReleasedValues)
-            {
-                return Json(new { success = false, message = "Vui lòng so sánh tồn kho và nhập số lượng thực xuất trước khi duyệt đơn." });
-            }
-
-            req.Status = "Đang chuẩn bị xuất";
-            req.ApprovedBy = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Warehouse Manager";
-            req.ApprovedDate = DateTime.UtcNow;
-
-            var bManager = await _context.Employees
-                .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
-
-            await _notificationService.SendAsync(new NotificationEvent(
-                Title: "Yêu cầu nhập kho đã duyệt",
-                Message: $"Đơn yêu cầu {req.RequestCode} của chi nhánh bạn đã được duyệt và đang chuẩn bị xuất kho.",
-                RecipientUserId: bManager?.EmployeeId,
-                RecipientRole: "BranchManager",
-                ResourceUrl: "/BranchWarehouse/RequestHistory",
-                BranchId: req.BranchId
-            ));
-
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Đã duyệt đơn và chuyển sang trạng thái Chuẩn bị xuất." });
+            var approverName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Warehouse Manager";
+            var result = await _warehouseSupplyService.ApproveAndPrepareShipmentAsync(code, approverName);
+            return Json(new { success = result.Success, message = result.Message });
         }
 
         [HttpPost]
         public async Task<IActionResult> ConfirmShipment(string code, string? delivererName, string? delivererPhone, string? deliveryProvider)
         {
-            if (string.IsNullOrWhiteSpace(delivererName))
-            {
-                return Json(new { success = false, message = "Vui lòng nhập họ tên người vận chuyển / tài xế giao hàng." });
-            }
-            if (string.IsNullOrWhiteSpace(delivererPhone))
-            {
-                return Json(new { success = false, message = "Vui lòng nhập số điện thoại người vận chuyển." });
-            }
+            var result = await _warehouseSupplyService.ConfirmShipmentAsync(code, delivererName, delivererPhone, deliveryProvider);
+            return Json(new { success = result.Success, message = result.Message });
+        }
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var req = await _context.BranchSupplyRequests
-                    .Include(r => r.Items)
-                    .ThenInclude(i => i.Material)
-                    .FirstOrDefaultAsync(r => r.RequestCode == code);
-
-                if (req == null) return Json(new { success = false, message = "Đơn hàng không tồn tại." });
-                if (req.Status != "Đang chuẩn bị xuất") return Json(new { success = false, message = "Trạng thái không hợp lệ." });
-
-                foreach (var item in req.Items)
-                {
-                    var releasedQty = item.QuantityReleased ?? 0;
-                    if (releasedQty > 0 && item.Material != null)
-                    {
-                        item.Material.StockQuantity -= releasedQty;
-                        if (item.Material.StockQuantity < 0) item.Material.StockQuantity = 0;
-                    }
-                }
-
-                req.Status = "Đã xuất kho";
-                req.DelivererName = delivererName.Trim();
-                req.DelivererPhone = delivererPhone.Trim();
-                req.DeliveryProvider = deliveryProvider?.Trim();
-
-                if (string.IsNullOrWhiteSpace(req.WarehouseNote))
-                {
-                    req.WarehouseNote = "Đang giao hàng";
-                }
-
-                var bManager = await _context.Employees
-                    .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
-
-                var providerInfo = !string.IsNullOrWhiteSpace(req.DeliveryProvider) ? $" ({req.DeliveryProvider})" : "";
-                await _notificationService.SendAsync(new NotificationEvent(
-                    Title: "Đơn hàng đang giao",
-                    Message: $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang được tài xế {req.DelivererName}{providerInfo} (SĐT: {req.DelivererPhone}) giao tới chi nhánh.",
-                    RecipientUserId: bManager?.EmployeeId,
-                    RecipientRole: "BranchManager",
-                    ResourceUrl: "/BranchWarehouse/RequestHistory",
-                    BranchId: req.BranchId
-                ));
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return Json(new { success = true, message = "Xác nhận đã xuất kho thành công!" });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return Json(new { success = false, message = "Lỗi hệ thống khi xuất kho: " + ex.Message });
-            }
+        [HttpPost]
+        public async Task<IActionResult> RejectRequest(string code, string? reason)
+        {
+            var approverName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Warehouse Manager";
+            var result = await _warehouseSupplyService.RejectSupplyRequestAsync(code, approverName, reason);
+            return Json(new { success = result.Success, message = result.Message });
         }
     }
 
@@ -795,29 +614,6 @@ namespace SEP490_G52_CSMS.Controllers
         public List<WarehouseReceiptItem> Items { get; set; } = new();
         public DateTime FromDate { get; set; }
         public DateTime ToDate { get; set; }
-        public int CurrentPage { get; set; }
-        public int TotalPages { get; set; }
-    }
-
-    public class UpdateReleasedQuantitiesModel
-    {
-        public string RequestCode { get; set; } = string.Empty;
-        public string? WarehouseNote { get; set; }
-        public List<RequestItemReleasedModel> Items { get; set; } = new();
-    }
-
-    public class RequestItemReleasedModel
-    {
-        public int MaterialId { get; set; }
-        public decimal QuantityReleased { get; set; }
-    }
-
-    public class ExportRequestsViewModel
-    {
-        public List<BranchSupplyRequest> Requests { get; set; } = new();
-        public DateTime FromDate { get; set; }
-        public DateTime ToDate { get; set; }
-        public string SelectedStatus { get; set; } = "Tất cả";
         public int CurrentPage { get; set; }
         public int TotalPages { get; set; }
     }

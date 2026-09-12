@@ -10,11 +10,16 @@ namespace SEP490_G52_CSMS.Services
     {
         private readonly IEmployeeRepository _repository;
         private readonly IDAT_EmailHelper _emailHelper;
+        private readonly IFileStorageService? _fileStorageService;
 
-        public EmployeeService(IEmployeeRepository repository, IDAT_EmailHelper emailHelper)
+        public EmployeeService(
+            IEmployeeRepository repository,
+            IDAT_EmailHelper emailHelper,
+            IFileStorageService? fileStorageService = null)
         {
             _repository = repository;
             _emailHelper = emailHelper;
+            _fileStorageService = fileStorageService;
         }
 
         public async Task<IEnumerable<Employee>> GetEmployeesListAsync()
@@ -117,18 +122,25 @@ namespace SEP490_G52_CSMS.Services
                     var fileExtension = System.IO.Path.GetExtension(dto.CccdFile.FileName).ToLower();
                     if (System.Linq.Enumerable.Contains(allowedExtensions, fileExtension) && dto.CccdFile.Length <= MaxFileSize)
                     {
-                        string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
-                        if (!System.IO.Directory.Exists(uploadsFolder))
+                        if (_fileStorageService != null)
                         {
-                            System.IO.Directory.CreateDirectory(uploadsFolder);
+                            employee.CccdFilePath = await _fileStorageService.UploadFileAsync(dto.CccdFile, "employees");
                         }
-                        string uniqueFileName = $"cccd_{employee.EmployeeId}_{Guid.NewGuid()}{fileExtension}";
-                        string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
-                        using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                        else
                         {
-                            await dto.CccdFile.CopyToAsync(fileStream);
+                            string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
+                            if (!System.IO.Directory.Exists(uploadsFolder))
+                            {
+                                System.IO.Directory.CreateDirectory(uploadsFolder);
+                            }
+                            string uniqueFileName = $"cccd_{employee.EmployeeId}_{Guid.NewGuid()}{fileExtension}";
+                            string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                            using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                            {
+                                await dto.CccdFile.CopyToAsync(fileStream);
+                            }
+                            employee.CccdFilePath = $"/uploads/employees/{uniqueFileName}";
                         }
-                        employee.CccdFilePath = $"/uploads/employees/{uniqueFileName}";
                         fileUpdated = true;
                     }
                 }
@@ -138,18 +150,25 @@ namespace SEP490_G52_CSMS.Services
                     var fileExtension = System.IO.Path.GetExtension(dto.ContractFile.FileName).ToLower();
                     if (System.Linq.Enumerable.Contains(allowedExtensions, fileExtension) && dto.ContractFile.Length <= MaxFileSize)
                     {
-                        string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
-                        if (!System.IO.Directory.Exists(uploadsFolder))
+                        if (_fileStorageService != null)
                         {
-                            System.IO.Directory.CreateDirectory(uploadsFolder);
+                            employee.ContractFilePath = await _fileStorageService.UploadFileAsync(dto.ContractFile, "employees");
                         }
-                        string uniqueFileName = $"contract_{employee.EmployeeId}_{Guid.NewGuid()}{fileExtension}";
-                        string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
-                        using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                        else
                         {
-                            await dto.ContractFile.CopyToAsync(fileStream);
+                            string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
+                            if (!System.IO.Directory.Exists(uploadsFolder))
+                            {
+                                System.IO.Directory.CreateDirectory(uploadsFolder);
+                            }
+                            string uniqueFileName = $"contract_{employee.EmployeeId}_{Guid.NewGuid()}{fileExtension}";
+                            string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                            using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                            {
+                                await dto.ContractFile.CopyToAsync(fileStream);
+                            }
+                            employee.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
                         }
-                        employee.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
                         fileUpdated = true;
                     }
                 }
@@ -265,18 +284,25 @@ namespace SEP490_G52_CSMS.Services
                         return new EmployeeUpdateResult { Success = false, ErrorMessage = "Dung lượng file ảnh CCCD không được vượt quá 10MB." };
                     }
 
-                    string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
-                    if (!System.IO.Directory.Exists(uploadsFolder))
+                    if (_fileStorageService != null)
                     {
-                        System.IO.Directory.CreateDirectory(uploadsFolder);
+                        employee.CccdFilePath = await _fileStorageService.UploadFileAsync(dto.CccdFile, "employees");
                     }
-                    string uniqueFileName = $"cccd_{employeeId}_{Guid.NewGuid()}{fileExtension}";
-                    string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
-                    using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                    else
                     {
-                        await dto.CccdFile.CopyToAsync(fileStream);
+                        string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
+                        if (!System.IO.Directory.Exists(uploadsFolder))
+                        {
+                            System.IO.Directory.CreateDirectory(uploadsFolder);
+                        }
+                        string uniqueFileName = $"cccd_{employeeId}_{Guid.NewGuid()}{fileExtension}";
+                        string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                        using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                        {
+                            await dto.CccdFile.CopyToAsync(fileStream);
+                        }
+                        employee.CccdFilePath = $"/uploads/employees/{uniqueFileName}";
                     }
-                    employee.CccdFilePath = $"/uploads/employees/{uniqueFileName}";
                 }
 
                 if (dto.ContractFile != null && dto.ContractFile.Length > 0)
@@ -291,18 +317,25 @@ namespace SEP490_G52_CSMS.Services
                         return new EmployeeUpdateResult { Success = false, ErrorMessage = "Dung lượng file hợp đồng không được vượt quá 10MB." };
                     }
 
-                    string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
-                    if (!System.IO.Directory.Exists(uploadsFolder))
+                    if (_fileStorageService != null)
                     {
-                        System.IO.Directory.CreateDirectory(uploadsFolder);
+                        employee.ContractFilePath = await _fileStorageService.UploadFileAsync(dto.ContractFile, "employees");
                     }
-                    string uniqueFileName = $"contract_{employeeId}_{Guid.NewGuid()}{fileExtension}";
-                    string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
-                    using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                    else
                     {
-                        await dto.ContractFile.CopyToAsync(fileStream);
+                        string uploadsFolder = System.IO.Path.Combine("wwwroot", "uploads", "employees");
+                        if (!System.IO.Directory.Exists(uploadsFolder))
+                        {
+                            System.IO.Directory.CreateDirectory(uploadsFolder);
+                        }
+                        string uniqueFileName = $"contract_{employeeId}_{Guid.NewGuid()}{fileExtension}";
+                        string filePath = System.IO.Path.Combine(uploadsFolder, uniqueFileName);
+                        using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+                        {
+                            await dto.ContractFile.CopyToAsync(fileStream);
+                        }
+                        employee.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
                     }
-                    employee.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
                 }
 
                 await _repository.UpdateAsync(employee);

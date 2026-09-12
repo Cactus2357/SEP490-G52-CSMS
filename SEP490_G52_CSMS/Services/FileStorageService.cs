@@ -112,6 +112,12 @@ namespace SEP490_G52_CSMS.Services
 
                         await s3Client.PutObjectAsync(putRequest);
 
+                        bool useRelativeUrl = s3Section.GetValue<bool>("UseRelativeUrl", true);
+                        if (useRelativeUrl)
+                        {
+                            return $"/{bucketName}/{relativeKey}";
+                        }
+
                         var serviceUrl = s3Section["ServiceUrl"] ?? "http://localhost:9002";
                         return $"{serviceUrl.TrimEnd('/')}/{bucketName}/{relativeKey}";
                     }
@@ -167,8 +173,16 @@ namespace SEP490_G52_CSMS.Services
                     var s3Section = _config.GetSection("S3Storage");
                     var bucketName = s3Section["BucketName"] ?? "csms-storage";
 
-                    var uri = new Uri(fileUrlOrPath);
-                    var key = uri.AbsolutePath.TrimStart('/');
+                    string key;
+                    if (Uri.TryCreate(fileUrlOrPath, UriKind.Absolute, out var uri))
+                    {
+                        key = uri.AbsolutePath.TrimStart('/');
+                    }
+                    else
+                    {
+                        key = fileUrlOrPath.TrimStart('/');
+                    }
+
                     if (key.StartsWith(bucketName + "/", StringComparison.OrdinalIgnoreCase))
                     {
                         key = key.Substring(bucketName.Length + 1);

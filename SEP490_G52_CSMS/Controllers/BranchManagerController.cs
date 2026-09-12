@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Employees;
+using SEP490_G52_CSMS.Services.Interfaces;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -16,11 +17,13 @@ namespace SEP490_G52_CSMS.Controllers
     {
         private readonly CSMSAppDbContext _context;
         private readonly IDAT_EmailHelper _emailHelper;
+        private readonly IFileStorageService? _fileStorageService;
 
-        public BranchManagerController(CSMSAppDbContext context, IDAT_EmailHelper emailHelper)
+        public BranchManagerController(CSMSAppDbContext context, IDAT_EmailHelper emailHelper, IFileStorageService? fileStorageService = null)
         {
             _context = context;
             _emailHelper = emailHelper;
+            _fileStorageService = fileStorageService;
         }
 
         public IActionResult Index()
@@ -302,13 +305,20 @@ namespace SEP490_G52_CSMS.Controllers
                     return Json(new { success = false, errorMessage = "Dung lượng file ảnh CCCD không được vượt quá 10MB." });
                 }
 
-                string uniqueFileName = $"cccd_{id}_{Guid.NewGuid()}{fileExtension}";
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                if (_fileStorageService != null)
                 {
-                    await request.CccdFile.CopyToAsync(fileStream);
+                    manager.CccdFilePath = await _fileStorageService.UploadFileAsync(request.CccdFile, "employees");
                 }
-                manager.CccdFilePath = $"/uploads/employees/{uniqueFileName}";
+                else
+                {
+                    string uniqueFileName = $"cccd_{id}_{Guid.NewGuid()}{fileExtension}";
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.CccdFile.CopyToAsync(fileStream);
+                    }
+                    manager.CccdFilePath = $"/uploads/employees/{uniqueFileName}";
+                }
             }
 
             if (request.ContractFile != null && request.ContractFile.Length > 0)
@@ -323,13 +333,20 @@ namespace SEP490_G52_CSMS.Controllers
                     return Json(new { success = false, errorMessage = "Dung lượng file hợp đồng không được vượt quá 10MB." });
                 }
 
-                string uniqueFileName = $"contract_{id}_{Guid.NewGuid()}{fileExtension}";
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                if (_fileStorageService != null)
                 {
-                    await request.ContractFile.CopyToAsync(fileStream);
+                    manager.ContractFilePath = await _fileStorageService.UploadFileAsync(request.ContractFile, "employees");
                 }
-                manager.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
+                else
+                {
+                    string uniqueFileName = $"contract_{id}_{Guid.NewGuid()}{fileExtension}";
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.ContractFile.CopyToAsync(fileStream);
+                    }
+                    manager.ContractFilePath = $"/uploads/employees/{uniqueFileName}";
+                }
             }
 
             // Update text fields

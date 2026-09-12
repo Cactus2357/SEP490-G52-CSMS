@@ -9,13 +9,16 @@ namespace SEP490_G52_CSMS.Services
     {
         private readonly IProductRepository _productRepository;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IFileStorageService? _fileStorageService;
 
         public ProductService(
             IProductRepository productRepository,
-            IWebHostEnvironment webHostEnvironment)
+            IWebHostEnvironment webHostEnvironment,
+            IFileStorageService? fileStorageService = null)
         {
             _productRepository = productRepository;
             _webHostEnvironment = webHostEnvironment;
+            _fileStorageService = fileStorageService;
         }
 
         public async Task<List<ProductListViewModel>> GetProductListAsync(
@@ -188,6 +191,11 @@ namespace SEP490_G52_CSMS.Services
             {
                 throw new InvalidOperationException(
                     "Chỉ chấp nhận hình ảnh JPG, JPEG, PNG hoặc WEBP.");
+            }
+
+            if (_fileStorageService != null)
+            {
+                return await _fileStorageService.UploadFileAsync(imageFile, "products");
             }
 
             var webRootPath =
