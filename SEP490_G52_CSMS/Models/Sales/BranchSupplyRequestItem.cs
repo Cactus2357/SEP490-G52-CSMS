@@ -31,5 +31,26 @@ namespace SEP490_G52_CSMS.Models.Sales
 
         [Column("quantity_released")]
         public decimal? QuantityReleased { get; set; } // Số lượng thực xuất
+
+        [Column("quantity_received")]
+        public decimal? QuantityReceived { get; set; } // Tổng SL thực nhận tại chi nhánh
+
+        [Column("quantity_accepted")]
+        public decimal? QuantityAccepted { get; set; } // SL đạt chuẩn nhập kho
+
+        [Column("quantity_defective")]
+        public decimal? QuantityDefective { get; set; } // SL lỗi / hư hỏng
+
+        [Column("defect_type")]
+        [StringLength(100)]
+        public string? DefectType { get; set; } // Loại lỗi (Hết hạn, Hư hại do vận chuyển, Kém chất lượng, Giao sai/thiếu quy cách, Khác)
+
+        [Column("defect_note")]
+        [StringLength(500)]
+        public string? DefectNote { get; set; } // Ghi chú chi tiết lỗi
+
+        [Column("defect_image_url")]
+        [StringLength(500)]
+        public string? DefectImageUrl { get; set; } // Ảnh chụp bằng chứng
     }
 }

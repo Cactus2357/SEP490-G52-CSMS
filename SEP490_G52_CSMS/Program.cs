@@ -92,6 +92,9 @@ builder.Services.AddScoped<INotificationService, SEP490_G52_CSMS.Services.Notifi
 // Voucher Management
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 
+// File Storage (S3 / Local fallback)
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+
 var app = builder.Build();
 
 // Seed database

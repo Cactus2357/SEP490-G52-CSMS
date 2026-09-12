@@ -540,20 +540,25 @@ namespace SEP490_G52_CSMS.Controllers
             var list = await query.OrderByDescending(r => r.RequestDate).ToListAsync();
 
             var csvBuilder = new System.Text.StringBuilder();
-            csvBuilder.AppendLine("Mã đơn,Ngày yêu cầu,Chi nhánh,Trạng thái,Ghi chú tổng kho,Người duyệt,Người giao,Sđt");
+            csvBuilder.AppendLine("Mã đơn,Ngày yêu cầu,Ngày cần nhận,Chi nhánh,Trạng thái,Ghi chú tổng kho,Người duyệt,Người giao,SĐT người giao,Đơn vị vận chuyển,Người nhận,SĐT người nhận,Kết quả đồng kiểm");
 
             foreach (var r in list)
             {
                 var code = r.RequestCode;
                 var reqDate = r.RequestDate.ToString("dd/MM/yyyy HH:mm");
+                var expDate = r.ExpectedDeliveryDate.HasValue ? r.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy") : "";
                 var branchName = $"\"{r.Branch?.BranchName?.Replace("\"", "\"\"")}\"";
                 var rStatus = r.Status;
                 var note = $"\"{r.WarehouseNote?.Replace("\"", "\"\"")}\"";
                 var approved = r.ApprovedBy ?? "";
                 var deliverer = r.DelivererName ?? "";
                 var phone = r.DelivererPhone ?? "";
+                var provider = r.DeliveryProvider ?? "";
+                var receiver = r.ReceiverName ?? "";
+                var rPhone = r.ReceiverPhone ?? "";
+                var insp = r.InspectionStatus ?? "";
 
-                csvBuilder.AppendLine($"{code},{reqDate},{branchName},{rStatus},{note},{approved},{deliverer},{phone}");
+                csvBuilder.AppendLine($"{code},{reqDate},{expDate},{branchName},{rStatus},{note},{approved},{deliverer},{phone},{provider},{receiver},{rPhone},{insp}");
             }
 
             var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csvBuilder.ToString())).ToArray();
@@ -584,7 +589,13 @@ namespace SEP490_G52_CSMS.Controllers
                 storageUnit = i.Material?.StorageUnit ?? "",
                 quantityRequested = i.QuantityRequested.ToString("G29"),
                 quantityReleased = i.QuantityReleased.HasValue ? i.QuantityReleased.Value.ToString("G29") : "",
-                centralStock = i.Material?.StockQuantity.ToString("G29") ?? "0"
+                centralStock = i.Material?.StockQuantity.ToString("G29") ?? "0",
+                quantityReceived = i.QuantityReceived.HasValue ? i.QuantityReceived.Value.ToString("G29") : null,
+                quantityAccepted = i.QuantityAccepted.HasValue ? i.QuantityAccepted.Value.ToString("G29") : null,
+                quantityDefective = i.QuantityDefective.HasValue ? i.QuantityDefective.Value.ToString("G29") : null,
+                defectType = i.DefectType ?? "",
+                defectNote = i.DefectNote ?? "",
+                defectImageUrl = i.DefectImageUrl ?? ""
             });
 
             return Json(new
@@ -592,12 +603,22 @@ namespace SEP490_G52_CSMS.Controllers
                 requestCode = req.RequestCode,
                 status = req.Status,
                 requestDate = req.RequestDate.ToString("dd/MM/yyyy HH:mm"),
+                expectedDeliveryDate = req.ExpectedDeliveryDate.HasValue ? req.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy") : null,
                 branchName = req.Branch?.BranchName ?? "",
-                creatorName = bManager?.FullName ?? "Quản lý chi nhánh",
-                creatorPhone = bManager?.PhoneNumber ?? "Không có",
+                creatorName = !string.IsNullOrWhiteSpace(req.ReceiverName) ? req.ReceiverName : (bManager?.FullName ?? "Quản lý chi nhánh"),
+                creatorPhone = !string.IsNullOrWhiteSpace(req.ReceiverPhone) ? req.ReceiverPhone : (bManager?.PhoneNumber ?? "Không có"),
+                receiverName = req.ReceiverName ?? (bManager?.FullName ?? ""),
+                receiverPhone = req.ReceiverPhone ?? (bManager?.PhoneNumber ?? ""),
+                requestNote = req.RequestNote ?? "",
                 approvedBy = req.ApprovedBy ?? "",
+                approvedDate = req.ApprovedDate.HasValue ? req.ApprovedDate.Value.ToString("dd/MM/yyyy HH:mm") : null,
                 delivererName = req.DelivererName ?? "",
                 delivererPhone = req.DelivererPhone ?? "",
+                deliveryProvider = req.DeliveryProvider ?? "",
+                receivedDate = req.ReceivedDate.HasValue ? req.ReceivedDate.Value.ToString("dd/MM/yyyy HH:mm") : null,
+                inspectedBy = req.InspectedBy ?? "",
+                inspectedAt = req.InspectedAt.HasValue ? req.InspectedAt.Value.ToString("dd/MM/yyyy HH:mm") : null,
+                inspectionStatus = req.InspectionStatus ?? "",
                 warehouseNote = req.WarehouseNote ?? "",
                 items = itemsResult
             });
@@ -675,8 +696,17 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ConfirmShipment(string code)
+        public async Task<IActionResult> ConfirmShipment(string code, string? delivererName, string? delivererPhone, string? deliveryProvider)
         {
+            if (string.IsNullOrWhiteSpace(delivererName))
+            {
+                return Json(new { success = false, message = "Vui lòng nhập họ tên người vận chuyển / tài xế giao hàng." });
+            }
+            if (string.IsNullOrWhiteSpace(delivererPhone))
+            {
+                return Json(new { success = false, message = "Vui lòng nhập số điện thoại người vận chuyển." });
+            }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -699,6 +729,10 @@ namespace SEP490_G52_CSMS.Controllers
                 }
 
                 req.Status = "Đã xuất kho";
+                req.DelivererName = delivererName.Trim();
+                req.DelivererPhone = delivererPhone.Trim();
+                req.DeliveryProvider = deliveryProvider?.Trim();
+
                 if (string.IsNullOrWhiteSpace(req.WarehouseNote))
                 {
                     req.WarehouseNote = "Đang giao hàng";
@@ -707,9 +741,10 @@ namespace SEP490_G52_CSMS.Controllers
                 var bManager = await _context.Employees
                     .FirstOrDefaultAsync(e => e.BranchId == req.BranchId && e.Role == "BranchManager");
 
+                var providerInfo = !string.IsNullOrWhiteSpace(req.DeliveryProvider) ? $" ({req.DeliveryProvider})" : "";
                 await _notificationService.SendAsync(new NotificationEvent(
                     Title: "Đơn hàng đang giao",
-                    Message: $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang trên đường giao tới chi nhánh.",
+                    Message: $"Đơn yêu cầu {req.RequestCode} đã được xuất kho và đang được tài xế {req.DelivererName}{providerInfo} (SĐT: {req.DelivererPhone}) giao tới chi nhánh.",
                     RecipientUserId: bManager?.EmployeeId,
                     RecipientRole: "BranchManager",
                     ResourceUrl: "/BranchWarehouse/RequestHistory",

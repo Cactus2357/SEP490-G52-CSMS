@@ -1064,6 +1064,70 @@ namespace SEP490_G52_CSMS.Models
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('menu_details') AND name = 'updated_at')
                     BEGIN
                         ALTER TABLE [menu_details] ADD [updated_at] DATETIME2 NULL;
+                    END
+
+                    -- Đảm bảo các cột giao nhận, đồng kiểm trên branch_supply_requests
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'delivery_provider')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [delivery_provider] NVARCHAR(100) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'expected_delivery_date')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [expected_delivery_date] DATETIME2 NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'receiver_name')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [receiver_name] NVARCHAR(100) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'receiver_phone')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [receiver_phone] NVARCHAR(20) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'request_note')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [request_note] NVARCHAR(500) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'inspected_by')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [inspected_by] NVARCHAR(100) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'inspected_at')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [inspected_at] DATETIME2 NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_requests') AND name = 'inspection_status')
+                    BEGIN
+                        ALTER TABLE [branch_supply_requests] ADD [inspection_status] NVARCHAR(50) NULL;
+                    END
+
+                    -- Đảm bảo các cột đồng kiểm và báo lỗi trên branch_supply_request_items
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_request_items') AND name = 'quantity_received')
+                    BEGIN
+                        ALTER TABLE [branch_supply_request_items] ADD [quantity_received] DECIMAL(18,2) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_request_items') AND name = 'quantity_accepted')
+                    BEGIN
+                        ALTER TABLE [branch_supply_request_items] ADD [quantity_accepted] DECIMAL(18,2) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_request_items') AND name = 'quantity_defective')
+                    BEGIN
+                        ALTER TABLE [branch_supply_request_items] ADD [quantity_defective] DECIMAL(18,2) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_request_items') AND name = 'defect_type')
+                    BEGIN
+                        ALTER TABLE [branch_supply_request_items] ADD [defect_type] NVARCHAR(100) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_request_items') AND name = 'defect_note')
+                    BEGIN
+                        ALTER TABLE [branch_supply_request_items] ADD [defect_note] NVARCHAR(500) NULL;
+                    END
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('branch_supply_request_items') AND name = 'defect_image_url')
+                    BEGIN
+                        ALTER TABLE [branch_supply_request_items] ADD [defect_image_url] NVARCHAR(MAX) NULL;
+                    END
+                    ELSE
+                    BEGIN
+                        ALTER TABLE [branch_supply_request_items] ALTER COLUMN [defect_image_url] NVARCHAR(MAX) NULL;
                     END");
             }
             catch { }

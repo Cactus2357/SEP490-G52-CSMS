@@ -25,3 +25,38 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+    depends_on:
+      - minio
+
+  minio:
+    image: minio/minio:latest
+    container_name: csms_minio
+    restart: unless-stopped
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: csms_minio_init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 2;
+      /usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin123;
+      /usr/bin/mc mb --ignore-existing local/csms-storage;
+      /usr/bin/mc anonymous set download local/csms-storage;
+      exit 0;
+      "
+    restart: "no"
+
+volumes:
+  minio_data:
+    name: csms_minio_data

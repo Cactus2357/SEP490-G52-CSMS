@@ -53,8 +53,38 @@ namespace SEP490_G52_CSMS.Models.Sales
         [StringLength(15)]
         public string? DelivererPhone { get; set; } // SĐT người giao
 
+        [Column("delivery_provider")]
+        [StringLength(100)]
+        public string? DeliveryProvider { get; set; } // Đơn vị vận chuyển / Biển số xe
+
+        [Column("expected_delivery_date")]
+        public DateTime? ExpectedDeliveryDate { get; set; } // Ngày mong muốn nhận hàng
+
+        [Column("receiver_name")]
+        [StringLength(100)]
+        public string? ReceiverName { get; set; } // Người nhận hàng tại chi nhánh
+
+        [Column("receiver_phone")]
+        [StringLength(20)]
+        public string? ReceiverPhone { get; set; } // SĐT người nhận
+
+        [Column("request_note")]
+        [StringLength(500)]
+        public string? RequestNote { get; set; } // Ghi chú khi tạo yêu cầu
+
         [Column("received_date")]
         public DateTime? ReceivedDate { get; set; } // Ngày nhận hàng (B Manager confirm)
+
+        [Column("inspected_by")]
+        [StringLength(100)]
+        public string? InspectedBy { get; set; } // Người đồng kiểm
+
+        [Column("inspected_at")]
+        public DateTime? InspectedAt { get; set; } // Thời gian đồng kiểm
+
+        [Column("inspection_status")]
+        [StringLength(50)]
+        public string? InspectionStatus { get; set; } // Trạng thái đồng kiểm (Đạt 100%, Có hàng lỗi)
 
         public List<BranchSupplyRequestItem> Items { get; set; } = new();
     }

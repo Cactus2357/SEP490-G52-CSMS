@@ -46,6 +46,7 @@
                         <option value="Đang chuẩn bị xuất" selected="@(Model.SelectedStatus == "Đang chuẩn bị xuất")">Đang chuẩn bị xuất</option>
                         <option value="Đã xuất kho" selected="@(Model.SelectedStatus == "Đã xuất kho")">Đã xuất kho</option>
                         <option value="Đã hoàn thành" selected="@(Model.SelectedStatus == "Đã hoàn thành")">Đã hoàn thành</option>
+                        <option value="Đã nhận - Có hàng lỗi" selected="@(Model.SelectedStatus == "Đã nhận - Có hàng lỗi")">Đã nhận - Có hàng lỗi</option>
                         <option value="Từ chối" selected="@(Model.SelectedStatus == "Từ chối")">Từ chối</option>
                         <option value="Đã hủy" selected="@(Model.SelectedStatus == "Đã hủy")">Đã hủy</option>
                     </select>
@@ -82,12 +83,14 @@
                                                    item.Status == "Đang chuẩn bị xuất" ? "bg-primary text-white" :
                                                    item.Status == "Đã xuất kho" ? "bg-info text-dark" :
                                                    item.Status == "Đã hoàn thành" ? "bg-success text-white" :
+                                                   item.Status == "Đã nhận - Có hàng lỗi" ? "bg-danger text-white" :
                                                    item.Status == "Từ chối" ? "bg-danger text-white" : "bg-secondary text-white";
 
                                 string rowStyle = item.Status == "Chờ duyệt" ? "table-warning fw-semibold" :
                                                    item.Status == "Đang chuẩn bị xuất" ? "table-primary fw-semibold" :
                                                    item.Status == "Đã xuất kho" ? "table-info fw-semibold" :
                                                    item.Status == "Đã hoàn thành" ? "table-success" :
+                                                   item.Status == "Đã nhận - Có hàng lỗi" ? "table-danger" :
                                                    item.Status == "Từ chối" ? "table-danger" : "";
 
                                 <tr class="@rowStyle" data-code="@item.RequestCode">
@@ -164,9 +167,11 @@
                                 <div class="col-md-4"><strong>Mã đơn:</strong> <span id="hdrCodeA" class="fw-bold text-primary"></span></div>
                                 <div class="col-md-4"><strong>Chi nhánh:</strong> <span id="hdrBranch" class="fw-semibold"></span></div>
                                 <div class="col-md-4"><strong>Trạng thái đơn:</strong> <span id="hdrStatusA"></span></div>
-                                <div class="col-md-4"><strong>Người tạo đơn:</strong> <span id="hdrCreator" class="fw-semibold"></span></div>
-                                <div class="col-md-4"><strong>SĐT:</strong> <span id="hdrPhone" class="fw-semibold"></span></div>
-                                <div class="col-md-4"><strong>Ngày yêu cầu:</strong> <span id="hdrDate" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Người nhận hàng:</strong> <span id="hdrReceiverA" class="fw-semibold text-dark"></span></div>
+                                <div class="col-md-4"><strong>SĐT người nhận:</strong> <span id="hdrPhoneA" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Ngày cần nhận:</strong> <span id="hdrExpectedDateA" class="fw-semibold text-danger"></span></div>
+                                <div class="col-md-4"><strong>Ngày gửi yêu cầu:</strong> <span id="hdrDate" class="fw-semibold"></span></div>
+                                <div class="col-md-8"><strong>Ghi chú chi nhánh:</strong> <span id="hdrRequestNoteA" class="fw-semibold text-secondary"></span></div>
                             </div>
                         </div>
                     </div>
@@ -212,21 +217,24 @@
 
                 <!-- Step 2: Preparing Shipment Form (Screen B for "Đang chuẩn bị xuất") -->
                 <div id="processScreenB" class="d-none">
-                    <div class="card bg-light border-0 mb-4 rounded-3">
+                    <div class="card bg-light border-0 mb-3 rounded-3">
                         <div class="card-body py-3 small text-dark fs-6">
                             <div class="row g-2">
                                 <div class="col-md-4"><strong>Mã đơn:</strong> <span id="hdrCodeB" class="fw-bold text-primary"></span></div>
                                 <div class="col-md-4"><strong>Chi nhánh:</strong> <span id="hdrBranchB" class="fw-semibold"></span></div>
-                                <div class="col-md-4"><strong>Trạng thái đơn:</strong> <span id="hdrStatusB"></span></div>
-                                <div class="col-md-4"><strong>Người tạo đơn:</strong> <span id="hdrCreatorB" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Trạng thái:</strong> <span id="hdrStatusB"></span></div>
+                                <div class="col-md-4"><strong>Người nhận:</strong> <span id="hdrReceiverB" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>SĐT nhận:</strong> <span id="hdrPhoneB" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Ngày cần nhận:</strong> <span id="hdrExpectedDateB" class="fw-semibold text-danger"></span></div>
                                 <div class="col-md-4"><strong>Ngày yêu cầu:</strong> <span id="hdrDateB" class="fw-semibold"></span></div>
                                 <div class="col-md-4"><strong>Người duyệt:</strong> <span id="hdrApproverB" class="fw-semibold text-primary"></span></div>
+                                <div class="col-md-4"><strong>Ghi chú chi nhánh:</strong> <span id="hdrRequestNoteB" class="fw-semibold text-secondary"></span></div>
                             </div>
                         </div>
                     </div>
 
                     <h6 class="fw-bold mb-2">Chi tiết nguyên vật liệu chuẩn bị xuất kho</h6>
-                    <div class="table-responsive mb-4">
+                    <div class="table-responsive mb-3">
                         <table class="table table-bordered table-sm align-middle">
                             <thead class="table-light">
                                 <tr>
@@ -242,6 +250,29 @@
                         </table>
                     </div>
 
+                    <!-- Deliverer / Carrier Info Form before shipment confirmation -->
+                    <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 mb-3 rounded-3 text-start">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-truck text-primary me-2"></i>Thông tin người vận chuyển / Tài xế giao hàng</h6>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tên tài xế / người giao <span class="text-danger">*</span></label>
+                                    <input type="text" id="shipDelivererName" class="form-control form-control-sm" placeholder="Họ tên tài xế giao hàng..." />
+                                    <div class="invalid-feedback" id="valShipDelivererName">Vui lòng nhập tên người giao.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Số điện thoại tài xế <span class="text-danger">*</span></label>
+                                    <input type="text" id="shipDelivererPhone" class="form-control form-control-sm" placeholder="Số điện thoại tài xế..." />
+                                    <div class="invalid-feedback" id="valShipDelivererPhone">Vui lòng nhập số điện thoại.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đơn vị VC / Biển số xe</label>
+                                    <input type="text" id="shipDeliveryProvider" class="form-control form-control-sm" placeholder="VD: GHTK, Xe tải 29C-12345..." />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="text-center py-3 bg-light rounded border p-3">
                         <i class="bi bi-box-seam text-primary fs-3 mb-2 d-block"></i>
                         <p class="text-secondary small mb-3">Vui lòng kiểm tra và đóng gói nguyên liệu theo danh sách trên trước khi xác nhận xuất kho.</p>
@@ -253,30 +284,49 @@
 
                 <!-- Step 3: Release Form / Complete Read-Only (UC67 & Screen C) -->
                 <div id="processScreenC" class="d-none">
-                    <div class="card bg-light border-0 mb-4 rounded-3">
+                    <div class="card bg-light border-0 mb-3 rounded-3">
                         <div class="card-body py-3 small text-dark fs-6">
                             <div class="row g-2">
                                 <div class="col-md-4"><strong>Mã đơn:</strong> <span id="roCode" class="fw-bold text-primary"></span></div>
                                 <div class="col-md-4"><strong>Chi nhánh:</strong> <span id="roBranch" class="fw-semibold"></span></div>
                                 <div class="col-md-4"><strong>Trạng thái đơn:</strong> <span id="roStatus"></span></div>
-                                <div class="col-md-4"><strong>Người tạo đơn:</strong> <span id="roCreator" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Người nhận / SĐT:</strong> <span id="roReceiver" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Ngày cần nhận:</strong> <span id="roExpectedDate" class="fw-semibold text-danger"></span></div>
                                 <div class="col-md-4"><strong>Ngày yêu cầu:</strong> <span id="roDate" class="fw-semibold"></span></div>
                                 <div class="col-md-4"><strong>Người duyệt:</strong> <span id="roApprovedBy" class="fw-semibold"></span></div>
-                                <div class="col-md-6"><strong>Người giao / SĐT:</strong> <span id="roDeliverer" class="fw-semibold text-primary"></span></div>
-                                <div class="col-md-6"><strong>Ghi chú tổng kho:</strong> <span id="roNote" class="fw-semibold"></span></div>
+                                <div class="col-md-4"><strong>Người giao / SĐT:</strong> <span id="roDeliverer" class="fw-semibold text-primary"></span></div>
+                                <div class="col-md-4"><strong>Đơn vị vận chuyển:</strong> <span id="roDeliveryProvider" class="fw-semibold"></span></div>
+                                <div class="col-md-6"><strong>Ghi chú chi nhánh:</strong> <span id="roRequestNote" class="fw-semibold text-secondary"></span></div>
+                                <div class="col-md-6"><strong>Ghi chú tổng kho:</strong> <span id="roNote" class="fw-semibold text-secondary"></span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inspection banner if inspected -->
+                    <div id="roInspectionBanner" class="alert alert-info py-2 px-3 mb-3 rounded-3 d-none">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong><i class="bi bi-shield-check me-1"></i> Biên bản đồng kiểm:</strong>
+                                Người kiểm: <span id="roInspectedBy" class="fw-bold"></span> | Thời gian: <span id="roInspectedAt" class="fw-semibold"></span>
+                            </div>
+                            <div>
+                                <span id="roInspectionBadge" class="badge"></span>
                             </div>
                         </div>
                     </div>
 
                     <h6 class="fw-bold mb-2">Chi tiết nguyên vật liệu</h6>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle">
+                    <div class="table-responsive mb-3" style="max-height: 420px; overflow-y: auto;">
+                        <table class="table table-bordered table-sm align-middle text-nowrap m-0">
                             <thead class="table-light">
                                 <tr>
                                     <th>Tên NgL</th>
                                     <th>Loại NgL</th>
                                     <th>Yêu cầu</th>
-                                    <th>Số lượng thực xuất</th>
+                                    <th>SL thực xuất</th>
+                                    <th id="thRoReceived" class="d-none">SL thực nhận</th>
+                                    <th id="thRoAccepted" class="d-none">SL đạt chuẩn</th>
+                                    <th id="thRoDefective" class="d-none">SL lỗi / Hư hỏng</th>
                                     <th class="text-center">Hành động</th>
                                 </tr>
                             </thead>
@@ -357,9 +407,11 @@
                         $('#hdrCodeA').text(r.requestCode);
                         $('#hdrBranch').text(r.branchName);
                         $('#hdrStatusA').html(getStatusBadgeHtml(r.status));
-                        $('#hdrCreator').text(r.creatorName);
-                        $('#hdrPhone').text(r.creatorPhone);
+                        $('#hdrReceiverA').text(r.receiverName || r.creatorName);
+                        $('#hdrPhoneA').text(r.receiverPhone || r.creatorPhone);
+                        $('#hdrExpectedDateA').text(r.expectedDeliveryDate || 'Càng sớm càng tốt');
                         $('#hdrDate').text(r.requestDate);
+                        $('#hdrRequestNoteA').text(r.requestNote || 'Không có ghi chú');
                         $('#warehouseNoteInput').val(r.warehouseNote);
 
                         let rows = "";
@@ -386,7 +438,7 @@
                                     </td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-link text-primary p-0" onclick="drilldownLineTrace('${item.materialName}')">
-                                            [Chi tiết]
+                                             [Chi tiết]
                                         </button>
                                     </td>
                                 </tr>
@@ -402,9 +454,17 @@
                         $('#hdrCodeB').text(r.requestCode);
                         $('#hdrBranchB').text(r.branchName);
                         $('#hdrStatusB').html(getStatusBadgeHtml(r.status));
-                        $('#hdrCreatorB').text(r.creatorName);
+                        $('#hdrReceiverB').text(r.receiverName || r.creatorName);
+                        $('#hdrPhoneB').text(r.receiverPhone || r.creatorPhone);
+                        $('#hdrExpectedDateB').text(r.expectedDeliveryDate || 'Càng sớm càng tốt');
                         $('#hdrDateB').text(r.requestDate);
                         $('#hdrApproverB').text(r.approvedBy || 'Warehouse Manager');
+                        $('#hdrRequestNoteB').text(r.requestNote || 'Không có');
+
+                        // Reset deliverer inputs
+                        $('#shipDelivererName').val('').removeClass('is-invalid');
+                        $('#shipDelivererPhone').val('').removeClass('is-invalid');
+                        $('#shipDeliveryProvider').val('');
 
                         let pbRows = "";
                         r.items.forEach(item => {
@@ -432,7 +492,9 @@
                         $('#roBranch').text(r.branchName);
                         $('#roStatus').html(getStatusBadgeHtml(r.status));
 
-                        $('#roCreator').text(r.creatorName);
+                        let receiverInfo = (r.receiverName || r.creatorName || 'Quản lý CN') + (r.receiverPhone ? ' / ' + r.receiverPhone : '');
+                        $('#roReceiver').text(receiverInfo);
+                        $('#roExpectedDate').text(r.expectedDeliveryDate || 'Không hẹn');
                         $('#roDate').text(r.requestDate);
                         $('#roApprovedBy').text(r.approvedBy || 'Chưa duyệt');
                         
@@ -441,16 +503,80 @@
                             delivererText = `${r.delivererName} / Sđt: ${r.delivererPhone || 'Không có'}`;
                         }
                         $('#roDeliverer').text(delivererText);
+                        $('#roDeliveryProvider').text(r.deliveryProvider || 'Không có');
+                        $('#roRequestNote').text(r.requestNote || 'Không có');
                         $('#roNote').text(r.warehouseNote || 'Không có');
+
+                        // Inspection summary
+                        let hasInspection = !!r.inspectionStatus;
+                        if (hasInspection) {
+                            $('#roInspectionBanner').removeClass('d-none');
+                            $('#roInspectedBy').text(r.inspectedBy || 'BManager');
+                            $('#roInspectedAt').text(r.inspectedAt || '');
+                            let badgeClass = r.inspectionStatus === "Đạt 100%" ? "bg-success" : "bg-danger";
+                            $('#roInspectionBadge').removeClass().addClass(`badge ${badgeClass}`).text(r.inspectionStatus);
+                            $('#thRoReceived').removeClass('d-none');
+                            $('#thRoAccepted').removeClass('d-none');
+                            $('#thRoDefective').removeClass('d-none');
+                        } else {
+                            $('#roInspectionBanner').addClass('d-none');
+                            $('#thRoReceived').addClass('d-none');
+                            $('#thRoAccepted').addClass('d-none');
+                            $('#thRoDefective').addClass('d-none');
+                        }
 
                         let rows = "";
                         r.items.forEach(item => {
                             let releasedQty = "-";
-                            if (r.status === "Đã xuất kho" || r.status === "Đã hoàn thành") {
+                            if (r.status === "Đã xuất kho" || r.status === "Đã hoàn thành" || r.status === "Đã nhận - Có hàng lỗi") {
                                 releasedQty = item.quantityReleased !== "" ? `[${item.quantityReleased}] ${item.storageUnit}` : `[0] ${item.storageUnit}`;
                             }
                             let catText = item.category ? item.category : (item.materialKind || '');
                             if (item.category && item.materialKind) catText = `${item.category} (${item.materialKind})`;
+
+                            let inspCols = "";
+                            if (hasInspection) {
+                                let qRec = item.quantityReceived || '-';
+                                let qAcc = item.quantityAccepted || '-';
+                                let qDef = item.quantityDefective ? parseFloat(item.quantityDefective) : 0;
+                                let defHtml = `<span class="text-success fw-bold">0</span>`;
+                                if (qDef > 0) {
+                                    let urls = [];
+                                    if (item.defectImageUrl) {
+                                        if (item.defectImageUrl.startsWith('[')) {
+                                            try { urls = JSON.parse(item.defectImageUrl); } catch(e) { urls = [item.defectImageUrl]; }
+                                        } else {
+                                            urls = item.defectImageUrl.split(',').map(s => s.trim()).filter(s => s);
+                                        }
+                                    }
+
+                                    let imgButtons = "";
+                                    if (urls.length > 0) {
+                                        imgButtons = urls.map((u, uIdx) => `
+                                            <a href="${u}" target="_blank" class="btn btn-outline-danger btn-xs py-0 px-2 fw-semibold" style="font-size:0.75rem;" title="Xem ảnh ${uIdx + 1}">
+                                                <i class="bi bi-image me-1"></i>Ảnh ${uIdx + 1}
+                                            </a>
+                                        `).join(' ');
+                                    }
+
+                                    let noteHtml = item.defectNote ? `<span class="badge bg-light text-secondary border ms-1" title="${item.defectNote}"><i class="bi bi-info-circle me-1"></i>${item.defectNote}</span>` : '';
+
+                                    defHtml = `
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            <span class="badge bg-danger-subtle text-danger fw-bold fs-7">[${qDef}] ${item.storageUnit}</span>
+                                            <span class="badge bg-danger">${item.defectType || 'Lỗi'}</span>
+                                            ${noteHtml}
+                                            ${imgButtons}
+                                        </div>
+                                    `;
+                                }
+
+                                inspCols = `
+                                    <td class="fw-bold text-dark">${qRec !== '-' ? qRec + ' ' + item.storageUnit : '-'}</td>
+                                    <td class="fw-bold text-success">${qAcc !== '-' ? qAcc + ' ' + item.storageUnit : '-'}</td>
+                                    <td>${defHtml}</td>
+                                `;
+                            }
 
                             rows += `
                                 <tr>
@@ -458,6 +584,7 @@
                                     <td>${catText}</td>
                                     <td>${item.quantityRequested} ${item.storageUnit}</td>
                                     <td class="fw-bold ${r.status === "Từ chối" || r.status === "Đã hủy" ? "text-muted" : "text-success"}">${releasedQty}</td>
+                                    ${inspCols}
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-link text-primary p-0" onclick="drilldownLineTrace('${item.materialName}')">
                                             [Chi tiết]
@@ -651,21 +778,44 @@
         function confirmShipment() {
             if (!currentRequestCode) return;
 
+            let delName = $('#shipDelivererName').val().trim();
+            let delPhone = $('#shipDelivererPhone').val().trim();
+            let delProvider = $('#shipDeliveryProvider').val().trim();
+
+            $('#shipDelivererName').removeClass('is-invalid');
+            $('#shipDelivererPhone').removeClass('is-invalid');
+
+            if (!delName) {
+                $('#shipDelivererName').addClass('is-invalid');
+                showToast('Vui lòng nhập họ tên người vận chuyển / tài xế.', 'warning');
+                return;
+            }
+            if (!delPhone) {
+                $('#shipDelivererPhone').addClass('is-invalid');
+                showToast('Vui lòng nhập số điện thoại người vận chuyển.', 'warning');
+                return;
+            }
+
             showConfirmModal(
                 'Xác nhận đã xuất kho',
-                'Xác nhận toàn bộ nguyên liệu đã được xuất kho và giao cho bộ phận vận chuyển?',
+                `Xác nhận toàn bộ nguyên liệu đã xuất kho và giao cho tài xế ${delName} (${delPhone})?`,
                 function() {
                     $.ajax({
                         url: '/Warehouse/ConfirmShipment',
                         type: 'POST',
-                        data: { code: currentRequestCode },
+                        data: {
+                            code: currentRequestCode,
+                            delivererName: delName,
+                            delivererPhone: delPhone,
+                            deliveryProvider: delProvider
+                        },
                         success: function(res) {
                             if (res.success) {
                                 $('#requestProcessModal').modal('hide');
                                 showToast(res.message, 'success');
                                 setTimeout(function() {
                                     location.reload();
-                                }, 1500);
+                                }, 1200);
                             } else {
                                 showToast(res.message, 'danger');
                             }
