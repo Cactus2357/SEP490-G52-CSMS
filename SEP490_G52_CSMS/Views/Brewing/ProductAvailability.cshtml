@@ -131,6 +131,12 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
+            @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+            {
+                <a asp-controller="MenuManagement" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
+                    <i class="bi bi-journal-text me-2"></i>Quản lý thực đơn
+                </a>
+            }
             <a asp-controller="Brewing" asp-action="Index" class="btn btn-outline-primary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
                 <i class="bi bi-cup-hot me-2"></i>Màn hình pha chế
             </a>

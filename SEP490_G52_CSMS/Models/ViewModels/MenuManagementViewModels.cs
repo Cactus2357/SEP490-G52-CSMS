@@ -13,6 +13,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int MenuId { get; set; }
         public string MenuName { get; set; } = string.Empty;
         public string BranchId { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
         public List<MenuProductViewModel> Products { get; set; } = new List<MenuProductViewModel>();
     }
 

@@ -1,19 +1,22 @@
 @model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.ProductSelectionViewModel>
 
 <div class="table-responsive">
-    <table class="table table-hover table-sm align-middle mb-0" id="modalProductTable">
-        <thead class="table-light">
+    <table class="table table-hover align-middle mb-0" id="modalProductTable">
+        <thead class="table-light text-secondary small">
             <tr>
-                <th class="ps-3">Tên Sản Phẩm</th>
-                <th>Thể Loại</th>
-                <th class="text-center pe-3">Thao Tác</th>
+                <th class="ps-3 py-2 text-uppercase fw-semibold">Tên sản phẩm</th>
+                <th class="py-2 text-uppercase fw-semibold">Danh mục</th>
+                <th class="text-end pe-3 py-2 text-uppercase fw-semibold">Thao tác</th>
             </tr>
         </thead>
         <tbody>
             @if (!Model.Any())
             {
                 <tr>
-                    <td colspan="3" class="text-center text-muted py-4">Không có sản phẩm nào thuộc thể loại này.</td>
+                    <td colspan="3" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox d-block mb-1 fs-4 text-secondary-subtle"></i>
+                        Không có sản phẩm nào thuộc danh mục này.
+                    </td>
                 </tr>
             }
             else
@@ -21,10 +24,15 @@
                 foreach (var item in Model)
                 {
                     <tr data-category-id="@item.CategoryId" data-product-id="@item.ProductId" data-product-name="@item.ProductName" data-category-name="@item.CategoryName" data-size-price="@item.SizeAndPrice">
-                        <td class="ps-3 fw-bold text-dark">@item.ProductName</td>
-                        <td><span class="badge bg-secondary-subtle text-dark border">@item.CategoryName</span></td>
-                        <td class="text-center pe-3">
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="addProductToStaging(this)">
+                        <td class="ps-3 py-2.5">
+                            <span class="fw-bold text-dark d-block">@item.ProductName</span>
+                            <small class="text-muted" style="font-size: 0.75rem;">@item.SizeAndPrice</small>
+                        </td>
+                        <td class="py-2.5">
+                            <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">@item.CategoryName</span>
+                        </td>
+                        <td class="text-end pe-3 py-2.5">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="addProductToStaging(this)">
                                 <i class="bi bi-plus-lg me-1"></i>Thêm
                             </button>
                         </td>

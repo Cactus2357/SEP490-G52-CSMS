@@ -41,7 +41,8 @@ namespace SEP490_G52_CSMS.Services
             {
                 MenuId = menu.MenuId,
                 MenuName = menu.MenuName ?? string.Empty,
-                BranchId = menu.BranchId ?? string.Empty
+                BranchId = menu.BranchId ?? string.Empty,
+                IsActive = menu.IsActive
             };
 
             // Group variants by ProductId to match mockups (showing product and its sizes/prices)

@@ -9,7 +9,7 @@ using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Bartender,Barista,BranchManager,RManager")]
     public class BrewingController : Controller
     {
         private readonly IOrderService _orderService;
@@ -40,7 +40,8 @@ namespace SEP490_G52_CSMS.Controllers
                     return employee.BranchId;
                 }
             }
-            return "";
+            var defaultBranch = await _context.Branches.Select(b => b.BranchId).FirstOrDefaultAsync();
+            return defaultBranch ?? "CB001";
         }
 
         private int GetUserId()
