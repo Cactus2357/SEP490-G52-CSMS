@@ -369,7 +369,7 @@ namespace SEP490_G52_CSMS.Repositories
 
             // CHỈ CÓ ĐƠN HOÀN THÀNH HOẶC HOÀN TIỀN 1 PHẦN MỚI TÍNH DOANH THU LÚC BÀN GIAO / ĐÓNG CA
             var completedOrders = orders
-                .Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done" || o.BrewingStatus == "Partially Refunded" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount))
+                .Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done" || o.BrewingStatus == "Delivered" || o.BrewingStatus == "Partially Refunded" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount))
                          && o.BrewingStatus != "Cancelled / Refunded"
                          && o.PaymentStatus != "Cancelled")
                 .ToList();

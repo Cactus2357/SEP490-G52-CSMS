@@ -31,7 +31,8 @@ namespace SEP490_G52_CSMS.Services
             decimal? subtotalAmount = null, 
             decimal? discountAmount = null, 
             decimal? tradeDiscountAmount = null, 
-            string? orderNotes = null)
+            string? orderNotes = null,
+            string? voucherCode = null)
         {
             var date = DateTime.Now;
             if (date.TimeOfDay < TimeSpan.FromHours(6))
@@ -45,6 +46,35 @@ namespace SEP490_G52_CSMS.Services
             decimal subtotal = subtotalAmount ?? items.Sum(i => i.Quantity * i.UnitPrice);
             decimal discount = discountAmount ?? 0;
             decimal tradeDiscount = tradeDiscountAmount ?? 0;
+
+            int? appliedVoucherId = null;
+            string? appliedVoucherCode = null;
+
+            if (!string.IsNullOrWhiteSpace(voucherCode))
+            {
+                var cleanCode = voucherCode.Trim().ToUpper();
+                var voucher = await _context.Vouchers.FirstOrDefaultAsync(v => 
+                    v.VoucherCode.ToUpper() == cleanCode && 
+                    (v.BranchId == branchId || v.BranchId == null) && 
+                    v.IsActive);
+
+                if (voucher != null && date >= voucher.StartDate && date <= voucher.EndDate && voucher.UsedCount < voucher.Quantity)
+                {
+                    appliedVoucherId = voucher.VoucherId;
+                    appliedVoucherCode = voucher.VoucherCode;
+                    
+                    // Nếu client chưa tính discount hoặc gửi 0, tự động tính theo % của voucher
+                    if (discount <= 0 && voucher.DiscountPercent > 0)
+                    {
+                        discount = Math.Round(subtotal * (voucher.DiscountPercent / 100m));
+                        if (discount > subtotal) discount = subtotal;
+                    }
+
+                    // Tăng số lượt dùng của voucher
+                    voucher.UsedCount += 1;
+                }
+            }
+
             decimal totalAmount = Math.Max(0, subtotal - discount - tradeDiscount);
 
             var finalCustomer = !string.IsNullOrWhiteSpace(customerName) ? customerName.Trim() : (string.IsNullOrWhiteSpace(recipientName) ? "Khách lẻ" : recipientName.Trim());
@@ -61,6 +91,8 @@ namespace SEP490_G52_CSMS.Services
                 DiscountAmount = discount,
                 TradeDiscountAmount = tradeDiscount,
                 OrderNotes = orderNotes,
+                VoucherId = appliedVoucherId,
+                VoucherCode = appliedVoucherCode,
                 BranchId = branchId,
                 CashierId = cashierId,
                 CreatedAt = date,
@@ -82,34 +114,43 @@ namespace SEP490_G52_CSMS.Services
             decimal? change = null;
             string actualMethod = paymentMethod ?? "Cash";
 
+            decimal remainingToPay = Math.Max(0, order.TotalAmount - order.PaidAmount);
+
             if (actualMethod == "Cash" && customerCash.HasValue && customerCash > 0)
             {
                 tendered = customerCash.Value;
                 change = changeAmount ?? Math.Max(0, customerCash.Value - order.TotalAmount);
                 order.PaymentMethod = $"Cash (Đưa:{tendered.Value:N0}đ - Thừa:{change.Value:N0}đ)";
             }
+            else if (order.CashPaid > 0 && actualMethod != "Cash")
+            {
+                order.PaymentMethod = $"Split (CK:{(order.BankPaid > 0 ? order.BankPaid : remainingToPay):N0}đ + TM:{order.CashPaid:N0}đ)";
+            }
             else
             {
                 order.PaymentMethod = actualMethod;
             }
 
-            // Ghi nhận bản ghi thanh toán vào bảng payments
-            var payment = new Payment
+            // Ghi nhận bản ghi thanh toán vào bảng payments nếu chưa thanh toán đủ
+            if (remainingToPay > 0)
             {
-                PaymentId = $"PAY-{order.OrderId}-{DateTime.UtcNow:HHmmss}-{Random.Shared.Next(100, 999)}",
-                OrderId = order.OrderId!,
-                BranchId = order.BranchId,
-                CashierId = order.CashierId,
-                PaymentType = "Payment",
-                PaymentMethod = actualMethod,
-                Amount = order.TotalAmount,
-                Status = "Success",
-                TransactionCode = bankTransactionCode,
-                CustomerCash = tendered,
-                ChangeAmount = change,
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.Payments.Add(payment);
+                var payment = new Payment
+                {
+                    PaymentId = $"PAY-{order.OrderId}-{DateTime.UtcNow:HHmmss}-{Random.Shared.Next(100, 999)}",
+                    OrderId = order.OrderId!,
+                    BranchId = order.BranchId,
+                    CashierId = order.CashierId,
+                    PaymentType = "Payment",
+                    PaymentMethod = actualMethod,
+                    Amount = (actualMethod != "Cash" && order.CashPaid > 0) ? remainingToPay : (remainingToPay > 0 ? remainingToPay : order.TotalAmount),
+                    Status = "Success",
+                    TransactionCode = bankTransactionCode,
+                    CustomerCash = tendered,
+                    ChangeAmount = change,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Payments.Add(payment);
+            }
 
             order.PaymentStatus = "Paid";
             order.BrewingStatus = "Waiting for Brewing";
@@ -585,9 +626,18 @@ namespace SEP490_G52_CSMS.Services
                                             && o.BrewingStatus != "Partially Refunded"
                                             && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
                 }
-                else if (status == "Đã hoàn thành")
+                else if (status == "Đã giao hàng")
+                {
+                    orders = orders.Where(o => o.BrewingStatus == "Delivered" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
+                }
+                else if (status == "Đã pha chế xong")
                 {
                     orders = orders.Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done")
+                                            && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
+                }
+                else if (status == "Đã hoàn thành")
+                {
+                    orders = orders.Where(o => (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done" || o.BrewingStatus == "Delivered")
                                             && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
                 }
                 else if (status == "Đã hủy" || status == "Đã hủy / Hoàn tiền")
@@ -617,18 +667,20 @@ namespace SEP490_G52_CSMS.Services
                     bool isMissing = (o.BrewingStatus == "Missing Ingredients");
                     bool isPartialRefund = (!isMissing && o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount);
                     bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount));
-                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
-                    bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "Unpaid");
-                    bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "PartiallyPaid");
-                    bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing");
+                    bool isDelivered = !isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Delivered");
+                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && !isDelivered && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+                    bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid");
+                    bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "PartiallyPaid");
+                    bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing");
 
                     string displayStatus = isMissing ? "Thiếu nguyên liệu (chờ xử lý)" :
                                            (isPartialRefund ? "Hoàn tiền 1 phần" :
                                            (isCancelled ? "Đã hủy / Hoàn tiền" :
-                                           (isDone ? "Đã hoàn thành" :
+                                           (isDelivered ? "Đã giao hàng" :
+                                           (isDone ? "Đã pha chế xong" :
                                            (isUnpaid ? "Chờ thanh toán" :
                                            (isPartiallyPaid ? "Thanh toán 1 phần" :
-                                           (isBrewing ? "Đang pha chế" : "Đang chờ pha chế"))))));
+                                           (isBrewing ? "Đang pha chế" : "Đang chờ pha chế")))))));
 
                     return new OrderSummaryViewModel
                     {
@@ -700,18 +752,20 @@ namespace SEP490_G52_CSMS.Services
             bool isMissing = (order.BrewingStatus == "Missing Ingredients");
             bool isPartialRefund = (!isMissing && order.RefundAmount > 0 && order.RefundAmount < order.TotalAmount);
             bool isCancelled = (!isMissing && (order.BrewingStatus == "Cancelled / Refunded" || order.PaymentStatus == "Cancelled" || order.RefundAmount >= order.TotalAmount));
-            bool isDone = !isCancelled && !isMissing && !isPartialRefund && (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done");
-            bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (order.PaymentStatus == "Unpaid");
-            bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (order.PaymentStatus == "PartiallyPaid");
-            bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isUnpaid && !isPartiallyPaid && (order.BrewingStatus == "Brewing in Progress" || order.BrewingStatus == "Brewing");
+            bool isDelivered = !isCancelled && !isMissing && !isPartialRefund && (order.BrewingStatus == "Delivered");
+            bool isDone = !isCancelled && !isMissing && !isPartialRefund && !isDelivered && (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done");
+            bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (order.PaymentStatus == "Unpaid");
+            bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (order.PaymentStatus == "PartiallyPaid");
+            bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (order.BrewingStatus == "Brewing in Progress" || order.BrewingStatus == "Brewing");
 
             string displayStatus = isMissing ? "Thiếu nguyên liệu (chờ xử lý)" :
                                    (isPartialRefund ? "Hoàn tiền 1 phần" :
                                    (isCancelled ? "Đã hủy / Hoàn tiền" :
-                                   (isDone ? "Đã hoàn thành" :
+                                   (isDelivered ? "Đã giao hàng" :
+                                   (isDone ? "Đã pha chế xong" :
                                    (isUnpaid ? "Chờ thanh toán" :
                                    (isPartiallyPaid ? "Thanh toán 1 phần" :
-                                   (isBrewing ? "Đang pha chế" : "Đang chờ pha chế"))))));
+                                   (isBrewing ? "Đang pha chế" : "Đang chờ pha chế")))))));
 
             decimal missingAmount = 0;
             string? missingNote = order.OrderNotes ?? order.RefundReason;
@@ -734,6 +788,7 @@ namespace SEP490_G52_CSMS.Services
                 SubtotalAmount = order.SubtotalAmount > 0 ? order.SubtotalAmount : order.TotalAmount,
                 DiscountAmount = order.DiscountAmount,
                 TradeDiscountAmount = order.TradeDiscountAmount,
+                VoucherCode = order.VoucherCode,
                 OrderNotes = order.OrderNotes,
                 BranchName = order.Branch?.BranchName ?? "CSMS",
                 BranchAddress = order.Branch?.Address ?? "",
@@ -743,6 +798,7 @@ namespace SEP490_G52_CSMS.Services
                 PaymentMethod = order.PaymentMethod ?? "",
                 BankTransactionCode = order.BankTransactionCode,
                 PaymentStatus = order.PaymentStatus,
+                BrewingStatus = order.BrewingStatus,
                 DisplayStatus = displayStatus,
                 TotalAmount = order.TotalAmount,
                 CashAmount = order.CashAmount,
@@ -763,6 +819,35 @@ namespace SEP490_G52_CSMS.Services
                     UnitPrice = oi.UnitPrice
                 }).ToList()
             };
+        }
+
+        public async Task<(bool success, string message)> MarkOrderAsDeliveredAsync(string orderId)
+        {
+            var order = await _orderRepo.GetOrderByIdAsync(orderId);
+            if (order == null)
+            {
+                return (false, "Không tìm thấy thông tin đơn hàng.");
+            }
+
+            if (order.PaymentStatus == "Cancelled" || order.BrewingStatus == "Cancelled / Refunded" || order.RefundAmount >= order.TotalAmount)
+            {
+                return (false, "Đơn hàng đã bị hủy hoặc hoàn tiền, không thể giao hàng.");
+            }
+
+            if (order.BrewingStatus == "Missing Ingredients")
+            {
+                return (false, "Đơn hàng đang bị thiếu nguyên liệu, vui lòng xử lý hoàn tiền hoặc sửa món trước khi giao.");
+            }
+
+            if (order.BrewingStatus == "Delivered")
+            {
+                return (true, "Đơn hàng đã ở trạng thái [Đã giao hàng] trước đó.");
+            }
+
+            order.BrewingStatus = "Delivered";
+            await _orderRepo.UpdateOrderAsync(order);
+
+            return (true, $"Đã cập nhật trạng thái đơn hàng {order.OrderId} thành: Đã giao hàng.");
         }
     }
 }

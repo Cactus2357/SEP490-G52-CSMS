@@ -36,6 +36,7 @@ namespace SEP490_G52_CSMS.Models
         public DbSet<BranchSupplyRequestItem> BranchSupplyRequestItems { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<BranchSetting> BranchSettings { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -145,7 +146,7 @@ namespace SEP490_G52_CSMS.Models
                 entity.Property(e => e.TradeDiscountAmount).HasColumnType("decimal(18, 2)");
 
                 entity.HasOne(o => o.Branch)
-                      .WithMany()
+                      .WithMany(b => b.Orders)
                       .HasForeignKey(o => o.BranchId)
                       .OnDelete(DeleteBehavior.Restrict);
 
@@ -157,6 +158,26 @@ namespace SEP490_G52_CSMS.Models
                 entity.HasMany(o => o.Payments)
                       .WithOne(p => p.Order)
                       .HasForeignKey(p => p.OrderId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(o => o.Voucher)
+                      .WithMany(v => v.Orders)
+                      .HasForeignKey(o => o.VoucherId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Voucher>(entity =>
+            {
+                entity.Property(e => e.DiscountPercent).HasColumnType("decimal(5, 2)");
+
+                entity.HasOne(v => v.Branch)
+                      .WithMany()
+                      .HasForeignKey(v => v.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(v => v.Creator)
+                      .WithMany()
+                      .HasForeignKey(v => v.CreatedBy)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 

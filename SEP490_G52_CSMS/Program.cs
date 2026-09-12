@@ -89,6 +89,9 @@ builder.Services.AddScoped<ILeaveRequestService, SEP490_G52_CSMS.Services.LeaveR
 // Notification (event-driven service)
 builder.Services.AddScoped<INotificationService, SEP490_G52_CSMS.Services.NotificationService>();
 
+// Voucher Management
+builder.Services.AddScoped<IVoucherService, VoucherService>();
+
 var app = builder.Build();
 
 // Seed database

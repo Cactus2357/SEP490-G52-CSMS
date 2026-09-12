@@ -1010,6 +1010,43 @@ namespace SEP490_G52_CSMS.Models
                     BEGIN
                         ALTER TABLE [orders] DROP CONSTRAINT [FK_orders_employees_cashier_id];
                         ALTER TABLE [orders] ADD CONSTRAINT [FK_orders_employees_cashier_id] FOREIGN KEY ([cashier_id]) REFERENCES [employees]([employee_id]) ON DELETE NO ACTION;
+                    END
+
+                    -- Đảm bảo bảng vouchers tồn tại
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'vouchers')
+                    BEGIN
+                        CREATE TABLE [vouchers] (
+                            [voucher_id] INT IDENTITY(1,1) NOT NULL,
+                            [voucher_code] NVARCHAR(50) NOT NULL,
+                            [branch_id] NVARCHAR(20) NULL,
+                            [discount_percent] DECIMAL(5, 2) NOT NULL,
+                            [quantity] INT NOT NULL,
+                            [used_count] INT NOT NULL DEFAULT 0,
+                            [start_date] DATETIME2 NOT NULL,
+                            [end_date] DATETIME2 NOT NULL,
+                            [description] NVARCHAR(500) NULL,
+                            [is_active] BIT NOT NULL DEFAULT 1,
+                            [created_by] INT NULL,
+                            [created_at] DATETIME2 NOT NULL DEFAULT GETDATE(),
+                            CONSTRAINT [PK_vouchers] PRIMARY KEY CLUSTERED ([voucher_id] ASC),
+                            CONSTRAINT [FK_vouchers_branches] FOREIGN KEY ([branch_id]) REFERENCES [branches] ([branch_id]) ON DELETE NO ACTION,
+                            CONSTRAINT [FK_vouchers_employees] FOREIGN KEY ([created_by]) REFERENCES [employees] ([employee_id]) ON DELETE NO ACTION
+                        );
+                        CREATE NONCLUSTERED INDEX [IX_vouchers_voucher_code] ON [vouchers] ([voucher_code] ASC);
+                        CREATE NONCLUSTERED INDEX [IX_vouchers_branch_id] ON [vouchers] ([branch_id] ASC);
+                    END
+
+                    -- Đảm bảo cột voucher_id trên orders
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'voucher_id')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [voucher_id] INT NULL;
+                        ALTER TABLE [orders] ADD CONSTRAINT [FK_orders_vouchers] FOREIGN KEY ([voucher_id]) REFERENCES [vouchers] ([voucher_id]) ON DELETE NO ACTION;
+                    END
+
+                    -- Đảm bảo cột voucher_code trên orders
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('orders') AND name = 'voucher_code')
+                    BEGIN
+                        ALTER TABLE [orders] ADD [voucher_code] NVARCHAR(50) NULL;
                     END");
             }
             catch { }

@@ -6,7 +6,12 @@
     string accountName = branchSetting.AccountName ?? "CSMS CAFE";
     string prefix = string.IsNullOrWhiteSpace(branchSetting.TransferPrefix) ? "CSMS" : branchSetting.TransferPrefix;
     string transferContent = $"{prefix} {Model.OrderId}";
-    string qrUrl = $"https://qr.sepay.vn/img?acc={accountNumber}&bank={bankCode}&amount={(int)Model.TotalAmount}&des={Uri.EscapeDataString(transferContent)}";
+
+    decimal initialCashPaid = Model.CashAmount;
+    decimal remainingTransfer = Math.Max(0, Model.TotalAmount - initialCashPaid);
+    if (remainingTransfer <= 0) remainingTransfer = Model.TotalAmount;
+
+    string qrUrl = $"https://qr.sepay.vn/img?acc={accountNumber}&bank={bankCode}&amount={(int)remainingTransfer}&des={Uri.EscapeDataString(transferContent)}";
 
     var itemList = new List<object>();
     if (Model?.Items != null)
@@ -111,7 +116,9 @@
                                 @if (Model.DiscountAmount > 0)
                                 {
                                     <tr>
-                                        <td colspan="4" class="ps-4 text-secondary fw-semibold">Giảm giá:</td>
+                                        <td colspan="4" class="ps-4 text-secondary fw-semibold">
+                                            Giảm giá @(!string.IsNullOrEmpty(Model.VoucherCode) ? $"({Model.VoucherCode})" : ""):
+                                        </td>
                                         <td class="text-end pe-4 fw-bold text-danger font-monospace">-@Model.DiscountAmount.ToString("N0") đ</td>
                                     </tr>
                                 }
@@ -122,10 +129,28 @@
                                         <td class="text-end pe-4 fw-bold text-danger font-monospace">-@Model.TradeDiscountAmount.ToString("N0") đ</td>
                                     </tr>
                                 }
-                                <tr class="table-light">
-                                    <td colspan="4" class="ps-4 fw-bold fs-5 text-dark">TỔNG TIỀN CẦN THANH TOÁN:</td>
-                                    <td class="text-end pe-4 fw-bold fs-4 text-success font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
+                                <tr>
+                                    <td colspan="4" class="ps-4 fw-bold text-dark">Tổng đơn hàng:</td>
+                                    <td class="text-end pe-4 fw-bold text-dark font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
                                 </tr>
+                                @if (initialCashPaid > 0)
+                                {
+                                    <tr class="text-primary">
+                                        <td colspan="4" class="ps-4 fw-semibold">Đã nhận tiền mặt:</td>
+                                        <td class="text-end pe-4 fw-bold font-monospace">-@initialCashPaid.ToString("N0") đ</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td colspan="4" class="ps-4 fw-bold fs-5 text-dark">TIỀN CHUYỂN KHOẢN NỐT:</td>
+                                        <td class="text-end pe-4 fw-bold fs-4 text-success font-monospace">@remainingTransfer.ToString("N0") đ</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr class="table-light">
+                                        <td colspan="4" class="ps-4 fw-bold fs-5 text-dark">TỔNG TIỀN CẦN THANH TOÁN:</td>
+                                        <td class="text-end pe-4 fw-bold fs-4 text-success font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
+                                    </tr>
+                                }
                             </tfoot>
                         </table>
                     </div>
@@ -159,6 +184,10 @@
                         <div class="d-flex justify-content-between mb-1">
                             <span class="text-muted">Chủ tài khoản:</span>
                             <strong class="text-dark">@accountName</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Số tiền cần chuyển:</span>
+                            <strong class="text-success fs-6 font-monospace">@remainingTransfer.ToString("N0") đ</strong>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted">Nội dung CK:</span>
@@ -297,6 +326,9 @@
                 <div>
                     <span class="text-uppercase text-secondary small d-block fw-bold">SỐ TIỀN THỰC NHẬN:</span>
                     <h1 class="fw-bold text-success mb-0 fs-2" id="receivedAmountDisplay">@Model.TotalAmount.ToString("N0") đ</h1>
+                    <div id="transferSuccessSplitBreakdown" class="small text-muted mt-1 @(initialCashPaid > 0 ? "" : "d-none")">
+                        (Tiền mặt: <span id="successCashPart">@initialCashPaid.ToString("N0") đ</span> + Chuyển khoản: <span id="successBankPart">@remainingTransfer.ToString("N0") đ</span>)
+                    </div>
                 </div>
             </div>
             <p class="text-secondary mb-4 fs-5">Hệ thống đã ghi nhận mã giao dịch ngân hàng để đối soát. Vui lòng bấm bên dưới để hoàn tất.</p>
@@ -371,16 +403,28 @@
                             <span id="recSubtotal" class="font-monospace">140.000 đ</span>
                         </div>
                         <div class="d-flex justify-content-between text-danger d-none" id="recDiscountRow">
-                            <span>Giảm giá:</span>
+                            <span id="recDiscountLabel">Giảm giá:</span>
                             <span id="recDiscount" class="font-monospace">-0 đ</span>
-                        </div>
-                        <div class="d-flex justify-content-between text-danger d-none" id="recTradeDiscountRow">
-                            <span>Chiết khấu:</span>
-                            <span id="recTradeDiscount" class="font-monospace">-0 đ</span>
                         </div>
                         <div class="d-flex justify-content-between fw-bold fs-6 mt-1 pt-1 border-top border-dark">
                             <span>TỔNG CỘNG:</span>
                             <span id="recTotal" class="font-monospace">140.000 đ</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment details in receipt -->
+                    <div class="pb-2 mb-2 border-bottom border-dark" id="recPaymentSection" style="font-size: 12px;">
+                        <div class="d-flex justify-content-between">
+                            <span>Hình thức TT:</span>
+                            <span id="recPaymentMethod" class="fw-semibold">Chuyển khoản</span>
+                        </div>
+                        <div class="d-flex justify-content-between d-none" id="recSplitCashRow">
+                            <span>- Tiền mặt:</span>
+                            <span id="recCashAmount" class="font-monospace">0 đ</span>
+                        </div>
+                        <div class="d-flex justify-content-between d-none" id="recSplitBankRow">
+                            <span>- Chuyển khoản:</span>
+                            <span id="recBankAmount" class="font-monospace">0 đ</span>
                         </div>
                     </div>
 
@@ -415,13 +459,15 @@
 
         var orderId = '@Model.OrderId';
         var totalAmount = @Model.TotalAmount;
+        var initialCashPaid = @initialCashPaid;
+        var remainingTransfer = @remainingTransfer;
         var recipientName = '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.RecipientName))';
         var orderItems = @Html.Raw(itemsJson);
         var qrCodeUrl = document.getElementById('qrCodeImg').src;
         var currentBankTxCode = '';
 
         var currentBankAmount = 0;
-        var currentRemainingAmount = totalAmount;
+        var currentRemainingAmount = remainingTransfer;
 
         // Sync order details and QR code with Customer Monitor immediately on load
         try {
@@ -429,9 +475,10 @@
                 mode: 'BankTransfer',
                 orderId: orderId,
                 recipientName: recipientName,
-                total: totalAmount,
+                total: remainingTransfer,
                 items: orderItems,
-                qrCodeUrl: qrCodeUrl
+                qrCodeUrl: qrCodeUrl,
+                note: initialCashPaid > 0 ? ('Đã thu TM: ' + formatMoney(initialCashPaid)) : null
             }));
         } catch (e) {
             console.error("Failed to sync state to Customer Monitor:", e);
@@ -450,6 +497,17 @@
                         var recAmount = data.receivedAmount || totalAmount;
                         var formattedAmount = formatMoney(recAmount);
                         document.getElementById('receivedAmountDisplay').innerText = formattedAmount;
+
+                        var cashAmount = data.cashAmount || initialCashPaid;
+                        var bankAmount = data.bankAmount || remainingTransfer;
+                        if (cashAmount > 0) {
+                            var breakdownEl = document.getElementById('transferSuccessSplitBreakdown');
+                            if (breakdownEl) breakdownEl.classList.remove('d-none');
+                            var cashPartEl = document.getElementById('successCashPart');
+                            if (cashPartEl) cashPartEl.innerText = formatMoney(cashAmount);
+                            var bankPartEl = document.getElementById('successBankPart');
+                            if (bankPartEl) bankPartEl.innerText = formatMoney(bankAmount);
+                        }
 
                         currentBankTxCode = data.bankTransactionCode || ('MBB-' + Date.now().toString().slice(-6));
                         document.getElementById('bankTxCodeDisplay').innerText = currentBankTxCode;
@@ -474,15 +532,19 @@
                         currentRemainingAmount = data.remainingAmount || Math.max(0, totalAmount - currentBankAmount);
                         currentBankTxCode = data.bankTransactionCode || '';
 
-                        // Show Partial Payment Alert
+                        // Show Partial Payment Alert only when customer has actually transferred a partial bank amount
                         var alertEl = document.getElementById('partialPaymentAlert');
                         if (alertEl) {
-                            alertEl.classList.remove('d-none');
-                            document.getElementById('partialReceivedBankDisplay').innerText = formatMoney(currentBankAmount);
-                            document.getElementById('partialRemainingDisplay').innerText = formatMoney(currentRemainingAmount);
-                            document.getElementById('btnRemainingAmountText').innerText = formatMoney(currentRemainingAmount);
-                            if (currentBankTxCode) {
-                                document.getElementById('partialTxCodeDisplay').innerText = currentBankTxCode;
+                            if (currentBankAmount > 0 && currentRemainingAmount > 0) {
+                                alertEl.classList.remove('d-none');
+                                document.getElementById('partialReceivedBankDisplay').innerText = formatMoney(currentBankAmount);
+                                document.getElementById('partialRemainingDisplay').innerText = formatMoney(currentRemainingAmount);
+                                document.getElementById('btnRemainingAmountText').innerText = formatMoney(currentRemainingAmount);
+                                if (currentBankTxCode) {
+                                    document.getElementById('partialTxCodeDisplay').innerText = currentBankTxCode;
+                                }
+                            } else {
+                                alertEl.classList.add('d-none');
                             }
                         }
 
@@ -700,8 +762,8 @@
         }
 
         function cancelPayment() {
-            if (currentBankAmount > 0) {
-                showToast("Đơn hàng đã nhận " + formatMoney(currentBankAmount) + " chuyển khoản từ khách. Vui lòng thu nốt tiền mặt hoặc thực hiện hoàn tiền!", "warning");
+            if (currentBankAmount > 0 || initialCashPaid > 0) {
+                showToast("Đơn hàng đã nhận tiền thanh toán (" + (initialCashPaid > 0 ? "Tiền mặt: " + formatMoney(initialCashPaid) : "") + (currentBankAmount > 0 ? " Chuyển khoản: " + formatMoney(currentBankAmount) : "") + "). Không thể hủy đơn trực tiếp!", "warning");
                 return;
             }
 
@@ -809,20 +871,43 @@
                     var discRow = document.getElementById('recDiscountRow');
                     if (data.discountAmount > 0) {
                         discRow.classList.remove('d-none');
+                        var labelEl = document.getElementById('recDiscountLabel');
+                        if (labelEl) {
+                            labelEl.innerText = data.voucherCode ? `Giảm giá (${data.voucherCode}):` : 'Giảm giá:';
+                        }
                         document.getElementById('recDiscount').innerText = '-' + data.discountAmount.toLocaleString('vi-VN') + ' đ';
                     } else {
                         discRow.classList.add('d-none');
                     }
 
-                    var tradeDiscRow = document.getElementById('recTradeDiscountRow');
-                    if (data.tradeDiscountAmount > 0) {
-                        tradeDiscRow.classList.remove('d-none');
-                        document.getElementById('recTradeDiscount').innerText = '-' + data.tradeDiscountAmount.toLocaleString('vi-VN') + ' đ';
-                    } else {
-                        tradeDiscRow.classList.add('d-none');
-                    }
-
                     document.getElementById('recTotal').innerText = data.totalAmount.toLocaleString('vi-VN') + ' đ';
+
+                    // Payment Method & Split breakdown
+                    var payMethodEl = document.getElementById('recPaymentMethod');
+                    if (payMethodEl) {
+                        if (data.paymentMethod === 'Split' || (data.cashAmount > 0 && data.bankAmount > 0)) {
+                            payMethodEl.innerText = 'Kết hợp (TM + CK)';
+                            var splitCashRow = document.getElementById('recSplitCashRow');
+                            var splitBankRow = document.getElementById('recSplitBankRow');
+                            if (splitCashRow) {
+                                splitCashRow.classList.remove('d-none');
+                                document.getElementById('recCashAmount').innerText = (data.cashAmount || 0).toLocaleString('vi-VN') + ' đ';
+                            }
+                            if (splitBankRow) {
+                                splitBankRow.classList.remove('d-none');
+                                document.getElementById('recBankAmount').innerText = (data.bankAmount || 0).toLocaleString('vi-VN') + ' đ';
+                            }
+                        } else {
+                            var pMethodText = 'Chuyển khoản';
+                            if (data.paymentMethod === 'Cash') pMethodText = 'Tiền mặt';
+                            else if (data.paymentMethod) pMethodText = data.paymentMethod;
+                            payMethodEl.innerText = pMethodText;
+                            var splitCashRow = document.getElementById('recSplitCashRow');
+                            var splitBankRow = document.getElementById('recSplitBankRow');
+                            if (splitCashRow) splitCashRow.classList.add('d-none');
+                            if (splitBankRow) splitBankRow.classList.add('d-none');
+                        }
+                    }
 
                     var modal = new bootstrap.Modal(document.getElementById('receiptPrintModal'));
                     modal.show();

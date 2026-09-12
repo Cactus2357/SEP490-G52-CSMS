@@ -4,6 +4,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
     {
         public IEnumerable<SaleCategoryViewModel> Categories { get; set; } = new List<SaleCategoryViewModel>();
         public IEnumerable<SaleProductViewModel> MenuProducts { get; set; } = new List<SaleProductViewModel>();
+        public List<SEP490_G52_CSMS.Models.Sales.Voucher> AvailableVouchers { get; set; } = new List<SEP490_G52_CSMS.Models.Sales.Voucher>();
     }
 
     public class SaleCategoryViewModel
@@ -78,6 +79,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public decimal SubtotalAmount { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal TradeDiscountAmount { get; set; }
+        public string? VoucherCode { get; set; }
         public string? OrderNotes { get; set; }
         public string? BranchName { get; set; }
         public string? BranchAddress { get; set; }
@@ -87,6 +89,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string PaymentMethod { get; set; } = "";
         public string? BankTransactionCode { get; set; }
         public string PaymentStatus { get; set; } = "";
+        public string BrewingStatus { get; set; } = "";
         public string DisplayStatus { get; set; } = null!;
         public decimal TotalAmount { get; set; }
         public decimal CashAmount { get; set; }

@@ -22,6 +22,7 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ICashHandoverService _cashHandoverService;
         private readonly ICashierWorkEligibilityService _eligibilityService;
+        private readonly IVoucherService _voucherService;
 
         public SaleManagementController(
             IOrderService orderService,
@@ -29,7 +30,8 @@ namespace SEP490_G52_CSMS.Controllers
             CSMSAppDbContext context,
             IHttpClientFactory httpClientFactory,
             ICashHandoverService cashHandoverService,
-            ICashierWorkEligibilityService eligibilityService)
+            ICashierWorkEligibilityService eligibilityService,
+            IVoucherService voucherService)
         {
             _orderService = orderService;
             _menuRepo = menuRepo;
@@ -37,6 +39,7 @@ namespace SEP490_G52_CSMS.Controllers
             _httpClientFactory = httpClientFactory;
             _cashHandoverService = cashHandoverService;
             _eligibilityService = eligibilityService;
+            _voucherService = voucherService;
         }
 
         private async Task<string> GetUserBranchIdAsync()
@@ -197,6 +200,25 @@ namespace SEP490_G52_CSMS.Controllers
             vm.Categories = categories;
             vm.MenuProducts = menuProducts;
 
+            // Load active vouchers for branch
+            var activeVouchers = await _voucherService.GetBranchVouchersAsync(branchId, status: "Active");
+            vm.AvailableVouchers = activeVouchers.Where(v => v.IsValidNow).ToList();
+
+            // Load branch banking settings for QR transfer
+            var branchSetting = await _context.BranchSettings.FirstOrDefaultAsync(s => s.BranchId == branchId);
+            if (branchSetting == null)
+            {
+                branchSetting = new Models.Core.BranchSetting
+                {
+                    BranchId = branchId,
+                    BankCode = "MBBank",
+                    AccountNumber = "0333333333",
+                    AccountName = "CSMS CAFE",
+                    TransferPrefix = "CSMS"
+                };
+            }
+            ViewBag.BranchSetting = branchSetting;
+
             return View(vm);
         }
 
@@ -236,7 +258,8 @@ namespace SEP490_G52_CSMS.Controllers
                 model.SubtotalAmount,
                 model.DiscountAmount,
                 model.TradeDiscountAmount,
-                model.OrderNotes);
+                model.OrderNotes,
+                model.VoucherCode);
 
             if (order == null || string.IsNullOrEmpty(order.OrderId))
             {
@@ -255,51 +278,85 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> SubmitOrderForTransfer([FromBody] OrderSubmissionModel model)
         {
-            if (model == null || model.Items == null || !model.Items.Any())
+            try
             {
-                return BadRequest(new { success = false, message = "Dữ liệu đơn hàng không hợp lệ." });
+                if (model == null || model.Items == null || !model.Items.Any())
+                {
+                    return BadRequest(new { success = false, message = "Dữ liệu đơn hàng không hợp lệ (giỏ hàng rỗng)." });
+                }
+
+                var branchId = await GetUserBranchIdAsync();
+                var cashierId = await GetUserCashierIdAsync();
+
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+                if (!isEligible)
+                {
+                    return BadRequest(new { success = false, message = message });
+                }
+
+                var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
+
+                var orderItems = model.Items.Select(i => new OrderItem
+                {
+                    VariantId = i.VariantId,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice
+                }).ToList();
+
+                var order = await _orderService.CreateOrderAsync(
+                    recipient, 
+                    branchId, 
+                    cashierId, 
+                    orderItems,
+                    model.TableNumber,
+                    model.CustomerName,
+                    model.SubtotalAmount,
+                    model.DiscountAmount,
+                    model.TradeDiscountAmount,
+                    model.OrderNotes,
+                    model.VoucherCode);
+
+                if (order == null || string.IsNullOrEmpty(order.OrderId))
+                {
+                    return BadRequest(new { success = false, message = "Không thể khởi tạo đơn hàng." });
+                }
+
+                if (model.InitialCashAmount.HasValue && model.InitialCashAmount.Value > 0)
+                {
+                    var initialCash = model.InitialCashAmount.Value;
+                    var payment = new Payment
+                    {
+                        PaymentId = $"PAY-CSH-{order.OrderId}-{DateTime.UtcNow:HHmmss}-{Random.Shared.Next(100, 999)}",
+                        OrderId = order.OrderId,
+                        BranchId = branchId,
+                        CashierId = cashierId,
+                        PaymentType = "Payment",
+                        PaymentMethod = "Cash",
+                        Amount = initialCash,
+                        CustomerCash = initialCash,
+                        ChangeAmount = 0,
+                        Status = "Success",
+                        Notes = "Thanh toán tiền mặt 1 phần trước khi chuyển khoản nốt",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _context.Payments.AddAsync(payment);
+
+                    order.PaymentMethod = "Split";
+                    order.PaymentStatus = "PartiallyPaid";
+                }
+                else
+                {
+                    order.PaymentMethod = "Bank Transfer";
+                    order.PaymentStatus = "Unpaid";
+                }
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, orderId = order.OrderId });
             }
-
-            var branchId = await GetUserBranchIdAsync();
-            var cashierId = await GetUserCashierIdAsync();
-
-            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
-            if (!isEligible)
+            catch (Exception ex)
             {
-                return BadRequest(new { success = false, message = message });
+                return BadRequest(new { success = false, message = ex.Message });
             }
-
-            var recipient = string.IsNullOrWhiteSpace(model.RecipientName) ? "Khách lẻ" : model.RecipientName.Trim();
-
-            var orderItems = model.Items.Select(i => new OrderItem
-            {
-                VariantId = i.VariantId,
-                Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice
-            }).ToList();
-
-            var order = await _orderService.CreateOrderAsync(
-                recipient, 
-                branchId, 
-                cashierId, 
-                orderItems,
-                model.TableNumber,
-                model.CustomerName,
-                model.SubtotalAmount,
-                model.DiscountAmount,
-                model.TradeDiscountAmount,
-                model.OrderNotes);
-
-            if (order == null || string.IsNullOrEmpty(order.OrderId))
-            {
-                return BadRequest(new { success = false, message = "Không thể khởi tạo đơn hàng." });
-            }
-
-            order.PaymentMethod = "Bank Transfer";
-            order.PaymentStatus = "Unpaid";
-            await _context.SaveChangesAsync();
-
-            return Json(new { success = true, orderId = order.OrderId });
         }
 
         [HttpGet]
@@ -339,7 +396,11 @@ namespace SEP490_G52_CSMS.Controllers
                 subtotalAmount = detail.SubtotalAmount,
                 discountAmount = detail.DiscountAmount,
                 tradeDiscountAmount = detail.TradeDiscountAmount,
-                totalAmount = detail.TotalAmount
+                voucherCode = detail.VoucherCode,
+                totalAmount = detail.TotalAmount,
+                paymentMethod = detail.PaymentMethod,
+                cashAmount = detail.CashAmount,
+                bankAmount = detail.BankAmount
             });
         }
 
@@ -445,21 +506,25 @@ namespace SEP490_G52_CSMS.Controllers
             var order = await _context.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
+            decimal transferRemaining = Math.Max(0, order.TotalAmount - order.CashPaid);
+            if (transferRemaining <= 0) transferRemaining = order.TotalAmount;
+
             string txCode = "QR-MANUAL-" + DateTime.UtcNow.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
             order.PaymentStatus = "TransferSuccessPending";
-            order.PaymentMethod = $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{order.TotalAmount:N0}đ)";
+            order.PaymentMethod = order.CashPaid > 0 ? $"Split (CK:{transferRemaining:N0}đ + TM:{order.CashPaid:N0}đ)" : $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{transferRemaining:N0}đ)";
 
             var cashierId = await GetUserCashierIdAsync();
             var branchId = await GetUserBranchIdAsync();
 
             var payment = new Payment
             {
+                PaymentId = $"PAY-BNK-{order.OrderId}-{DateTime.UtcNow:HHmmss}-{Random.Shared.Next(100, 999)}",
                 OrderId = order.OrderId,
                 BranchId = branchId,
                 CashierId = cashierId,
                 PaymentType = "Payment",
                 PaymentMethod = "BankTransfer",
-                Amount = order.TotalAmount,
+                Amount = transferRemaining,
                 TransactionCode = txCode,
                 Status = "Success",
                 Notes = order.PaymentMethod,
@@ -481,6 +546,7 @@ namespace SEP490_G52_CSMS.Controllers
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
             decimal receivedBankAmount = order.BankPaid;
+            decimal receivedCashAmount = order.CashPaid;
             if (receivedBankAmount == 0 && !string.IsNullOrEmpty(order.PaymentMethod) && order.PaymentMethod.Contains("Đã nhận:"))
             {
                 var match = Regex.Match(order.PaymentMethod, @"Đã nhận:([\d\.,]+)đ?");
@@ -494,14 +560,15 @@ namespace SEP490_G52_CSMS.Controllers
                 }
             }
 
-            decimal remainingAmount = Math.Max(0, order.TotalAmount - receivedBankAmount);
+            decimal remainingAmount = Math.Max(0, order.TotalAmount - receivedBankAmount - receivedCashAmount);
 
             return Json(new { 
                 success = true, 
                 paymentStatus = order.PaymentStatus,
                 totalAmount = order.TotalAmount,
-                receivedAmount = receivedBankAmount > 0 ? receivedBankAmount : order.TotalAmount,
+                receivedAmount = (receivedBankAmount + receivedCashAmount) > 0 ? (receivedBankAmount + receivedCashAmount) : order.TotalAmount,
                 bankAmount = receivedBankAmount,
+                cashAmount = receivedCashAmount,
                 remainingAmount = remainingAmount,
                 bankTransactionCode = order.LatestBankTransactionCode
             });
@@ -572,6 +639,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             var payment = new Payment
             {
+                PaymentId = $"PAY-BNK-{order.OrderId}-{DateTime.UtcNow:HHmmss}-{Random.Shared.Next(100, 999)}",
                 OrderId = order.OrderId,
                 BranchId = branchId,
                 CashierId = cashierId,
@@ -612,9 +680,9 @@ namespace SEP490_G52_CSMS.Controllers
                 var order = await _context.Orders.Include(o => o.Payments).Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.OrderId == orderId);
                 if (order != null)
                 {
-                    if (order.PaymentStatus == "PartiallyPaid" || order.BankPaid > 0)
+                    if (order.PaymentStatus == "PartiallyPaid" || order.BankPaid > 0 || order.CashPaid > 0)
                     {
-                        return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.BankPaid:N0}đ chuyển khoản từ khách hàng. Không thể hủy đơn trực tiếp mà phải xử lý thu nốt hoặc hoàn tiền!" });
+                        return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.PaidAmount:N0}đ thanh toán từ khách hàng. Không thể hủy đơn trực tiếp mà phải xử lý hoàn tất hoặc hoàn tiền!" });
                     }
 
                     if (order.PaymentStatus == "Unpaid" || order.PaymentStatus == "Cancelled")
@@ -747,6 +815,60 @@ namespace SEP490_G52_CSMS.Controllers
 
             return BadRequest(new { success = false, message = result.message });
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CheckVoucher([FromBody] CheckVoucherRequestModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.VoucherCode))
+            {
+                return BadRequest(new { success = false, message = "Mã giảm giá không tồn tại" });
+            }
+
+            var branchId = await GetUserBranchIdAsync();
+            var (success, message, voucher, percent, discountAmount) = await _voucherService.ValidateVoucherForOrderAsync(model.VoucherCode, branchId, model.Subtotal);
+
+            if (!success)
+            {
+                return BadRequest(new { success = false, message });
+            }
+
+            return Json(new
+            {
+                success = true,
+                message,
+                voucherId = voucher?.VoucherId,
+                voucherCode = voucher?.VoucherCode,
+                discountPercent = percent,
+                discountAmount = discountAmount,
+                description = voucher?.Description,
+                remainingQuantity = voucher?.RemainingQuantity
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkOrderAsDelivered(string orderId)
+        {
+            if (string.IsNullOrWhiteSpace(orderId))
+                return BadRequest(new { success = false, message = "Mã đơn hàng không hợp lệ." });
+
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
+                return BadRequest(new { success = false, message = message });
+
+            var result = await _orderService.MarkOrderAsDeliveredAsync(orderId.Trim());
+            if (result.success)
+                return Json(new { success = true, message = result.message });
+
+            return BadRequest(new { success = false, message = result.message });
+        }
+    }
+
+    public class CheckVoucherRequestModel
+    {
+        public string VoucherCode { get; set; } = string.Empty;
+        public decimal Subtotal { get; set; }
     }
 
     public class RefundRequestModel
@@ -764,8 +886,10 @@ namespace SEP490_G52_CSMS.Controllers
         public decimal? SubtotalAmount { get; set; }
         public decimal? DiscountAmount { get; set; }
         public decimal? TradeDiscountAmount { get; set; }
+        public string? VoucherCode { get; set; }
         public string? OrderNotes { get; set; }
         public string? IdempotencyKey { get; set; }
+        public decimal? InitialCashAmount { get; set; }
         public List<OrderItemSubmission> Items { get; set; } = new List<OrderItemSubmission>();
     }
 

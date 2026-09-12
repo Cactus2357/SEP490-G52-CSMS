@@ -70,6 +70,8 @@
                                 <option value="Tất cả" selected="@(Model.StatusFilter == "Tất cả")">Tất cả</option>
                                 <option value="Đang chờ pha chế" selected="@(Model.StatusFilter == "Đang chờ pha chế")">Đang chờ pha chế</option>
                                 <option value="Đang pha chế" selected="@(Model.StatusFilter == "Đang pha chế")">Đang pha chế</option>
+                                <option value="Đã pha chế xong" selected="@(Model.StatusFilter == "Đã pha chế xong")">Đã pha chế xong (Chờ giao)</option>
+                                <option value="Đã giao hàng" selected="@(Model.StatusFilter == "Đã giao hàng")">Đã giao hàng</option>
                                 <option value="Chờ thanh toán" selected="@(Model.StatusFilter == "Chờ thanh toán")">Chờ thanh toán</option>
                                 <option value="Thanh toán 1 phần" selected="@(Model.StatusFilter == "Thanh toán 1 phần")">Thanh toán 1 phần</option>
                                 <option value="Thiếu nguyên liệu / Chờ xử lý" selected="@(Model.StatusFilter == "Thiếu nguyên liệu / Chờ xử lý" || Model.StatusFilter == "Thiếu nguyên liệu")">Thiếu nguyên liệu (Chờ xử lý)</option>
@@ -137,17 +139,19 @@
                                     bool isMissing = o.IsMissingIngredients || o.BrewingStatus == "Missing Ingredients";
                                     bool isPartialRefund = (!isMissing && (o.DisplayStatus == "Hoàn tiền 1 phần" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount)));
                                     bool isCancelled = (!isMissing && !isPartialRefund && (o.DisplayStatus.Contains("hủy") || o.DisplayStatus.Contains("Hoàn tiền") || o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount));
-                                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && (o.DisplayStatus.ToLower() == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
-                                    bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "Unpaid" || o.DisplayStatus == "Chờ thanh toán");
-                                    bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && (o.PaymentStatus == "PartiallyPaid" || o.DisplayStatus == "Thanh toán 1 phần");
-                                    bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing" || o.DisplayStatus == "Đang pha chế");
+                                    bool isDelivered = (!isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Delivered" || o.DisplayStatus == "Đã giao hàng"));
+                                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && !isDelivered && (o.DisplayStatus.ToLower() == "đã pha chế xong" || o.DisplayStatus.ToLower() == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+                                    bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid" || o.DisplayStatus == "Chờ thanh toán");
+                                    bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "PartiallyPaid" || o.DisplayStatus == "Thanh toán 1 phần");
+                                    bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing" || o.DisplayStatus == "Đang pha chế");
 
                                     string rowStyle = isMissing ? "table-danger fw-semibold" : 
                                                      (isPartialRefund ? "table-warning" : 
                                                      (isCancelled ? "table-light text-muted" : 
-                                                     (isDone ? "table-success" : 
+                                                     (isDelivered ? "table-success" : 
+                                                     (isDone ? "table-primary" : 
                                                      (isUnpaid ? "table-secondary" :
-                                                     (isPartiallyPaid ? "table-info" : "table-light")))));
+                                                     (isPartiallyPaid ? "table-info" : "table-light"))))));
 
                                     <tr class="history-order-row @rowStyle" data-order-id="@o.OrderId" onclick="loadOrderDetails('@o.OrderId')">
                                         <td class="ps-3 text-secondary">@stt</td>
@@ -173,10 +177,16 @@
                                                     <i class="bi bi-x-circle-fill me-1"></i>Đã hủy / Hoàn tiền
                                                 </span>
                                             }
-                                            else if (isDone)
+                                            else if (isDelivered)
                                             {
                                                 <span class="badge bg-success text-white px-2.5 py-1 rounded-pill">
-                                                    <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
+                                                    <i class="bi bi-box-seam me-1"></i>Đã giao hàng
+                                                </span>
+                                            }
+                                            else if (isDone)
+                                            {
+                                                <span class="badge bg-primary text-white px-2.5 py-1 rounded-pill">
+                                                    <i class="bi bi-check2-circle me-1"></i>Đã pha chế xong
                                                 </span>
                                             }
                                             else if (isUnpaid)
@@ -205,9 +215,17 @@
                                             }
                                         </td>
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="event.stopPropagation(); loadOrderDetails('@o.OrderId')">
-                                                Chi tiết
-                                            </button>
+                                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                                @if (isDone)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-success py-0.5 px-2 fw-semibold shadow-sm" style="font-size: 0.78rem;" onclick="event.stopPropagation(); markDeliveredOrder('@o.OrderId')" title="Xác nhận đã giao hàng cho khách">
+                                                        <i class="bi bi-box-seam me-1"></i>Giao hàng
+                                                    </button>
+                                                }
+                                                <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="event.stopPropagation(); loadOrderDetails('@o.OrderId')">
+                                                    Chi tiết
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -317,7 +335,7 @@
                             <span id="recSubtotal" class="font-monospace">140.000 đ</span>
                         </div>
                         <div class="d-flex justify-content-between text-danger d-none" id="recDiscountRow">
-                            <span>Giảm giá:</span>
+                            <span id="recDiscountLabel">Giảm giá:</span>
                             <span id="recDiscount" class="font-monospace">-0 đ</span>
                         </div>
                         <div class="d-flex justify-content-between text-danger d-none" id="recTradeDiscountRow">
@@ -972,6 +990,10 @@
                     var discRow = document.getElementById('recDiscountRow');
                     if (data.discountAmount > 0) {
                         discRow.classList.remove('d-none');
+                        var labelEl = document.getElementById('recDiscountLabel');
+                        if (labelEl) {
+                            labelEl.innerText = data.voucherCode ? `Giảm giá (${data.voucherCode}):` : 'Giảm giá:';
+                        }
                         document.getElementById('recDiscount').innerText = '-' + data.discountAmount.toLocaleString('vi-VN') + ' đ';
                     } else {
                         discRow.classList.add('d-none');
@@ -994,6 +1016,40 @@
                     console.error(err);
                     showToast("Lỗi khi tải dữ liệu hóa đơn.", "danger");
                 });
+        }
+
+        function markDeliveredOrder(orderId) {
+            if (!orderId) return;
+
+            showConfirmModal(
+                'Xác nhận đã giao hàng',
+                'Bạn có chắc chắn muốn xác nhận đã giao đồ uống / đơn hàng <strong>#' + orderId + '</strong> cho khách hàng không?',
+                function() {
+                    const formData = new FormData();
+                    formData.append('orderId', orderId);
+
+                    fetch('@Url.Action("MarkOrderAsDelivered", "SaleManagement")', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, body: data })))
+                    .then(res => {
+                        if (res.ok && res.body.success) {
+                            showToast(res.body.message || 'Đã xác nhận giao hàng thành công!', 'success');
+                            loadOrderDetails(orderId);
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            showToast(res.body.message || 'Không thể cập nhật trạng thái đơn hàng.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Lỗi kết nối khi cập nhật trạng thái đơn hàng.', 'danger');
+                    });
+                }
+            );
         }
     </script>
 }

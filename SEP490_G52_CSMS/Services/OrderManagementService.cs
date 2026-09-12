@@ -16,12 +16,14 @@ namespace SEP490_G52_CSMS.Services
 
         private string MapStatus(Order o)
         {
-            if (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount && o.BrewingStatus != "Missing Ingredients")
-                return "Hoàn tiền 1 phần";
-            if (o.PaymentStatus == "Paid" || o.BrewingStatus == "Done" || o.BrewingStatus == "Completed")
-                return "Hoàn thành";
             if (o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount)
                 return "Đã hủy";
+            if (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount && o.BrewingStatus != "Missing Ingredients")
+                return "Hoàn tiền 1 phần";
+            if (o.BrewingStatus == "Delivered")
+                return "Đã giao hàng";
+            if (o.PaymentStatus == "Paid" || o.BrewingStatus == "Done" || o.BrewingStatus == "Completed")
+                return "Hoàn thành";
             return "Đang xử lý";
         }
 

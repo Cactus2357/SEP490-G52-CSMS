@@ -52,9 +52,13 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")
             {
-                if (status == "Hoàn thành")
+                if (status == "Đã giao hàng")
                 {
-                    query = query.Where(o => o.PaymentStatus == "Paid" || o.BrewingStatus == "Done" || o.BrewingStatus == "Completed");
+                    query = query.Where(o => o.BrewingStatus == "Delivered");
+                }
+                else if (status == "Hoàn thành")
+                {
+                    query = query.Where(o => o.PaymentStatus == "Paid" || o.BrewingStatus == "Done" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Delivered");
                 }
                 else if (status == "Đã hủy")
                 {
@@ -67,6 +71,7 @@ namespace SEP490_G52_CSMS.Repositories
                                            o.PaymentStatus != "Cancelled" &&
                                            o.BrewingStatus != "Done" &&
                                            o.BrewingStatus != "Completed" &&
+                                           o.BrewingStatus != "Delivered" &&
                                            o.BrewingStatus != "Canceled" &&
                                            o.BrewingStatus != "Cancelled");
                 }

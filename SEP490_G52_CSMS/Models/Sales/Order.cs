@@ -68,6 +68,17 @@ namespace SEP490_G52_CSMS.Models.Sales
         [StringLength(255)]
         public string? OrderNotes { get; set; }
 
+        /// <summary> Mã voucher áp dụng cho đơn hàng </summary>
+        [Column("voucher_id")]
+        public int? VoucherId { get; set; }
+
+        [Column("voucher_code")]
+        [StringLength(50)]
+        public string? VoucherCode { get; set; }
+
+        [ForeignKey("VoucherId")]
+        public virtual Voucher? Voucher { get; set; }
+
         [ForeignKey("BranchId")]
         public virtual Core.Branch? Branch { get; set; }
 

@@ -39,6 +39,7 @@
                     <label class="form-label fw-semibold text-secondary">Trạng thái</label>
                     <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit()">
                         <option value="Tất cả" selected="@(Model.FilterStatus == "Tất cả")">Tất cả trạng thái</option>
+                        <option value="Đã giao hàng" selected="@(Model.FilterStatus == "Đã giao hàng")">Đã giao hàng</option>
                         <option value="Hoàn thành" selected="@(Model.FilterStatus == "Hoàn thành")">Hoàn thành</option>
                         <option value="Đang xử lý" selected="@(Model.FilterStatus == "Đang xử lý")">Đang xử lý</option>
                         <option value="Đã hủy" selected="@(Model.FilterStatus == "Đã hủy")">Đã hủy</option>
@@ -97,7 +98,13 @@
                                     @item.TotalAmount.ToString("N0")đ
                                 </td>
                                 <td class="text-center">
-                                    @if (item.Status == "Hoàn thành")
+                                     @if (item.Status == "Đã giao hàng")
+                                    {
+                                        <span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill fw-semibold">
+                                            <i class="bi bi-box-seam me-1"></i>Đã giao hàng
+                                        </span>
+                                    }
+                                    else if (item.Status == "Hoàn thành")
                                     {
                                         <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5">
                                             <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
