@@ -27,8 +27,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public decimal BankTransferRevenue { get; set; }
         public decimal CashRefundAmount { get; set; } = 0;
 
-        /// <summary> Tổng tiền mặt lý thuyết két = InitialCash + MachineCashRevenue - CashRefundAmount </summary>
-        public decimal TheoreticalCash => InitialCash + MachineCashRevenue - CashRefundAmount;
+        /// <summary> Tổng tiền mặt lý thuyết két = InitialCash + MachineCashRevenue </summary>
+        public decimal TheoreticalCash => InitialCash + MachineCashRevenue;
 
         // ===== Đối soát thực tế =====
         [Required(ErrorMessage = "Vui lòng nhập số tiền mặt thực tế trong két.")]
@@ -38,19 +38,20 @@ namespace SEP490_G52_CSMS.Models.ViewModels
 
         public decimal Discrepancy => ActualCash - TheoreticalCash;
 
-        [StringLength(500)]
-        [Display(Name = "Lý do chênh lệch (nếu có)")]
-        public string? Notes { get; set; }
+        [Required(ErrorMessage = "Vui lòng nhập lý do / ghi chú chênh lệch.")]
+        [StringLength(500, ErrorMessage = "Ghi chú không được vượt quá 500 ký tự.")]
+        [Display(Name = "Lý do / Ghi chú chênh lệch")]
+        public string Notes { get; set; } = string.Empty;
 
-        /// <summary> Số tiền giữ lại trong két cho ca sáng mai </summary>
+        /// <summary> Số tiền giữ lại trong két cho ca sáng mai (ban đầu = 0) </summary>
         [Display(Name = "Tiền để lại két cho ngày mai")]
         public decimal RetainedCashForTomorrow { get; set; } = 0;
 
-        /// <summary> Số tiền nộp về két tổng / chủ quán </summary>
-        [Display(Name = "Tiền nộp về két tổng / chủ quán")]
+        /// <summary> Số tiền chênh lệch / nộp về két tổng / chủ quán </summary>
+        [Display(Name = "Số tiền chênh lệch")]
         public decimal DepositedCashAmount => Math.Max(0, ActualCash - RetainedCashForTomorrow);
 
-        /// <summary> Thông tin người nhận tiền nộp cuối ngày (Quản lý / Chủ quán / Két tổng - bắt buộc) </summary>
+        /// <summary> Thông tin người nhận tiền chốt ca (Quản lý / Chủ quán / Két tổng - bắt buộc) </summary>
         [Required(ErrorMessage = "Vui lòng nhập thông tin người nhận tiền.")]
         [Display(Name = "Thông tin người nhận tiền")]
         [StringLength(100, ErrorMessage = "Tên người nhận tiền không được vượt quá 100 ký tự.")]

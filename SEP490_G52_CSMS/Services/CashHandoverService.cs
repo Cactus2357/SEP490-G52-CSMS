@@ -416,7 +416,7 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
-            var theoretical = handover.InitialCash + cashRev - cashRefunds;
+            var theoretical = handover.InitialCash + cashRev;
             var discrepancy = model.ActualCash - theoretical;
 
             if (discrepancy != 0 && string.IsNullOrWhiteSpace(model.Notes))
@@ -505,7 +505,7 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 activeHandover.BranchId, activeHandover.OutgoingCashierId, activeHandover.OpenedAt, null);
 
-            var theoretical = activeHandover.InitialCash + cashRev - cashRefunds;
+            var theoretical = activeHandover.InitialCash + cashRev;
 
             return new CloseShiftViewModel
             {
@@ -520,9 +520,11 @@ namespace SEP490_G52_CSMS.Services
                 InitialCash = activeHandover.InitialCash,
                 MachineCashRevenue = cashRev,
                 BankTransferRevenue = bankRev,
-                CashRefundAmount = cashRefunds,
+                CashRefundAmount = 0,
                 ActualCash = theoretical,
-                RetainedCashForTomorrow = activeHandover.InitialCash
+                RetainedCashForTomorrow = 0,
+                ReceiverName = string.Empty,
+                Notes = string.Empty
             };
         }
 
@@ -537,6 +539,11 @@ namespace SEP490_G52_CSMS.Services
             if (string.IsNullOrWhiteSpace(model.ReceiverName))
             {
                 return OperationResult.Fail("Vui lòng nhập thông tin người nhận tiền đóng ca.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Notes))
+            {
+                return OperationResult.Fail("Vui lòng nhập lý do / ghi chú chốt két và chênh lệch!");
             }
 
             // Kiểm tra thời gian đóng ca cuối ngày (Cho phép sau khi ca làm việc cuối bắt đầu 30 phút)
@@ -567,13 +574,8 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
-            var theoretical = handover.InitialCash + cashRev - cashRefunds;
+            var theoretical = handover.InitialCash + cashRev;
             var discrepancy = model.ActualCash - theoretical;
-
-            if (discrepancy != 0 && string.IsNullOrWhiteSpace(model.Notes))
-            {
-                return OperationResult.Fail("Tiền két cuối ngày bị chênh lệch. Vui lòng nhập lý do giải trình!");
-            }
 
             handover.IncomingCashierId = model.OutgoingCashierId;
             handover.DelivererName = model.ReceiverName;
@@ -650,7 +652,7 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
-            var theoretical = handover.InitialCash + cashRev - cashRefunds;
+            var theoretical = handover.InitialCash + cashRev;
             var discrepancy = model.ActualCash - theoretical;
 
             string emergencyNote = $"[BÀN GIAO ĐỘT XUẤT GIỮA CA] Lý do: {model.EmergencyReason ?? "Nhân viên ốm/nghỉ đột xuất"}. " + (model.Notes ?? "");
@@ -731,7 +733,7 @@ namespace SEP490_G52_CSMS.Services
                 TotalCount = total,
                 Items = items.Select(ch =>
                 {
-                    var theoretical = ch.InitialCash + ch.MachineCashRevenue - ch.CashRefundAmount;
+                    var theoretical = ch.InitialCash + ch.MachineCashRevenue;
                     var discrepancy = ch.ActualCash - theoretical;
 
                     string sessionType;
@@ -746,7 +748,7 @@ namespace SEP490_G52_CSMS.Services
 
                     if (isActive)
                     {
-                        actionTime = ch.OpenedAt.ToString("HH:mm dd/MM/yyyy");
+                        actionTime = ch.OpenedAt.ToVietnamTimeString("HH:mm dd/MM/yyyy");
                         actionTimeType = "Mở ca lúc";
                         hasOutgoing = !string.IsNullOrWhiteSpace(ch.DelivererName);
                         outgoingName = !string.IsNullOrWhiteSpace(ch.DelivererName) ? ch.DelivererName : "-";
@@ -772,7 +774,7 @@ namespace SEP490_G52_CSMS.Services
                     }
                     else // Status == Closed
                     {
-                        actionTime = (ch.ClosedAt ?? ch.OpenedAt).ToString("HH:mm dd/MM/yyyy");
+                        actionTime = (ch.ClosedAt ?? ch.OpenedAt).ToVietnamTimeString("HH:mm dd/MM/yyyy");
 
                         if (ch.HandoverType == CashHandoverConstants.HandoverTypeLastShift)
                         {
@@ -834,8 +836,8 @@ namespace SEP490_G52_CSMS.Services
                         DepositedCash = ch.DepositedCash.ToString("N0") + " đ",
                         Discrepancy = isActive ? "-" : ((discrepancy >= 0 ? "+" : "") + discrepancy.ToString("N0") + " đ"),
                         Status = ch.Status,
-                        OpenedAt = ch.OpenedAt.ToString("HH:mm dd/MM/yyyy"),
-                        ClosedAt = ch.ClosedAt?.ToString("HH:mm dd/MM/yyyy") ?? "-",
+                        OpenedAt = ch.OpenedAt.ToVietnamTimeString("HH:mm dd/MM/yyyy"),
+                        ClosedAt = ch.ClosedAt.HasValue ? ch.ClosedAt.ToVietnamTimeString("HH:mm dd/MM/yyyy") : "-",
                         Notes = ch.Notes,
                         DelivererName = ch.DelivererName,
                         SessionType = sessionType,

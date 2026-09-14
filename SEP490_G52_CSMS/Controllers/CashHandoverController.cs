@@ -350,6 +350,33 @@ namespace SEP490_G52_CSMS.Controllers
         //  3. ĐÓNG CA CUỐI NGÀY — GET & POST
         // =========================================================
 
+        private async Task<List<string>> GetReceiverSuggestionsAsync(string branchId)
+        {
+            var suggestions = new List<string>
+            {
+                "Két tổng chi nhánh",
+                "Chủ quán",
+                "Quản lý chi nhánh"
+            };
+
+            var branchStaff = await _context.Employees
+                .Where(e => (e.BranchId == branchId || e.Role == "BranchManager" || e.Role == "RManager") && e.Status == "Active")
+                .OrderBy(e => e.FullName)
+                .Select(e => e.FullName)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var staff in branchStaff)
+            {
+                if (!string.IsNullOrWhiteSpace(staff) && !suggestions.Contains(staff))
+                {
+                    suggestions.Add(staff);
+                }
+            }
+
+            return suggestions;
+        }
+
         public async Task<IActionResult> CloseShift(int? cashierId = null)
         {
             int loggedInUserId = User.GetEmployeeId() ?? 0;
@@ -394,6 +421,7 @@ namespace SEP490_G52_CSMS.Controllers
                 return RedirectToAction(nameof(Handover));
             }
 
+            ViewBag.ReceiverSuggestions = await GetReceiverSuggestionsAsync(userBranchId);
             return View(model);
         }
 
@@ -414,11 +442,9 @@ namespace SEP490_G52_CSMS.Controllers
                 model.BranchId = userBranchId;
             }
 
-            decimal theoretical = model.InitialCash + model.MachineCashRevenue - model.CashRefundAmount;
-            decimal discrepancy = model.ActualCash - theoretical;
-            if (discrepancy != 0 && string.IsNullOrWhiteSpace(model.Notes))
+            if (string.IsNullOrWhiteSpace(model.Notes))
             {
-                ModelState.AddModelError("Notes", "Tiền két cuối ngày bị chênh lệch. Vui lòng nhập lý do giải trình!");
+                ModelState.AddModelError("Notes", "Vui lòng nhập lý do / ghi chú chênh lệch.");
             }
 
             if (!ModelState.IsValid)
@@ -429,11 +455,12 @@ namespace SEP490_G52_CSMS.Controllers
                     model.InitialCash = freshModel.InitialCash;
                     model.MachineCashRevenue = freshModel.MachineCashRevenue;
                     model.BankTransferRevenue = freshModel.BankTransferRevenue;
-                    model.CashRefundAmount = freshModel.CashRefundAmount;
+                    model.CashRefundAmount = 0;
                     model.CashierName = freshModel.CashierName;
                     model.ShiftName = freshModel.ShiftName;
                     model.ShiftTimeRange = freshModel.ShiftTimeRange;
                 }
+                ViewBag.ReceiverSuggestions = await GetReceiverSuggestionsAsync(userBranchId);
                 return View(model);
             }
 
@@ -447,11 +474,12 @@ namespace SEP490_G52_CSMS.Controllers
                     model.InitialCash = freshModel.InitialCash;
                     model.MachineCashRevenue = freshModel.MachineCashRevenue;
                     model.BankTransferRevenue = freshModel.BankTransferRevenue;
-                    model.CashRefundAmount = freshModel.CashRefundAmount;
+                    model.CashRefundAmount = 0;
                     model.CashierName = freshModel.CashierName;
                     model.ShiftName = freshModel.ShiftName;
                     model.ShiftTimeRange = freshModel.ShiftTimeRange;
                 }
+                ViewBag.ReceiverSuggestions = await GetReceiverSuggestionsAsync(userBranchId);
                 return View(model);
             }
 

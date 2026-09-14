@@ -29,8 +29,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         /// <summary> Tiền mặt hoàn trả trong ca (do thiếu nguyên liệu / hủy món) </summary>
         public decimal CashRefundAmount { get; set; } = 0;
 
-        /// <summary> Tổng tiền mặt lý thuyết phải có = InitialCash + MachineCashRevenue - CashRefundAmount </summary>
-        public decimal TheoreticalCash => InitialCash + MachineCashRevenue - CashRefundAmount;
+        /// <summary> Tổng tiền mặt lý thuyết phải có = InitialCash + MachineCashRevenue </summary>
+        public decimal TheoreticalCash => InitialCash + MachineCashRevenue;
 
         /// <summary> Thời điểm mở ca </summary>
         public DateTime OpenedAt { get; set; } = DateTime.UtcNow;

@@ -32,9 +32,15 @@
 
     @if (!ViewData.ModelState.IsValid)
     {
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <div asp-validation-summary="ModelOnly"></div>
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3 border-danger-subtle rounded-3 shadow-sm" role="alert" style="background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b;">
+            <i class="bi bi-exclamation-circle-fill fs-5 text-danger flex-shrink-0"></i>
+            <div class="small fw-semibold flex-grow-1">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
         </div>
     }
 
@@ -76,7 +82,7 @@
                                     <tr class="table-primary border-top">
                                         <td class="ps-3 py-2.5 text-primary">
                                             <span class="fw-bold d-block">☑ Tổng tiền mặt lý thuyết trong két:</span>
-                                            <small class="text-muted d-block font-monospace" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
+                                            <small class="text-muted d-block" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
                                         </td>
                                         <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="displayTheoretical">
                                             @Model.TheoreticalCash.ToString("N0") đ
@@ -145,7 +151,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-5 text-muted small">Thời điểm mở ca:</div>
-                                <div class="col-7 small text-secondary">@Model.OpenedAt.ToString("HH:mm - dd/MM/yyyy")</div>
+                                <div class="col-7 small text-secondary">@Model.OpenedAt.ToVietnamTimeString("HH:mm - dd/MM/yyyy")</div>
                             </div>
                         </div>
 

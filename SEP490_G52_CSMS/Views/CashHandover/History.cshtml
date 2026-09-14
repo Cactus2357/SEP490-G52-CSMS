@@ -29,17 +29,19 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 mb-3 border-success-subtle rounded-3 shadow-sm" role="alert" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534;">
+            <i class="bi bi-check-circle-fill fs-5 text-success flex-shrink-0"></i>
+            <span class="small fw-semibold flex-grow-1">@TempData["SuccessMessage"]</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3 border-danger-subtle rounded-3 shadow-sm" role="alert" style="background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b;">
+            <i class="bi bi-exclamation-circle-fill fs-5 text-danger flex-shrink-0"></i>
+            <span class="small fw-semibold flex-grow-1">@TempData["ErrorMessage"]</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
         </div>
     }
 
@@ -202,8 +204,8 @@
                                         <span class="text-muted fw-normal fst-italic">–</span>
                                     }
                                 </td>
-                                <td class="text-end fw-bold text-dark font-monospace">@item.ActualCash</td>
-                                <td class="text-end fw-bold font-monospace @discClass">@item.Discrepancy</td>
+                                <td class="text-end fw-bold text-dark">@item.ActualCash</td>
+                                <td class="text-end fw-bold @discClass">@item.Discrepancy</td>
                                 <td>
                                     @if (item.Status == "Active")
                                     {
@@ -333,7 +335,7 @@
                                             <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" id="modalRetained">–</td>
                                         </tr>
                                         <tr class="border-top d-none table-warning" id="modalDepositedRow">
-                                            <td class="ps-3 py-2 text-dark fw-semibold"><i class="bi bi-cash-stack me-1"></i>Tiền nộp về két tổng / chủ quán:</td>
+                                            <td class="ps-3 py-2 text-dark fw-semibold"><i class="bi bi-cash-stack me-1"></i>Số tiền chênh lệch:</td>
                                             <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" id="modalDeposited">–</td>
                                         </tr>
                                     </tbody>

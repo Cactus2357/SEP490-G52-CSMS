@@ -32,9 +32,15 @@
 
     @if (!ViewData.ModelState.IsValid)
     {
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <div asp-validation-summary="ModelOnly"></div>
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3 border-danger-subtle rounded-3 shadow-sm" role="alert" style="background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b;">
+            <i class="bi bi-exclamation-circle-fill fs-5 text-danger flex-shrink-0"></i>
+            <div class="small fw-semibold flex-grow-1">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
         </div>
     }
 
@@ -75,7 +81,7 @@
                                     <tr class="table-primary border-top">
                                         <td class="ps-3 py-2.5 text-primary">
                                             <span class="fw-bold d-block">☑ Tổng tiền mặt lý thuyết trong két:</span>
-                                            <small class="text-muted d-block font-monospace" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
+                                            <small class="text-muted d-block" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
                                         </td>
                                         <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="displayTheoretical">
                                             @Model.TheoreticalCash.ToString("N0") đ
@@ -104,22 +110,13 @@
                             <span asp-validation-for="ActualCash" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label small text-muted mb-1">Chênh lệch kết tiền cuối ngày:</label>
                             <div class="input-group input-group-sm">
                                 <input type="text" class="form-control bg-light fw-bold"
                                        id="discrepancyDisplay" readonly value="0 đ" />
                                 <span class="input-group-text bg-light">đ</span>
                             </div>
-                        </div>
-
-                        <div class="mb-0">
-                            <label asp-for="Notes" class="form-label small text-muted mb-1" id="notesLabel">
-                                Giải trình chênh lệch (nếu có):
-                            </label>
-                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="3" id="notesInput"
-                                      placeholder="Bắt buộc nhập nếu có chênh lệch tiền cuối ngày..."></textarea>
-                            <span asp-validation-for="Notes" class="text-danger small"></span>
                         </div>
                     </div>
                 </div>
@@ -144,7 +141,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-5 text-muted small">Thời điểm mở ca:</div>
-                                <div class="col-7 small text-secondary">@Model.OpenedAt.ToString("HH:mm - dd/MM/yyyy")</div>
+                                <div class="col-7 small text-secondary">@Model.OpenedAt.ToVietnamTimeString("HH:mm - dd/MM/yyyy")</div>
                             </div>
                         </div>
 
@@ -154,7 +151,7 @@
                             </label>
                             <div class="input-group">
                                 <input type="text" class="form-control fw-bold" id="retainedCashDisplay"
-                                       placeholder="Số tiền để lại két..." value="@Model.RetainedCashForTomorrow.ToString("N0")" inputmode="numeric" autocomplete="off" />
+                                       placeholder="Nhập số tiền để lại két (ban đầu 0)..." value="@Model.RetainedCashForTomorrow.ToString("N0")" inputmode="numeric" autocomplete="off" />
                                 <input asp-for="RetainedCashForTomorrow" type="hidden" id="retainedCashInput" value="@Model.RetainedCashForTomorrow" />
                                 <span class="input-group-text bg-light">đ</span>
                             </div>
@@ -163,20 +160,44 @@
 
                         <div class="mb-3 p-3 bg-warning-subtle border border-warning rounded">
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="small fw-semibold text-dark">Số tiền nộp về két tổng / Chủ quán:</span>
+                                <span class="small fw-semibold text-dark">Số tiền chênh lệch:</span>
                                 <strong class="text-danger fs-6" id="depositedCashDisplay">0 đ</strong>
                             </div>
                         </div>
 
                         <div class="mb-3">
+                            <label asp-for="Notes" class="form-label small fw-semibold text-dark mb-1">
+                                Lý do / Ghi chú chênh lệch: <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="2" id="notesInput"
+                                      placeholder="Bắt buộc nhập lý do hoặc ghi chú chốt két..." required></textarea>
+                            <span asp-validation-for="Notes" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
                             <label asp-for="ReceiverName" class="form-label small fw-semibold text-dark mb-1">
-                                Thông tin người nhận tiền nộp (Quản lý / Chủ quán / Két tổng): <span class="text-danger">*</span>
+                                Thông tin người nhận tiền: <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="bi bi-person-check text-secondary"></i></span>
-                                <input asp-for="ReceiverName" class="form-control"
-                                       placeholder="VD: Nguyễn Văn Quản Lý (hoặc Két tổng tầng 1)..." required />
+                                <input asp-for="ReceiverName" class="form-control" list="receiverSuggestionsList"
+                                       placeholder="Nhập hoặc chọn người nhận tiền..." autocomplete="off" required />
                             </div>
+                            <datalist id="receiverSuggestionsList">
+                                @if (ViewBag.ReceiverSuggestions is List<string> suggestions && suggestions.Any())
+                                {
+                                    foreach (var suggestion in suggestions)
+                                    {
+                                        <option value="@suggestion"></option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="Két tổng chi nhánh"></option>
+                                    <option value="Chủ quán"></option>
+                                    <option value="Quản lý chi nhánh"></option>
+                                }
+                            </datalist>
                             <span asp-validation-for="ReceiverName" class="text-danger small"></span>
                         </div>
 
@@ -224,7 +245,6 @@
         const retainedInput    = document.getElementById('retainedCashInput');
         const depositedDisplay = document.getElementById('depositedCashDisplay');
         const discDisplay      = document.getElementById('discrepancyDisplay');
-        const notesLabel       = document.getElementById('notesLabel');
         const notesInput       = document.getElementById('notesInput');
 
         let currentDiff = 0;
@@ -243,19 +263,13 @@
                 discDisplay.value = '+' + fmt + ' đ';
                 discDisplay.classList.remove('text-danger');
                 discDisplay.classList.add('text-success');
-                notesLabel.innerHTML = 'Giải trình chênh lệch <span class="text-danger fw-bold">* (Dư +' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
-                notesInput.required = true;
             } else if (currentDiff < 0) {
                 discDisplay.value = '-' + fmt + ' đ';
                 discDisplay.classList.remove('text-success');
                 discDisplay.classList.add('text-danger');
-                notesLabel.innerHTML = 'Giải trình chênh lệch <span class="text-danger fw-bold">* (Thiếu -' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
-                notesInput.required = true;
             } else {
                 discDisplay.value = '0 đ';
                 discDisplay.classList.remove('text-success', 'text-danger');
-                notesLabel.innerHTML = 'Giải trình chênh lệch (không bắt buộc nếu khớp):';
-                notesInput.required = false;
             }
         }
 
