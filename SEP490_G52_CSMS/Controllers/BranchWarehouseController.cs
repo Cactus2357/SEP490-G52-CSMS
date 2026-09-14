@@ -143,32 +143,79 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SearchCentralCatalog(string term)
+        public async Task<IActionResult> SearchCentralCatalog(string? term)
         {
-            var (branchId, _) = await GetUserBranchAsync();
-            if (string.IsNullOrEmpty(branchId)) return Json(new List<object>());
+            try
+            {
+                var (branchId, _) = await GetUserBranchAsync();
+                if (string.IsNullOrEmpty(branchId)) return Json(new List<object>());
 
-            if (string.IsNullOrEmpty(term)) term = "";
-            term = term.Trim().ToLower();
+                term = term?.Trim() ?? "";
 
-            var trackedMaterialIds = await _context.BranchInventories
-                .Where(bi => bi.BranchId == branchId)
-                .Select(bi => bi.MaterialId)
-                .ToListAsync();
+                var trackedMaterialIds = await _context.BranchInventories
+                    .Where(bi => bi.BranchId == branchId)
+                    .Select(bi => bi.MaterialId)
+                    .ToListAsync();
 
-            var materials = await _context.Materials
-                .Where(m => !trackedMaterialIds.Contains(m.MaterialId) && EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(term))
-                .Take(10)
-                .Select(m => new
+                var query = _context.Materials
+                    .Where(m => !trackedMaterialIds.Contains(m.MaterialId));
+
+                if (!string.IsNullOrEmpty(term))
                 {
-                    materialId = m.MaterialId,
-                    materialName = m.MaterialName,
-                    category = m.Category,
-                    materialKind = m.MaterialKind
-                })
-                .ToListAsync();
+                    if (_context.Database.IsSqlServer())
+                    {
+                        query = query.Where(m => EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(term));
+                    }
+                    else
+                    {
+                        query = query.Where(m => m.MaterialName.ToLower().Contains(term.ToLower()));
+                    }
+                }
 
-            return Json(materials);
+                var materials = await query
+                    .OrderBy(m => m.MaterialName)
+                    .Take(15)
+                    .Select(m => new
+                    {
+                        materialId = m.MaterialId,
+                        materialName = m.MaterialName,
+                        category = m.Category,
+                        materialKind = m.MaterialKind
+                    })
+                    .ToListAsync();
+
+                return Json(materials);
+            }
+            catch
+            {
+                try
+                {
+                    var (branchId, _) = await GetUserBranchAsync();
+                    var trackedIds = await _context.BranchInventories
+                        .Where(bi => bi.BranchId == branchId)
+                        .Select(bi => bi.MaterialId)
+                        .ToListAsync();
+
+                    var fallbackMaterials = await _context.Materials
+                        .Where(m => !trackedIds.Contains(m.MaterialId) && (string.IsNullOrEmpty(term) || m.MaterialName.Contains(term)))
+                        .OrderBy(m => m.MaterialName)
+                        .Take(15)
+                        .Select(m => new
+                        {
+                            materialId = m.MaterialId,
+                            materialName = m.MaterialName,
+                            category = m.Category,
+                            materialKind = m.MaterialKind
+                        })
+                        .ToListAsync();
+
+                    return Json(fallbackMaterials);
+                }
+                catch
+                {
+                    return Json(new List<object>());
+                }
+            }
         }
 
         [HttpPost]
@@ -333,6 +380,84 @@ namespace SEP490_G52_CSMS.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Thêm nguyên liệu thành công!" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RegisterBranchMaterial(int? materialId, string? materialName)
+        {
+            try
+            {
+                var (branchId, branchName) = await GetUserBranchAsync();
+                if (string.IsNullOrEmpty(branchId))
+                {
+                    return Json(new { success = false, message = "Không thể xác định chi nhánh của bạn. Vui lòng đăng nhập lại." });
+                }
+
+                materialName = materialName?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(materialName) && (!materialId.HasValue || materialId.Value <= 0))
+                {
+                    return Json(new { success = false, message = "Tên nguyên liệu là bắt buộc." });
+                }
+
+                var trackedMaterialIds = await _context.BranchInventories
+                    .Where(bi => bi.BranchId == branchId)
+                    .Select(bi => bi.MaterialId)
+                    .ToListAsync();
+
+                Material? material = null;
+                if (materialId.HasValue && materialId.Value > 0)
+                {
+                    material = await _context.Materials.FirstOrDefaultAsync(m => m.MaterialId == materialId.Value);
+                }
+
+                if (material == null && !string.IsNullOrEmpty(materialName))
+                {
+                    // Find by name in central materials (case-insensitive)
+                    // First try untracked
+                    material = await _context.Materials.FirstOrDefaultAsync(m =>
+                        !trackedMaterialIds.Contains(m.MaterialId) &&
+                        m.MaterialName.ToLower() == materialName.ToLower());
+
+                    if (material == null)
+                    {
+                        material = await _context.Materials.FirstOrDefaultAsync(m =>
+                            m.MaterialName.ToLower() == materialName.ToLower());
+                    }
+
+                    if (material == null && _context.Database.IsSqlServer())
+                    {
+                        material = await _context.Materials.FirstOrDefaultAsync(m =>
+                            EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI") == materialName);
+                    }
+                }
+
+                if (material == null)
+                {
+                    return Json(new { success = false, message = "Tên nguyên liệu không tồn tại trong kho tổng. Tên nguyên liệu phải khớp với nguyên liệu tạo từ kho tổng." });
+                }
+
+                if (trackedMaterialIds.Contains(material.MaterialId))
+                {
+                    return Json(new { success = false, message = $"Nguyên liệu '{material.MaterialName}' đã tồn tại trong danh sách tồn kho chi nhánh." });
+                }
+
+                var branchInventory = new BranchInventory
+                {
+                    BranchId = branchId,
+                    MaterialId = material.MaterialId,
+                    StockQuantity = 0,
+                    LowStockThreshold = 10m
+                };
+
+                _context.BranchInventories.Add(branchInventory);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = $"Đã thêm nguyên liệu '{material.MaterialName}' vào kho chi nhánh thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Đã xảy ra lỗi khi thêm nguyên liệu vào kho chi nhánh: " + ex.Message });
+            }
         }
 
 

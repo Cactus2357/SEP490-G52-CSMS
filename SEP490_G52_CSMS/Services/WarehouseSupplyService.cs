@@ -425,6 +425,7 @@ namespace SEP490_G52_CSMS.Services
                 category = i.Material?.Category ?? "",
                 materialKind = i.Material?.MaterialKind ?? "",
                 storageUnit = i.Material?.StorageUnit ?? "",
+                centralStock = i.Material != null ? i.Material.StockQuantity.ToString("G29") : "0",
                 quantityRequested = i.QuantityRequested.ToString("G29"),
                 quantityReleased = i.QuantityReleased.HasValue ? i.QuantityReleased.Value.ToString("G29") : null,
                 quantityReceived = i.QuantityReceived.HasValue ? i.QuantityReceived.Value.ToString("G29") : null,

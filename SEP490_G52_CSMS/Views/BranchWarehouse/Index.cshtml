@@ -350,7 +350,7 @@
             <div class="modal-body p-4">
                 <div class="mb-3 position-relative">
                     <label class="form-label small fw-bold mb-1">Tên nguyên liệu <span class="text-danger">*</span></label>
-                    <input type="text" id="addMatName" class="form-control" placeholder="Nhập/ Tìm kiếm tên ngl..." autocomplete="off" oninput="searchCatalogSuggestions(this.value)" />
+                    <input type="text" id="addMatName" class="form-control" placeholder="Nhập/ Tìm kiếm tên ngl..." autocomplete="off" oninput="searchCatalogSuggestions(this.value)" onfocus="searchCatalogSuggestions(this.value)" onclick="searchCatalogSuggestions(this.value)" />
                     <div id="autocompleteResults" class="list-group position-absolute w-100 mt-1 shadow-sm d-none" style="z-index: 1050; max-height: 200px; overflow-y: auto;">
                         <!-- Autocomplete items -->
                     </div>
@@ -446,28 +446,27 @@
 
         // --- 2. AUTOCOMPLETE SUGGESTIONS ---
         let catalogList = [];
+        let selectedMaterialId = null;
 
         function prepareAddMaterialModal() {
+            selectedMaterialId = null;
             $('#addMatName').val('').removeClass('is-invalid');
             $('#addMatCategory').html('<option value="">-- Tự động điền --</option>').val('');
             $('#addMatKind').val('');
             $('#autocompleteResults').addClass('d-none').html('');
+            searchCatalogSuggestions('');
         }
 
         function searchCatalogSuggestions(term) {
-            if (!term.trim()) {
-                $('#autocompleteResults').addClass('d-none').html('');
-                return;
-            }
-
+            term = term || '';
             $.ajax({
                 url: '/BranchWarehouse/SearchCentralCatalog',
                 type: 'GET',
                 data: { term: term },
                 success: function(list) {
-                    catalogList = list;
+                    catalogList = list || [];
                     let items = "";
-                    list.forEach((item, index) => {
+                    catalogList.forEach((item, index) => {
                         items += `
                             <button type="button" class="list-group-item list-group-item-action py-2" onclick="selectSuggestion(${index})">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -477,17 +476,32 @@
                             </button>
                         `;
                     });
-                    if (list.length === 0) {
+                    if (catalogList.length === 0) {
                         items = '<div class="list-group-item text-muted small">Không tìm thấy nguyên liệu phù hợp trong kho tổng.</div>';
                     }
                     $('#autocompleteResults').removeClass('d-none').html(items);
+
+                    // Check exact match if user typed term
+                    if (term.trim()) {
+                        let exact = catalogList.find(c => c.materialName.toLowerCase() === term.trim().toLowerCase());
+                        if (exact) {
+                            selectedMaterialId = exact.materialId;
+                            $('#addMatCategory').html(`<option value="${exact.category}" selected>${exact.category}</option>`);
+                            $('#addMatKind').val(exact.materialKind);
+                            $('#addMatName').removeClass('is-invalid');
+                        }
+                    }
+                },
+                error: function() {
+                    $('#autocompleteResults').addClass('d-none').html('');
                 }
             });
         }
 
         function selectSuggestion(index) {
             let item = catalogList[index];
-            $('#addMatName').val(item.materialName);
+            selectedMaterialId = item.materialId;
+            $('#addMatName').val(item.materialName).removeClass('is-invalid');
             
             // Auto fill category and kind
             let catOpt = `<option value="${item.category}" selected>${item.category}</option>`;
@@ -509,7 +523,7 @@
             let name = $('#addMatName').val().trim();
             $('#addMatName').removeClass('is-invalid');
 
-            if (!name) {
+            if (!name && !selectedMaterialId) {
                 $('#addMatName').addClass('is-invalid');
                 $('#valAddMatName').text('Tên nguyên liệu là bắt buộc.');
                 return;
@@ -518,19 +532,27 @@
             $.ajax({
                 url: '/BranchWarehouse/RegisterBranchMaterial',
                 type: 'POST',
-                data: { materialName: name },
+                data: { 
+                    materialId: selectedMaterialId,
+                    materialName: name 
+                },
                 success: function(res) {
                     if (res.success) {
                         $('#addMaterialModal').modal('hide');
                         showToast(res.message, 'success');
-                        location.reload();
+                        setTimeout(() => location.reload(), 600);
                     } else {
                         $('#addMatName').addClass('is-invalid');
                         $('#valAddMatName').text(res.message);
+                        showToast(res.message, 'warning');
                     }
                 },
-                error: function() {
-                    showToast('Lỗi kết nối máy chủ.', 'danger');
+                error: function(xhr) {
+                    let errMsg = 'Lỗi kết nối máy chủ.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    showToast(errMsg, 'danger');
                 }
             });
         }

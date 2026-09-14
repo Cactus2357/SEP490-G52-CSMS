@@ -418,16 +418,19 @@
                         r.items.forEach(item => {
                             let stock = parseFloat(item.centralStock) || 0;
                             let requested = parseFloat(item.quantityRequested) || 0;
-                            let initialReleased = item.quantityReleased !== "" ? item.quantityReleased : Math.min(requested, stock);
+                            let initialReleased = (item.quantityReleased !== null && item.quantityReleased !== undefined && item.quantityReleased !== "") 
+                                ? item.quantityReleased 
+                                : Math.min(requested, stock);
                             let catText = item.category ? item.category : (item.materialKind || '');
                             if (item.category && item.materialKind) catText = `${item.category} (${item.materialKind})`;
+                            let stockDisplay = (item.centralStock !== undefined && item.centralStock !== null && item.centralStock !== "") ? item.centralStock : stock;
 
                             rows += `
-                                <tr class="item-row" data-id="${item.materialId}" data-requested="${item.quantityRequested}" data-stock="${item.centralStock}">
+                                <tr class="item-row" data-id="${item.materialId}" data-requested="${item.quantityRequested}" data-stock="${stock}">
                                     <td class="fw-bold">${item.materialName}</td>
                                     <td>${catText}</td>
                                     <td class="fw-semibold">${item.quantityRequested} ${item.storageUnit}</td>
-                                    <td class="text-secondary">${item.centralStock} ${item.storageUnit}</td>
+                                    <td class="text-secondary">${stockDisplay} ${item.storageUnit}</td>
                                     <td class="comparison-status text-muted">Chưa so sánh</td>
                                     <td>
                                         <div class="input-group input-group-sm" style="max-width: 140px;">
@@ -615,8 +618,8 @@
         // --- 3. STOCK COMPARISON ---
         function runStockComparison() {
             $('#releasedItemsTableBody tr').each(function() {
-                let requested = parseFloat($(this).attr('data-requested'));
-                let stock = parseFloat($(this).attr('data-stock'));
+                let requested = parseFloat($(this).attr('data-requested')) || 0;
+                let stock = parseFloat($(this).attr('data-stock')) || 0;
                 
                 let isEnough = stock >= requested;
                 let statusCell = $(this).find('.comparison-status');
