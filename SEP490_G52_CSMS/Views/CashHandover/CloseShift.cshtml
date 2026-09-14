@@ -72,14 +72,10 @@
                                         <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu CK (Không vào két):</td>
                                         <td class="pe-3 py-2 text-end fw-bold text-secondary fs-6">@Model.BankTransferRevenue.ToString("N0") đ</td>
                                     </tr>
-                                    <tr class="border-bottom">
-                                        <td class="ps-3 py-2 text-muted fw-semibold">Hoàn tiền mặt (Hủy món / Thiếu NL):</td>
-                                        <td class="pe-3 py-2 text-end fw-bold text-danger fs-6">-@Model.CashRefundAmount.ToString("N0") đ</td>
-                                    </tr>
                                     <tr class="table-primary border-top">
                                         <td class="ps-3 py-2.5 text-primary">
                                             <span class="fw-bold d-block">☑ Tổng tiền mặt lý thuyết trong két:</span>
-                                            <small class="text-muted d-block font-monospace" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt - Hoàn tiền mặt)</small>
+                                            <small class="text-muted d-block font-monospace" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
                                         </td>
                                         <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="displayTheoretical">
                                             @Model.TheoreticalCash.ToString("N0") đ
@@ -220,8 +216,7 @@
     <script>
         const initialCash   = @Model.InitialCash;
         const machineRevenue = @Model.MachineCashRevenue;
-        const cashRefund    = @Model.CashRefundAmount;
-        const theoretical   = initialCash + machineRevenue - cashRefund;
+        const theoretical   = initialCash + machineRevenue;
 
         const actualDisplay    = document.getElementById('actualCashDisplay');
         const actualInput      = document.getElementById('actualCashInput');

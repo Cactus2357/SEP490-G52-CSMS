@@ -95,7 +95,7 @@
 
                                 <tr class="@rowStyle" data-code="@item.RequestCode">
                                     <td class="ps-3 fw-bold">@item.RequestCode</td>
-                                    <td>@item.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm")</td>
                                     <td>@item.Branch?.BranchName</td>
                                     <td class="status-cell"><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
                                     <td class="text-center pe-3">
@@ -262,8 +262,8 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold text-muted text-uppercase mb-1">Số điện thoại tài xế <span class="text-danger">*</span></label>
-                                    <input type="text" id="shipDelivererPhone" class="form-control form-control-sm" placeholder="Số điện thoại tài xế..." />
-                                    <div class="invalid-feedback" id="valShipDelivererPhone">Vui lòng nhập số điện thoại.</div>
+                                    <input type="tel" id="shipDelivererPhone" class="form-control form-control-sm" placeholder="VD: 0912345678" pattern="^0\d{9}$" maxlength="10" />
+                                    <div class="invalid-feedback" id="valShipDelivererPhone">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đơn vị VC / Biển số xe</label>
@@ -790,9 +790,10 @@
                 showToast('Vui lòng nhập họ tên người vận chuyển / tài xế.', 'warning');
                 return;
             }
-            if (!delPhone) {
+            const phoneRegex = /^0\d{9}$/;
+            if (!delPhone || !phoneRegex.test(delPhone)) {
                 $('#shipDelivererPhone').addClass('is-invalid');
-                showToast('Vui lòng nhập số điện thoại người vận chuyển.', 'warning');
+                showToast('Số điện thoại người vận chuyển không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).', 'warning');
                 return;
             }
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Repositories.Interfaces;
@@ -60,6 +61,11 @@ namespace SEP490_G52_CSMS.Services
             if (string.IsNullOrWhiteSpace(model.ReceiverPhone))
             {
                 return (false, "Vui lòng nhập số điện thoại người nhận hàng.", null);
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.ReceiverPhone.Trim(), @"^0\d{9}$"))
+            {
+                return (false, "Số điện thoại người nhận không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).", null);
             }
 
             if (model.ExpectedDeliveryDate.HasValue && model.ExpectedDeliveryDate.Value.Date < DateTime.Today)
@@ -433,20 +439,20 @@ namespace SEP490_G52_CSMS.Services
             {
                 requestCode = req.RequestCode,
                 status = req.Status,
-                requestDate = req.RequestDate.ToString("dd/MM/yyyy HH:mm"),
+                requestDate = req.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm"),
                 expectedDeliveryDate = req.ExpectedDeliveryDate.HasValue ? req.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy") : null,
                 receiverName = req.ReceiverName ?? "",
                 receiverPhone = req.ReceiverPhone ?? "",
                 requestNote = req.RequestNote ?? "",
                 approvedBy = req.ApprovedBy ?? "Chưa duyệt",
-                approvedDate = req.ApprovedDate.HasValue ? req.ApprovedDate.Value.ToString("dd/MM/yyyy HH:mm") : null,
+                approvedDate = req.ApprovedDate.HasValue ? req.ApprovedDate.Value.ToVietnamTimeString("dd/MM/yyyy HH:mm") : null,
                 delivererName = req.DelivererName ?? "",
                 delivererPhone = req.DelivererPhone ?? "",
                 deliveryProvider = req.DeliveryProvider ?? "",
-                receivedDate = req.ReceivedDate.HasValue ? req.ReceivedDate.Value.ToString("dd/MM/yyyy HH:mm") : null,
+                receivedDate = req.ReceivedDate.HasValue ? req.ReceivedDate.Value.ToVietnamTimeString("dd/MM/yyyy HH:mm") : null,
                 warehouseNote = req.WarehouseNote ?? "",
                 inspectedBy = req.InspectedBy ?? "",
-                inspectedAt = req.InspectedAt.HasValue ? req.InspectedAt.Value.ToString("dd/MM/yyyy HH:mm") : null,
+                inspectedAt = req.InspectedAt.HasValue ? req.InspectedAt.Value.ToVietnamTimeString("dd/MM/yyyy HH:mm") : null,
                 inspectionStatus = req.InspectionStatus ?? "",
                 items = itemsResult
             };
@@ -504,6 +510,11 @@ namespace SEP490_G52_CSMS.Services
             if (string.IsNullOrWhiteSpace(delivererPhone))
             {
                 return (false, "Vui lòng nhập số điện thoại người vận chuyển để chi nhánh liên hệ.");
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(delivererPhone.Trim(), @"^0\d{9}$"))
+            {
+                return (false, "Số điện thoại người vận chuyển không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).");
             }
 
             var req = await _repository.GetRequestByCodeAsync(requestCode);

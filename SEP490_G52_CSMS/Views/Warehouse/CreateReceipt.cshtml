@@ -23,7 +23,8 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase text-muted">Số điện thoại</label>
-                        <input type="text" id="delivererPhone" class="form-control" placeholder="Số điện thoại..." maxlength="15" />
+                        <input type="tel" id="delivererPhone" class="form-control" placeholder="VD: 0912345678" pattern="^0\d{9}$" maxlength="10" />
+                        <div class="invalid-feedback" id="valDelivererPhone">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-uppercase text-muted">Thời gian nhập kho</label>
@@ -326,6 +327,15 @@
 
             if (!name) {
                 $('#delivererName').addClass('is-invalid');
+                return;
+            }
+
+            let phone = $('#delivererPhone').val().trim();
+            $('#delivererPhone').removeClass('is-invalid');
+            const phoneRegex = /^0\d{9}$/;
+            if (phone && !phoneRegex.test(phone)) {
+                $('#delivererPhone').addClass('is-invalid');
+                showToast('Số điện thoại người giao không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).', 'warning');
                 return;
             }
 

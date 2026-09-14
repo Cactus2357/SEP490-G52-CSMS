@@ -230,6 +230,13 @@
                     </div>
 
                     <div class="d-grid gap-2">
+                        @if (initialCashPaid > 0)
+                        {
+                            <button type="button" class="btn btn-warning fw-bold text-dark py-2.5 shadow-sm" onclick="openCollectRemainingCashModal()">
+                                <i class="bi bi-cash-stack me-1"></i>Thu nốt tiền mặt (@remainingTransfer.ToString("N0") đ) &amp; Hoàn tất đơn
+                            </button>
+                        }
+
                         <button type="button" class="btn btn-success fw-bold py-2.5 shadow-sm" onclick="confirmManualBankTransfer()">
                             <i class="bi bi-qr-code-scan me-2"></i>Xác nhận đã nhận chuyển khoản
                         </button>
@@ -264,13 +271,20 @@
                         <span class="text-muted">Tổng giá trị đơn hàng:</span>
                         <strong class="text-dark font-monospace text-end">@Model.TotalAmount.ToString("N0") đ</strong>
                     </div>
-                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                    @if (initialCashPaid > 0)
+                    {
+                        <div class="d-flex justify-content-between align-items-baseline mb-1">
+                            <span class="text-muted">Đã thu tiền mặt trước:</span>
+                            <strong class="text-primary font-monospace text-end">@initialCashPaid.ToString("N0") đ</strong>
+                        </div>
+                    }
+                    <div class="d-flex justify-content-between align-items-baseline mb-1" id="modalBankReceivedRow">
                         <span class="text-muted">Đã nhận chuyển khoản:</span>
                         <strong class="text-success font-monospace text-end" id="modalReceivedBank">0 đ</strong>
                     </div>
                     <hr class="my-1" />
                     <div class="d-flex justify-content-between align-items-baseline fs-5">
-                        <span class="fw-bold text-danger">Tiền mặt cần thu:</span>
+                        <span class="fw-bold text-danger">Tiền mặt cần thu nốt:</span>
                         <strong class="fw-bold text-danger font-monospace text-end" id="modalRemainingCash">0 đ</strong>
                     </div>
                 </div>
@@ -350,7 +364,7 @@
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
                 <h6 class="modal-title fw-bold text-dark mb-0">
-                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Giao (K80)
+                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Đặt Đồ (K80)
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -361,7 +375,7 @@
                         <i class="bi bi-receipt me-1"></i>Hóa đơn thanh toán
                     </button>
                     <button type="button" class="btn btn-outline-primary fw-semibold" id="btnModeDelivery" onclick="switchReceiptMode('delivery')">
-                        <i class="bi bi-ticket-detailed me-1"></i>Phiếu giao đồ (kẹp khay)
+                        <i class="bi bi-ticket-detailed me-1"></i>Phiếu đặt đồ (kẹp khay)
                     </button>
                 </div>
 
@@ -464,7 +478,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-dark btn-sm fw-semibold" onclick="switchReceiptMode(currentReceiptMode === 'receipt' ? 'delivery' : 'receipt')">
-                        <i class="bi bi-arrow-repeat me-1"></i><span id="btnToggleModeLabel">Đổi sang Phiếu giao</span>
+                        <i class="bi bi-arrow-repeat me-1"></i><span id="btnToggleModeLabel">Đổi sang Phiếu đặt đồ</span>
                     </button>
                     <button type="button" class="btn btn-primary btn-sm px-3 fw-bold" onclick="window.print()">
                         <i class="bi bi-printer me-1"></i>In ngay (Print)
@@ -633,7 +647,17 @@
         }
 
         function openCollectRemainingCashModal() {
-            document.getElementById('modalReceivedBank').innerText = formatMoney(currentBankAmount);
+            var bankRow = document.getElementById('modalBankReceivedRow');
+            if (bankRow) {
+                if (currentBankAmount > 0) {
+                    bankRow.classList.remove('d-none');
+                    document.getElementById('modalReceivedBank').innerText = formatMoney(currentBankAmount);
+                } else if (initialCashPaid > 0) {
+                    bankRow.classList.add('d-none');
+                } else {
+                    document.getElementById('modalReceivedBank').innerText = '0 đ';
+                }
+            }
             document.getElementById('modalRemainingCash').innerText = formatMoney(currentRemainingAmount);
 
             var cashInput = document.getElementById('splitCustomerCashInput');
@@ -704,10 +728,11 @@
                 return;
             }
             var change = Math.max(0, cash - currentRemainingAmount);
+            var totalCashForOrder = initialCashPaid > 0 ? (initialCashPaid + currentRemainingAmount) : currentRemainingAmount;
 
             var payload = {
                 orderId: orderId,
-                cashAmount: currentRemainingAmount,
+                cashAmount: totalCashForOrder,
                 bankAmount: currentBankAmount,
                 customerCash: cash,
                 changeAmount: change,
@@ -793,31 +818,48 @@
         }
 
         function cancelPayment() {
-            if (currentBankAmount > 0 || initialCashPaid > 0) {
-                showToast("Đơn hàng đã nhận tiền thanh toán (" + (initialCashPaid > 0 ? "Tiền mặt: " + formatMoney(initialCashPaid) : "") + (currentBankAmount > 0 ? " Chuyển khoản: " + formatMoney(currentBankAmount) : "") + "). Không thể hủy đơn trực tiếp!", "warning");
+            if (currentBankAmount > 0) {
+                showToast("Đơn hàng đã nhận tiền chuyển khoản (" + formatMoney(currentBankAmount) + "). Vui lòng thu nốt tiền mặt phần còn thiếu để hoàn tất đơn!", "warning");
                 return;
             }
 
+            var confirmTitle = initialCashPaid > 0 ? 'Hủy giao dịch & Hoàn tiền mặt' : 'Hủy giao dịch';
+            var confirmMsg = initialCashPaid > 0 
+                ? 'Đơn hàng đã thu trước ' + formatMoney(initialCashPaid) + ' tiền mặt. Bạn có chắc chắn muốn hủy giao dịch chuyển khoản này, hoàn trả lại ' + formatMoney(initialCashPaid) + ' tiền mặt cho khách và quay lại màn hình chọn phương thức thanh toán?'
+                : 'Xác nhận hủy giao dịch chuyển khoản này và quay lại màn hình chọn phương thức thanh toán?';
+            var confirmBtnText = initialCashPaid > 0 ? 'Xác nhận hủy & Trả lại tiền' : 'Xác nhận hủy';
+
             showConfirmModal(
-                'Hủy giao dịch',
-                'Xác nhận hủy giao dịch chuyển khoản này và quay lại màn hình chọn phương thức thanh toán?',
+                confirmTitle,
+                confirmMsg,
                 function() {
                     clearInterval(pollInterval);
                     fetch('@Url.Action("CancelBankTransfer", "SaleManagement")?orderId=' + orderId, {
                         method: 'POST'
                     })
-                    .then(() => {
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && !data.success) {
+                            showToast(data.message || "Không thể hủy giao dịch.", "danger");
+                            return;
+                        }
+
                         // Reset Customer Monitor
-                        localStorage.setItem('customer_display_state', JSON.stringify({
-                            mode: 'Idle'
-                        }));
+                        try {
+                            localStorage.setItem('customer_display_state', JSON.stringify({
+                                mode: 'Idle'
+                            }));
+                        } catch(e) {}
+
                         window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
                     })
                     .catch(err => {
                         console.error(err);
                         window.location.href = '@Url.Action("CreateOrder", "SaleManagement")?orderId=' + orderId + '&showCheckout=true';
                     });
-                }
+                },
+                confirmBtnText,
+                'Quay lại'
             );
         }
 
@@ -872,19 +914,19 @@
                 if (btnRec) { btnRec.className = 'btn btn-outline-primary fw-semibold'; }
                 if (btnDel) { btnDel.className = 'btn btn-primary fw-semibold'; }
                 if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Hóa đơn'; }
-                if (docTitle) { docTitle.innerText = 'PHIẾU GIAO ĐỒ (DELIVERY TICKET)'; }
+                if (docTitle) { docTitle.innerText = 'PHIẾU ĐẶT ĐỒ'; }
                 if (badgeBox) { badgeBox.classList.remove('d-none'); }
                 if (stdTableRow) { stdTableRow.classList.add('d-none'); }
                 if (stdCustRow) { stdCustRow.classList.add('d-none'); }
                 if (finSec) { finSec.classList.add('d-none'); }
                 if (paySec) { paySec.classList.add('d-none'); }
                 if (delTotalBox) { delTotalBox.classList.remove('d-none'); }
-                if (footerText) { footerText.innerHTML = '<div>CSMS - Vui lòng kiểm tra đủ món trước khi giao!</div>'; }
+                if (footerText) { footerText.innerHTML = '<div>Powered by CSMS.vn</div>'; }
                 priceCols.forEach(el => el.classList.add('d-none'));
             } else {
                 if (btnRec) { btnRec.className = 'btn btn-primary fw-semibold'; }
                 if (btnDel) { btnDel.className = 'btn btn-outline-primary fw-semibold'; }
-                if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Phiếu giao'; }
+                if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Phiếu đặt đồ'; }
                 if (docTitle) { docTitle.innerText = 'HÓA ĐƠN THANH TOÁN'; }
                 if (badgeBox) { badgeBox.classList.add('d-none'); }
                 if (stdTableRow) { stdTableRow.classList.remove('d-none'); }

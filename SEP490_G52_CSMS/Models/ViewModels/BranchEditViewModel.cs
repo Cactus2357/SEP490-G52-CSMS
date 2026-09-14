@@ -17,7 +17,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public string Address { get; set; } = string.Empty;
 
         [Display(Name = "Số điện thoại")]
-        [RegularExpression(@"^(0[3|5|7|8|9])[0-9]{8}$", ErrorMessage = "Số điện thoại phải là số di động Việt Nam hợp lệ (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).")]
+        [RegularExpression(@"^0\d{9}$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0 (VD: 0912345678).")]
         [StringLength(20, ErrorMessage = "Số điện thoại không được quá 20 ký tự.")]
         public string? PhoneNumber { get; set; }
 

@@ -503,32 +503,6 @@ namespace SEP490_G52_CSMS.Controllers
             return BadRequest(new { success = false, message = "Thanh toán thất bại" });
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ProcessRefund([FromBody] RefundRequestModel model)
-        {
-            if (model == null || string.IsNullOrEmpty(model.OrderId))
-            {
-                return BadRequest(new { success = false, message = "Mã đơn hàng không hợp lệ." });
-            }
-
-            var cashierId = await GetUserCashierIdAsync();
-            var branchId = await GetUserBranchIdAsync();
-
-            // Enforce that only a cashier currently on an active, open shift can process refunds
-            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
-            if (!isEligible)
-            {
-                return BadRequest(new { success = false, message = $"Chỉ thu ngân đang trong ca làm việc chính thức mới được phép thực hiện hoàn tiền! ({message})" });
-            }
-
-            var (success, refundMsg) = await _orderService.ProcessRefundCashAsync(model.OrderId, model.RefundAmount, model.Reason ?? "Hoàn tiền do thiếu nguyên liệu/hủy món", cashierId);
-            if (success)
-            {
-                return Json(new { success = true, message = refundMsg });
-            }
-            return BadRequest(new { success = false, message = refundMsg });
-        }
-
         [HttpGet]
         public async Task<IActionResult> BankTransferPayment(string orderId)
         {
@@ -754,7 +728,11 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (!string.IsNullOrEmpty(orderId))
             {
-                var order = await _context.Orders.Include(o => o.Payments).Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.OrderId == orderId);
+                var order = await _context.Orders
+                    .Include(o => o.Payments)
+                    .Include(o => o.OrderItems)
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
                 if (order != null)
                 {
                     var now = order.CreatedAt.Kind == DateTimeKind.Utc ? DateTime.UtcNow : DateTime.Now;
@@ -763,17 +741,29 @@ namespace SEP490_G52_CSMS.Controllers
                         return BadRequest(new { success = false, message = "Không thể hủy đơn hàng đã tạo quá 1 ngày (quá 24 giờ)." });
                     }
 
-                    if (order.PaymentStatus == "PartiallyPaid" || order.BankPaid > 0 || order.CashPaid > 0)
+                    if (order.PaymentStatus == "Paid" || order.PaymentStatus == "Completed")
                     {
-                        return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.PaidAmount:N0}đ thanh toán từ khách hàng. Không thể hủy đơn trực tiếp mà phải xử lý hoàn tất hoặc hoàn tiền!" });
+                        return BadRequest(new { success = false, message = "Đơn hàng đã thanh toán hoàn tất. Không thể hủy giao dịch chuyển khoản!" });
                     }
 
-                    if (order.PaymentStatus == "Unpaid" || order.PaymentStatus == "Cancelled")
+                    if (order.BankPaid > 0)
+                    {
+                        return BadRequest(new { success = false, message = $"Đơn hàng đã nhận {order.BankPaid:N0}đ chuyển khoản từ ngân hàng của khách. Vui lòng thu nốt tiền mặt phần còn thiếu hoặc xử lý qua quản lý!" });
+                    }
+
+                    // Xóa các giao dịch thanh toán dở dang (ví dụ tiền mặt thu trước khi chuyển khoản nốt)
+                    if (order.Payments != null && order.Payments.Any())
+                    {
+                        _context.Payments.RemoveRange(order.Payments);
+                    }
+
+                    if (order.OrderItems != null && order.OrderItems.Any())
                     {
                         _context.OrderItems.RemoveRange(order.OrderItems);
-                        _context.Orders.Remove(order);
-                        await _context.SaveChangesAsync();
                     }
+
+                    _context.Orders.Remove(order);
+                    await _context.SaveChangesAsync();
                 }
             }
             return Json(new { success = true });
@@ -805,7 +795,7 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             order.PaymentStatus = "Cancelled";
-            order.BrewingStatus = "Cancelled / Refunded";
+            order.BrewingStatus = "Cancelled";
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Đã hủy đơn hàng chưa thanh toán." });
@@ -817,7 +807,6 @@ namespace SEP490_G52_CSMS.Controllers
             var cashierId = await GetUserCashierIdAsync();
             var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
 
-            ViewBag.CanRefund = isEligible;
             ViewBag.IneligibleReason = message;
 
             var vm = await _orderService.GetOrderHistoryAsync(branchId, status, fromDate, toDate, search, page);
@@ -834,7 +823,6 @@ namespace SEP490_G52_CSMS.Controllers
             var cashierId = await GetUserCashierIdAsync();
             var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
 
-            ViewBag.CanRefund = isEligible;
             ViewBag.IneligibleReason = message;
 
             return PartialView("_OrderDetailPartial", details);
@@ -897,7 +885,6 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { 
                     success = true, 
                     message = result.message, 
-                    refundDifference = result.refundDifference, 
                     additionalAmount = result.additionalAmount 
                 });
             }
@@ -958,13 +945,6 @@ namespace SEP490_G52_CSMS.Controllers
     {
         public string VoucherCode { get; set; } = string.Empty;
         public decimal Subtotal { get; set; }
-    }
-
-    public class RefundRequestModel
-    {
-        public string OrderId { get; set; } = string.Empty;
-        public decimal RefundAmount { get; set; }
-        public string? Reason { get; set; }
     }
 
     public class OrderSubmissionModel

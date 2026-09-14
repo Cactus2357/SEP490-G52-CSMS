@@ -95,7 +95,14 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             setting.BranchDisplayName = string.IsNullOrWhiteSpace(model.BranchDisplayName) ? "CSMS Coffee" : model.BranchDisplayName.Trim();
-            setting.ContactPhone = string.IsNullOrWhiteSpace(model.ContactPhone) ? "" : model.ContactPhone.Trim();
+            
+            var phone = model.ContactPhone?.Trim() ?? "";
+            if (!string.IsNullOrEmpty(phone) && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0\d{9}$"))
+            {
+                TempData["ErrorMessage"] = "Số điện thoại không hợp lệ! Vui lòng nhập đúng định dạng 10 chữ số bắt đầu bằng số 0 (VD: 0912345678).";
+                return RedirectToAction(nameof(Index), new { activeTab = "general" });
+            }
+            setting.ContactPhone = phone;
             setting.Address = string.IsNullOrWhiteSpace(model.Address) ? "" : model.Address.Trim();
             setting.AutoPrintReceipt = model.AutoPrintReceipt;
             setting.EnableSoundNotification = model.EnableSoundNotification;

@@ -119,7 +119,7 @@
 
                                 <div class="upd-mb">
                                     <label class="upd-lbl" for="updatePhoneNumber">Số điện thoại *</label>
-                                    <input type="tel" class="upd-input" name="PhoneNumber" id="updatePhoneNumber" value="@Model.PhoneNumber" required />
+                                    <input type="tel" class="upd-input" name="PhoneNumber" id="updatePhoneNumber" value="@Model.PhoneNumber" pattern="^0\d{9}$" maxlength="10" placeholder="VD: 0912345678" required />
                                 </div>
 
                                 <div class="upd-mb">

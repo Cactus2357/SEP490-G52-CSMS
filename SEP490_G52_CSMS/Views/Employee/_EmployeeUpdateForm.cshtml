@@ -78,7 +78,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="updPhoneNumber" class="form-label fw-bold">Số điện thoại *</label>
-                            <input type="tel" class="form-control rounded-3" id="updPhoneNumber" name="PhoneNumber" value="@Model.PhoneNumber" required />
+                            <input type="tel" class="form-control rounded-3" id="updPhoneNumber" name="PhoneNumber" value="@Model.PhoneNumber" pattern="^0\d{9}$" maxlength="10" placeholder="VD: 0912345678" required />
+                            <div class="invalid-feedback">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
                         </div>
                         <div class="mb-3">
                             <label for="updEmail" class="form-label fw-bold">Email *</label>

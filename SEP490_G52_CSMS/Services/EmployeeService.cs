@@ -58,6 +58,8 @@ namespace SEP490_G52_CSMS.Services
                     return new EmployeeCreationResult { Success = false, ErrorMessage = "Email không được để trống." };
                 if (string.IsNullOrWhiteSpace(phoneNumber))
                     return new EmployeeCreationResult { Success = false, ErrorMessage = "Số điện thoại không được để trống." };
+                if (!System.Text.RegularExpressions.Regex.IsMatch(phoneNumber, @"^0\d{9}$"))
+                    return new EmployeeCreationResult { Success = false, ErrorMessage = "Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0)." };
                 if (string.IsNullOrWhiteSpace(citizenId) || citizenId.Length != 12)
                     return new EmployeeCreationResult { Success = false, ErrorMessage = "Số CCCD phải đúng 12 chữ số." };
 
@@ -228,6 +230,10 @@ namespace SEP490_G52_CSMS.Services
                 if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
                 {
                     string phone = dto.PhoneNumber.Trim();
+                    if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0\d{9}$"))
+                    {
+                        return new EmployeeUpdateResult { Success = false, ErrorMessage = "Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0)." };
+                    }
                     if (await _repository.ExistsPhoneNumberExcludeSelfAsync(phone, employeeId))
                     {
                         return new EmployeeUpdateResult { Success = false, ErrorMessage = "Số điện thoại đã tồn tại trên hệ thống." };

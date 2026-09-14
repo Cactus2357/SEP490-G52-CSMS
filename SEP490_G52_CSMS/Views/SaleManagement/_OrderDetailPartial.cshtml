@@ -71,12 +71,6 @@
                         <i class="bi bi-exclamation-octagon-fill me-1"></i>Thiếu nguyên liệu (Chờ xử lý)
                     </span>
                 }
-                else if (Model.DisplayStatus == "Hoàn tiền 1 phần" || (Model.RefundAmount > 0 && Model.RefundAmount < Model.TotalAmount))
-                {
-                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-semibold">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn tiền 1 phần
-                    </span>
-                }
                 else if (Model.BrewingStatus == "Delivered" || Model.DisplayStatus == "Đã giao hàng")
                 {
                     <span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill fw-bold">
@@ -95,10 +89,10 @@
                         <i class="bi bi-check-circle-fill me-1"></i>Hoàn thành
                     </span>
                 }
-                else if (Model.DisplayStatus.Contains("Hoàn tiền") || Model.DisplayStatus.Contains("hủy") || Model.PaymentStatus == "Cancelled" || Model.RefundAmount >= Model.TotalAmount)
+                else if (Model.DisplayStatus.Contains("hủy") || Model.PaymentStatus == "Cancelled" || Model.BrewingStatus == "Cancelled")
                 {
                     <span class="badge bg-secondary text-white px-2.5 py-1 rounded-pill fw-semibold">
-                        <i class="bi bi-x-circle-fill me-1"></i>Đã hủy / Hoàn tiền
+                        <i class="bi bi-x-circle-fill me-1"></i>Đã hủy
                     </span>
                 }
                 else if (Model.PaymentStatus == "Unpaid" || Model.DisplayStatus == "Chờ thanh toán")
@@ -157,26 +151,9 @@
                 <div class="small text-dark mb-2">
                     @(string.IsNullOrEmpty(Model.MissingIngredientsDetail) ? "Món trong đơn bị thiếu nguyên liệu pha chế." : Model.MissingIngredientsDetail)
                 </div>
-                <div class="p-2 bg-white rounded border border-danger-subtle d-flex justify-content-between align-items-center">
-                    <span class="small fw-semibold text-muted">Số tiền cần hoàn (Cả đơn hàng):</span>
-                    <strong class="text-danger fs-6">@Model.TotalAmount.ToString("N0") đ</strong>
-                </div>
                 <div class="small text-muted mt-2 fst-italic">
-                    * Thu ngân thực hiện hủy toàn bộ đơn này và hoàn lại tiền mặt cho khách. Khách có thể tạo lại order mới nếu cần.
+                    * Thu ngân vui lòng tư vấn khách đổi sang món khác có giá trị tương đương hoặc lớn hơn để tiếp tục pha chế.
                 </div>
-            </div>
-        }
-
-        @if (Model.RefundAmount > 0)
-        {
-            <div class="alert alert-danger p-2.5 mt-2 mb-0 rounded small">
-                <div class="fw-bold mb-1"><i class="bi bi-arrow-return-left me-1"></i>ĐÃ HOÀN TIỀN MẶT: -@Model.RefundAmount.ToString("N0") đ</div>
-                <div>- Lý do: <em>@Model.RefundReason</em></div>
-                @if (Model.RefundedAt.HasValue)
-                {
-                    <div>- Thời gian hoàn: @Model.RefundedAt.Value.ToString("HH:mm dd/MM/yyyy")</div>
-                }
-                <div class="text-muted mt-1">(Số tiền hoàn đã được tự động trừ vào két tiền ca hiện tại)</div>
             </div>
         }
     </div>
@@ -237,16 +214,12 @@
     </div>
 
     @{
-        bool canRefund = ViewBag.CanRefund ?? true;
-        string ineligibleMsg = ViewBag.IneligibleReason ?? "Chỉ thu ngân đang trong ca làm việc chính thức mới được phép thực hiện hoàn tiền / sửa đơn!";
         bool isOlderThanOneDay = (DateTime.Now - Model.OrderTime).TotalHours > 24;
-        bool isPartiallyRefunded = (Model.RefundAmount > 0 && Model.RefundAmount < Model.TotalAmount && !Model.IsMissingIngredients);
-        bool isFullyCancelledOrRefunded = (Model.RefundAmount >= Model.TotalAmount || Model.DisplayStatus.Contains("hủy") || Model.DisplayStatus.Contains("Hoàn tiền") || Model.PaymentStatus == "Cancelled");
+        bool isCancelled = (Model.DisplayStatus.Contains("hủy") || Model.PaymentStatus == "Cancelled" || Model.BrewingStatus == "Cancelled");
         bool isUnpaid = (Model.PaymentStatus == "Unpaid" || Model.DisplayStatus == "Chờ thanh toán");
         bool isPartiallyPaid = (Model.PaymentStatus == "PartiallyPaid" || Model.DisplayStatus == "Thanh toán 1 phần");
         bool isDelivered = (Model.BrewingStatus == "Delivered" || Model.DisplayStatus == "Đã giao hàng");
         bool isDone = !isDelivered && (Model.BrewingStatus == "Completed" || Model.BrewingStatus == "Done" || Model.DisplayStatus == "Đã pha chế xong");
-        decimal remainingRefundable = Model.TotalAmount - Model.RefundAmount;
         decimal remainingDue = Math.Max(0, Model.TotalAmount - Model.BankAmount);
     }
 
@@ -255,52 +228,17 @@
         <div class="mt-3 flex-shrink-0">
             @if (isOlderThanOneDay)
             {
-                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-clock-history me-1'></i> Đã quá 1 ngày" data-bs-content="Không thể hủy đơn hoặc hoàn tiền cho đơn hàng đã tạo quá 1 ngày (quá 24 giờ).">
+                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-clock-history me-1'></i> Đã quá 1 ngày" data-bs-content="Không thể sửa đơn hàng đã tạo quá 1 ngày (quá 24 giờ).">
                     <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
-                        <i class="bi bi-clock-history me-1"></i>Hủy đơn thiếu nguyên liệu (Đã quá 1 ngày)
+                        <i class="bi bi-clock-history me-1"></i>Đổi món thiếu nguyên liệu (Đã quá 1 ngày)
                     </button>
                 </span>
-            }
-            else if (canRefund)
-            {
-                <button type="button" class="btn btn-danger fw-bold py-2.5 w-100 shadow-sm" onclick="triggerRefundForOrder('@Model.OrderId', @Model.TotalAmount)">
-                    <i class="bi bi-x-circle-fill me-1.5"></i> Hủy toàn bộ đơn hàng &amp; Hoàn tiền mặt (@Model.TotalAmount.ToString("N0") đ)
-                </button>
             }
             else
             {
-                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-lock-fill me-1'></i> Không thể hủy đơn" data-bs-content="Chỉ thu ngân đang trong ca làm việc chính thức mới được phép hủy đơn / hoàn tiền mặt.<br><small class='text-muted'>Lý do: @ineligibleMsg</small>">
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
-                        <i class="bi bi-lock-fill me-1"></i>Hủy đơn thiếu nguyên liệu (Chưa trong ca trực)
-                    </button>
-                </span>
-            }
-        </div>
-    }
-    else if (isPartiallyRefunded)
-    {
-        <div class="mt-3 flex-shrink-0">
-            @if (isOlderThanOneDay)
-            {
-                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-clock-history me-1'></i> Đã quá 1 ngày" data-bs-content="Không thể hủy đơn hoặc hoàn tiền cho đơn hàng đã tạo quá 1 ngày (quá 24 giờ).">
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
-                        <i class="bi bi-clock-history me-1"></i>Hoàn tiền phần còn lại (Đã quá 1 ngày)
-                    </button>
-                </span>
-            }
-            else if (canRefund)
-            {
-                <button type="button" class="btn btn-outline-danger btn-sm w-100 fw-semibold py-2 shadow-sm" onclick="triggerRefundForOrder('@Model.OrderId', @remainingRefundable)">
-                    <i class="bi bi-cash-stack me-1"></i>Hoàn tiền phần còn lại (@remainingRefundable.ToString("N0") đ)
+                <button type="button" class="btn btn-primary fw-bold py-2.5 w-100 shadow-sm" onclick="openExchangeModal('@Model.OrderId')">
+                    <i class="bi bi-arrow-repeat me-1.5"></i> Đổi món / Sửa đơn hàng thiếu nguyên liệu
                 </button>
-            }
-            else
-            {
-                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-lock-fill me-1'></i> Không thể hoàn tiền" data-bs-content="Chỉ thu ngân đang trong ca làm việc chính thức mới được phép hoàn tiền mặt.<br><small class='text-muted'>Lý do: @ineligibleMsg</small>">
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
-                        <i class="bi bi-lock-fill me-1"></i>Hoàn tiền phần còn lại (Chưa trong ca trực)
-                    </button>
-                </span>
             }
         </div>
     }
@@ -334,7 +272,15 @@
             </a>
         </div>
     }
-    else if (!isFullyCancelledOrRefunded)
+    else if (isCancelled)
+    {
+        <div class="mt-3 flex-shrink-0">
+            <div class="alert alert-secondary text-center py-2 px-3 mb-0 rounded-3 shadow-sm">
+                <span class="fw-semibold text-secondary"><i class="bi bi-x-circle me-1"></i> Đơn hàng đã bị hủy</span>
+            </div>
+        </div>
+    }
+    else
     {
         <div class="mt-3 flex-shrink-0 d-flex flex-column gap-2">
             @if (isDelivered)
@@ -345,54 +291,16 @@
             }
             else if (isDone)
             {
-                @if (canRefund)
-                {
-                    <button type="button" class="btn btn-success fw-bold py-2 w-100 shadow-sm" onclick="markDeliveredOrder('@Model.OrderId')">
-                        <i class="bi bi-box-seam me-1.5"></i> Xác nhận đã giao hàng cho khách
-                    </button>
-                }
-                else
-                {
-                    <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-lock-fill me-1'></i> Không thể thao tác" data-bs-content="Chỉ thu ngân đang trong ca làm việc chính thức mới được phép giao hàng.<br><small class='text-muted'>Lý do: @ineligibleMsg</small>">
-                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
-                            <i class="bi bi-lock-fill me-1"></i> Xác nhận đã giao hàng (Chưa trong ca trực)
-                        </button>
-                    </span>
-                }
-            }
-
-            @if (isOlderThanOneDay)
-            {
-                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-clock-history me-1'></i> Đã quá 1 ngày" data-bs-content="Không thể hủy đơn hoặc hoàn tiền cho đơn hàng đã tạo quá 1 ngày (quá 24 giờ).">
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
-                        <i class="bi bi-clock-history me-1"></i>Không thể hủy / hoàn tiền (Đã quá 1 ngày)
-                    </button>
-                </span>
-            }
-            else if (canRefund)
-            {
-                <button type="button" class="btn btn-outline-danger btn-sm w-100 fw-semibold py-2 shadow-sm" onclick="triggerRefundForOrder('@Model.OrderId', @Model.TotalAmount)">
-                    <i class="bi bi-x-circle me-1"></i>Hủy đơn hàng &amp; Hoàn tiền mặt (@Model.TotalAmount.ToString("N0") đ)
+                <button type="button" class="btn btn-success fw-bold py-2 w-100 shadow-sm" onclick="markDeliveredOrder('@Model.OrderId')">
+                    <i class="bi bi-box-seam me-1.5"></i> Xác nhận đã giao hàng cho khách
                 </button>
             }
             else
             {
-                <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-lock-fill me-1'></i> Không thể hủy đơn" data-bs-content="Chỉ thu ngân đang trong ca làm việc chính thức mới được phép hủy đơn / hoàn tiền mặt.<br><small class='text-muted'>Lý do: @ineligibleMsg</small>">
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-75" disabled style="pointer-events: none;">
-                        <i class="bi bi-lock-fill me-1"></i>Hủy đơn hàng (Không đủ điều kiện ca làm)
-                    </button>
-                </span>
+                <div class="alert alert-info border-info text-center py-2 px-3 mb-0 rounded-3 shadow-sm">
+                    <span class="fw-medium text-info-emphasis"><i class="bi bi-cup-hot me-1"></i> Đơn hàng đang được pha chế</span>
+                </div>
             }
-        </div>
-    }
-    else
-    {
-        <div class="mt-3 flex-shrink-0">
-            <span class="d-inline-block w-100" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="<i class='bi bi-info-circle-fill text-warning me-1'></i> Đã hoàn tất" data-bs-content="Đơn hàng này đã được thực hiện hoàn tiền / hủy món thành công.">
-                <button type="button" class="btn btn-outline-secondary btn-sm w-100 fw-semibold opacity-50" disabled style="pointer-events: none;">
-                    <i class="bi bi-check-circle-fill me-1"></i>Đã hủy đơn / Hoàn tiền mặt toàn bộ
-                </button>
-            </span>
         </div>
     }
 </div>

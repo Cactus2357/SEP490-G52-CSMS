@@ -73,7 +73,8 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="ContactPhone" class="form-label fw-semibold">Số điện thoại liên hệ</label>
-                                        <input asp-for="ContactPhone" class="form-control" placeholder="0988xxx..." />
+                                        <input asp-for="ContactPhone" type="tel" class="form-control" placeholder="VD: 0912345678" pattern="^0\d{9}$" maxlength="10" />
+                                        <div class="invalid-feedback">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
                                     </div>
                                     <div class="col-12">
                                         <label asp-for="Address" class="form-label fw-semibold">Địa chỉ chi nhánh</label>

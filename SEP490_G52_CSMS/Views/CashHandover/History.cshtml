@@ -129,7 +129,6 @@
                                 data-initial="@item.InitialCash"
                                 data-revenue="@item.MachineCashRevenue"
                                 data-bank="@item.BankTransferRevenue"
-                                data-refund="@item.CashRefundAmount"
                                 data-theoretical="@item.TheoreticalCash"
                                 data-actual="@item.ActualCash"
                                 data-discrepancy="@item.Discrepancy"
@@ -317,10 +316,6 @@
                                             <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu chuyển khoản (CK - Không vào két):</td>
                                             <td class="pe-3 py-2 text-end fw-bold text-secondary fs-6" id="modalBank">–</td>
                                         </tr>
-                                        <tr class="border-bottom">
-                                            <td class="ps-3 py-2 text-muted fw-semibold">Hoàn tiền mặt (Hủy món / Thiếu NL):</td>
-                                            <td class="pe-3 py-2 text-end fw-bold text-danger fs-6" id="modalRefund">–</td>
-                                        </tr>
                                         <tr class="table-primary border-bottom">
                                             <td class="ps-3 py-2.5 text-primary fw-bold">Tổng tiền mặt lý thuyết trong két:</td>
                                             <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="modalTheoretical">–</td>
@@ -416,7 +411,6 @@
             const initial     = row.dataset.initial || '0 đ';
             const revenue     = row.dataset.revenue || '0 đ';
             const bank        = row.dataset.bank || '0 đ';
-            const refund      = row.dataset.refund || '0 đ';
             const theoretical = row.dataset.theoretical || '0 đ';
             const actual      = row.dataset.actual || '0 đ';
             const discrepancy = row.dataset.discrepancy || '0 đ';
@@ -435,7 +429,6 @@
             document.getElementById('modalInitial').textContent = initial;
             document.getElementById('modalRevenue').textContent = (revenue.startsWith('+') || revenue.startsWith('-')) ? revenue : ('+' + revenue);
             document.getElementById('modalBank').textContent = bank;
-            document.getElementById('modalRefund').textContent = (refund.startsWith('+') || refund.startsWith('-')) ? refund : ('-' + refund);
             document.getElementById('modalTheoretical').textContent = theoretical;
             document.getElementById('modalActual').textContent = actual;
             document.getElementById('modalActionTime').textContent = `${actionTime} (${actionType})`;

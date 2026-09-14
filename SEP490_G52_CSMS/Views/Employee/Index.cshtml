@@ -230,8 +230,8 @@
                             </div>
                             <div class="mb-3">
                                 <label for="phoneNumber" class="form-label fw-bold">Số điện thoại *</label>
-                                <input type="tel" class="form-control rounded-3" id="phoneNumber" name="PhoneNumber" placeholder="VD: 0912345678" required>
-                                <div class="invalid-feedback">Vui lòng nhập số điện thoại.</div>
+                                <input type="tel" class="form-control rounded-3" id="phoneNumber" name="PhoneNumber" placeholder="VD: 0912345678" pattern="^0\d{9}$" maxlength="10" required>
+                                <div class="invalid-feedback">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label fw-bold">Email *</label>
@@ -563,8 +563,9 @@
                 alertBox.classList.remove('d-none');
                 return;
             }
-            if (!phoneNumber) {
-                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Vui lòng nhập Số điện thoại.';
+            var phoneRegex = /^0\d{9}$/;
+            if (!phoneNumber || !phoneRegex.test(phoneNumber)) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).';
                 alertBox.classList.remove('d-none');
                 return;
             }
@@ -736,6 +737,20 @@
 
             var empIdEl = form.querySelector('input[name="EmployeeId"]');
             var empId = empIdEl ? empIdEl.value : '';
+
+            var phoneEl = form.querySelector('input[name="PhoneNumber"]');
+            var phoneVal = phoneEl ? phoneEl.value.trim() : '';
+            var phoneRegex = /^0\d{9}$/;
+            if (!phoneVal || !phoneRegex.test(phoneVal)) {
+                if (errBox) {
+                    errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).';
+                    errBox.classList.remove('d-none');
+                } else {
+                    showToast('Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).', 'danger');
+                }
+                if (phoneEl) phoneEl.focus();
+                return;
+            }
 
             var btn = document.getElementById('btnSaveUpdate');
             var spinner = document.getElementById('saveUpdateSpinner');

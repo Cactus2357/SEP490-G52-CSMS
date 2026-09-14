@@ -252,6 +252,11 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, errorMessage = "Số điện thoại không được để trống." });
             }
 
+            if (!System.Text.RegularExpressions.Regex.IsMatch(request.PhoneNumber.Trim(), @"^0\d{9}$"))
+            {
+                return Json(new { success = false, errorMessage = "Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0)." });
+            }
+
             if (_context.Employees.Any(e => e.PhoneNumber == request.PhoneNumber.Trim() && e.EmployeeId != id))
             {
                 return Json(new { success = false, errorMessage = "Số điện thoại đã tồn tại trên hệ thống." });

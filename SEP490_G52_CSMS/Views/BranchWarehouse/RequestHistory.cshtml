@@ -98,7 +98,7 @@
 
                                 <tr class="@rowStyle">
                                     <td class="ps-3 fw-bold text-dark">@item.RequestCode</td>
-                                    <td>@item.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm")</td>
                                     <td><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
                                     <td class="text-secondary small">@item.WarehouseNote</td>
                                     <td class="text-center pe-3">

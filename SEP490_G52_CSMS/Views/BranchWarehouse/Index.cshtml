@@ -83,13 +83,13 @@
                         <table class="table table-hover align-middle m-0 table-sm">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 8%;" class="ps-3">STT</th>
-                                    <th style="width: 15%;">Mã NgL</th>
-                                    <th style="width: 27%;">Tên nguyên liệu</th>
-                                    <th style="width: 15%;">Kiểu NgL</th>
-                                    <th style="width: 10%;">Loại NgL</th>
-                                    <th style="width: 12%;">Tồn kho</th>
-                                    <th style="width: 13%;" class="text-center pe-3">Hành động</th>
+                                    <th style="width: 5%;" class="ps-3">STT</th>
+                                    <th style="width: 14%;">Mã NgL</th>
+                                    <th style="width: 25%;">Tên nguyên liệu</th>
+                                    <th style="width: 14%;">Kiểu NgL</th>
+                                    <th style="width: 11%;">Loại NgL</th>
+                                    <th style="width: 14%;">Tồn kho</th>
+                                    <th style="width: 17%;" class="text-center pe-3">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -120,9 +120,20 @@
                                                     }
                                                 }
                                             </td>
-                                            <td class="text-center pe-3">
-                                                <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none" onclick="loadInventoryDetails(@item.InventoryId)">
-                                                    Chi tiết
+                                            <td class="text-center pe-3 text-nowrap">
+                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold me-1" onclick="loadInventoryDetails(@item.InventoryId)" title="Xem chi tiết">
+                                                    <i class="bi bi-eye"></i> Chi tiết
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 fw-semibold btn-adjust-stock"
+                                                        data-inventory-id="@item.InventoryId"
+                                                        data-material-id="@item.MaterialId"
+                                                        data-material-name="@(item.Material?.MaterialName ?? "")"
+                                                        data-material-code="@(item.Material?.MaterialCode ?? "")"
+                                                        data-stock-quantity="@item.StockQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                        data-storage-unit="@(item.Material?.StorageUnit ?? "")"
+                                                        onclick="openAdjustStockFromButton(this)"
+                                                        title="Cập nhật số lượng kho thực tế (Kiểm kê)">
+                                                    <i class="bi bi-pencil-square"></i> Cập nhật tồn
                                                 </button>
                                             </td>
                                         </tr>
@@ -223,6 +234,11 @@
                                 <span class="fs-4 fw-bold text-danger" id="lblThreshold"></span>
                             </div>
                         </div>
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm" id="btnDetailAdjustStock" onclick="openAdjustFromDetail()">
+                                <i class="bi bi-clipboard2-check me-1"></i> Cập nhật tồn kho thực tế
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -231,6 +247,97 @@
 </div>
 
 <!-- ==================== MODALS ==================== -->
+
+<!-- Modal: Cập nhật tồn kho thực tế (Kiểm kê kho) -->
+<div class="modal fade" id="adjustStockModal" tabindex="-1" aria-labelledby="adjustStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="adjustStockModalLabel">
+                    <i class="bi bi-clipboard2-check me-2 text-warning"></i>Cập nhật số lượng tồn kho thực tế
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="adjustInventoryId" />
+                <input type="hidden" id="adjustMaterialId" />
+
+                <!-- Thông tin nguyên liệu -->
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small fw-bold text-uppercase">Nguyên liệu</span>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis" id="adjustMaterialCode"></span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-0" id="adjustMaterialName"></h5>
+                </div>
+
+                <!-- Tồn hệ thống vs Tồn thực tế -->
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tồn hệ thống</label>
+                        <div class="input-group">
+                            <input type="text" id="adjustCurrentStock" class="form-control bg-light fw-bold text-primary" readonly />
+                            <span class="input-group-text bg-light adjustUnitLabel"></span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-dark text-uppercase mb-1">
+                            Tồn thực tế <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" step="any" min="0" id="adjustActualStock" class="form-control fw-bold border-primary" placeholder="Nhập SL..." oninput="calculateAdjustmentDiff()" />
+                            <span class="input-group-text bg-white adjustUnitLabel fw-bold"></span>
+                        </div>
+                        <div class="invalid-feedback" id="valAdjustActualStock"></div>
+                    </div>
+                </div>
+
+                <!-- Chênh lệch kiểm kê (Badge chênh lệch real-time) -->
+                <div class="mb-3 p-3 rounded-3 border bg-white text-center" id="diffContainer">
+                    <span class="text-muted small d-block mb-1">Chênh lệch kiểm đếm:</span>
+                    <div id="diffBadge">
+                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6">
+                            <i class="bi bi-dash-circle me-1"></i> Chưa nhập số lượng thực tế
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Lý do điều chỉnh -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold mb-1">Lý do sai lệch / điều chỉnh <span class="text-danger">*</span></label>
+                    <select id="adjustReason" class="form-select" onchange="onReasonChange()">
+                        <option value="">-- Chọn lý do điều chỉnh --</option>
+                        <option value="Kiểm kê định kỳ (Đồng bộ số liệu thực tế)">Kiểm kê định kỳ (Đồng bộ số liệu thực tế)</option>
+                        <option value="Hao hụt / Rơi vãi / Bay hơi tự nhiên">Hao hụt / Rơi vãi / Bay hơi tự nhiên</option>
+                        <option value="Hư hỏng / Hết hạn sử dụng (Cần hủy bỏ)">Hư hỏng / Hết hạn sử dụng (Cần hủy bỏ)</option>
+                        <option value="Pha hỏng / Hao hụt quầy bar pha chế">Pha hỏng / Hao hụt quầy bar pha chế</option>
+                        <option value="Sai sót kiểm đếm / Giao nhận ca trước">Sai sót kiểm đếm / Giao nhận ca trước</option>
+                        <option value="Khác">Khác (Vui lòng ghi rõ ở ghi chú bên dưới)</option>
+                    </select>
+                    <div class="invalid-feedback" id="valAdjustReason"></div>
+                </div>
+
+                <!-- Ghi chú chi tiết -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold mb-1">Ghi chú chi tiết</label>
+                    <textarea id="adjustNote" class="form-control" rows="2" placeholder="Nhập chi tiết biên bản kiểm kê, nguyên nhân hư hỏng, người liên quan (nếu có)..."></textarea>
+                    <div class="invalid-feedback" id="valAdjustNote"></div>
+                </div>
+
+                <div class="alert alert-info py-2 px-3 m-0 small d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill fs-5 text-info me-2"></i>
+                    <div>Tồn kho chi nhánh sẽ được cập nhật trực tiếp và hệ thống sẽ tự động gửi thông báo kiểm kê đến Quản lý vùng.</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success px-4 fw-bold" id="btnSubmitAdjust" onclick="submitStockAdjustment()">
+                    <i class="bi bi-check-lg me-1"></i> Lưu cập nhật
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal: Thêm nguyên liệu (Screen B) -->
 <div class="modal fade" id="addMaterialModal" tabindex="-1" aria-labelledby="addMaterialModalLabel" aria-hidden="true">
@@ -305,6 +412,8 @@
         }
 
         // --- 1. VIEW DETAILS ---
+        let currentDetailItem = null;
+
         function loadInventoryDetails(id) {
             $('#detailPlaceholder').addClass('d-none');
             $('#detailContent').addClass('d-none');
@@ -314,6 +423,7 @@
                 type: 'GET',
                 data: { id: id },
                 success: function(m) {
+                    currentDetailItem = m;
                     $('#lblCode').text(m.materialCode);
                     $('#lblName').text(m.materialName);
                     $('#lblKind').text(m.materialKind);
@@ -421,6 +531,191 @@
                 },
                 error: function() {
                     showToast('Lỗi kết nối máy chủ.', 'danger');
+                }
+            });
+        }
+
+        // --- 4. STOCK ADJUSTMENT (KIỂM KÊ KHO) ---
+        let adjustModalInstance = null;
+
+        function openAdjustStockFromButton(btn) {
+            let $b = $(btn);
+            let invId = $b.data('inventory-id');
+            let matId = $b.data('material-id');
+            let matName = $b.data('material-name');
+            let matCode = $b.data('material-code');
+            let stock = parseFloat($b.data('stock-quantity')) || 0;
+            let unit = $b.data('storage-unit');
+
+            openAdjustStockModal(invId, matId, matName, matCode, stock, unit);
+        }
+
+        function openAdjustFromDetail() {
+            if (!currentDetailItem) {
+                showToast('Vui lòng chọn một nguyên liệu từ danh sách trước.', 'warning');
+                return;
+            }
+            let stock = currentDetailItem.rawStockQuantity !== undefined ? currentDetailItem.rawStockQuantity : (parseFloat(currentDetailItem.stockQuantity) || 0);
+            openAdjustStockModal(
+                currentDetailItem.inventoryId,
+                currentDetailItem.materialId,
+                currentDetailItem.materialName,
+                currentDetailItem.materialCode,
+                stock,
+                currentDetailItem.storageUnit
+            );
+        }
+
+        function openAdjustStockModal(invId, matId, matName, matCode, stock, unit) {
+            $('#adjustInventoryId').val(invId);
+            $('#adjustMaterialId').val(matId);
+            $('#adjustMaterialCode').text(matCode);
+            $('#adjustMaterialName').text(matName);
+            $('#adjustCurrentStock').val(stock);
+            $('.adjustUnitLabel').text(unit || '');
+            
+            // Default actual stock to current stock so user can easily adjust or verify
+            $('#adjustActualStock').val(stock).removeClass('is-invalid');
+            $('#adjustReason').val('').removeClass('is-invalid');
+            $('#adjustNote').val('').removeClass('is-invalid');
+            $('#valAdjustActualStock').text('');
+            $('#valAdjustReason').text('');
+            $('#valAdjustNote').text('');
+
+            calculateAdjustmentDiff();
+
+            let modalEl = document.getElementById('adjustStockModal');
+            if (modalEl) {
+                adjustModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                adjustModalInstance.show();
+            }
+
+            setTimeout(function() {
+                $('#adjustActualStock').focus().select();
+            }, 500);
+        }
+
+        function calculateAdjustmentDiff() {
+            let curStock = parseFloat($('#adjustCurrentStock').val()) || 0;
+            let actualStr = $('#adjustActualStock').val();
+            let unit = $('.adjustUnitLabel').first().text();
+
+            if (actualStr === '' || isNaN(parseFloat(actualStr))) {
+                $('#diffBadge').html(`
+                    <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6">
+                        <i class="bi bi-dash-circle me-1"></i> Chưa nhập số lượng thực tế
+                    </span>
+                `);
+                return;
+            }
+
+            let actualStock = parseFloat(actualStr);
+            let diff = Math.round((actualStock - curStock) * 1000) / 1000;
+
+            if (diff === 0) {
+                $('#diffBadge').html(`
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis px-3 py-2 fs-6 border">
+                        <i class="bi bi-check-circle-fill me-1 text-success"></i> Số lượng khớp hoàn toàn (Chênh lệch: 0 ${unit})
+                    </span>
+                `);
+            } else if (diff > 0) {
+                let formattedDiff = '+' + diff.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+                $('#diffBadge').html(`
+                    <span class="badge bg-success-subtle text-success px-3 py-2 fs-6 border border-success-subtle">
+                        <i class="bi bi-arrow-up-circle-fill me-1"></i> Thừa tồn kho (${formattedDiff} ${unit})
+                    </span>
+                `);
+            } else {
+                let formattedDiff = diff.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+                $('#diffBadge').html(`
+                    <span class="badge bg-danger-subtle text-danger px-3 py-2 fs-6 border border-danger-subtle">
+                        <i class="bi bi-arrow-down-circle-fill me-1"></i> Hao hụt / Thiếu tồn (${formattedDiff} ${unit})
+                    </span>
+                `);
+            }
+        }
+
+        function onReasonChange() {
+            let reason = $('#adjustReason').val();
+            $('#adjustReason').removeClass('is-invalid');
+            if (reason === 'Khác') {
+                $('#adjustNote').focus();
+            }
+        }
+
+        function submitStockAdjustment() {
+            let invId = parseInt($('#adjustInventoryId').val()) || 0;
+            let matId = parseInt($('#adjustMaterialId').val()) || 0;
+            let actualStr = $('#adjustActualStock').val().trim();
+            let reason = $('#adjustReason').val().trim();
+            let note = $('#adjustNote').val().trim();
+
+            let isValid = true;
+            $('#adjustActualStock, #adjustReason, #adjustNote').removeClass('is-invalid');
+
+            if (actualStr === '' || isNaN(parseFloat(actualStr))) {
+                $('#adjustActualStock').addClass('is-invalid');
+                $('#valAdjustActualStock').text('Vui lòng nhập số lượng tồn thực tế.');
+                isValid = false;
+            } else if (parseFloat(actualStr) < 0) {
+                $('#adjustActualStock').addClass('is-invalid');
+                $('#valAdjustActualStock').text('Số lượng tồn thực tế không được âm.');
+                isValid = false;
+            }
+
+            if (!reason) {
+                $('#adjustReason').addClass('is-invalid');
+                $('#valAdjustReason').text('Vui lòng chọn lý do điều chỉnh.');
+                isValid = false;
+            } else if (reason === 'Khác' && !note) {
+                $('#adjustNote').addClass('is-invalid');
+                $('#valAdjustNote').text('Vui lòng nhập giải thích chi tiết khi chọn lý do "Khác".');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            let actualVal = parseFloat(actualStr);
+            let $btn = $('#btnSubmitAdjust');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang lưu...');
+
+            $.ajax({
+                url: '/BranchWarehouse/AdjustStockQuantity',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    inventoryId: invId,
+                    materialId: matId,
+                    actualStock: actualVal,
+                    reason: reason,
+                    note: note
+                }),
+                success: function(res) {
+                    if (res.success) {
+                        let modalEl = document.getElementById('adjustStockModal');
+                        if (modalEl) {
+                            let inst = bootstrap.Modal.getInstance(modalEl);
+                            if (inst) inst.hide();
+                        }
+                        showToast(res.message, 'success');
+
+                        // Refresh page after short delay to update grid and alerts
+                        setTimeout(function() {
+                            location.reload();
+                        }, 700);
+                    } else {
+                        showToast(res.message || 'Cập nhật thất bại.', 'danger');
+                    }
+                },
+                error: function(xhr) {
+                    let errMsg = 'Lỗi kết nối máy chủ khi cập nhật tồn kho.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    showToast(errMsg, 'danger');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Lưu cập nhật');
                 }
             });
         }

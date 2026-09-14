@@ -520,7 +520,7 @@ namespace SEP490_G52_CSMS.Controllers
             foreach (var r in list)
             {
                 var code = r.RequestCode;
-                var reqDate = r.RequestDate.ToString("dd/MM/yyyy HH:mm");
+                var reqDate = r.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm");
                 var expDate = r.ExpectedDeliveryDate.HasValue ? r.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy") : "";
                 var branchName = $"\"{r.Branch?.BranchName?.Replace("\"", "\"\"")}\"";
                 var rStatus = r.Status;

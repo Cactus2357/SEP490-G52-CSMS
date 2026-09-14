@@ -39,7 +39,7 @@
                             </div>
                             <div class="mb-3">
                                 <label asp-for="PhoneNumber" class="form-label"></label>
-                                <input asp-for="PhoneNumber" class="form-control form-control-lg" />
+                                <input asp-for="PhoneNumber" type="tel" class="form-control form-control-lg" maxlength="10" placeholder="VD: 0912345678" />
                                 <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                             </div>
                             <div class="mb-3">

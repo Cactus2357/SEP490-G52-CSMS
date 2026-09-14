@@ -839,8 +839,9 @@
             }
 
             const phone = document.getElementById('updatePhoneNumber').value.trim();
-            if (!phone) {
-                showUpdateError(errorAlert, 'Số điện thoại là bắt buộc.');
+            const phoneRegex = /^0\d{9}$/;
+            if (!phone || !phoneRegex.test(phone)) {
+                showUpdateError(errorAlert, 'Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).');
                 return;
             }
 

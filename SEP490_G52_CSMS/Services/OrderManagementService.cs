@@ -17,16 +17,14 @@ namespace SEP490_G52_CSMS.Services
         private string MapStatus(Order o)
         {
             bool isMissing = (o.BrewingStatus == "Missing Ingredients");
-            bool isPartialRefund = (!isMissing && o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount);
-            bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.PaymentStatus == "Cancelled" || o.PaymentStatus == "Canceled" || (o.RefundAmount > 0 && o.RefundAmount >= o.TotalAmount)));
-            bool isDelivered = !isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Delivered");
-            bool isDone = !isCancelled && !isMissing && !isPartialRefund && !isDelivered && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
-            bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid");
-            bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "PartiallyPaid");
-            bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing");
+            bool isCancelled = (!isMissing && (o.BrewingStatus == "Cancelled / Refunded" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.PaymentStatus == "Cancelled" || o.PaymentStatus == "Canceled"));
+            bool isDelivered = !isCancelled && !isMissing && (o.BrewingStatus == "Delivered");
+            bool isDone = !isCancelled && !isMissing && !isDelivered && (o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+            bool isUnpaid = !isCancelled && !isMissing && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid");
+            bool isPartiallyPaid = !isCancelled && !isMissing && !isDone && !isDelivered && (o.PaymentStatus == "PartiallyPaid");
+            bool isBrewing = !isCancelled && !isMissing && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing");
 
             if (isMissing) return "Thiếu nguyên liệu";
-            if (isPartialRefund) return "Hoàn tiền 1 phần";
             if (isCancelled) return "Đã hủy";
             if (isDelivered) return "Đã giao hàng";
             if (isDone) return "Đã pha chế xong";

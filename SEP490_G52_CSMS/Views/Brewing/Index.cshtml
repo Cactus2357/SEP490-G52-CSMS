@@ -294,66 +294,6 @@
     </div>
 </div>
 
-<!-- ========================================================= -->
-<!-- MODAL: BÁO THIẾU NGUYÊN LIỆU                               -->
-<!-- ========================================================= -->
-<div class="modal fade" id="missingIngredientsModal" tabindex="-1" aria-labelledby="missingIngredientsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-3">
-            <div class="modal-header bg-danger text-white py-3 px-4 border-0">
-                <h4 class="modal-title fw-bold mb-0" id="missingIngredientsModalLabel">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Báo thiếu nguyên liệu
-                </h4>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="alert alert-warning mb-3 py-2.5 px-3">
-                    <i class="bi bi-info-circle-fill me-1"></i>
-                    Vui lòng tích chọn <strong>các món bị thiếu nguyên liệu</strong> để chuyển thông báo về Thu ngân xử lý.
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold text-secondary small mb-1">Mã đơn hàng:</label>
-                    <input type="text" id="modalMissingOrderId" class="form-control bg-light fw-bold text-primary fs-6" readonly />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold text-dark mb-2">
-                        Chọn món bị thiếu: <span class="text-danger">*</span>
-                    </label>
-                    <div id="missingItemsListContainer" class="border rounded p-3 bg-light" style="max-height: 280px; overflow-y: auto;">
-                        <div class="text-center text-muted py-3">
-                            <span class="spinner-border spinner-border-sm me-1"></span> Đang tải...
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <label class="form-label fw-semibold text-secondary small mb-1">
-                        Ghi chú lý do <span class="text-muted fw-normal">(Tùy chọn)</span>:
-                    </label>
-                    <textarea id="modalMissingReason" class="form-control" rows="3" placeholder="Ví dụ: Hết sữa tươi thanh trùng, hết trân châu đen..."></textarea>
-                </div>
-
-                <div class="form-check mt-3 pt-2 border-top">
-                    <input class="form-check-input" type="checkbox" id="modalAutoInactiveProduct" checked />
-                    <label class="form-check-label fw-semibold text-danger small" for="modalAutoInactiveProduct" style="cursor: pointer;">
-                        <i class="bi bi-slash-circle me-1"></i>Tự động khóa món (chuyển sang [Tạm hết]) trên hệ thống bán hàng của Thu ngân
-                    </label>
-                    <div class="text-muted" style="font-size: 0.75rem; margin-left: 1.5rem;">
-                        Hệ thống sẽ cập nhật trạng thái các món này thành [Tạm hết] để quầy Thu ngân không bán nữa.
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer bg-light py-3 px-4 border-top">
-                <button type="button" class="btn btn-secondary rounded px-3" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-danger rounded fw-bold px-4 shadow-sm" onclick="submitMissingIngredientsReport()">
-                    <i class="bi bi-send-fill me-1"></i>Gửi báo cáo
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- ========================================================= -->
 <!-- MODAL: IN PHIẾU GIAO ĐỒ (K80 DELIVERY SLIP)              -->
@@ -363,46 +303,43 @@
         <div class="modal-content border-0 shadow-lg rounded-3">
             <div class="modal-header py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
                 <h6 class="modal-title fw-bold text-dark mb-0" id="deliverySlipModalLabel">
-                    <i class="bi bi-printer me-1 text-primary"></i>Phiếu Giao Đồ (K80)
+                    <i class="bi bi-printer me-1 text-primary"></i>Phiếu Đặt Đồ (K80)
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-3 bg-light d-flex justify-content-center">
-                <!-- Printable K80 Delivery Slip Container -->
+                <!-- Printable K80 Order Slip Container -->
                 <div id="k80DeliverySlipContainer" class="bg-white p-3 shadow-sm border border-secondary border-opacity-25" style="width: 320px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.35; color: #000;">
-                    <!-- Store Header -->
-                    <div class="text-center pb-2 mb-2 border-bottom border-dark">
-                        <div class="fw-bold text-uppercase fs-6">CSMS COFFEE</div>
-                        <div class="fw-bold text-uppercase mt-1" style="font-size: 14px; letter-spacing: 0.5px;">PHIẾU GIAO ĐỒ (KẸP KHAY)</div>
-                        <div class="small mt-1">Chi nhánh: <span id="slipBranchName">CSMS</span></div>
+                    <!-- Title & Order Subheader -->
+                    <div class="text-center pb-2 mb-2">
+                        <div class="fw-bold text-uppercase fs-5" style="letter-spacing: 0.5px;">PHIẾU ĐẶT ĐỒ</div>
+                        <div class="fw-bold text-uppercase mt-1" style="font-size: 13px;" id="slipSubHeader">08 - MANG VỀ - HĐ.MH260903-001</div>
                     </div>
 
-                    <!-- Prominent Table Badge -->
-                    <div class="p-2 mb-2 text-center border border-2 border-dark rounded" style="background-color: #f8f9fa;">
-                        <div class="small text-uppercase fw-bold text-secondary" style="font-size: 11px;">VỊ TRÍ PHỤC VỤ</div>
-                        <div id="slipTableBadge" class="fs-4 fw-bolder text-uppercase text-dark my-1">BÀN --</div>
-                        <div class="small text-muted" id="slipCustomerBadge">Khách: Khách lẻ</div>
-                    </div>
-
-                    <!-- Order Info -->
-                    <div class="pb-2 mb-2 border-bottom border-dark">
+                    <!-- Meta Information -->
+                    <div class="pb-2 mb-2" style="font-size: 12px; line-height: 1.45;">
                         <div class="d-flex justify-content-between">
-                            <span>Mã đơn: <strong id="slipOrderId">MH------</strong></span>
-                            <span id="slipOrderTime">--/--/---- --:--</span>
+                            <span>Giờ : <strong id="slipOrderTimeOnly">--:--:--</strong></span>
+                            <span>Ngày: <strong id="slipOrderDateOnly">--/--/----</strong></span>
+                        </div>
+                        <div>
+                            <span>Nhân viên: <strong id="slipCashierName">--</strong></span>
+                        </div>
+                        <div>
+                            <span>Số thứ tự: <strong id="slipOrderSeq">1</strong> (SL : <strong id="slipTotalItemsCount">0</strong>)</span>
                         </div>
                         <div id="slipNotesRow" class="d-none mt-1 p-1 border border-secondary border-opacity-50 rounded" style="background: #fff8e1;">
                             <strong>Ghi chú:</strong> <em id="slipOrderNotes">--</em>
                         </div>
                     </div>
 
-                    <!-- Items Table -->
-                    <table class="w-100 mb-2 border-bottom border-dark" style="font-size: 12px;">
+                    <!-- Items Table with Solid Border -->
+                    <table class="w-100 mb-2" style="font-size: 12px; border: 1px solid #000; border-collapse: collapse;">
                         <thead>
-                            <tr class="border-bottom border-dark">
-                                <th class="text-center py-1" style="width: 25px;">STT</th>
-                                <th class="text-start py-1">Tên Món</th>
-                                <th class="text-center py-1" style="width: 40px;">Size</th>
-                                <th class="text-center py-1" style="width: 35px;">SL</th>
+                            <tr style="border-bottom: 1px solid #000; background-color: #f8f9fa;">
+                                <th class="py-1 px-2 text-start" style="border-right: 1px solid #000;">Tên món</th>
+                                <th class="py-1 px-1 text-center" style="width: 45px; border-right: 1px solid #000;">SL</th>
+                                <th class="py-1 px-1 text-center" style="width: 45px;">ĐVT</th>
                             </tr>
                         </thead>
                         <tbody id="slipItemsBody">
@@ -410,24 +347,16 @@
                         </tbody>
                     </table>
 
-                    <!-- Summary -->
-                    <div class="pb-2 mb-2 border-bottom border-dark">
-                        <div class="d-flex justify-content-between fw-bold">
-                            <span>Tổng số món:</span>
-                            <span id="slipTotalItems">0 món</span>
-                        </div>
-                    </div>
-
                     <!-- Footer -->
-                    <div class="text-center pt-1 small">
-                        <div>Vui lòng kiểm tra đủ món trước khi giao khách!</div>
+                    <div class="text-center pt-2 mt-1 border-top border-dark" style="font-size: 12px;">
+                        <div class="fw-semibold">Powered by CSMS.vn</div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer py-2 bg-light d-flex justify-content-between">
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
                 <button type="button" class="btn btn-primary btn-sm px-3 fw-bold shadow-sm" onclick="window.print()">
-                    <i class="bi bi-printer me-1"></i>In phiếu giao (Print)
+                    <i class="bi bi-printer me-1"></i>In phiếu đặt đồ (Print)
                 </button>
             </div>
         </div>
@@ -445,7 +374,6 @@
         let checkedItemKeys = new Set(); // `${orderId}_${variantId}`
         let isAllExpanded = true;
         let pendingCompleteOrderId = null;
-        let missingModalInstance = null;
         let completeConfirmModalInstance = null;
 
         // Distinct colors to differentiate orders
@@ -856,8 +784,8 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm" onclick="openDeliverySlipModal('${o.orderId}')" title="In phiếu giao đồ kẹp khay">
-                                    <i class="bi bi-printer me-1"></i>In Phiếu Giao
+                                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm" onclick="openDeliverySlipModal('${o.orderId}')" title="In phiếu đặt đồ">
+                                    <i class="bi bi-printer me-1"></i>In Phiếu Đặt Đồ
                                 </button>
                                 ${isBrewing ? `
                                     <span class="badge bg-primary px-2.5 py-1.5">Đang pha chế</span>
@@ -870,9 +798,6 @@
                                         <i class="bi bi-play-fill me-1"></i>Pha chế
                                     </button>
                                 `}
-                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="openMissingModal('${o.orderId}')" title="Báo thiếu nguyên liệu">
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Báo thiếu NL
-                                </button>
                             </div>
 
                             ${o.orderNotes ? `
@@ -1301,90 +1226,6 @@
             updateTotalFraction();
         }
 
-        // =========================================================
-        // MISSING INGREDIENTS MODAL
-        // =========================================================
-        function openMissingModal(orderId) {
-            $('#modalMissingOrderId').val(orderId);
-            $('#modalMissingReason').val('');
-
-            const order = rawOrdersList.find(o => o.orderId === orderId);
-            if (order && order.items && order.items.length) {
-                renderMissingItemsList(order.items);
-            } else {
-                $('#missingItemsListContainer').html('<div class="text-muted small py-2 text-center">Không tìm thấy danh sách món.</div>');
-            }
-
-            if (!missingModalInstance) {
-                missingModalInstance = new bootstrap.Modal(document.getElementById('missingIngredientsModal'));
-            }
-            missingModalInstance.show();
-        }
-
-        function renderMissingItemsList(items) {
-            let html = '';
-            items.forEach((it, idx) => {
-                let vId = it.variantId || idx;
-                html += `
-                    <div class="form-check p-2 mb-1 border-bottom bg-white rounded">
-                        <input class="form-check-input missing-item-chk ms-0 me-2" type="checkbox" value="${vId}" id="chk_missing_${vId}">
-                        <label class="form-check-label w-100 cursor-pointer d-flex justify-content-between align-items-center" for="chk_missing_${vId}">
-                            <div>
-                                <span class="fw-bold text-dark">${it.productName}</span>
-                                <span class="text-muted small ms-1">(Size ${it.size})</span>
-                                <span class="text-muted ms-1">x${it.quantity}</span>
-                            </div>
-                            <span class="fw-bold text-primary">${(it.amount || (it.quantity * it.unitPrice) || 0).toLocaleString('vi-VN')} đ</span>
-                        </label>
-                    </div>
-                `;
-            });
-            $('#missingItemsListContainer').html(html);
-        }
-
-        function submitMissingIngredientsReport() {
-            const orderId = $('#modalMissingOrderId').val();
-            const reason = $('#modalMissingReason').val().trim();
-            const selectedVariantIds = [];
-
-            $('.missing-item-chk:checked').each(function () {
-                const val = parseInt($(this).val());
-                if (!isNaN(val)) selectedVariantIds.push(val);
-            });
-
-            if (selectedVariantIds.length === 0) {
-                showAppAlert('Vui lòng tích chọn ít nhất 1 món bị thiếu nguyên liệu!', 'Cảnh báo');
-                return;
-            }
-
-            const autoInactive = document.getElementById('modalAutoInactiveProduct')?.checked ?? false;
-
-            showConfirmModal(
-                'Xác nhận báo thiếu nguyên liệu',
-                `Gửi báo cáo thiếu nguyên liệu cho <strong>${selectedVariantIds.length} món</strong> của đơn <strong>${orderId}</strong> tới Thu ngân?`,
-                function () {
-                    $.ajax({
-                        url: '/Brewing/ReportMissingIngredients',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
-                            orderId: orderId,
-                            missingVariantIds: selectedVariantIds,
-                            reason: reason,
-                            autoInactiveProducts: autoInactive
-                        }),
-                        success: function (res) {
-                            if (missingModalInstance) missingModalInstance.hide();
-                            fetchLiveOrders();
-                        },
-                        error: function (xhr) {
-                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi gửi báo cáo.';
-                            showAppAlert(msg, 'Thông báo lỗi');
-                        }
-                    });
-                }
-            );
-        }
 
         // =========================================================
         // LIVE AUTO-POLLING (EVERY 5 SECONDS)
@@ -1444,19 +1285,43 @@
                 .then(res => res.json())
                 .then(data => {
                     if (!data.success) {
-                        showAppAlert("Không thể tải thông tin phiếu giao: " + (data.message || 'Lỗi không xác định'), "Lỗi");
+                        showAppAlert("Không thể tải thông tin phiếu đặt đồ: " + (data.message || 'Lỗi không xác định'), "Lỗi");
                         return;
                     }
 
-                    document.getElementById('slipBranchName').innerText = data.branchName || 'CSMS';
-                    document.getElementById('slipOrderId').innerText = data.orderId;
-                    document.getElementById('slipOrderTime').innerText = data.orderTime;
-                    
-                    const tableText = (data.tableNumber && data.tableNumber.trim() !== '' && data.tableNumber !== 'Mang về') 
-                        ? 'BÀN ' + data.tableNumber 
-                        : 'MANG VỀ';
-                    document.getElementById('slipTableBadge').innerText = tableText;
-                    document.getElementById('slipCustomerBadge').innerText = 'Khách: ' + (data.customerName || 'Khách lẻ');
+                    // Parse time and date: data.orderTime is typically "dd/MM/yyyy HH:mm"
+                    let timeStr = '--:--:--';
+                    let dateStr = '--/--/----';
+                    if (data.orderTime) {
+                        const parts = data.orderTime.split(' ');
+                        if (parts.length >= 2) {
+                            dateStr = parts[0];
+                            timeStr = parts[1];
+                            if (timeStr.length === 5) timeStr += ':00';
+                        } else {
+                            dateStr = data.orderTime;
+                        }
+                    }
+
+                    // Subheader: [Số bàn] - [MANG VỀ / TẠI BÀN] - HĐ.[Mã đơn]
+                    const rawTable = (data.tableNumber || '').trim();
+                    const isMangVe = !rawTable || rawTable.toLowerCase().includes('mang về');
+                    const typeStr = isMangVe ? 'MANG VỀ' : 'TẠI BÀN';
+                    const tableDisplay = isMangVe ? (rawTable || 'Mang về') : rawTable;
+                    document.getElementById('slipSubHeader').innerText = `${tableDisplay} - ${typeStr} - HĐ.${data.orderId}`;
+
+                    document.getElementById('slipOrderTimeOnly').innerText = timeStr;
+                    document.getElementById('slipOrderDateOnly').innerText = dateStr;
+                    document.getElementById('slipCashierName').innerText = data.cashierName || 'Thu ngân';
+
+                    // Extract sequence number from orderId (e.g. MH260903-001 -> 1)
+                    let seq = '1';
+                    if (data.orderId && data.orderId.includes('-')) {
+                        const numPart = data.orderId.split('-')[1];
+                        const parsed = parseInt(numPart, 10);
+                        if (!isNaN(parsed)) seq = parsed.toString();
+                    }
+                    document.getElementById('slipOrderSeq').innerText = seq;
 
                     const notesRow = document.getElementById('slipNotesRow');
                     if (data.orderNotes && data.orderNotes.trim() !== '') {
@@ -1468,19 +1333,20 @@
 
                     let itemsHtml = '';
                     let totalCount = 0;
-                    (data.items || []).forEach((item, idx) => {
-                        totalCount += (item.quantity || 1);
+                    (data.items || []).forEach(item => {
+                        const qty = (item.quantity || 1);
+                        totalCount += qty;
+                        const sizeInfo = item.size ? ` (Size ${item.size})` : '';
                         itemsHtml += `
-                            <tr>
-                                <td class="text-center py-1 text-muted font-monospace">${idx + 1}</td>
-                                <td class="py-1 fw-semibold text-start">${item.productName}</td>
-                                <td class="text-center py-1">${item.size}</td>
-                                <td class="text-center py-1 font-monospace fw-bold fs-6">${item.quantity}</td>
+                            <tr style="border-bottom: 1px solid #000;">
+                                <td class="py-1 px-2 text-start fw-semibold" style="border-right: 1px solid #000;">${item.productName}${sizeInfo}</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-bold" style="border-right: 1px solid #000;">${qty}</td>
+                                <td class="py-1 px-1 text-center text-muted">Món</td>
                             </tr>
                         `;
                     });
                     document.getElementById('slipItemsBody').innerHTML = itemsHtml;
-                    document.getElementById('slipTotalItems').innerText = totalCount + ' món';
+                    document.getElementById('slipTotalItemsCount').innerText = totalCount;
 
                     const modalEl = document.getElementById('deliverySlipModal');
                     if (modalEl) {
@@ -1490,7 +1356,7 @@
                 })
                 .catch(err => {
                     console.error("Error fetching delivery slip:", err);
-                    showAppAlert("Lỗi khi tải thông tin phiếu giao đồ.", "Lỗi");
+                    showAppAlert("Lỗi khi tải thông tin phiếu đặt đồ.", "Lỗi");
                 });
         }
 

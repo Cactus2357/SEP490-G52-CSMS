@@ -217,7 +217,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             var result = await _orderService.StartBrewingAsync(orderId);
             if (result) return Json(new { success = true });
-            return BadRequest(new { success = false, message = "Không thể bắt đầu pha chế đơn hàng này." });
+            return BadRequest(new { success = false, message = "Không thể bắt đầu pha chế đơn hàng này (đơn có thể không tồn tại hoặc đã tạo quá 1 ngày)." });
         }
 
         [HttpPost]
@@ -260,56 +260,16 @@ namespace SEP490_G52_CSMS.Controllers
 
             var result = await _orderService.CompleteBrewingAsync(orderId);
             if (result) return Json(new { success = true });
-            return BadRequest(new { success = false, message = "Không thể hoàn thành đơn hàng này." });
+            return BadRequest(new { success = false, message = "Không thể hoàn thành đơn hàng này (đơn có thể không tồn tại hoặc đã tạo quá 1 ngày)." });
         }
 
         [HttpPost]
         public async Task<IActionResult> ReportMissingIngredients([FromBody] MissingIngredientsReportModel model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.OrderId))
-            {
-                return BadRequest(new { success = false, message = "Mã đơn hàng không hợp lệ." });
-            }
-
-            if (model.MissingVariantIds == null || !model.MissingVariantIds.Any())
-            {
-                return BadRequest(new { success = false, message = "Vui lòng chọn ít nhất một món bị thiếu nguyên liệu." });
-            }
-
-            var branchId = await GetUserBranchIdAsync();
-            var (isEligible, reasonCode, message) = await CheckBartenderEligibilityAsync(GetUserId(), branchId);
-            if (!isEligible)
-            {
-                return BadRequest(new { success = false, message = message });
-            }
-
-            int userId = GetUserId();
-            var ok = await _orderService.ReportMissingIngredientsAsync(model.OrderId, model.MissingVariantIds, model.Reason, userId);
-
-            if (ok)
-            {
-                if (model.AutoInactiveProducts && model.MissingVariantIds != null && model.MissingVariantIds.Any())
-                {
-                    var productIds = await _context.ProductVariants
-                        .Where(pv => model.MissingVariantIds.Contains(pv.VariantId))
-                        .Select(pv => pv.ProductId)
-                        .Distinct()
-                        .ToListAsync();
-
-                    foreach (var pid in productIds)
-                    {
-                        await _menuService.SetProductAvailabilityAsync(branchId, pid, false, userId);
-                    }
-                }
-
-                return Json(new { 
-                    success = true, 
-                    message = $"Đã ghi nhận báo thiếu nguyên liệu cho đơn {model.OrderId} và gửi thông báo tới Thu ngân." 
-                });
-            }
-
-            return BadRequest(new { success = false, message = "Không thể gửi báo cáo thiếu nguyên liệu cho đơn hàng này." });
+            return BadRequest(new { success = false, message = "Chức năng báo thiếu nguyên liệu từ pha chế đã ngừng hỗ trợ." });
         }
+
+
 
         [HttpGet]
         public async Task<IActionResult> ProductAvailability(string? search, int? categoryId, string? status)

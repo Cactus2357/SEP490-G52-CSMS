@@ -438,7 +438,7 @@
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
                 <h6 class="modal-title fw-bold text-dark mb-0">
-                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Giao (K80)
+                    <i class="bi bi-printer me-1 text-primary"></i>Hóa Đơn / Phiếu Đặt Đồ (K80)
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -449,7 +449,7 @@
                         <i class="bi bi-receipt me-1"></i>Hóa đơn thanh toán
                     </button>
                     <button type="button" class="btn btn-outline-primary fw-semibold" id="btnModeDelivery" onclick="switchReceiptMode('delivery')">
-                        <i class="bi bi-ticket-detailed me-1"></i>Phiếu giao đồ (kẹp khay)
+                        <i class="bi bi-ticket-detailed me-1"></i>Phiếu đặt đồ (kẹp khay)
                     </button>
                 </div>
 
@@ -552,7 +552,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-dark btn-sm fw-semibold" onclick="switchReceiptMode(currentReceiptMode === 'receipt' ? 'delivery' : 'receipt')">
-                        <i class="bi bi-arrow-repeat me-1"></i><span id="btnToggleModeLabel">Đổi sang Phiếu giao</span>
+                        <i class="bi bi-arrow-repeat me-1"></i><span id="btnToggleModeLabel">Đổi sang Phiếu đặt đồ</span>
                     </button>
                     <button type="button" class="btn btn-primary btn-sm px-3 fw-bold" onclick="triggerBrowserPrint()">
                         <i class="bi bi-printer me-1"></i>In ngay (Print)
@@ -1341,13 +1341,7 @@
                 var payModal = bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal'));
                 if (payModal) payModal.hide();
 
-                // Clear cart state
-                cart = [];
-                localStorage.removeItem('csms_cart');
-                cartIdempotencyKey = null;
-                appliedVoucher = null;
-
-                // Redirect to shared BankTransferPayment page
+                // Redirect to shared BankTransferPayment page (keep cart until payment actually completes)
                 window.location.href = '@Url.Action("BankTransferPayment", "SaleManagement")?orderId=' + encodeURIComponent(data.orderId);
             })
             .catch(err => {
@@ -1507,19 +1501,19 @@
                 if (btnRec) { btnRec.className = 'btn btn-outline-primary fw-semibold'; }
                 if (btnDel) { btnDel.className = 'btn btn-primary fw-semibold'; }
                 if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Hóa đơn'; }
-                if (docTitle) { docTitle.innerText = 'PHIẾU GIAO ĐỒ (DELIVERY TICKET)'; }
+                if (docTitle) { docTitle.innerText = 'PHIẾU ĐẶT ĐỒ'; }
                 if (badgeBox) { badgeBox.classList.remove('d-none'); }
                 if (stdTableRow) { stdTableRow.classList.add('d-none'); }
                 if (stdCustRow) { stdCustRow.classList.add('d-none'); }
                 if (finSec) { finSec.classList.add('d-none'); }
                 if (paySec) { paySec.classList.add('d-none'); }
                 if (delTotalBox) { delTotalBox.classList.remove('d-none'); }
-                if (footerText) { footerText.innerHTML = '<div>CSMS - Vui lòng kiểm tra đủ món trước khi giao!</div>'; }
+                if (footerText) { footerText.innerHTML = '<div>Powered by CSMS.vn</div>'; }
                 priceCols.forEach(el => el.classList.add('d-none'));
             } else {
                 if (btnRec) { btnRec.className = 'btn btn-primary fw-semibold'; }
                 if (btnDel) { btnDel.className = 'btn btn-outline-primary fw-semibold'; }
-                if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Phiếu giao'; }
+                if (toggleLabel) { toggleLabel.innerText = 'Đổi sang Phiếu đặt đồ'; }
                 if (docTitle) { docTitle.innerText = 'HÓA ĐƠN THANH TOÁN'; }
                 if (badgeBox) { badgeBox.classList.add('d-none'); }
                 if (stdTableRow) { stdTableRow.classList.remove('d-none'); }

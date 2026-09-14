@@ -103,4 +103,13 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public decimal ReleasedQuantity { get; set; }
         public string Status { get; set; } = string.Empty; // "Đủ" hoặc "Thiếu"
     }
+
+    public class BranchStockAdjustmentDto
+    {
+        public int? InventoryId { get; set; }
+        public int? MaterialId { get; set; }
+        public decimal ActualStock { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public string? Note { get; set; }
+    }
 }

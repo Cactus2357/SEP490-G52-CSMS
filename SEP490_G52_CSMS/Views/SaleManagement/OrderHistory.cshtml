@@ -75,8 +75,7 @@
                                 <option value="Chờ thanh toán" selected="@(Model.StatusFilter == "Chờ thanh toán")">Chờ thanh toán</option>
                                 <option value="Thanh toán 1 phần" selected="@(Model.StatusFilter == "Thanh toán 1 phần")">Thanh toán 1 phần</option>
                                 <option value="Thiếu nguyên liệu" selected="@(Model.StatusFilter == "Thiếu nguyên liệu" || Model.StatusFilter == "Thiếu nguyên liệu / Chờ xử lý")">Thiếu nguyên liệu</option>
-                                <option value="Hoàn tiền 1 phần" selected="@(Model.StatusFilter == "Hoàn tiền 1 phần" || Model.StatusFilter == "Hoàn tiền một phần")">Hoàn tiền 1 phần</option>
-                                <option value="Đã hủy" selected="@(Model.StatusFilter == "Đã hủy" || Model.StatusFilter == "Đã hủy / Hoàn tiền")">Đã hủy / Hoàn tiền</option>
+                                <option value="Đã hủy" selected="@(Model.StatusFilter == "Đã hủy" || Model.StatusFilter == "Đã hủy / Hoàn tiền")">Đã hủy</option>
                             </select>
                         </div>
                         
@@ -158,21 +157,19 @@
                                     var o = Model.Orders[i];
                                     var stt = (Model.CurrentPage - 1) * Model.PageSize + i + 1;
                                     bool isMissing = o.IsMissingIngredients || o.BrewingStatus == "Missing Ingredients";
-                                    bool isPartialRefund = (!isMissing && (o.DisplayStatus == "Hoàn tiền 1 phần" || (o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount)));
-                                    bool isCancelled = (!isMissing && !isPartialRefund && (o.DisplayStatus.Contains("hủy") || o.DisplayStatus.Contains("Hoàn tiền") || o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount));
-                                    bool isDelivered = (!isCancelled && !isMissing && !isPartialRefund && (o.BrewingStatus == "Delivered" || o.DisplayStatus == "Đã giao hàng"));
-                                    bool isDone = !isCancelled && !isMissing && !isPartialRefund && !isDelivered && (o.DisplayStatus.ToLower() == "đã pha chế xong" || o.DisplayStatus.ToLower() == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
-                                    bool isUnpaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid" || o.DisplayStatus == "Chờ thanh toán");
-                                    bool isPartiallyPaid = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && (o.PaymentStatus == "PartiallyPaid" || o.DisplayStatus == "Thanh toán 1 phần");
-                                    bool isBrewing = !isCancelled && !isMissing && !isPartialRefund && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing" || o.DisplayStatus == "Đang pha chế");
+                                    bool isCancelled = (!isMissing && (o.DisplayStatus.Contains("hủy") || o.BrewingStatus == "Cancelled" || o.BrewingStatus == "Cancelled / Refunded" || o.PaymentStatus == "Cancelled"));
+                                    bool isDelivered = (!isCancelled && !isMissing && (o.BrewingStatus == "Delivered" || o.DisplayStatus == "Đã giao hàng"));
+                                    bool isDone = !isCancelled && !isMissing && !isDelivered && (o.DisplayStatus.ToLower() == "đã pha chế xong" || o.DisplayStatus.ToLower() == "đã hoàn thành" || o.BrewingStatus == "Completed" || o.BrewingStatus == "Done");
+                                    bool isUnpaid = !isCancelled && !isMissing && !isDone && !isDelivered && (o.PaymentStatus == "Unpaid" || o.DisplayStatus == "Chờ thanh toán");
+                                    bool isPartiallyPaid = !isCancelled && !isMissing && !isDone && !isDelivered && (o.PaymentStatus == "PartiallyPaid" || o.DisplayStatus == "Thanh toán 1 phần");
+                                    bool isBrewing = !isCancelled && !isMissing && !isDone && !isDelivered && !isUnpaid && !isPartiallyPaid && (o.BrewingStatus == "Brewing in Progress" || o.BrewingStatus == "Brewing" || o.DisplayStatus == "Đang pha chế");
 
                                     string rowStyle = isMissing ? "table-danger fw-semibold" : 
-                                                     (isPartialRefund ? "table-warning" : 
                                                      (isCancelled ? "table-light text-muted" : 
                                                      (isDelivered ? "table-success" : 
                                                      (isDone ? "table-primary" : 
                                                      (isUnpaid ? "table-secondary" :
-                                                     (isPartiallyPaid ? "table-info" : "table-light"))))));
+                                                     (isPartiallyPaid ? "table-info" : "table-light")))));
 
                                     <tr class="history-order-row @rowStyle" data-order-id="@o.OrderId" onclick="loadOrderDetails('@o.OrderId')">
                                         <td class="ps-3 text-secondary">@stt</td>
@@ -186,16 +183,10 @@
                                                     <i class="bi bi-exclamation-octagon-fill me-1"></i>Thiếu nguyên liệu
                                                 </span>
                                             }
-                                            else if (isPartialRefund)
-                                            {
-                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill fw-semibold">
-                                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn tiền 1 phần
-                                                </span>
-                                            }
                                             else if (isCancelled)
                                             {
                                                 <span class="badge bg-secondary text-white px-2 py-1 rounded-pill">
-                                                    <i class="bi bi-x-circle-fill me-1"></i>Đã hủy / Hoàn tiền
+                                                    <i class="bi bi-x-circle-fill me-1"></i>Đã hủy
                                                 </span>
                                             }
                                             else if (isDelivered)
@@ -377,46 +368,6 @@
     </div>
 </div>
 
-<!-- Modal Hoàn tiền mặt -->
-<div class="modal fade" id="refundModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-danger text-white py-3">
-                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-counterclockwise me-2"></i>Hoàn tiền mặt cho khách</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="alert alert-warning small mb-3">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    Số tiền hoàn mặt sẽ được <strong>trừ trực tiếp vào dòng tiền mặt của ca hiện tại</strong> để đảm bảo đối soát chính xác khi bàn giao/đóng ca.
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small">Mã đơn hàng:</label>
-                    <input type="text" id="refundOrderId" class="form-control bg-light fw-bold text-primary" readonly />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small">Số tiền hoàn (VNĐ): <span class="text-danger">*</span></label>
-                    <input type="number" id="refundAmountInput" class="form-control form-control-lg fw-bold text-danger" step="1000" min="0" required />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small">Lý do hoàn tiền: <span class="text-danger">*</span></label>
-                    <select id="refundReasonSelect" class="form-select mb-2">
-                        <option value="Hết nguyên liệu pha chế">Hết nguyên liệu pha chế</option>
-                        <option value="Khách đổi ý / Hủy đơn trước khi pha">Khách đổi ý / Hủy đơn trước khi pha</option>
-                        <option value="Pha nhầm món / Lỗi chất lượng">Pha nhầm món / Lỗi chất lượng</option>
-                        <option value="Khác">Lý do khác</option>
-                    </select>
-                    <input type="text" id="customRefundReason" class="form-control form-control-sm d-none" placeholder="Nhập lý do chi tiết..." />
-                </div>
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-danger fw-bold" onclick="submitRefund()">Xác nhận hoàn tiền</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Modal Đổi Món / Sửa Đơn Hàng -->
 <div class="modal fade" id="exchangeOrderModal" tabindex="-1" aria-labelledby="exchangeOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -500,7 +451,7 @@
             </div>
             <div class="modal-footer bg-light py-2.5">
                 <button type="button" class="btn btn-secondary fw-semibold px-3" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitExchangeOrder()">
+                <button type="button" id="btnSubmitExchange" class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitExchangeOrder()">
                     <i class="bi bi-check-circle-fill me-1"></i> Xác nhận sửa đơn & Đẩy lại pha chế
                 </button>
             </div>
@@ -510,8 +461,6 @@
 
 @section Scripts {
     <script>
-        var refundModalInstance = null;
-
         function loadOrderDetails(orderId) {
             // Highlight selected row in table
             $('.history-order-row').removeClass('selected-order');
@@ -541,87 +490,6 @@
                     `;
                 });
         }
-
-        function triggerRefundForOrder(orderId, defaultAmount) {
-            var reasonElem = document.getElementById('missingReasonData_' + orderId);
-            var reasonDetail = reasonElem ? reasonElem.value : '';
-            openRefundModal(orderId, defaultAmount, reasonDetail);
-        }
-
-        function openRefundModal(orderId, refundAmount, reasonDetail) {
-            var orderIdInput = document.getElementById('refundOrderId');
-            var amountInput = document.getElementById('refundAmountInput');
-            if (orderIdInput) orderIdInput.value = orderId;
-            if (amountInput) amountInput.value = refundAmount || 0;
-            
-            var reasonSelect = document.getElementById('refundReasonSelect');
-            if (reasonSelect && reasonDetail && reasonDetail.trim() !== '') {
-                reasonSelect.value = 'Hết nguyên liệu pha chế';
-            }
-            
-            var modalElem = document.getElementById('refundModal');
-            if (modalElem) {
-                if (!refundModalInstance) {
-                    refundModalInstance = new bootstrap.Modal(modalElem);
-                }
-                refundModalInstance.show();
-            }
-        }
-
-        document.getElementById('refundReasonSelect').addEventListener('change', function() {
-            var customInput = document.getElementById('customRefundReason');
-            if (this.value === 'Khác') {
-                customInput.classList.remove('d-none');
-            } else {
-                customInput.classList.add('d-none');
-            }
-        });
-
-        function submitRefund() {
-            var orderId = document.getElementById('refundOrderId').value;
-            var amount = parseFloat(document.getElementById('refundAmountInput').value) || 0;
-            var reasonSelect = document.getElementById('refundReasonSelect').value;
-            var customReason = document.getElementById('customRefundReason').value;
-            var reason = reasonSelect === 'Khác' ? (customReason || 'Lý do khác') : reasonSelect;
-
-            if (amount <= 0) {
-                showToast('Số tiền hoàn phải lớn hơn 0', 'warning');
-                return;
-            }
-
-            var confirmMsg = `Bạn có chắc chắn muốn <strong>xác nhận hủy đơn &amp; hoàn tiền ${amount.toLocaleString('vi-VN')} đ</strong> cho đơn hàng <strong>${orderId}</strong> với lý do: <em>"${reason}"</em>?<br><br><span class="text-danger small"><i class="bi bi-exclamation-triangle-fill me-1"></i>Số tiền sẽ được khấu trừ trực tiếp vào quỹ tiền mặt của ca trực hiện tại.</span>`;
-
-            showConfirmModal(
-                'Xác nhận hủy đơn & hoàn tiền',
-                confirmMsg,
-                function() {
-                    fetch('@Url.Action("ProcessRefund", "SaleManagement")', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            orderId: orderId,
-                            refundAmount: amount,
-                            reason: reason
-                        })
-                    })
-                    .then(res => res.json().then(data => ({ status: res.status, body: data })))
-                    .then(res => {
-                        if (res.body.success) {
-                            if (refundModalInstance) refundModalInstance.hide();
-                            showToast(res.body.message, 'success');
-                            loadOrderDetails(orderId);
-                        } else {
-                            showToast(res.body.message || 'Thất bại', 'danger');
-                        }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        showToast('Lỗi khi gửi yêu cầu hoàn tiền.', 'danger');
-                    });
-                }
-            );
-        }
-
         function cancelUnpaidOrder(orderId) {
             if (!orderId) return;
 
@@ -765,17 +633,18 @@
             let diffBox = $('#exchangeDifferenceBox');
 
             if (diff < 0) {
-                let refund = Math.abs(diff);
+                let shortage = Math.abs(diff);
                 diffBox.html(`
-                    <div class="alert alert-success border-success py-2 px-3 m-0 d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="fw-bold text-success"><i class="bi bi-arrow-down-circle-fill me-1"></i>HOÀN TIỀN THỪA CHO KHÁCH:</span>
-                            <div class="small text-muted">(Số tiền sẽ được tự động khấu trừ vào két tiền ca hiện tại)</div>
+                    <div class="alert alert-danger border-danger py-2 px-3 m-0">
+                        <div class="fw-bold text-danger mb-1">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>GIÁ TRỊ ĐƠN MỚI THẤP HƠN ĐƠN GỐC (-${shortage.toLocaleString('vi-VN')} đ)
                         </div>
-                        <h4 class="fw-bold text-success mb-0">-${refund.toLocaleString('vi-VN')} đ</h4>
+                        <div class="small text-muted">Hệ thống không áp dụng chính sách hoàn tiền khi đổi món. Vui lòng chọn thêm món hoặc món có giá trị bằng hoặc lớn hơn tổng tiền ban đầu (${exchangeOriginalTotal.toLocaleString('vi-VN')} đ).</div>
                     </div>
                 `);
+                $('#btnSubmitExchange').prop('disabled', true);
             } else if (diff > 0) {
+                $('#btnSubmitExchange').prop('disabled', false);
                 diffBox.html(`
                     <div class="alert alert-warning border-warning py-2 px-3 m-0">
                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -796,11 +665,12 @@
                     </div>
                 `);
             } else {
+                $('#btnSubmitExchange').prop('disabled', false);
                 diffBox.html(`
                     <div class="alert alert-info border-info py-2 px-3 m-0 d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="fw-bold text-info"><i class="bi bi-check-circle-fill me-1"></i>TỔNG TIỀN KHÔNG ĐỔI</span>
-                            <div class="small text-muted">Không phát sinh thu thêm hay hoàn tiền.</div>
+                            <span class="fw-bold text-info"><i class="bi bi-check-circle-fill me-1"></i>TỔNG TIỀN BẰNG ĐƠN GỐC</span>
+                            <div class="small text-muted">Không phát sinh thanh toán thêm.</div>
                         </div>
                         <h4 class="fw-bold text-info mb-0">0 đ</h4>
                     </div>
@@ -894,12 +764,16 @@
 
             let newTotal = exchangeCurrentItems.reduce((sum, it) => sum + (it.quantity * it.unitPrice), 0);
             let diff = newTotal - exchangeOriginalTotal;
+
+            if (diff < 0) {
+                showToast('Hệ thống không áp dụng chính sách hoàn tiền khi đổi món có giá trị thấp hơn đơn gốc. Vui lòng chọn món có giá trị bằng hoặc lớn hơn!', 'warning');
+                return;
+            }
+
             let addPayMethod = $('input[name="addPayMethod"]:checked').val() || 'Cash';
 
             let diffText = '';
-            if (diff < 0) {
-                diffText = `<span class="text-success fw-bold">Hoàn tiền mặt cho khách: ${Math.Abs(diff).toLocaleString('vi-VN')} đ</span> (Tự động trừ vào quỹ tiền mặt ca hiện tại)`;
-            } else if (diff > 0) {
+            if (diff > 0) {
                 diffText = `<span class="text-danger fw-bold">Thu thêm từ khách: ${diff.toLocaleString('vi-VN')} đ</span> qua hình thức <strong>${addPayMethod === 'Cash' ? 'Tiền mặt' : 'Chuyển khoản'}</strong>`;
             } else {
                 diffText = `<span class="text-info fw-bold">Tổng tiền không đổi (0 đ)</span>`;

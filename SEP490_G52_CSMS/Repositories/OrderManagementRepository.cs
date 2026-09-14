@@ -54,11 +54,11 @@ namespace SEP490_G52_CSMS.Repositories
             {
                 if (status == "Đã giao hàng" || status == "Hoàn thành" || status == "Đã hoàn thành")
                 {
-                    query = query.Where(o => o.BrewingStatus == "Delivered" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
+                    query = query.Where(o => o.BrewingStatus == "Delivered" && o.BrewingStatus != "Cancelled" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled");
                 }
                 else if (status == "Đã pha chế xong")
                 {
-                    query = query.Where(o => (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed") && o.BrewingStatus != "Delivered" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
+                    query = query.Where(o => (o.BrewingStatus == "Done" || o.BrewingStatus == "Completed") && o.BrewingStatus != "Delivered" && o.BrewingStatus != "Cancelled" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled");
                 }
                 else if (status == "Đang chờ pha chế")
                 {
@@ -70,27 +70,23 @@ namespace SEP490_G52_CSMS.Repositories
                 }
                 else if (status == "Chờ thanh toán")
                 {
-                    query = query.Where(o => o.PaymentStatus == "Unpaid" && o.BrewingStatus != "Cancelled / Refunded" && o.RefundAmount == 0);
+                    query = query.Where(o => o.PaymentStatus == "Unpaid" && o.BrewingStatus != "Cancelled" && o.BrewingStatus != "Cancelled / Refunded");
                 }
                 else if (status == "Thanh toán 1 phần")
                 {
-                    query = query.Where(o => o.PaymentStatus == "PartiallyPaid" && o.BrewingStatus != "Cancelled / Refunded");
+                    query = query.Where(o => o.PaymentStatus == "PartiallyPaid" && o.BrewingStatus != "Cancelled" && o.BrewingStatus != "Cancelled / Refunded");
                 }
                 else if (status == "Thiếu nguyên liệu" || status == "Thiếu nguyên liệu / Chờ xử lý")
                 {
                     query = query.Where(o => o.BrewingStatus == "Missing Ingredients");
                 }
-                else if (status == "Hoàn tiền 1 phần")
-                {
-                    query = query.Where(o => o.RefundAmount > 0 && o.RefundAmount < o.TotalAmount && o.BrewingStatus != "Missing Ingredients");
-                }
                 else if (status == "Đã hủy" || status == "Đã hủy / Hoàn tiền")
                 {
-                    query = query.Where(o => o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.RefundAmount >= o.TotalAmount);
+                    query = query.Where(o => o.PaymentStatus == "Canceled" || o.PaymentStatus == "Cancelled" || o.BrewingStatus == "Canceled" || o.BrewingStatus == "Cancelled" || o.BrewingStatus == "Cancelled / Refunded");
                 }
                 else if (status == "Đang xử lý")
                 {
-                    query = query.Where(o => o.BrewingStatus != "Delivered" && o.BrewingStatus != "Canceled" && o.BrewingStatus != "Cancelled" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled" && o.RefundAmount == 0);
+                    query = query.Where(o => o.BrewingStatus != "Delivered" && o.BrewingStatus != "Canceled" && o.BrewingStatus != "Cancelled" && o.BrewingStatus != "Cancelled / Refunded" && o.PaymentStatus != "Cancelled");
                 }
             }
 

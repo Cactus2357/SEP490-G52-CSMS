@@ -16,13 +16,16 @@ namespace SEP490_G52_CSMS.Controllers
     {
         private readonly CSMSAppDbContext _context;
         private readonly IWarehouseSupplyService _warehouseSupplyService;
+        private readonly INotificationService _notificationService;
 
         public BranchWarehouseController(
             CSMSAppDbContext context, 
-            IWarehouseSupplyService warehouseSupplyService)
+            IWarehouseSupplyService warehouseSupplyService,
+            INotificationService notificationService)
         {
             _context = context;
             _warehouseSupplyService = warehouseSupplyService;
+            _notificationService = notificationService;
         }
 
         private async Task<(string BranchId, string BranchName)> GetUserBranchAsync()
@@ -123,12 +126,15 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new
             {
                 inventoryId = item.InventoryId,
+                materialId = item.MaterialId,
                 materialCode = item.Material?.MaterialCode ?? "",
                 materialName = item.Material?.MaterialName ?? "",
                 category = item.Material?.Category ?? "",
                 materialKind = item.Material?.MaterialKind ?? "",
                 stockQuantity = item.StockQuantity.ToString("G29") + " " + (item.Material?.StorageUnit ?? ""),
+                rawStockQuantity = item.StockQuantity,
                 lowStockThreshold = item.LowStockThreshold.ToString("G29") + " " + (item.Material?.StorageUnit ?? ""),
+                rawLowStockThreshold = item.LowStockThreshold,
                 storageUnit = item.Material?.StorageUnit ?? "",
                 physicalState = item.Material?.PhysicalState ?? "",
                 supplier = item.Material?.Supplier ?? "N/A",
@@ -188,6 +194,87 @@ namespace SEP490_G52_CSMS.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Cập nhật định mức cảnh báo thành công!" });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AdjustStockQuantity([FromBody] BranchStockAdjustmentDto model)
+        {
+            var (branchId, branchName) = await GetUserBranchAsync();
+            if (string.IsNullOrEmpty(branchId)) return Json(new { success = false, message = "Không thể xác định chi nhánh của bạn." });
+
+            if (model == null) return Json(new { success = false, message = "Dữ liệu gửi lên không hợp lệ." });
+
+            if (model.ActualStock < 0)
+            {
+                return Json(new { success = false, message = "Số lượng tồn kho thực tế không được nhỏ hơn 0." });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Reason))
+            {
+                return Json(new { success = false, message = "Vui lòng chọn hoặc nhập lý do điều chỉnh tồn kho." });
+            }
+
+            var query = _context.BranchInventories
+                .Include(bi => bi.Material)
+                .Where(bi => bi.BranchId == branchId);
+
+            BranchInventory? item = null;
+            if (model.InventoryId.HasValue && model.InventoryId.Value > 0)
+            {
+                item = await query.FirstOrDefaultAsync(bi => bi.InventoryId == model.InventoryId.Value);
+            }
+            else if (model.MaterialId.HasValue && model.MaterialId.Value > 0)
+            {
+                item = await query.FirstOrDefaultAsync(bi => bi.MaterialId == model.MaterialId.Value);
+            }
+
+            if (item == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy nguyên liệu trong kho chi nhánh." });
+            }
+
+            decimal oldStock = item.StockQuantity;
+            decimal newStock = model.ActualStock;
+            decimal diff = newStock - oldStock;
+
+            item.StockQuantity = newStock;
+            await _context.SaveChangesAsync();
+
+            // Send notification to Regional Manager
+            try
+            {
+                var userName = User.FindFirstValue(ClaimTypes.Name) ?? "Quản lý";
+                string sign = diff > 0 ? "+" : "";
+                string diffStr = $"{sign}{diff.ToString("G29")} {item.Material?.StorageUnit ?? ""}";
+                string title = $"[Kiểm kê kho] Điều chỉnh tồn: {item.Material?.MaterialName ?? "Nguyên liệu"}";
+                string message = $"Chi nhánh {branchName}: Người thực hiện {userName} đã cập nhật tồn kho '{item.Material?.MaterialName}' từ {oldStock.ToString("G29")} thành {newStock.ToString("G29")} {item.Material?.StorageUnit} (Chênh lệch: {diffStr}). Lý do: {model.Reason.Trim()}. Ghi chú: {model.Note?.Trim() ?? "Không có"}";
+
+                await _notificationService.SendAsync(new NotificationEvent(
+                    Title: title,
+                    Message: message,
+                    RecipientRole: "RManager",
+                    ResourceUrl: "/BranchWarehouse",
+                    BranchId: branchId
+                ));
+            }
+            catch
+            {
+                // Ensure notification logging doesn't abort stock update
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = $"Cập nhật tồn kho thực tế cho '{item.Material?.MaterialName}' thành công!",
+                inventoryId = item.InventoryId,
+                materialId = item.MaterialId,
+                materialName = item.Material?.MaterialName,
+                oldStock = oldStock,
+                newStock = newStock,
+                diff = diff,
+                storageUnit = item.Material?.StorageUnit,
+                isLow = newStock <= item.LowStockThreshold
+            });
         }
 
         [HttpGet]
