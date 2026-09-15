@@ -224,7 +224,8 @@ namespace SEP490_G52_CSMS.Services
 
                 var sizesAndPrices = string.Join(" ", p.ProductVariants.Select(v => $"{v.SizeVariant}-{v.SellingPrice / 1000}K"));
 
-                var variantsVm = p.ProductVariants.Select(v => {
+                var variantsVm = p.ProductVariants.Select(v =>
+                {
                     var md = menuDetailsForProduct.FirstOrDefault(d => d.VariantId == v.VariantId);
                     return new SaleVariantViewModel
                     {
@@ -350,8 +351,8 @@ namespace SEP490_G52_CSMS.Services
 
                 await _notificationService.SendAsync(new NotificationEvent(
                     Title: isAvailable ? $"✅ Món [{prodName}] đã phục vụ trở lại" : $"⚠️ Món [{prodName}] tạm ngưng phục vụ (Hết NL)",
-                    Message: isAvailable 
-                        ? $"{updaterName} đã mở lại món [{prodName}]." 
+                    Message: isAvailable
+                        ? $"{updaterName} đã mở lại món [{prodName}]."
                         : $"{updaterName} đã đánh dấu tạm hết món [{prodName}] do hết nguyên liệu. Món đã được khóa tại màn hình bán hàng.",
                     RecipientRole: "Cashier",
                     ResourceUrl: "/SaleManagement/CreateOrder",

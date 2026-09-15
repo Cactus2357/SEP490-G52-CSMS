@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
@@ -22,15 +21,15 @@ namespace SEP490_G52_CSMS.Services
         }
 
         public async Task<Order> CreateOrderAsync(
-            string recipientName, 
-            string branchId, 
-            int cashierId, 
-            List<OrderItem> items, 
-            string? tableNumber = null, 
-            string? customerName = null, 
-            decimal? subtotalAmount = null, 
-            decimal? discountAmount = null, 
-            decimal? tradeDiscountAmount = null, 
+            string recipientName,
+            string branchId,
+            int cashierId,
+            List<OrderItem> items,
+            string? tableNumber = null,
+            string? customerName = null,
+            decimal? subtotalAmount = null,
+            decimal? discountAmount = null,
+            decimal? tradeDiscountAmount = null,
             string? orderNotes = null,
             string? voucherCode = null)
         {
@@ -53,16 +52,16 @@ namespace SEP490_G52_CSMS.Services
             if (!string.IsNullOrWhiteSpace(voucherCode))
             {
                 var cleanCode = voucherCode.Trim().ToUpper();
-                var voucher = await _context.Vouchers.FirstOrDefaultAsync(v => 
-                    v.VoucherCode.ToUpper() == cleanCode && 
-                    (v.BranchId == branchId || v.BranchId == null) && 
+                var voucher = await _context.Vouchers.FirstOrDefaultAsync(v =>
+                    v.VoucherCode.ToUpper() == cleanCode &&
+                    (v.BranchId == branchId || v.BranchId == null) &&
                     v.IsActive);
 
                 if (voucher != null && date >= voucher.StartDate && date <= voucher.EndDate && voucher.UsedCount < voucher.Quantity)
                 {
                     appliedVoucherId = voucher.VoucherId;
                     appliedVoucherCode = voucher.VoucherCode;
-                    
+
                     // Nếu client chưa tính discount hoặc gửi 0, tự động tính theo % của voucher
                     if (discount <= 0 && voucher.DiscountPercent > 0)
                     {
@@ -433,6 +432,7 @@ namespace SEP490_G52_CSMS.Services
 
                 var addPayment = new Payment
                 {
+                    PaymentId = $"PAY-{order.OrderId}-EX-{DateTime.UtcNow:HHmmss}-{Random.Shared.Next(100, 999)}",
                     OrderId = order.OrderId,
                     BranchId = order.BranchId,
                     CashierId = cashierId,
@@ -444,7 +444,10 @@ namespace SEP490_G52_CSMS.Services
                     CreatedAt = DateTime.UtcNow
                 };
                 await _context.Payments.AddAsync(addPayment);
-                order.Payments.Add(addPayment);
+                if (order.Payments != null && !order.Payments.Contains(addPayment))
+                {
+                    order.Payments.Add(addPayment);
+                }
 
                 if (activeHandover != null)
                 {

@@ -1,10 +1,10 @@
-using System.Diagnostics;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
+using System.Diagnostics;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {

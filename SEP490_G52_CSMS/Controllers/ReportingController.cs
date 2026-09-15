@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
 

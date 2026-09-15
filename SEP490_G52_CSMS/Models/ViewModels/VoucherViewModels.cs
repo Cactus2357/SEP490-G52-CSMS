@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using SEP490_G52_CSMS.Models.Sales;
+using System.ComponentModel.DataAnnotations;
 
 namespace SEP490_G52_CSMS.Models.ViewModels
 {

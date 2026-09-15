@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
@@ -51,7 +50,8 @@ namespace SEP490_G52_CSMS.Services
             }
 
             // 1. Match current roster by current time (within shift bounds: start - 30m to end)
-            var matchingRoster = rosters.FirstOrDefault(r => {
+            var matchingRoster = rosters.FirstOrDefault(r =>
+            {
                 if (r.FixedShift == null) return false;
                 var start = r.FixedShift.StartTime;
                 var end = r.FixedShift.EndTime;
@@ -71,11 +71,12 @@ namespace SEP490_G52_CSMS.Services
             // 2. If no roster strictly matches shift bounds, check active check-in roster whose end time hasn't expired by more than 30 mins
             if (matchingRoster == null)
             {
-                matchingRoster = rosters.FirstOrDefault(r => {
+                matchingRoster = rosters.FirstOrDefault(r =>
+                {
                     if (r.FixedShift == null) return false;
                     var log = r.AttendanceLogs.FirstOrDefault();
                     if (log == null || log.CheckInTime == null || log.CheckOutTime != null) return false;
-                    
+
                     var end = r.FixedShift.EndTime;
                     return r.AssignmentDate.Date == today && nowTime <= end.Add(TimeSpan.FromMinutes(30));
                 });
@@ -85,7 +86,8 @@ namespace SEP490_G52_CSMS.Services
             if (matchingRoster == null)
             {
                 var earlyWindow = TimeSpan.FromHours(2);
-                matchingRoster = rosters.FirstOrDefault(r => {
+                matchingRoster = rosters.FirstOrDefault(r =>
+                {
                     if (r.FixedShift == null) return false;
                     var start = r.FixedShift.StartTime;
                     var end = r.FixedShift.EndTime;
@@ -171,7 +173,7 @@ namespace SEP490_G52_CSMS.Services
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(ch => ch.BranchId == branchId 
+                .FirstOrDefaultAsync(ch => ch.BranchId == branchId
                                         && ch.HandoverDate.Date == matchingRoster.AssignmentDate.Date
                                         && ch.Status == CashHandoverConstants.ActiveStatus);
 

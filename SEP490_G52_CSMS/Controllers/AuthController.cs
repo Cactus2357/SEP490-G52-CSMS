@@ -6,9 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
-using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Attendance;
+using SEP490_G52_CSMS.Models.Employees;
 using SEP490_G52_CSMS.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
@@ -209,7 +208,8 @@ namespace SEP490_G52_CSMS.Controllers
                 var lateWindow = TimeSpan.FromHours(2);
 
                 // Ưu tiên ca làm việc đang diễn ra hoặc chuẩn bị bắt đầu
-                todayRoster = rosters.FirstOrDefault(r => {
+                todayRoster = rosters.FirstOrDefault(r =>
+                {
                     if (r.FixedShift == null) return false;
                     var start = r.FixedShift.StartTime;
                     var end = r.FixedShift.EndTime;
@@ -352,11 +352,12 @@ namespace SEP490_G52_CSMS.Controllers
 
             await _context.SaveChangesAsync();
             await SignInUserAsync(matchedEmployee);
-            return Json(new { 
-                success = true, 
-                employee = employeePayload, 
-                attendance = attendancePayload, 
-                attendanceMessage = attendanceMessage 
+            return Json(new
+            {
+                success = true,
+                employee = employeePayload,
+                attendance = attendancePayload,
+                attendanceMessage = attendanceMessage
             });
         }
 

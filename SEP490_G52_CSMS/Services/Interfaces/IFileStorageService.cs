@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http;
-
 namespace SEP490_G52_CSMS.Services.Interfaces
 {
     public interface IFileStorageService

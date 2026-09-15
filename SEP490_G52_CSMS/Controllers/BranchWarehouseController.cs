@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
@@ -19,7 +18,7 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly INotificationService _notificationService;
 
         public BranchWarehouseController(
-            CSMSAppDbContext context, 
+            CSMSAppDbContext context,
             IWarehouseSupplyService warehouseSupplyService,
             INotificationService notificationService)
         {

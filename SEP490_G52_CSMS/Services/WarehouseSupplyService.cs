@@ -1,16 +1,9 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Repositories.Interfaces;
 using SEP490_G52_CSMS.Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Services
 {

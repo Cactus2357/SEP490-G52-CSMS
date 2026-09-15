@@ -1,5 +1,3 @@
-using System;
-
 namespace SEP490_G52_CSMS.Commons
 {
     public static class DateTimeExtensions

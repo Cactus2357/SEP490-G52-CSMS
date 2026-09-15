@@ -157,8 +157,8 @@ namespace SEP490_G52_CSMS.Services
             }
 
             // Kiểm tra trùng mã trong chi nhánh hoặc toàn hệ thống
-            bool codeExists = await _context.Vouchers.AnyAsync(v => 
-                v.VoucherCode.ToUpper() == voucher.VoucherCode && 
+            bool codeExists = await _context.Vouchers.AnyAsync(v =>
+                v.VoucherCode.ToUpper() == voucher.VoucherCode &&
                 (v.BranchId == voucher.BranchId || v.BranchId == null || voucher.BranchId == null));
 
             if (codeExists)

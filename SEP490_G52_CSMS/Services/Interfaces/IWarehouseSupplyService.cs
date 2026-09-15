@@ -1,8 +1,5 @@
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Services.Interfaces
 {

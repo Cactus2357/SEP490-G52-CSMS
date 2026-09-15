@@ -1,14 +1,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using SEP490_G52_CSMS.Services.Interfaces;
-using System;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Services
 {
@@ -127,7 +120,7 @@ namespace SEP490_G52_CSMS.Services
                     _logger.LogWarning(ex, "S3 upload failed for {Key}. FallbackToLocal: {Fallback}", relativeKey, fallbackToLocal);
                     if (!fallbackToLocal) throw;
                 }
-            }   
+            }
 
             // Fallback to local storage in wwwroot/uploads/{folder}
             return await SaveLocallyAsync(file, folder, fileName);

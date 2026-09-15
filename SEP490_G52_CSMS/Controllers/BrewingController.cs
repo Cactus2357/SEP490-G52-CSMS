@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +5,7 @@ using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -75,7 +75,8 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             // Tìm ca phù hợp với khung giờ hiện tại
-            var matchingRoster = rosters.FirstOrDefault(r => {
+            var matchingRoster = rosters.FirstOrDefault(r =>
+            {
                 if (r.FixedShift == null) return false;
                 var start = r.FixedShift.StartTime;
                 var end = r.FixedShift.EndTime;

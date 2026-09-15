@@ -5,7 +5,6 @@ using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
-using SEP490_G52_CSMS.Services;
 using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Controllers
@@ -18,7 +17,7 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly IWarehouseSupplyService _warehouseSupplyService;
 
         public WarehouseController(
-            CSMSAppDbContext context, 
+            CSMSAppDbContext context,
             INotificationService notificationService,
             IWarehouseSupplyService warehouseSupplyService)
         {

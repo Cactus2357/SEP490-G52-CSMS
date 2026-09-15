@@ -79,7 +79,8 @@ namespace SEP490_G52_CSMS.Repositories
             var nowTime = DateTime.Now.TimeOfDay;
 
             // 1. Match current shift bounds (start - 30m to end)
-            var matching = rosters.FirstOrDefault(r => {
+            var matching = rosters.FirstOrDefault(r =>
+            {
                 if (r.FixedShift == null) return false;
                 var start = r.FixedShift.StartTime;
                 var end = r.FixedShift.EndTime;
@@ -125,7 +126,8 @@ namespace SEP490_G52_CSMS.Repositories
                 .Where(w => w.BranchId == branchId && (w.AssignmentDate.Date == date.Date || w.AssignmentDate.Date == yesterday))
                 .ToListAsync();
 
-            var roster = rosters.FirstOrDefault(w => {
+            var roster = rosters.FirstOrDefault(w =>
+            {
                 if (w.FixedShift == null) return false;
                 var start = w.FixedShift.StartTime;
                 var end = w.FixedShift.EndTime;
@@ -173,8 +175,8 @@ namespace SEP490_G52_CSMS.Repositories
                     var rosterForNextShift = await _context.WeeklyRosterGrids
                         .Include(w => w.Employee)
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(w => w.BranchId == branchId 
-                                               && w.AssignmentDate.Date == date.Date 
+                        .FirstOrDefaultAsync(w => w.BranchId == branchId
+                                               && w.AssignmentDate.Date == date.Date
                                                && w.ShiftId == nextShift.ShiftId
                                                && w.Employee != null
                                                && (w.Employee.Role == CashHandoverConstants.CashierRole || w.Employee.Role == "Cashier")
@@ -192,8 +194,8 @@ namespace SEP490_G52_CSMS.Repositories
                 .Include(w => w.FixedShift)
                 .Include(w => w.Employee)
                 .AsNoTracking()
-                .Where(w => w.BranchId == branchId 
-                         && w.AssignmentDate.Date == date.Date 
+                .Where(w => w.BranchId == branchId
+                         && w.AssignmentDate.Date == date.Date
                          && w.FixedShift != null
                          && w.FixedShift.StartTime >= currentTime
                          && w.Employee != null
@@ -247,7 +249,7 @@ namespace SEP490_G52_CSMS.Repositories
 
             var eligibleCashiers = await _context.Employees
                 .AsNoTracking()
-                .Where(e => rosterEmployeeIds.Contains(e.EmployeeId) 
+                .Where(e => rosterEmployeeIds.Contains(e.EmployeeId)
                          && (e.Role == CashHandoverConstants.CashierRole || e.Role == "Cashier")
                          && e.Status == BranchConstants.DefaultStatus)
                 .OrderBy(e => e.FullName)
@@ -359,7 +361,7 @@ namespace SEP490_G52_CSMS.Repositories
 
             var query = _context.Orders
                 .Include(o => o.Payments)
-                .Where(o => o.BranchId == branchId 
+                .Where(o => o.BranchId == branchId
                          && (o.CreatedAt >= openedAt.AddSeconds(-30) || o.CreatedAt >= openedLocal.AddSeconds(-30))
                          && (o.PaymentStatus == "Paid" || o.PaymentStatus == "Partially Refunded" || o.PaymentStatus == "TransferSuccessPending"));
 
@@ -380,13 +382,13 @@ namespace SEP490_G52_CSMS.Repositories
                 .ToList();
 
             decimal cashRevenue = validPaidOrders
-                .Sum(o => o.CashAmount > 0 
-                    ? o.CashAmount 
+                .Sum(o => o.CashAmount > 0
+                    ? o.CashAmount
                     : (!string.IsNullOrEmpty(o.PaymentMethod) && o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase) ? o.TotalAmount : 0));
 
             decimal bankRevenue = validPaidOrders
-                .Sum(o => o.BankAmount > 0 
-                    ? o.BankAmount 
+                .Sum(o => o.BankAmount > 0
+                    ? o.BankAmount
                     : (!string.IsNullOrEmpty(o.PaymentMethod) && !o.PaymentMethod.StartsWith("Cash", StringComparison.OrdinalIgnoreCase) ? o.TotalAmount : 0));
 
             decimal cashRefunds = orders
@@ -421,7 +423,8 @@ namespace SEP490_G52_CSMS.Repositories
             }
 
             // 1. Match current roster by current time (within shift bounds: start - 30m to end)
-            var matchingRoster = rosters.FirstOrDefault(r => {
+            var matchingRoster = rosters.FirstOrDefault(r =>
+            {
                 if (r.FixedShift == null) return false;
                 var start = r.FixedShift.StartTime;
                 var end = r.FixedShift.EndTime;
@@ -441,11 +444,12 @@ namespace SEP490_G52_CSMS.Repositories
             // 2. If no roster strictly matches shift bounds, check active check-in roster whose end time hasn't expired by more than 30 mins
             if (matchingRoster == null)
             {
-                matchingRoster = rosters.FirstOrDefault(r => {
+                matchingRoster = rosters.FirstOrDefault(r =>
+                {
                     if (r.FixedShift == null) return false;
                     var log = r.AttendanceLogs.FirstOrDefault();
                     if (log == null || log.CheckInTime == null || log.CheckOutTime != null) return false;
-                    
+
                     var end = r.FixedShift.EndTime;
                     return r.AssignmentDate.Date == today && nowTime <= end.Add(TimeSpan.FromMinutes(30));
                 });
@@ -455,7 +459,8 @@ namespace SEP490_G52_CSMS.Repositories
             if (matchingRoster == null)
             {
                 var earlyWindow = TimeSpan.FromHours(2);
-                matchingRoster = rosters.FirstOrDefault(r => {
+                matchingRoster = rosters.FirstOrDefault(r =>
+                {
                     if (r.FixedShift == null) return false;
                     var start = r.FixedShift.StartTime;
                     var end = r.FixedShift.EndTime;
@@ -499,7 +504,7 @@ namespace SEP490_G52_CSMS.Repositories
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(ch => ch.BranchId == branchId 
+                .FirstOrDefaultAsync(ch => ch.BranchId == branchId
                                         && ch.ShiftId == matchingRoster.ShiftId
                                         && ch.HandoverDate.Date == matchingRoster.AssignmentDate.Date
                                         && ch.Status == CashHandoverConstants.ActiveStatus);

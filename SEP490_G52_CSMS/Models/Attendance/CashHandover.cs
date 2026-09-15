@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using SEP490_G52_CSMS.Commons;
 namespace SEP490_G52_CSMS.Models.Attendance
 {
     /// <summary>

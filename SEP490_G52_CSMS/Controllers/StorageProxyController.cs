@@ -1,13 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
 using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace SEP490_G52_CSMS.Controllers
 {

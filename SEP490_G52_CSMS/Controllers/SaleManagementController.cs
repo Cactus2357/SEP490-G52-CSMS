@@ -251,8 +251,8 @@ namespace SEP490_G52_CSMS.Controllers
                     IsAvailable = variants.Any(v => v.IsAvailable)
                 };
 
-                var def = pvm.Variants.FirstOrDefault(v => v.IsAvailable && v.SizeVariant == "S") 
-                          ?? pvm.Variants.FirstOrDefault(v => v.IsAvailable) 
+                var def = pvm.Variants.FirstOrDefault(v => v.IsAvailable && v.SizeVariant == "S")
+                          ?? pvm.Variants.FirstOrDefault(v => v.IsAvailable)
                           ?? pvm.Variants.FirstOrDefault();
                 if (def != null)
                 {
@@ -320,9 +320,9 @@ namespace SEP490_G52_CSMS.Controllers
             }).ToList();
 
             var order = await _orderService.CreateOrderAsync(
-                recipient, 
-                branchId, 
-                cashierId, 
+                recipient,
+                branchId,
+                cashierId,
                 orderItems,
                 model.TableNumber,
                 model.CustomerName,
@@ -381,9 +381,9 @@ namespace SEP490_G52_CSMS.Controllers
                 }).ToList();
 
                 var order = await _orderService.CreateOrderAsync(
-                    recipient, 
-                    branchId, 
-                    cashierId, 
+                    recipient,
+                    branchId,
+                    cashierId,
                     orderItems,
                     model.TableNumber,
                     model.CustomerName,
@@ -613,8 +613,9 @@ namespace SEP490_G52_CSMS.Controllers
 
             decimal remainingAmount = Math.Max(0, order.TotalAmount - receivedBankAmount - receivedCashAmount);
 
-            return Json(new { 
-                success = true, 
+            return Json(new
+            {
+                success = true,
                 paymentStatus = order.PaymentStatus,
                 totalAmount = order.TotalAmount,
                 receivedAmount = (receivedBankAmount + receivedCashAmount) > 0 ? (receivedBankAmount + receivedCashAmount) : order.TotalAmount,
@@ -666,12 +667,13 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (result)
             {
-                return Json(new { 
-                    success = true, 
+                return Json(new
+                {
+                    success = true,
                     orderId = order.OrderId,
                     cashAmount = cashAmount,
                     bankAmount = bankAmount,
-                    message = "Thanh toán kết hợp thành công!" 
+                    message = "Thanh toán kết hợp thành công!"
                 });
             }
 
@@ -872,20 +874,21 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             var result = await _orderService.ExchangeOrderItemsAsync(
-                model.OrderId, 
-                model.Items, 
-                model.AdditionalPaymentMethod ?? "Cash", 
-                model.CustomerCash, 
-                model.ChangeAmount, 
-                model.Reason, 
+                model.OrderId,
+                model.Items,
+                model.AdditionalPaymentMethod ?? "Cash",
+                model.CustomerCash,
+                model.ChangeAmount,
+                model.Reason,
                 cashierId);
 
             if (result.success)
             {
-                return Json(new { 
-                    success = true, 
-                    message = result.message, 
-                    additionalAmount = result.additionalAmount 
+                return Json(new
+                {
+                    success = true,
+                    message = result.message,
+                    additionalAmount = result.additionalAmount
                 });
             }
 

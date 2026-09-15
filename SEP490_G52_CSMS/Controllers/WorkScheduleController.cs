@@ -78,7 +78,7 @@ namespace SEP490_G52_CSMS.Controllers
                     .Where(r => r.Employee != null)
                     .GroupBy(r => (r.ShiftId, r.AssignmentDate.Date))
                     .ToDictionary(
-                        g => g.Key, 
+                        g => g.Key,
                         g => g.Select(r => r.Employee!)
                               .OrderBy(e => e.Role == "Cashier" ? 0 : (e.Role == "Bartender" || e.Role == "Barista" ? 1 : 2))
                               .ThenBy(e => e.FullName)
@@ -334,8 +334,8 @@ namespace SEP490_G52_CSMS.Controllers
             var roster = await _context.WeeklyRosterGrids
                 .Include(r => r.FixedShift)
                 .Include(r => r.AttendanceLogs)
-                .FirstOrDefaultAsync(r => r.EmployeeId == empId 
-                                          && r.ShiftId == request.ShiftId 
+                .FirstOrDefaultAsync(r => r.EmployeeId == empId
+                                          && r.ShiftId == request.ShiftId
                                           && r.AssignmentDate.Date == targetDate);
 
             if (roster == null || roster.FixedShift == null)

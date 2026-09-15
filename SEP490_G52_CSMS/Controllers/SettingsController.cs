@@ -1,5 +1,3 @@
-using System.Security.Claims;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +6,7 @@ using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
+using System.Text.RegularExpressions;
 
 namespace SEP490_G52_CSMS.Controllers
 {
@@ -76,7 +75,7 @@ namespace SEP490_G52_CSMS.Controllers
 
             ViewBag.ActiveTab = activeTab;
             ViewBag.WebhookUrl = $"{Request.Scheme}://{Request.Host}/api/sepay/webhook";
-            
+
             return View(setting);
         }
 
@@ -95,7 +94,7 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             setting.BranchDisplayName = string.IsNullOrWhiteSpace(model.BranchDisplayName) ? "CSMS Coffee" : model.BranchDisplayName.Trim();
-            
+
             var phone = model.ContactPhone?.Trim() ?? "";
             if (!string.IsNullOrEmpty(phone) && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0\d{9}$"))
             {

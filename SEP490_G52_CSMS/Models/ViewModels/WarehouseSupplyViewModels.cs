@@ -1,7 +1,4 @@
-using Microsoft.AspNetCore.Http;
 using SEP490_G52_CSMS.Models.Sales;
-using System;
-using System.Collections.Generic;
 
 namespace SEP490_G52_CSMS.Models.ViewModels
 {
