@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using SEP490_G52_CSMS.Commons;
@@ -46,6 +47,7 @@ namespace SEP490_G52_CSMS.Controllers
 
         [HttpPost]
         [AllowAnonymous]
+        [EnableRateLimiting("AuthLimit")]
         public async Task<IActionResult> Login(string username, string password)
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
@@ -97,6 +99,7 @@ namespace SEP490_G52_CSMS.Controllers
 
         [HttpPost]
         [AllowAnonymous]
+        [EnableRateLimiting("AuthLimit")]
         public async Task<IActionResult> FaceLogin([FromBody] FaceLoginRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.FacialId))

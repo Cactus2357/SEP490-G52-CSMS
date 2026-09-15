@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Repositories;
@@ -37,6 +39,60 @@ builder.Services.AddScoped<IProductCategoryRepository, ProductCategoryRepository
 builder.Services.AddScoped<IProductCategoryService, ProductCategoryService>();
 builder.Services.AddMemoryCache();
 
+// Rate Limiting (.NET 8)
+builder.Services.AddRateLimiter(rateLimiterOptions =>
+{
+    rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    rateLimiterOptions.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.ContentType = "text/html; charset=utf-8";
+        if (context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+            context.HttpContext.Request.Headers.Accept.ToString().Contains("application/json"))
+        {
+            context.HttpContext.Response.ContentType = "application/json; charset=utf-8";
+            await context.HttpContext.Response.WriteAsync("{\"error\": \"Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.\"}", token);
+        }
+        else
+        {
+            await context.HttpContext.Response.WriteAsync(
+                "<div style='font-family:sans-serif; text-align:center; padding:50px;'>" +
+                "<h2 style='color:#d9534f;'>429 - Quá nhiều yêu cầu (Too Many Requests)</h2>" +
+                "<p>Hệ thống tạm thời giới hạn tần suất gửi yêu cầu từ địa chỉ IP của bạn để đảm bảo an toàn.</p>" +
+                "<p>Vui lòng đợi 1 phút trước khi thử lại.</p></div>", token);
+        }
+    };
+
+    // Global sliding window: max 100 requests per minute per IP
+    rateLimiterOptions.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                SegmentsPerWindow = 4,
+                QueueLimit = 10
+            });
+    });
+
+    // Strict policy for Auth/Login: max 5 requests per minute per IP
+    rateLimiterOptions.AddPolicy("AuthLimit", httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+});
+
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -45,6 +101,9 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
         options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     });
 
 builder.Services.AddAuthorization(options =>
@@ -134,6 +193,20 @@ if (!app.Environment.IsEnvironment("Docker"))
     app.UseHttpsRedirection();
 }
 
+// Security Headers Middleware
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Permissions-Policy"] = "geolocation=(), microphone=()";
+    context.Response.Headers.Remove("Server");
+    context.Response.Headers.Remove("X-Powered-By");
+
+    await next();
+});
+
 app.UseStaticFiles(new StaticFileOptions
 {
     ServeUnknownFileTypes = true,
@@ -141,6 +214,8 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseRouting();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
