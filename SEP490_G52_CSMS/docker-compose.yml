@@ -15,7 +15,6 @@ services:
       - TZ=Asia/Ho_Chi_Minh
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=https://+:9000;http://+:8080
-      - ASPNETCORE_HTTPS_PORTS=9000
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/csms.pfx
       - ASPNETCORE_Kestrel__Certificates__Default__Password=csms123456
       # SQL Server on Host Machine:
@@ -56,6 +55,18 @@ services:
       exit 0;
       "
     restart: "no"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: csms_ngrok
+    restart: unless-stopped
+    command: ${NGROK_COMMAND:-http csms-web-staging:8080}
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - csms-web-staging
 
 volumes:
   minio_data:

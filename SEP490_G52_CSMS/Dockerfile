@@ -20,7 +20,6 @@ COPY --from=build /app/publish .
 
 ENV TZ=Asia/Ho_Chi_Minh
 ENV ASPNETCORE_URLS=https://+:9000;http://+:8080
-ENV ASPNETCORE_HTTPS_PORTS=9000
 ENV ASPNETCORE_ENVIRONMENT=Docker
 
 ENTRYPOINT ["dotnet", "SEP490_G52_CSMS.dll"]
