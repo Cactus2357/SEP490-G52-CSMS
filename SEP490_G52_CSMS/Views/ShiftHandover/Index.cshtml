@@ -9,112 +9,123 @@
 
 <style>
     .kpi-card {
-        border: 1px solid #dee2e6;
-        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
         padding: 16px 20px;
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 16px;
         flex: 1;
+        min-width: 220px;
         background: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .kpi-icon {
-        font-size: 1.8rem;
-        color: #495057;
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    .kpi-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
     }
 
     .kpi-label {
         font-size: 0.82rem;
         color: #6c757d;
         font-weight: 500;
+        margin-bottom: 2px;
     }
 
     .kpi-value {
-        font-size: 1.25rem;
+        font-size: 1.3rem;
         font-weight: 700;
         color: #111827;
+        line-height: 1.2;
     }
 
     .kpi-value.variance-nonzero {
         color: #dc3545;
     }
 
-    .handover-box {
-        border: 1px solid #ced4da;
-        border-radius: 8px;
-        padding: 20px;
-        background-color: #fff;
-        height: 100%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-
-    .handover-box h5 {
-        font-weight: 700;
-        margin-bottom: 16px;
-        font-size: 1.15rem;
-    }
-
-    .handover-box input[readonly] {
-        border: 1px solid #ced4da !important;
-        border-radius: 4px;
-        background-color: #f8f9fa !important;
-        color: #212529;
+    .handover-box-input {
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #1e293b;
         font-weight: 600;
+    }
+
+    .shift-history-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background-color: #f8fafc !important;
+        box-shadow: inset 0 -2px 0 #edf2f7;
     }
 </style>
 
-<div class="page-header d-flex justify-content-between align-items-center mb-3">
+<div class="page-header d-flex justify-content-between align-items-center mb-3 pt-2">
     <h1 class="page-title h3 fw-bold text-dark mb-0">LỊCH SỬ ĐÓNG MỞ / BÀN GIAO CA</h1>
 </div>
 
 <div class="card-container mb-4">
     <!-- Date pager + filters -->
-    <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <div class="input-group" style="width:auto;">
-            <a class="btn btn-outline-secondary"
-               href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(-1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus, handoverType = Model.SelectedHandoverType })">
-                &lsaquo;
-            </a>
-            <span class="input-group-text fw-semibold px-3">
-                <i class="bi bi-calendar3 me-2 text-primary"></i>@(IsToday ? "Hôm nay" : "Ngày") @Model.SelectedDate.ToString("dd/MM/yyyy")
-            </span>
-            <a class="btn btn-outline-secondary"
-               href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus, handoverType = Model.SelectedHandoverType })">
-                &rsaquo;
-            </a>
-        </div>
+    <div class="card border-0 shadow-sm rounded-3 p-3 mb-3 bg-white">
+        <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2 mb-0">
+            <div class="input-group" style="width:auto;">
+                <a class="btn btn-outline-secondary"
+                   href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(-1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus, handoverType = Model.SelectedHandoverType })">
+                    &lsaquo;
+                </a>
+                <span class="input-group-text fw-semibold px-3 bg-white">
+                    <i class="bi bi-calendar3 me-2 text-primary"></i>@(IsToday ? "Hôm nay" : "Ngày") @Model.SelectedDate.ToString("dd/MM/yyyy")
+                </span>
+                <a class="btn btn-outline-secondary"
+                   href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus, handoverType = Model.SelectedHandoverType })">
+                    &rsaquo;
+                </a>
+            </div>
 
-        <input type="hidden" name="date" value="@(Model.SelectedDate.ToString("yyyy-MM-dd"))" />
+            <input type="hidden" name="date" value="@(Model.SelectedDate.ToString("yyyy-MM-dd"))" />
 
-        <select name="shiftId" class="form-select" style="max-width:180px;" onchange="this.form.submit()">
-            <option value="">Tất cả các ca</option>
-            @foreach (var s in Model.AllShifts)
-            {
-                <option value="@s.ShiftId" selected="@(Model.SelectedShiftId == s.ShiftId)">@s.ShiftName</option>
-            }
-        </select>
+            <select name="shiftId" class="form-select" style="max-width:180px;" onchange="this.form.submit()">
+                <option value="">Tất cả các ca</option>
+                @foreach (var s in Model.AllShifts)
+                {
+                    <option value="@s.ShiftId" selected="@(Model.SelectedShiftId == s.ShiftId)">@s.ShiftName</option>
+                }
+            </select>
 
-        <select name="handoverType" class="form-select" style="max-width:210px;" onchange="this.form.submit()">
-            <option value="">Loại bàn giao: Tất cả</option>
-            <option value="FirstShift" selected="@(Model.SelectedHandoverType == "FirstShift")">Mở ca đầu ngày</option>
-            <option value="MidShift" selected="@(Model.SelectedHandoverType == "MidShift")">Giao ca thường</option>
-            <option value="Emergency" selected="@(Model.SelectedHandoverType == "Emergency")">Bàn giao đột xuất</option>
-            <option value="LastShift" selected="@(Model.SelectedHandoverType == "LastShift")">Đóng ca cuối ngày</option>
-        </select>
+            <select name="handoverType" class="form-select" style="max-width:210px;" onchange="this.form.submit()">
+                <option value="">Loại bàn giao: Tất cả</option>
+                <option value="FirstShift" selected="@(Model.SelectedHandoverType == "FirstShift")">Mở ca đầu ngày</option>
+                <option value="MidShift" selected="@(Model.SelectedHandoverType == "MidShift")">Giao ca thường</option>
+                <option value="Emergency" selected="@(Model.SelectedHandoverType == "Emergency")">Bàn giao đột xuất</option>
+                <option value="LastShift" selected="@(Model.SelectedHandoverType == "LastShift")">Đóng ca cuối ngày</option>
+            </select>
 
-        <select name="status" class="form-select" style="max-width:190px;" onchange="this.form.submit()">
-            <option value="">Trạng thái: Tất cả</option>
-            <option value="Lệch tiền" selected="@(Model.SelectedStatus == "Lệch tiền")">Lệch tiền</option>
-            <option value="Khớp tiền" selected="@(Model.SelectedStatus == "Khớp tiền")">Khớp tiền</option>
-        </select>
-    </form>
+            <select name="status" class="form-select" style="max-width:190px;" onchange="this.form.submit()">
+                <option value="">Trạng thái: Tất cả</option>
+                <option value="Lệch tiền" selected="@(Model.SelectedStatus == "Lệch tiền")">Lệch tiền</option>
+                <option value="Khớp tiền" selected="@(Model.SelectedStatus == "Khớp tiền")">Khớp tiền</option>
+            </select>
+        </form>
+    </div>
 
     <!-- KPI cards -->
     <div class="d-flex flex-wrap gap-3 mb-4">
         <div class="kpi-card">
-            <i class="bi bi-cash-stack kpi-icon text-success"></i>
+            <div class="kpi-icon-wrapper bg-success bg-opacity-10 text-success">
+                <i class="bi bi-cash-stack"></i>
+            </div>
             <div>
                 <div class="kpi-label">Tổng Doanh Thu Hôm Nay</div>
                 <div class="kpi-value text-success">@FormatMoney(Model.TotalRevenueToday)</div>
@@ -125,7 +136,9 @@
         </div>
 
         <div class="kpi-card">
-            <i class="bi bi-clipboard-check kpi-icon text-primary"></i>
+            <div class="kpi-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-clipboard-check"></i>
+            </div>
             <div>
                 <div class="kpi-label">Số phiên đã chốt</div>
                 <div class="kpi-value">@Model.HandedOverCount phiên</div>
@@ -133,7 +146,9 @@
         </div>
 
         <div class="kpi-card @(Model.EmergencyCount > 0 ? "border-danger bg-danger-subtle bg-opacity-10" : "")">
-            <i class="bi bi-exclamation-octagon-fill kpi-icon @(Model.EmergencyCount > 0 ? "text-danger" : "text-secondary")"></i>
+            <div class="kpi-icon-wrapper @(Model.EmergencyCount > 0 ? "bg-danger bg-opacity-15 text-danger" : "bg-warning bg-opacity-15 text-warning")">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+            </div>
             <div>
                 <div class="kpi-label">Bàn giao đột xuất</div>
                 <div class="kpi-value @(Model.EmergencyCount > 0 ? "text-danger" : "")">@Model.EmergencyCount phiên</div>
@@ -141,7 +156,9 @@
         </div>
 
         <div class="kpi-card">
-            <i class="bi bi-exclamation-triangle-fill kpi-icon @(Model.TotalVarianceToday != 0 ? "text-danger" : "text-muted")"></i>
+            <div class="kpi-icon-wrapper @(Model.TotalVarianceToday != 0 ? "bg-danger bg-opacity-10 text-danger" : "bg-secondary bg-opacity-10 text-secondary")">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
             <div>
                 <div class="kpi-label">Tổng chênh lệch ngày</div>
                 <div class="kpi-value @(Model.TotalVarianceToday != 0 ? "variance-nonzero" : "")">
@@ -152,86 +169,90 @@
     </div>
 
     <!-- Handover history grid -->
-    <div class="table-responsive mb-0 border rounded">
-        <table class="table table-hover align-middle text-center mb-0">
-            <thead class="table-dark">
-                <tr>
-                    <th style="width: 14%;">Thời Gian</th>
-                    <th style="width: 10%;">Loại Bàn Giao</th>
-                    <th style="width: 8%;">Ca Trực</th>
-                    <th style="width: 14%;">Người Giao</th>
-                    <th style="width: 14%;">Người Nhận</th>
-                    <th style="width: 14%;">Doanh Thu Ca</th>
-                    <th style="width: 12%;">Tiền Lý Thuyết</th>
-                    <th style="width: 17%;">Tiền Kiểm Kê</th>
-                    <th style="width: 17%;">Chênh Lệch</th>
-                    <th style="width: 10%;">Hành Động</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.Rows.Count == 0)
-                {
-                    <tr>
-                        <td colspan="10" class="text-center text-muted py-5">
-                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                            Không có dữ liệu bàn giao ca nào phù hợp với bộ lọc ngày đã chọn.
-                        </td>
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4 bg-white">
+        <div class="table-responsive" style="max-height: 520px; overflow-y: auto; overflow-x: auto;">
+            <table class="table table-hover align-middle text-center mb-0 shift-history-table">
+                <thead class="table-light">
+                    <tr class="text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px; border-bottom: 2px solid #edf2f7; font-size: 0.78rem;">
+                        <th style="width: 12%;">Thời Gian</th>
+                        <th style="width: 11%;">Loại Bàn Giao</th>
+                        <th style="width: 8%;">Ca Trực</th>
+                        <th style="width: 13%;">Người Giao</th>
+                        <th style="width: 13%;">Người Nhận</th>
+                        <th style="width: 14%;">Doanh Thu Ca</th>
+                        <th style="width: 12%;">Tiền Lý Thuyết</th>
+                        <th style="width: 12%;">Tiền Kiểm Kê</th>
+                        <th style="width: 10%;">Chênh Lệch</th>
+                        <th style="width: 10%; min-width: 105px; white-space: nowrap;">Hành Động</th>
                     </tr>
-                }
-                else
-                {
-                    @foreach (var row in Model.Rows)
+                </thead>
+                <tbody>
+                    @if (Model.Rows.Count == 0)
                     {
-                        var h = row.Handover;
-                        var variance = h.ActualCash - h.TheoreticalCash;
-                        var isMatched = variance == 0;
-                        var timeDisplay = (h.ClosedAt ?? h.OpenedAt).ToString("HH:mm - dd/MM");
-
-                        <tr class="@(h.HandoverType == "Emergency" ? "table-danger bg-opacity-10" : "")">
-                            <td><span class="fw-semibold text-dark">@timeDisplay</span></td>
-                            <td>
-                                <span class="badge @row.HandoverTypeBadgeClass px-2 py-1">
-                                    @if (h.HandoverType == "Emergency")
-                                    {
-                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                    }
-                                    @row.HandoverTypeLabel
-                                </span>
-                            </td>
-                            <td>
-                                <span class="fw-semibold text-primary">@(h.FixedShift?.ShiftName ?? "Ca ?")</span>
-                            </td>
-                            <td><span class="fw-medium">@(h.OutgoingCashier?.FullName ?? "?")</span></td>
-                            <td><span class="fw-medium">@(h.IncomingCashier?.FullName ?? "?")</span></td>
-                            <td class="fw-bold text-success">
-                                <div>+@FormatMoney(h.MachineCashRevenue + h.BankTransferRevenue)</div>
-                                <small class="text-muted d-block" style="font-size: 0.72rem;">TM: @FormatMoney(h.MachineCashRevenue) | CK: @FormatMoney(h.BankTransferRevenue)</small>
-                            </td>
-                            <td class="fw-semibold">@FormatMoney(h.TheoreticalCash)</td>
-                            <td class="fw-bold text-dark">@FormatMoney(h.ActualCash)</td>
-                            <td class="@(isMatched ? "text-secondary" : "text-danger fw-bold")">
-                                @(variance == 0 ? "0 đ" : (variance > 0 ? "+" : "") + FormatMoney(variance))
-                            </td>
-                            <td>
-                                <a href="#" class="link-primary text-decoration-none fw-semibold small" onclick="showHandoverDetail(@h.HandoverId); return false;">
-                                    <i class="bi bi-eye me-1"></i>Chi tiết
-                                </a>
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                Không có dữ liệu bàn giao ca nào phù hợp với bộ lọc ngày đã chọn.
                             </td>
                         </tr>
                     }
-                }
-            </tbody>
-        </table>
+                    else
+                    {
+                        @foreach (var row in Model.Rows)
+                        {
+                            var h = row.Handover;
+                            var variance = h.ActualCash - h.TheoreticalCash;
+                            var isMatched = variance == 0;
+                            var timeDisplay = (h.ClosedAt ?? h.OpenedAt).ToVietnamTimeString("HH:mm - dd/MM");
+
+                            <tr class="@(h.HandoverType == "Emergency" ? "table-danger bg-opacity-10" : "")">
+                                <td><span class="fw-semibold text-dark">@timeDisplay</span></td>
+                                <td>
+                                    <span class="badge @row.HandoverTypeBadgeClass px-2.5 py-1.5 rounded-pill fw-medium">
+                                        @if (h.HandoverType == "Emergency")
+                                        {
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                        }
+                                        @row.HandoverTypeLabel
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border px-2 py-1 fw-semibold">@(h.FixedShift?.ShiftName ?? "Ca ?")</span>
+                                </td>
+                                <td><span class="fw-medium text-dark">@(h.OutgoingCashier?.FullName ?? "?")</span></td>
+                                <td><span class="fw-medium text-dark">@(h.IncomingCashier?.FullName ?? "?")</span></td>
+                                <td class="fw-bold text-success">
+                                    <div>+@FormatMoney(h.MachineCashRevenue + h.BankTransferRevenue)</div>
+                                    <small class="text-muted d-block fw-normal" style="font-size: 0.72rem;">TM: @FormatMoney(h.MachineCashRevenue) | CK: @FormatMoney(h.BankTransferRevenue)</small>
+                                </td>
+                                <td class="fw-semibold text-dark">@FormatMoney(h.TheoreticalCash)</td>
+                                <td class="fw-bold text-dark">@FormatMoney(h.ActualCash)</td>
+                                <td class="@(isMatched ? "text-secondary" : "text-danger fw-bold")">
+                                    @(variance == 0 ? "0 đ" : (variance > 0 ? "+" : "") + FormatMoney(variance))
+                                </td>
+                                <td style="white-space: nowrap; vertical-align: middle;">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-medium text-nowrap d-inline-flex align-items-center justify-content-center" style="height: 32px; min-width: 88px;" onclick="showHandoverDetail(@h.HandoverId); return false;">
+                                        <i class="bi bi-eye me-1"></i>Chi tiết
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <div class="card-container">
     <!-- Opening / Closing detail panel -->
-    <h2 class="mb-3 fw-bold h5 text-uppercase text-secondary">Chi tiết mở &amp; đóng ca trong ngày:</h2>
+    <h2 class="mb-3 fw-bold h5 text-uppercase text-secondary"><i class="bi bi-calendar-event me-2"></i>Chi tiết mở &amp; đóng ca trong ngày:</h2>
     <div class="row g-3">
         <div class="col-md-6">
-            <div class="handover-box">
-                <h5 class="text-primary"><i class="bi bi-door-open me-2"></i>Mở ca (@(Model.OpeningInfo?.Handover.FixedShift?.ShiftName ?? "Ca 1")):</h5>
+            <div class="card border-0 shadow-sm rounded-3 p-4 bg-white h-100">
+                <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-door-open-fill me-2"></i>Mở ca (@(Model.OpeningInfo?.Handover.FixedShift?.ShiftName ?? "Ca 1")):</h5>
+                </div>
                 @if (Model.OpeningInfo == null)
                 {
                     <p class="text-muted mb-0">Chưa có dữ liệu mở ca cho ngày này.</p>
@@ -240,24 +261,26 @@
                 {
                     var opening = Model.OpeningInfo.Handover;
                     <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-                        <span class="text-nowrap fw-semibold small" style="width: 140px;">Thu ngân mở ca:</span>
-                        <input type="text" class="form-control form-control-sm text-center flex-grow-1" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly />
+                        <span class="text-nowrap fw-semibold small text-secondary" style="width: 140px;">Thu ngân mở ca:</span>
+                        <input type="text" class="form-control form-control-sm text-center flex-grow-1 handover-box-input" value="@(opening.OutgoingCashier?.FullName ?? "?")" readonly />
                     </div>
                     <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-                        <span class="text-nowrap fw-semibold small" style="width: 140px;">Thời gian mở ca:</span>
-                        <input type="text" class="form-control form-control-sm text-center flex-grow-1" value="@(opening.OpenedAt.ToString("HH:mm - dd/MM/yyyy"))" readonly />
+                        <span class="text-nowrap fw-semibold small text-secondary" style="width: 140px;">Thời gian mở ca:</span>
+                        <input type="text" class="form-control form-control-sm text-center flex-grow-1 handover-box-input" value="@(opening.OpenedAt.ToVietnamTimeString("HH:mm - dd/MM/yyyy"))" readonly />
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="text-nowrap fw-semibold small" style="width: 140px;">Tiền mặt đầu ca:</span>
-                        <input type="text" class="form-control form-control-sm font-monospace text-success fw-bold flex-grow-1" value="@FormatMoney(opening.InitialCash)" readonly />
+                        <span class="text-nowrap fw-semibold small text-secondary" style="width: 140px;">Tiền mặt đầu ca:</span>
+                        <input type="text" class="form-control form-control-sm font-monospace text-success fw-bold flex-grow-1 handover-box-input" value="@FormatMoney(opening.InitialCash)" readonly />
                     </div>
                 }
             </div>
         </div>
 
         <div class="col-md-6">
-            <div class="handover-box">
-                <h5 class="text-danger"><i class="bi bi-door-closed me-2"></i>Đóng ca (@(Model.ClosingInfo?.Handover.FixedShift?.ShiftName ?? "Ca cuối")):</h5>
+            <div class="card border-0 shadow-sm rounded-3 p-4 bg-white h-100">
+                <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                    <h5 class="fw-bold text-danger mb-0"><i class="bi bi-door-closed-fill me-2"></i>Đóng ca (@(Model.ClosingInfo?.Handover.FixedShift?.ShiftName ?? "Ca cuối")):</h5>
+                </div>
                 @if (Model.ClosingInfo == null)
                 {
                     <p class="text-muted mb-0">Chưa có dữ liệu đóng ca cho ngày này.</p>
@@ -266,16 +289,16 @@
                 {
                     var closing = Model.ClosingInfo.Handover;
                     <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-                        <span class="text-nowrap fw-semibold small" style="width: 150px;">Thu ngân đóng ca:</span>
-                        <input type="text" class="form-control form-control-sm text-center flex-grow-1" value="@(closing.OutgoingCashier?.FullName ?? "?")" readonly />
+                        <span class="text-nowrap fw-semibold small text-secondary" style="width: 150px;">Thu ngân đóng ca:</span>
+                        <input type="text" class="form-control form-control-sm text-center flex-grow-1 handover-box-input" value="@(closing.OutgoingCashier?.FullName ?? "?")" readonly />
                     </div>
                     <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-                        <span class="text-nowrap fw-semibold small" style="width: 150px;">Thời gian chốt ca:</span>
-                        <input type="text" class="form-control form-control-sm text-center flex-grow-1" value="@((closing.ClosedAt ?? closing.OpenedAt).ToString("HH:mm - dd/MM/yyyy"))" readonly />
+                        <span class="text-nowrap fw-semibold small text-secondary" style="width: 150px;">Thời gian chốt ca:</span>
+                        <input type="text" class="form-control form-control-sm text-center flex-grow-1 handover-box-input" value="@((closing.ClosedAt ?? closing.OpenedAt).ToVietnamTimeString("HH:mm - dd/MM/yyyy"))" readonly />
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span class="text-nowrap fw-semibold small" style="width: 150px;">Tổng tiền thực tế:</span>
-                        <input type="text" class="form-control form-control-sm font-monospace text-primary fw-bold flex-grow-1" value="@FormatMoney(closing.ActualCash)" readonly />
+                        <span class="text-nowrap fw-semibold small text-secondary" style="width: 150px;">Tổng tiền thực tế:</span>
+                        <input type="text" class="form-control form-control-sm font-monospace text-primary fw-bold flex-grow-1 handover-box-input" value="@FormatMoney(closing.ActualCash)" readonly />
                     </div>
                 }
             </div>

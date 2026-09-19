@@ -605,12 +605,75 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<HandoverViewModel?> GetEmergencyHandoverModelAsync(int cashierId)
         {
-            var model = await GetHandoverModelAsync(cashierId);
-            if (model != null)
+            var today = DateTime.Today;
+            var activeHandover = await _cashHandoverRepository.GetActiveHandoverAsync(cashierId, today);
+
+            if (activeHandover == null)
             {
-                model.IsEmergencyHandover = true;
+                var cashier = await _cashHandoverRepository.GetEmployeeByIdAsync(cashierId);
+                if (cashier != null && !string.IsNullOrEmpty(cashier.BranchId))
+                {
+                    activeHandover = await _cashHandoverRepository.GetCurrentActiveHandoverForBranchAsync(cashier.BranchId, today);
+                }
             }
-            return model;
+
+            if (activeHandover == null)
+            {
+                return null;
+            }
+
+            // Kiểm tra ca tiếp theo nếu có. Nếu là ca cuối cùng trong ngày, target chính là ca hiện tại
+            var nextShift = await _cashHandoverRepository.GetNextFixedShiftAsync(activeHandover.ShiftId);
+            string targetShiftName = nextShift?.ShiftName ?? (activeHandover.FixedShift?.ShiftName ?? "Ca hiện tại");
+            string targetShiftTimeRange = nextShift != null ? FormatShiftTimeRange(nextShift) : FormatShiftTimeRange(activeHandover.FixedShift);
+
+            // Tính doanh thu và hoàn tiền mặt thực tế phát sinh trong ca
+            var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
+                activeHandover.BranchId, activeHandover.OutgoingCashierId, activeHandover.OpenedAt, null);
+
+            // Thu ngân có thể nhận bàn giao đột xuất: tất cả thu ngân hoạt động trong chi nhánh
+            var branchCashiers = await _cashHandoverRepository.GetCashiersInBranchAsync(activeHandover.BranchId);
+            if (!branchCashiers.Any())
+            {
+                branchCashiers = await _cashHandoverRepository.GetEligibleHandoverCashiersAsync(
+                    activeHandover.BranchId, today, activeHandover.ShiftId, activeHandover.OutgoingCashierId);
+            }
+
+            var currentTime = DateTime.Now.TimeOfDay;
+            var nextCashierId = await _cashHandoverRepository.GetNextCashierForHandoverAsync(activeHandover.BranchId, today, currentTime);
+
+            var otherCashier = branchCashiers.FirstOrDefault(c => c.EmployeeId != activeHandover.OutgoingCashierId);
+            var defaultIncomingId = otherCashier?.EmployeeId ?? nextCashierId ?? activeHandover.OutgoingCashierId;
+
+            var theoretical = activeHandover.InitialCash + cashRev - cashRefunds;
+
+            return new HandoverViewModel
+            {
+                HandoverId = activeHandover.HandoverId,
+                OutgoingCashierId = activeHandover.OutgoingCashierId,
+                BranchId = activeHandover.BranchId,
+                ShiftId = activeHandover.ShiftId,
+                HandoverDate = activeHandover.HandoverDate,
+                OutgoingCashierName = activeHandover.OutgoingCashier?.FullName ?? CashHandoverConstants.UnassignedCashierLabel,
+                ShiftName = activeHandover.FixedShift?.ShiftName ?? "-",
+                OpenedAt = activeHandover.OpenedAt,
+                InitialCash = activeHandover.InitialCash,
+                MachineCashRevenue = cashRev,
+                BankTransferRevenue = bankRev,
+                CashRefundAmount = cashRefunds,
+                ActualCash = theoretical,
+                TargetShiftName = targetShiftName,
+                TargetShiftTimeRange = targetShiftTimeRange,
+                IsSelfHandover = false,
+                IsEmergencyHandover = true,
+                IncomingCashierId = defaultIncomingId,
+                DelivererName = activeHandover.DelivererName,
+                IncomingCashiers = branchCashiers.Select(c => new CashierOption
+                {
+                    CashierId = c.EmployeeId,
+                    CashierName = c.FullName ?? c.Username ?? CashHandoverConstants.UnassignedCashierLabel
+                }).ToList(),
+            };
         }
 
         public async Task<OperationResult> EmergencyHandoverAsync(HandoverViewModel model)
@@ -626,11 +689,15 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Vui lòng chọn nhân viên tiếp nhận ủy quyền ca.");
             }
 
-            var eligibleCashiers = await _cashHandoverRepository.GetEligibleHandoverCashiersAsync(
-                handover.BranchId, handover.HandoverDate, handover.ShiftId, handover.OutgoingCashierId);
+            var eligibleCashiers = await _cashHandoverRepository.GetCashiersInBranchAsync(handover.BranchId);
             if (!eligibleCashiers.Any(c => c.EmployeeId == model.IncomingCashierId.Value))
             {
-                return OperationResult.Fail("Nhân viên được chọn nhận ủy quyền không hợp lệ. Chỉ có thể bàn giao cho thu ngân có ca làm việc tiếp theo trong ngày hoặc chính bản thân.");
+                var rosterCashiers = await _cashHandoverRepository.GetEligibleHandoverCashiersAsync(
+                    handover.BranchId, handover.HandoverDate, handover.ShiftId, handover.OutgoingCashierId);
+                if (!rosterCashiers.Any(c => c.EmployeeId == model.IncomingCashierId.Value))
+                {
+                    return OperationResult.Fail("Nhân viên được chọn nhận ủy quyền không hợp lệ. Chỉ có thể bàn giao cho thu ngân thuộc chi nhánh.");
+                }
             }
 
             var incomingEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.IncomingCashierId.Value);
@@ -639,9 +706,9 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Không tìm thấy thông tin nhân viên tiếp nhận ủy quyền.");
             }
 
-            if (incomingEmployee.Role != CashHandoverConstants.CashierRole && incomingEmployee.Role != "Cashier")
+            if (incomingEmployee.Role != CashHandoverConstants.CashierRole && incomingEmployee.Role != "Cashier" && incomingEmployee.Role != "BranchManager")
             {
-                return OperationResult.Fail($"Nhân viên {incomingEmployee.FullName} không có vai trò Thu ngân (Vai trò: {incomingEmployee.Role}). Chỉ có thể bàn giao cho nhân viên Thu ngân.");
+                return OperationResult.Fail($"Nhân viên {incomingEmployee.FullName} không có vai trò Thu ngân hoặc Quản lý chi nhánh (Vai trò: {incomingEmployee.Role}). Chỉ có thể bàn giao cho nhân viên Thu ngân hoặc Quản lý chi nhánh.");
             }
 
             if (!DAT_PasswordHasher.VerifyPassword(model.IncomingPassword, incomingEmployee.Password ?? ""))

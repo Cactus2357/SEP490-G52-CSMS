@@ -46,8 +46,17 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrEmpty(searchCashier))
             {
-                // Find cashiers matching name
-                query = query.Where(o => o.Cashier != null && (o.Cashier.FullName.Contains(searchCashier) || o.Cashier.Username.Contains(searchCashier)));
+                if (_context.Database.IsSqlServer())
+                {
+                    query = query.Where(o => o.Cashier != null && (
+                        EF.Functions.Collate(o.Cashier.FullName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchCashier) ||
+                        EF.Functions.Collate(o.Cashier.Username, "SQL_Latin1_General_CP1_CI_AI").Contains(searchCashier)
+                    ));
+                }
+                else
+                {
+                    query = query.Where(o => o.Cashier != null && (o.Cashier.FullName.Contains(searchCashier) || o.Cashier.Username.Contains(searchCashier)));
+                }
             }
 
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")

@@ -310,6 +310,20 @@
             if (item) item.quantity = qty;
         }
 
+        function filterCatalogTable() {
+            let q = $('#supplierSearchInput').val() || '';
+            $('#catalogTable tbody tr').each(function () {
+                let row = $(this);
+                let supplier = row.attr('data-supplier') || row.find('td:nth-child(3)').text() || '';
+                let name = row.attr('data-name') || row.find('td:first-child').text() || '';
+                if (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(q, [supplier, name]) : true) {
+                    row.show();
+                } else {
+                    row.hide();
+                }
+            });
+        }
+
         // --- 3. DRAFT NAVIGATION & CANCEL ---
         function cancelReceiptDraft() {
             showConfirmModal(
@@ -327,6 +341,14 @@
 
             if (!name) {
                 $('#delivererName').addClass('is-invalid');
+                showToast('Vui lòng nhập tên người giao hàng.', 'warning');
+                return;
+            }
+
+            const nameRegex = /^[\p{L}\s_]{2,100}$/u;
+            if (!nameRegex.test(name)) {
+                $('#delivererName').addClass('is-invalid');
+                showToast('Họ và tên người giao hàng chỉ bao gồm chữ cái, dấu gạch dưới và khoảng trắng (không chứa số hoặc ký tự đặc biệt khác).', 'warning');
                 return;
             }
 
@@ -389,6 +411,14 @@
 
             if (!receiver) {
                 $('#receiverName').addClass('is-invalid');
+                showToast('Vui lòng nhập họ và tên người nhận hàng.', 'warning');
+                return;
+            }
+
+            const nameRegex = /^[\p{L}\s_]{2,100}$/u;
+            if (!nameRegex.test(receiver)) {
+                $('#receiverName').addClass('is-invalid');
+                showToast('Họ và tên người nhận hàng chỉ bao gồm chữ cái, dấu gạch dưới và khoảng trắng (không chứa số hoặc ký tự đặc biệt khác).', 'warning');
                 return;
             }
 

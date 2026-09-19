@@ -501,6 +501,12 @@ namespace SEP490_G52_CSMS.Services
                 return (false, "Vui lòng nhập họ tên người vận chuyển / tài xế giao hàng.");
             }
 
+            var trimmedDeliverer = delivererName.Trim();
+            if (trimmedDeliverer.Length < 2 || !System.Text.RegularExpressions.Regex.IsMatch(trimmedDeliverer, @"^[\p{L}\s_]{2,100}$"))
+            {
+                return (false, "Tên người giao hàng chỉ bao gồm chữ cái, dấu gạch dưới và khoảng trắng (tối thiểu 2 ký tự, không chứa số hoặc ký tự đặc biệt khác).");
+            }
+
             if (string.IsNullOrWhiteSpace(delivererPhone))
             {
                 return (false, "Vui lòng nhập số điện thoại người vận chuyển để chi nhánh liên hệ.");

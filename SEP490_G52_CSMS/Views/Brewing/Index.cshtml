@@ -707,7 +707,7 @@
         // =========================================================
         function renderOrderView(orders) {
             const container = $('#ordersCardsContainer');
-            const search = $('#brewingSearch').val().toLowerCase().trim();
+            const search = ($('#brewingSearch').val() || '').trim();
 
             let filtered = orders;
 
@@ -718,11 +718,19 @@
             }
 
             if (search) {
-                filtered = filtered.filter(o => 
-                    o.orderId.toLowerCase().includes(search) || 
-                    o.recipientName.toLowerCase().includes(search) ||
-                    (o.items && o.items.some(it => it.productName.toLowerCase().includes(search)))
-                );
+                filtered = filtered.filter(o => {
+                    if (!window.CSMSSearch) {
+                        const s = search.toLowerCase();
+                        return o.orderId.toLowerCase().includes(s) || 
+                               o.recipientName.toLowerCase().includes(s) ||
+                               (o.items && o.items.some(it => it.productName.toLowerCase().includes(s)));
+                    }
+                    const searchPool = [o.orderId, o.recipientName, o.customerName, o.tableNumber];
+                    if (o.items) {
+                        o.items.forEach(it => searchPool.push(it.productName));
+                    }
+                    return window.CSMSSearch.fuzzyMatchAny(search, searchPool);
+                });
             }
 
             if (filtered.length === 0) {
@@ -988,7 +996,7 @@
         // =========================================================
         function renderBatchView(orders) {
             const container = $('#batchDrinksContainer');
-            const search = $('#brewingSearch').val().toLowerCase().trim();
+            const search = ($('#brewingSearch').val() || '').trim();
 
             const batchMap = new Map();
 
@@ -1028,10 +1036,20 @@
             let recipes = Array.from(batchMap.values());
 
             if (search) {
-                recipes = recipes.filter(r => 
-                    r.productName.toLowerCase().includes(search) || 
-                    r.ordersList.some(ord => ord.orderId.toLowerCase().includes(search) || ord.recipientName.toLowerCase().includes(search))
-                );
+                recipes = recipes.filter(r => {
+                    if (!window.CSMSSearch) {
+                        const s = search.toLowerCase();
+                        return r.productName.toLowerCase().includes(s) || 
+                               r.ordersList.some(ord => ord.orderId.toLowerCase().includes(s) || ord.recipientName.toLowerCase().includes(s));
+                    }
+                    const searchPool = [r.productName];
+                    r.ordersList.forEach(ord => {
+                        searchPool.push(ord.orderId);
+                        searchPool.push(ord.recipientName);
+                        searchPool.push(ord.customerName);
+                    });
+                    return window.CSMSSearch.fuzzyMatchAny(search, searchPool);
+                });
             }
 
             if (recipes.length === 0) {

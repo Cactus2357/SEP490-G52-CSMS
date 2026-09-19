@@ -200,17 +200,17 @@
 @section Scripts {
 <script>
     function filterPermList() {
-        const query = document.getElementById('permSearchInput').value.trim().toLowerCase();
+        const query = document.getElementById('permSearchInput').value.trim();
         const roleFilter = document.getElementById('roleFilterSelect').value;
         const rows = document.querySelectorAll('.perm-row-item');
         let visibleCount = 0;
 
         rows.forEach(row => {
-            const fullName = (row.getAttribute('data-fullname') || '').toLowerCase();
-            const email = (row.getAttribute('data-email') || '').toLowerCase();
+            const fullName = row.getAttribute('data-fullname') || '';
+            const email = row.getAttribute('data-email') || '';
             const role = row.getAttribute('data-role') || '';
 
-            let matchesQuery = fullName.includes(query) || email.includes(query);
+            let matchesQuery = !query || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(query, [fullName, email]) : (fullName.toLowerCase().includes(query.toLowerCase()) || email.toLowerCase().includes(query.toLowerCase())));
             let matchesRole = true;
 
             if (roleFilter !== '') {

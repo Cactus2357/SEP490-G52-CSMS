@@ -481,9 +481,14 @@
                     }
                     $('#autocompleteResults').removeClass('d-none').html(items);
 
-                    // Check exact match if user typed term
+                    // Check exact or accent-insensitive match if user typed term
                     if (term.trim()) {
-                        let exact = catalogList.find(c => c.materialName.toLowerCase() === term.trim().toLowerCase());
+                        let exact = catalogList.find(c => {
+                            if (window.CSMSSearch) {
+                                return window.CSMSSearch.removeVietnameseTones(c.materialName) === window.CSMSSearch.removeVietnameseTones(term.trim());
+                            }
+                            return c.materialName.toLowerCase() === term.trim().toLowerCase();
+                        });
                         if (exact) {
                             selectedMaterialId = exact.materialId;
                             $('#addMatCategory').html(`<option value="${exact.category}" selected>${exact.category}</option>`);

@@ -480,14 +480,14 @@
             const sessionFilter = document.getElementById('filterSessionType').value.toLowerCase();
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo   = document.getElementById('filterDateTo').value;
-            const searchKeyword = (document.getElementById('filterSearch').value || '').toLowerCase();
+            const searchKeyword = (document.getElementById('filterSearch').value || '').trim();
 
             document.querySelectorAll('.history-row').forEach(row => {
-                const rowType = (row.dataset.sessionType || '').toLowerCase();
+                const rowType = row.dataset.sessionType || '';
                 const rawDate = row.dataset.date;
-                const outgoing = (row.dataset.outgoing || '').toLowerCase();
-                const incoming = (row.dataset.incoming || '').toLowerCase();
-                const shift = (row.dataset.shift || '').toLowerCase();
+                const outgoing = row.dataset.outgoing || '';
+                const incoming = row.dataset.incoming || '';
+                const shift = row.dataset.shift || '';
 
                 let rowDate = null;
                 if (rawDate) {
@@ -496,10 +496,10 @@
                         rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
                 }
 
-                const typeOk = !sessionFilter || rowType.includes(sessionFilter);
+                const typeOk = !sessionFilter || rowType.toLowerCase().includes(sessionFilter);
                 const fromOk = !dateFrom || !rowDate || rowDate >= new Date(dateFrom);
                 const toOk   = !dateTo   || !rowDate || rowDate <= new Date(dateTo);
-                const searchOk = !searchKeyword || outgoing.includes(searchKeyword) || incoming.includes(searchKeyword) || shift.includes(searchKeyword) || rowType.includes(searchKeyword);
+                const searchOk = !searchKeyword || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(searchKeyword, [outgoing, incoming, shift, rowType]) : (outgoing.toLowerCase().includes(searchKeyword.toLowerCase()) || incoming.toLowerCase().includes(searchKeyword.toLowerCase()) || shift.toLowerCase().includes(searchKeyword.toLowerCase()) || rowType.toLowerCase().includes(searchKeyword.toLowerCase())));
 
                 row.style.display = (typeOk && fromOk && toOk && searchOk) ? '' : 'none';
             });

@@ -66,7 +66,7 @@
 
     <div class="mb-3 p-2.5 bg-light rounded border d-flex justify-content-between align-items-center">
         <small class="text-muted fw-semibold"><i class="bi bi-clock me-1 text-secondary"></i>Thời điểm thực hiện chốt ca:</small>
-        <span class="fw-bold text-dark font-monospace">@((h.ClosedAt ?? h.OpenedAt).ToString("HH:mm:ss - dd/MM/yyyy"))</span>
+        <span class="fw-bold text-dark font-monospace">@((h.ClosedAt ?? h.OpenedAt).ToVietnamTimeString("HH:mm:ss - dd/MM/yyyy"))</span>
     </div>
 
     <!-- Chi tiết bảng đối soát két -->

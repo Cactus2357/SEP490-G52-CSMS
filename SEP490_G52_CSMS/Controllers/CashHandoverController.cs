@@ -513,6 +513,23 @@ namespace SEP490_G52_CSMS.Controllers
                 return RedirectToAction(nameof(History));
 
             var model = await _cashHandoverService.GetEmergencyHandoverModelAsync(targetCashierId);
+            if (model == null && !string.IsNullOrEmpty(userBranchId))
+            {
+                var today = DateTime.UtcNow.Date;
+                var branchActiveHandover = await _context.CashHandovers
+                    .AsNoTracking()
+                    .Where(h => h.BranchId == userBranchId
+                             && h.HandoverDate.Date == today
+                             && h.Status == CashHandoverConstants.ActiveStatus)
+                    .OrderByDescending(h => h.OpenedAt)
+                    .FirstOrDefaultAsync();
+
+                if (branchActiveHandover != null)
+                {
+                    model = await _cashHandoverService.GetEmergencyHandoverModelAsync(branchActiveHandover.OutgoingCashierId);
+                }
+            }
+
             if (model == null)
             {
                 TempData["InfoMessage"] = "Không tìm thấy ca làm việc đang mở để bàn giao đột xuất.";

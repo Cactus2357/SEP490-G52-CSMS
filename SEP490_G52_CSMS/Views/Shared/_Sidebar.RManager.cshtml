@@ -46,8 +46,23 @@
 </li>
 
 <li class="menu-item">
+    <a asp-controller="Reporting" asp-action="Warehouse" class="menu-link @ActiveIf("Reporting", "Warehouse")" title="Báo cáo xuất - nhập kho">
+        <i class="bi bi-box-seam"></i>
+        <span>Báo cáo xuất - nhập kho</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Reporting" asp-action="CashHandover" class="menu-link @ActiveIf("Reporting", "CashHandover")" title="Báo cáo bàn giao ca">
+        <i class="bi bi-cash-coin"></i>
+        <span>Báo cáo bàn giao ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
     <a asp-controller="Reporting" asp-action="Export" class="menu-link @ActiveIf("Reporting", "Export")" title="Xuất file">
         <i class="bi bi-file-earmark-arrow-down-fill"></i>
         <span>Xuất file</span>
     </a>
 </li>
+

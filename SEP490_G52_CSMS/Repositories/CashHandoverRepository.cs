@@ -19,7 +19,7 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<CashHandover?> GetActiveHandoverAsync(int cashierId, DateTime date)
         {
-            return await _context.CashHandovers
+            var handover = await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
                 .Include(ch => ch.IncomingCashier)
@@ -29,6 +29,21 @@ namespace SEP490_G52_CSMS.Repositories
                     ch.OutgoingCashierId == cashierId &&
                     ch.HandoverDate.Date == date.Date &&
                     ch.Status == CashHandoverConstants.ActiveStatus);
+
+            if (handover == null)
+            {
+                handover = await _context.CashHandovers
+                    .Include(ch => ch.FixedShift)
+                    .Include(ch => ch.OutgoingCashier)
+                    .Include(ch => ch.IncomingCashier)
+                    .Include(ch => ch.Branch)
+                    .AsNoTracking()
+                    .Where(ch => ch.OutgoingCashierId == cashierId && ch.Status == CashHandoverConstants.ActiveStatus)
+                    .OrderByDescending(ch => ch.OpenedAt)
+                    .FirstOrDefaultAsync();
+            }
+
+            return handover;
         }
 
         public async Task<CashHandover?> GetLastClosedHandoverForBranchAsync(string branchId)
@@ -213,7 +228,7 @@ namespace SEP490_G52_CSMS.Repositories
                 .AsNoTracking()
                 .Where(e =>
                     e.BranchId == branchId &&
-                    (e.Role == CashHandoverConstants.CashierRole || e.Role == "Cashier") &&
+                    (e.Role == CashHandoverConstants.CashierRole || e.Role == "Cashier" || e.Role == "BranchManager") &&
                     e.Status == BranchConstants.DefaultStatus)
                 .OrderBy(e => e.FullName)
                 .ToListAsync();
@@ -557,13 +572,28 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<CashHandover?> GetCurrentActiveHandoverForBranchAsync(string branchId, DateTime date)
         {
-            return await _context.CashHandovers
+            var handover = await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
                 .Include(ch => ch.IncomingCashier)
                 .Include(ch => ch.Branch)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ch => ch.BranchId == branchId && ch.HandoverDate.Date == date.Date && ch.Status == CashHandoverConstants.ActiveStatus);
+
+            if (handover == null)
+            {
+                handover = await _context.CashHandovers
+                    .Include(ch => ch.FixedShift)
+                    .Include(ch => ch.OutgoingCashier)
+                    .Include(ch => ch.IncomingCashier)
+                    .Include(ch => ch.Branch)
+                    .AsNoTracking()
+                    .Where(ch => ch.BranchId == branchId && ch.Status == CashHandoverConstants.ActiveStatus)
+                    .OrderByDescending(ch => ch.OpenedAt)
+                    .FirstOrDefaultAsync();
+            }
+
+            return handover;
         }
 
         public async Task<CashHandover?> GetActiveHandoverByShiftAsync(string branchId, int shiftId, DateTime date)

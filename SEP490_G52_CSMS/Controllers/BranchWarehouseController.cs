@@ -60,7 +60,14 @@ namespace SEP490_G52_CSMS.Controllers
             if (!string.IsNullOrEmpty(searchString))
             {
                 searchString = searchString.Trim();
-                query = query.Where(bi => bi.Material != null && EF.Functions.Collate(bi.Material.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchString));
+                if (_context.Database.IsSqlServer())
+                {
+                    query = query.Where(bi => bi.Material != null && EF.Functions.Collate(bi.Material.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchString));
+                }
+                else
+                {
+                    query = query.Where(bi => bi.Material != null && bi.Material.MaterialName.Contains(searchString));
+                }
             }
 
             if (!string.IsNullOrEmpty(selectedCategory))

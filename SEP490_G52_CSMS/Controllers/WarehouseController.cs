@@ -35,7 +35,14 @@ namespace SEP490_G52_CSMS.Controllers
             // Search by material name
             if (!string.IsNullOrWhiteSpace(searchString))
             {
-                query = query.Where(m => EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchString));
+                if (_context.Database.IsSqlServer())
+                {
+                    query = query.Where(m => EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchString));
+                }
+                else
+                {
+                    query = query.Where(m => m.MaterialName.Contains(searchString));
+                }
             }
 
             // Filter by Category (Loại NgL)
@@ -347,7 +354,8 @@ namespace SEP490_G52_CSMS.Controllers
             foreach (var item in items)
             {
                 var r = item.WarehouseReceipt;
-                var line = $"\"{r?.ReceiptCode}\",\"{r?.ImportDate:dd/MM/yyyy HH:mm}\",\"{r?.Supplier}\",\"{item.Material?.MaterialName}\",{item.Quantity},\"{item.Material?.StorageUnit}\",{item.UnitPrice},{item.Amount},\"{r?.ReceiverName}\",\"{r?.DelivererName}\",\"{r?.DelivererPhone}\",\"{r?.Status}\"";
+                var importTimeStr = r != null ? r.ImportDate.ToVietnamTimeString("dd/MM/yyyy HH:mm") : "";
+                var line = $"\"{r?.ReceiptCode}\",\"{importTimeStr}\",\"{r?.Supplier}\",\"{item.Material?.MaterialName}\",{item.Quantity},\"{item.Material?.StorageUnit}\",{item.UnitPrice},{item.Amount},\"{r?.ReceiverName}\",\"{r?.DelivererName}\",\"{r?.DelivererPhone}\",\"{r?.Status}\"";
                 csvBuilder.AppendLine(line);
             }
 
@@ -369,7 +377,18 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (model == null) return Json(new { success = false, message = "Dữ liệu trống." });
             if (string.IsNullOrWhiteSpace(model.DelivererName)) return Json(new { success = false, message = "Họ & Tên Người giao là bắt buộc." });
+            var trimmedDeliverer = model.DelivererName.Trim();
+            if (trimmedDeliverer.Length < 2 || !System.Text.RegularExpressions.Regex.IsMatch(trimmedDeliverer, @"^[\p{L}\s_]{2,100}$"))
+            {
+                return Json(new { success = false, message = "Tên người giao hàng chỉ bao gồm chữ cái, dấu gạch dưới và khoảng trắng (tối thiểu 2 ký tự, không chứa số hoặc ký tự đặc biệt khác)." });
+            }
+
             if (string.IsNullOrWhiteSpace(model.ReceiverName)) return Json(new { success = false, message = "Vui lòng nhập tên người nhận hàng." });
+            var trimmedReceiver = model.ReceiverName.Trim();
+            if (trimmedReceiver.Length < 2 || !System.Text.RegularExpressions.Regex.IsMatch(trimmedReceiver, @"^[\p{L}\s_]{2,100}$"))
+            {
+                return Json(new { success = false, message = "Tên người nhận hàng chỉ bao gồm chữ cái, dấu gạch dưới và khoảng trắng (tối thiểu 2 ký tự, không chứa số hoặc ký tự đặc biệt khác)." });
+            }
             if (model.Items == null || model.Items.Count == 0) return Json(new { success = false, message = "Phiếu nhập phải có nhất một nguyên liệu." });
 
             var materials = await _context.Materials.ToListAsync();
@@ -461,7 +480,7 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new
             {
                 receiptCode = receipt.ReceiptCode,
-                importDate = receipt.ImportDate.ToString("dd/MM/yyyy : HH\\hmm"),
+                importDate = receipt.ImportDate.ToVietnamTimeString("dd/MM/yyyy : HH\\hmm"),
                 supplier = receipt.Supplier,
                 totalAmount = receipt.TotalAmount.ToString("N0") + " đ",
                 delivererName = receipt.DelivererName,

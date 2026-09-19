@@ -729,10 +729,10 @@
         }
 
         function filterExchangeMenu() {
-            let kw = $('#exchangeMenuSearch').val().toLowerCase().trim();
+            let kw = ($('#exchangeMenuSearch').val() || '').trim();
             $('.exchange-product-card').each(function() {
                 let name = $(this).data('name') || '';
-                if (!kw || name.includes(kw)) {
+                if (!kw || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatch(name, kw) : name.toLowerCase().includes(kw.toLowerCase()))) {
                     $(this).removeClass('d-none');
                 } else {
                     $(this).addClass('d-none');

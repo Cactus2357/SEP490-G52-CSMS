@@ -1,3 +1,4 @@
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels;
 using SEP490_G52_CSMS.Repositories.Interfaces;
@@ -127,9 +128,9 @@ namespace SEP490_G52_CSMS.Services
                 TransactionId = "#TXN" + new Random().Next(1000, 9999), // Mock transaction id
                 TotalItems = order.OrderItems.Sum(oi => oi.Quantity),
                 TotalAmount = order.TotalAmount,
-                CreatedAtStr = order.CreatedAt.ToString("HH:mm"),
-                PaidAtStr = order.CreatedAt.AddMinutes(2).ToString("HH:mm"),
-                CompletedAtStr = order.CreatedAt.AddMinutes(4).ToString("HH:mm")
+                CreatedAtStr = order.CreatedAt.ToVietnamTimeString("HH:mm"),
+                PaidAtStr = order.CreatedAt.AddMinutes(2).ToVietnamTimeString("HH:mm"),
+                CompletedAtStr = order.CreatedAt.AddMinutes(4).ToVietnamTimeString("HH:mm")
             };
 
             foreach (var item in order.OrderItems)

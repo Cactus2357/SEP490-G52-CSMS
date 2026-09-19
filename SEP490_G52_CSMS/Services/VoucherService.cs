@@ -22,13 +22,13 @@ namespace SEP490_G52_CSMS.Services
                 .Where(v => string.IsNullOrEmpty(branchId) || v.BranchId == branchId || v.BranchId == null)
                 .AsQueryable();
 
+            var list = await query.OrderByDescending(v => v.CreatedAt).ToListAsync();
+
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var term = search.Trim().ToLower();
-                query = query.Where(v => v.VoucherCode.ToLower().Contains(term) || (v.Description != null && v.Description.ToLower().Contains(term)));
+                list = list.Where(v => SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(v.VoucherCode, search)
+                                    || SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(v.Description, search)).ToList();
             }
-
-            var list = await query.OrderByDescending(v => v.CreatedAt).ToListAsync();
 
             if (!string.IsNullOrWhiteSpace(status) && status != "Tất cả")
             {

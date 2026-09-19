@@ -458,7 +458,7 @@ namespace SEP490_G52_CSMS.Controllers
                 branchAddress = detail.BranchAddress,
                 branchPhone = detail.BranchPhone,
                 cashierName = detail.CashierName,
-                orderTime = detail.OrderTime.ToString("dd/MM/yyyy HH:mm"),
+                orderTime = detail.OrderTime.ToVietnamTimeString("dd/MM/yyyy HH:mm"),
                 tableNumber = detail.TableNumber,
                 customerName = detail.CustomerName,
                 orderNotes = detail.OrderNotes,

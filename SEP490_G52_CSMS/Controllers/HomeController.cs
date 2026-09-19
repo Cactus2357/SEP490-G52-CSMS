@@ -47,6 +47,16 @@ namespace SEP490_G52_CSMS.Controllers
                     ViewBag.BranchManagerEmail = branchManager?.Email ?? "manager@csms.com";
                     ViewBag.EmployeeRole = employee.Role ?? "Cashier";
                     ViewBag.EmployeeName = employee.FullName ?? "Nhân viên";
+
+                    if (string.Equals(employee.Role, "BranchManager", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var regionalManager = await _context.Employees
+                            .FirstOrDefaultAsync(e => e.Role == "RManager" && e.Status == "Active");
+                        ViewBag.UpperManagerName = regionalManager?.FullName ?? "Ban Quản Lý Vùng";
+                        ViewBag.UpperManagerPhone = regionalManager?.PhoneNumber ?? "1900 6868";
+                        ViewBag.UpperManagerEmail = regionalManager?.Email ?? "rmanager@csms.com";
+                        ViewBag.UpperManagerTitle = "Quản Lý Vùng (Regional Manager)";
+                    }
                 }
             }
 

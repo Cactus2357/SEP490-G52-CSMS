@@ -259,8 +259,7 @@ namespace SEP490_G52_CSMS.Services
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var s = search.Trim().ToLower();
-                filtered = filtered.Where(i => i.ProductName.ToLower().Contains(s));
+                filtered = filtered.Where(i => SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(i.ProductName, search));
             }
 
             if (categoryId.HasValue && categoryId.Value > 0)

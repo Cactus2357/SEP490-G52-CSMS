@@ -28,12 +28,10 @@ namespace SEP490_G52_CSMS.Services
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
-                var keyword = SEP490_G52_CSMS.Commons.StringHelper.RemoveDiacritics(searchString);
-
                 products = products
                     .Where(p =>
                         !string.IsNullOrWhiteSpace(p.ProductName) &&
-                        SEP490_G52_CSMS.Commons.StringHelper.RemoveDiacritics(p.ProductName).Contains(keyword))
+                        SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(p.ProductName, searchString))
                     .ToList();
             }
 

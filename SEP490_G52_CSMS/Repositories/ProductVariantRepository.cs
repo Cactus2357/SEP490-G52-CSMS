@@ -22,7 +22,8 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
-                query = query.Where(v => v.SizeVariant != null && v.SizeVariant.Contains(searchString));
+                var allVariants = await query.ToListAsync();
+                return allVariants.Where(v => v.SizeVariant != null && SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(v.SizeVariant, searchString)).ToList();
             }
 
             return await query.ToListAsync();
@@ -82,10 +83,24 @@ namespace SEP490_G52_CSMS.Repositories
             {
                 return await _context.Materials.Take(10).ToListAsync();
             }
-            return await _context.Materials
-                .Where(m => m.MaterialName.Contains(term))
+
+            if (_context.Database.IsSqlServer())
+            {
+                var collateResults = await _context.Materials
+                    .Where(m => EF.Functions.Collate(m.MaterialName, "SQL_Latin1_General_CP1_CI_AI").Contains(term))
+                    .Take(20)
+                    .ToListAsync();
+                if (collateResults.Any())
+                {
+                    return collateResults;
+                }
+            }
+
+            var allMaterials = await _context.Materials.Take(200).ToListAsync();
+            return allMaterials
+                .Where(m => SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(m.MaterialName, term))
                 .Take(20)
-                .ToListAsync();
+                .ToList();
         }
 
         public async Task<List<Recipe>> GetRecipeAsync(int variantId)

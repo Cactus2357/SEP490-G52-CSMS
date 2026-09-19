@@ -11,6 +11,8 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int HandoverId { get; set; }
         public int OutgoingCashierId { get; set; }
         public string BranchId { get; set; } = string.Empty;
+        public int ShiftId { get; set; }
+        public DateTime HandoverDate { get; set; } = DateTime.Today;
 
         // ===== Thông tin người bàn giao =====
         public string OutgoingCashierName { get; set; } = string.Empty;

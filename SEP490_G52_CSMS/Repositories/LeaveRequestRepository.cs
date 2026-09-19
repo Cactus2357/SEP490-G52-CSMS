@@ -69,8 +69,22 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrWhiteSpace(searchName))
             {
-                var term = searchName.Trim().ToLower();
-                query = query.Where(l => l.Employee!.FullName!.ToLower().Contains(term) || l.Employee!.Username!.ToLower().Contains(term));
+                var term = searchName.Trim();
+                if (_context.Database.IsSqlServer())
+                {
+                    query = query.Where(l => l.Employee != null && (
+                        EF.Functions.Collate(l.Employee.FullName, "SQL_Latin1_General_CP1_CI_AI").Contains(term) ||
+                        EF.Functions.Collate(l.Employee.Username, "SQL_Latin1_General_CP1_CI_AI").Contains(term)
+                    ));
+                }
+                else
+                {
+                    var lowerTerm = term.ToLower();
+                    query = query.Where(l => l.Employee != null && (
+                        (l.Employee.FullName != null && l.Employee.FullName.ToLower().Contains(lowerTerm)) ||
+                        (l.Employee.Username != null && l.Employee.Username.ToLower().Contains(lowerTerm))
+                    ));
+                }
             }
 
             if (fromDate.HasValue)

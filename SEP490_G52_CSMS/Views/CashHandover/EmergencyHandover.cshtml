@@ -13,8 +13,8 @@
             <p class="text-muted small mb-0">Ủy quyền tiếp quản ca giữa chừng &bull; Ca hiện tại: <strong>@Model.ShiftName</strong></p>
         </div>
         <div class="d-flex gap-2">
-            <a asp-action="Handover"
-               class="btn btn-outline-secondary btn-sm">Quay lại Giao ca thường</a>
+            <a asp-action="Index"
+               class="btn btn-outline-secondary btn-sm">Quay lại ca làm việc</a>
             <a asp-action="History"
                class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-clock-history me-1"></i>Lịch sử giao ca
@@ -202,7 +202,7 @@
                         </div>
 
                         <div class="d-flex gap-2 mt-4">
-                            <a asp-action="Handover" class="btn btn-outline-secondary btn-lg flex-fill">
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg flex-fill">
                                 <i class="bi bi-x-circle me-2"></i>Hủy / Quay lại
                             </a>
                             <button type="submit" class="btn btn-danger btn-lg flex-fill" id="submitEmergencyBtn">

@@ -161,7 +161,7 @@ namespace SEP490_G52_CSMS.Controllers
                 tableNumber = o.TableNumber,
                 customerName = o.CustomerName,
                 orderNotes = o.OrderNotes,
-                orderTime = o.OrderTime.ToString("dd/MM/yyyy HH:mm"),
+                orderTime = o.OrderTime.ToVietnamTimeString("dd/MM/yyyy HH:mm"),
                 orderTimeRaw = o.OrderTime.ToString("o"),
                 brewingStatus = o.BrewingStatus,
                 displayStatus = o.DisplayStatus,

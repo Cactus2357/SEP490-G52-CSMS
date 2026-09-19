@@ -649,16 +649,16 @@
 @section Scripts {
     <script>
         function filterManagersList() {
-            const query = document.getElementById('managerSearchInput').value.trim().toLowerCase();
+            const query = document.getElementById('managerSearchInput').value.trim();
             const selectedBranch = document.getElementById('filterBranch').value;
             
             document.querySelectorAll('#managersList .manager-card-item').forEach(function (card) {
-                const fullName = (card.dataset.fullname || '').toLowerCase();
-                const username = (card.dataset.username || '').toLowerCase();
-                const managerId = (card.dataset.managerid || '').toLowerCase();
+                const fullName = card.dataset.fullname || '';
+                const username = card.dataset.username || '';
+                const managerId = card.dataset.managerid || '';
                 const branch = card.dataset.branch || '';
 
-                const matchesQuery = fullName.includes(query) || username.includes(query) || managerId.includes(query);
+                const matchesQuery = !query || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(query, [fullName, username, managerId]) : (fullName.toLowerCase().includes(query.toLowerCase()) || username.toLowerCase().includes(query.toLowerCase()) || managerId.includes(query)));
                 const matchesBranch = !selectedBranch || branch === selectedBranch;
 
                 card.style.display = (matchesQuery && matchesBranch) ? 'flex' : 'none';

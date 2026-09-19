@@ -74,7 +74,7 @@ namespace SEP490_G52_CSMS.Controllers
                 n.NotificationId,
                 n.Title,
                 n.Message,
-                CreatedTime = n.CreatedTime.ToString("HH:mm dd/MM/yyyy"),
+                CreatedTime = n.CreatedTime.ToVietnamTimeString("HH:mm dd/MM/yyyy"),
                 n.IsRead,
                 n.ResourceUrl
             });

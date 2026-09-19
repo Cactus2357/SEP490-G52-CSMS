@@ -159,11 +159,12 @@
 @section Scripts {
     <script>
         function filterManagers() {
-            const query = document.getElementById('managerSearch').value.toLowerCase();
+            const query = document.getElementById('managerSearch').value.trim();
             document.querySelectorAll('.manager-item').forEach(item => {
                 const name = item.dataset.name || '';
                 const code = item.dataset.code || '';
-                item.style.display = (name.includes(query) || code.includes(query)) ? '' : 'none';
+                const matches = !query || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(query, [name, code]) : (name.toLowerCase().includes(query.toLowerCase()) || code.toLowerCase().includes(query.toLowerCase())));
+                item.style.display = matches ? '' : 'none';
             });
         }
     </script>

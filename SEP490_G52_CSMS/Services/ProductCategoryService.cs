@@ -1,4 +1,4 @@
-﻿using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Models.Sales;
 using SEP490_G52_CSMS.Models.ViewModels.Sales.Category;
 using SEP490_G52_CSMS.Repositories.Interfaces;
 using SEP490_G52_CSMS.Services.Interfaces;
@@ -20,11 +20,9 @@ namespace SEP490_G52_CSMS.Services
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
-                var keyword = searchString.Trim();
-
                 productCategories = productCategories
                     .Where(c => !string.IsNullOrEmpty(c.CategoryName)
-                        && c.CategoryName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                        && SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(c.CategoryName, searchString))
                     .ToList();
             }
 

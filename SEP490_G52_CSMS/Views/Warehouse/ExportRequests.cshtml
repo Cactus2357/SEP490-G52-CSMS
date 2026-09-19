@@ -790,7 +790,16 @@
 
             if (!delName) {
                 $('#shipDelivererName').addClass('is-invalid');
+                $('#valShipDelivererName').text('Vui lòng nhập tên người giao hàng.');
                 showToast('Vui lòng nhập họ tên người vận chuyển / tài xế.', 'warning');
+                return;
+            }
+
+            const nameRegex = /^[\p{L}\s_]{2,100}$/u;
+            if (!nameRegex.test(delName)) {
+                $('#shipDelivererName').addClass('is-invalid');
+                $('#valShipDelivererName').text('Tên người giao hàng chỉ bao gồm chữ cái, dấu gạch dưới và khoảng trắng (không chứa số hoặc ký tự đặc biệt khác).');
+                showToast('Tên người giao hàng chỉ bao gồm chữ cái, dấu gạch dưới và khoảng trắng (không chứa số hoặc ký tự đặc biệt khác).', 'warning');
                 return;
             }
             const phoneRegex = /^0\d{9}$/;

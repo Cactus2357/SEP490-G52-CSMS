@@ -127,7 +127,7 @@
                                     <div class="small text-muted">Thu ngân: <span class="fw-medium text-dark">@item.CashierName</span> &bull; @item.TotalItems món</div>
                                 </td>
                                 <td>
-                                    <div class="small text-dark fw-medium">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                                    <div class="small text-dark fw-medium">@item.CreatedAt.ToVietnamTimeString("dd/MM/yyyy HH:mm:ss")</div>
                                 </td>
                                 <td class="text-end fw-bold text-dark">
                                     @item.TotalAmount.ToString("N0")đ

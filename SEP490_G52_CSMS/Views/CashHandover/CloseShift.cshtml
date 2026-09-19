@@ -12,6 +12,7 @@
         </div>
         <div class="d-flex gap-2">
             <a asp-action="EmergencyHandover"
+               asp-route-cashierId="@Model.OutgoingCashierId"
                class="btn btn-warning text-dark btn-sm fw-bold">
                 <i class="bi bi-exclamation-octagon me-1"></i>Bàn giao đột xuất
             </a>

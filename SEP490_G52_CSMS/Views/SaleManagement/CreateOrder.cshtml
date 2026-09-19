@@ -697,7 +697,7 @@
         }
 
         function filterProducts() {
-            var search = (document.getElementById("productSearch")?.value || "").toLowerCase();
+            var search = document.getElementById("productSearch")?.value || "";
             var cat = document.getElementById("categoryFilter")?.value || "";
             var status = document.getElementById("statusFilter")?.value || "all";
             var cards = document.querySelectorAll('.product-card');
@@ -708,7 +708,7 @@
                 var cCat = card.getAttribute('data-category') || "";
                 var cAvail = card.getAttribute('data-available') || "true";
                 
-                var matchSearch = cName.includes(search);
+                var matchSearch = window.CSMSSearch ? window.CSMSSearch.fuzzyMatch(cName, search) : cName.toLowerCase().includes(search.toLowerCase());
                 var matchCat = cat === "" || cCat === cat;
                 var matchStatus = (status === "all") || (status === "available" && cAvail === "true") || (status === "unavailable" && cAvail === "false");
 

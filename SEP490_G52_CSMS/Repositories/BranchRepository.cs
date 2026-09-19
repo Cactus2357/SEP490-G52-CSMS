@@ -56,7 +56,15 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(b => b.BranchName.Contains(searchTerm) || b.Address.Contains(searchTerm));
+                if (_context.Database.IsSqlServer())
+                {
+                    query = query.Where(b => EF.Functions.Collate(b.BranchName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchTerm) ||
+                                             EF.Functions.Collate(b.Address, "SQL_Latin1_General_CP1_CI_AI").Contains(searchTerm));
+                }
+                else
+                {
+                    query = query.Where(b => b.BranchName.Contains(searchTerm) || b.Address.Contains(searchTerm));
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(statusFilter) && statusFilter != "All")
@@ -83,7 +91,15 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(b => b.BranchName.Contains(searchTerm) || b.Address.Contains(searchTerm));
+                if (_context.Database.IsSqlServer())
+                {
+                    query = query.Where(b => EF.Functions.Collate(b.BranchName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchTerm) ||
+                                             EF.Functions.Collate(b.Address, "SQL_Latin1_General_CP1_CI_AI").Contains(searchTerm));
+                }
+                else
+                {
+                    query = query.Where(b => b.BranchName.Contains(searchTerm) || b.Address.Contains(searchTerm));
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(statusFilter) && statusFilter != "All")

@@ -454,26 +454,19 @@
             var visibleCount = 0;
 
             items.forEach(function(item) {
-                var fullname = (item.getAttribute('data-fullname') || '').toLowerCase();
-                var normFullname = removeVietnameseTones(fullname);
-                var username = (item.getAttribute('data-username') || '').toLowerCase();
-                var phone = (item.getAttribute('data-phone') || '').toLowerCase();
-                var email = (item.getAttribute('data-email') || '').toLowerCase();
-                var citizenId = (item.getAttribute('data-citizenid') || '').toLowerCase();
-                var empId = (item.getAttribute('data-empid') || '').toLowerCase();
+                var fullname = item.getAttribute('data-fullname') || '';
+                var username = item.getAttribute('data-username') || '';
+                var phone = item.getAttribute('data-phone') || '';
+                var email = item.getAttribute('data-email') || '';
+                var citizenId = item.getAttribute('data-citizenid') || '';
+                var empId = item.getAttribute('data-empid') || '';
 
                 var role = item.getAttribute('data-role') || '';
                 var branch = item.getAttribute('data-branch') || '';
 
                 var matchSearch = !rawSearchVal || 
-                    fullname.includes(rawSearchVal) || 
-                    normFullname.includes(normSearchVal) || 
-                    username.includes(rawSearchVal) || 
-                    phone.includes(rawSearchVal) || 
-                    email.includes(rawSearchVal) || 
-                    citizenId.includes(rawSearchVal) || 
-                    empId === rawSearchVal || 
-                    ('nv-' + empId).includes(rawSearchVal);
+                    (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(rawSearchVal, [fullname, username, phone, email, citizenId, empId, 'NV-' + empId])
+                                       : (fullname.toLowerCase().includes(rawSearchVal) || username.toLowerCase().includes(rawSearchVal)));
 
                 var matchRole = !roleVal || role === roleVal;
                 var matchBranch = !branchVal || branch === branchVal;

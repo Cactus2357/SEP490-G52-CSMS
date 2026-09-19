@@ -586,9 +586,8 @@ namespace SEP490_G52_CSMS.Services
                 orders = orders.Where(o => o.CreatedAt.Date <= toDate.Value.Date);
             if (!string.IsNullOrEmpty(search))
             {
-                search = search.ToLower();
-                orders = orders.Where(o => o.OrderId.ToLower().Contains(search) ||
-                                           (o.RecipientName != null && o.RecipientName.ToLower().Contains(search)));
+                orders = orders.Where(o => SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(o.OrderId, search) ||
+                                           (o.RecipientName != null && SEP490_G52_CSMS.Commons.StringHelper.FuzzyMatch(o.RecipientName, search)));
             }
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")
             {

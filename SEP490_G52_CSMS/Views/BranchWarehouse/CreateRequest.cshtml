@@ -240,18 +240,18 @@
 
         // --- 1. FILTERING MATERIALS ---
         function filterMaterials() {
-            let kw = ($('#filterKeyword').val() || '').trim().toLowerCase();
+            let kw = ($('#filterKeyword').val() || '').trim();
             let cat = ($('#filterCategory').val() || '').trim().toLowerCase();
             let stock = ($('#filterStockStatus').val() || '').trim();
 
             let visibleCount = 0;
 
             $('#materialsTable tbody tr.mat-item-row').each(function() {
-                let name = ($(this).attr('data-name') || '').toLowerCase();
+                let name = $(this).attr('data-name') || '';
                 let kind = ($(this).attr('data-kind') || '').toLowerCase();
                 let isLow = $(this).attr('data-is-low') === 'true';
 
-                let matchKw = !kw || name.includes(kw);
+                let matchKw = !kw || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatch(name, kw) : name.toLowerCase().includes(kw.toLowerCase()));
                 let matchCat = !cat || kind === cat;
                 let matchStock = true;
                 if (stock === 'low') matchStock = isLow;

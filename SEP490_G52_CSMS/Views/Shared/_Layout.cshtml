@@ -254,7 +254,7 @@
             <header class="top-header">
                 <div class="header-left d-flex align-items-center gap-3">
                     <!-- Search Input Box Container -->
-                    <div class="position-relative" style="width: 220px; flex-shrink: 0;">
+                    <div class="position-relative" style="width: 340px; max-width: 100%; flex-shrink: 0;">
                         <div class="input-group">
                             <span class="input-group-text border-end-0 rounded-start-pill header-search-icon py-1.5 px-3">
                                 <i class="bi bi-search"></i>
@@ -270,7 +270,7 @@
                     @if (User.Identity != null && User.Identity.IsAuthenticated)
                     {
                         <div class="text-nowrap text-secondary fw-medium" style="font-size: 0.88rem;">
-                            <span id="navLiveDateTime">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                            <span id="navLiveDateTime">@DateTime.UtcNow.ToVietnamTimeString("dd/MM/yyyy HH:mm")</span>
                             @if (!string.IsNullOrEmpty(shiftDisplayInfo))
                             {
                                 <span> - @shiftDisplayInfo</span>
@@ -339,7 +339,7 @@
                                                         </span>
                                                     }
                                                 </div>
-                                                <small class="text-muted flex-shrink-0" style="font-size: 0.7rem; white-space: nowrap;">@n.CreatedTime.ToString("HH:mm dd/MM")</small>
+                                                <small class="text-muted flex-shrink-0" style="font-size: 0.7rem; white-space: nowrap;">@n.CreatedTime.ToVietnamTimeString("HH:mm dd/MM")</small>
                                             </div>
                                         </li>
                                     }
@@ -759,10 +759,13 @@
             const cleanVal = removeVietnameseDiacritics(val);
             const pages = rolePages[currentUserRole] || [];
             
-            filteredSuggestions = pages.filter(p => 
-                removeVietnameseDiacritics(p.name).includes(cleanVal) || 
-                removeVietnameseDiacritics(p.url).includes(cleanVal)
-            );
+            filteredSuggestions = pages.filter(p => {
+                if (window.CSMSSearch) {
+                    return window.CSMSSearch.fuzzyMatchAny(val, [p.name, p.url]);
+                }
+                return removeVietnameseDiacritics(p.name).includes(cleanVal) || 
+                       removeVietnameseDiacritics(p.url).includes(cleanVal);
+            });
 
             if (filteredSuggestions.length === 0) {
                 listEl.classList.add('d-none');

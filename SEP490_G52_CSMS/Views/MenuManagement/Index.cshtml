@@ -288,7 +288,7 @@
                 const name = row.getAttribute('data-name') || '';
                 const status = row.getAttribute('data-status') || '';
 
-                const matchesSearch = !searchVal || name.includes(searchVal);
+                const matchesSearch = !searchVal || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatch(name, searchVal) : name.includes(searchVal));
                 const matchesStatus = (currentStatusFilter === 'all') || (status === currentStatusFilter);
 
                 row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
