@@ -75,23 +75,53 @@ namespace SEP490_G52_CSMS.Repositories
             return query;
         }
 
-        public async Task<List<BranchSupplyRequest>> GetCentralExportRequestsAsync(DateTime fromDate, DateTime toDate, string status, int page, int pageSize)
+        public async Task<List<BranchSupplyRequest>> GetCentralExportRequestsAsync(
+            DateTime fromDate, DateTime toDate, string status, int page, int pageSize, string? sortBy = "expected_asc", string? priorityFilter = "all", string? branchId = null)
         {
-            var query = ApplyExportRequestFilters(fromDate, toDate, status);
+            var query = ApplyExportRequestFilters(fromDate, toDate, status, priorityFilter, branchId);
+
+            query = (sortBy?.ToLower()) switch
+            {
+                "expected_asc" => query.OrderBy(r => r.ExpectedDeliveryDate ?? DateTime.MaxValue).ThenByDescending(r => r.RequestDate),
+                "expected_desc" => query.OrderByDescending(r => r.ExpectedDeliveryDate ?? DateTime.MinValue).ThenByDescending(r => r.RequestDate),
+                "request_asc" => query.OrderBy(r => r.RequestDate),
+                "request_desc" => query.OrderByDescending(r => r.RequestDate),
+                _ => query.OrderBy(r => r.ExpectedDeliveryDate ?? DateTime.MaxValue).ThenByDescending(r => r.RequestDate)
+            };
+
             return await query
-                .OrderByDescending(r => r.RequestDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
         }
 
-        public async Task<int> GetCentralExportRequestsCountAsync(DateTime fromDate, DateTime toDate, string status)
+        public async Task<int> GetCentralExportRequestsCountAsync(DateTime fromDate, DateTime toDate, string status, string? priorityFilter = "all", string? branchId = null)
         {
-            var query = ApplyExportRequestFilters(fromDate, toDate, status);
+            var query = ApplyExportRequestFilters(fromDate, toDate, status, priorityFilter, branchId);
             return await query.CountAsync();
         }
 
-        private IQueryable<BranchSupplyRequest> ApplyExportRequestFilters(DateTime fromDate, DateTime toDate, string status)
+        public async Task<int> GetUrgentRequestsCountAsync(DateTime fromDate, DateTime toDate, string? branchId = null)
+        {
+            var start = fromDate.Date;
+            var end = toDate.Date.AddDays(1).AddTicks(-1);
+            var urgentDeadline = DateTime.Today.AddDays(2);
+
+            var query = _context.BranchSupplyRequests
+                .Where(r => r.RequestDate >= start && r.RequestDate <= end
+                    && (r.Status == "Chờ duyệt" || r.Status == "Đang chuẩn bị xuất")
+                    && r.ExpectedDeliveryDate.HasValue
+                    && r.ExpectedDeliveryDate.Value.Date <= urgentDeadline);
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                query = query.Where(r => r.BranchId == branchId);
+            }
+
+            return await query.CountAsync();
+        }
+
+        private IQueryable<BranchSupplyRequest> ApplyExportRequestFilters(DateTime fromDate, DateTime toDate, string status, string? priorityFilter = "all", string? branchId = null)
         {
             var start = fromDate.Date;
             var end = toDate.Date.AddDays(1).AddTicks(-1);
@@ -102,9 +132,22 @@ namespace SEP490_G52_CSMS.Repositories
                 .ThenInclude(i => i.Material)
                 .Where(r => r.RequestDate >= start && r.RequestDate <= end);
 
-            if (!string.IsNullOrEmpty(status) && status != "Tất cả")
+            if (!string.IsNullOrEmpty(status) && !string.Equals(status, "Tất cả", StringComparison.OrdinalIgnoreCase) && !string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
             {
                 query = query.Where(r => r.Status == status);
+            }
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                query = query.Where(r => r.BranchId == branchId);
+            }
+
+            if (priorityFilter == "urgent")
+            {
+                var urgentDeadline = DateTime.Today.AddDays(2);
+                query = query.Where(r => (r.Status == "Chờ duyệt" || r.Status == "Đang chuẩn bị xuất")
+                    && r.ExpectedDeliveryDate.HasValue
+                    && r.ExpectedDeliveryDate.Value.Date <= urgentDeadline);
             }
 
             return query;

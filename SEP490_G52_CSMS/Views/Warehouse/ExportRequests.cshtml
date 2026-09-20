@@ -8,10 +8,42 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold text-dark m-0">DANH SÁCH ĐƠN YÊU CẦU XUẤT KHO (TỪ CHI NHÁNH)</h2>
         <div>
-            <a href="@Url.Action("ExportRequestsCsv", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus })" class="btn btn-outline-dark fw-bold">
+            <a href="@Url.Action("ExportRequestsCsv", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, sortBy = Model.SortBy, priority = Model.PriorityFilter, branchId = Model.SelectedBranchId })" class="btn btn-outline-dark fw-bold">
                 <i class="bi bi-download me-2"></i> Tải xuống báo cáo
             </a>
         </div>
+    </div>
+
+    <!-- Quick Priority Filter Pills -->
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+        <a href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = "Tất cả", sortBy = Model.SortBy, priority = "all", branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.PriorityFilter != "urgent" && Model.SelectedStatus == "Tất cả" ? "btn-dark" : "btn-outline-secondary") rounded-pill px-3">
+            Tất cả yêu cầu
+        </a>
+        <a href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = "Tất cả", sortBy = "expected_asc", priority = "urgent", branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.PriorityFilter == "urgent" ? "btn-danger text-white shadow-sm" : "btn-outline-danger") rounded-pill px-3">
+            <i class="bi bi-lightning-charge-fill me-1"></i> Cần giao gấp (Trong 48h)
+            @if (Model.UrgentCount > 0)
+            {
+                <span class="badge bg-white text-danger ms-1 rounded-pill">@Model.UrgentCount</span>
+            }
+        </a>
+        <a href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = "Chờ duyệt", sortBy = Model.SortBy, priority = "all", branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.PriorityFilter != "urgent" && Model.SelectedStatus == "Chờ duyệt" ? "btn-warning text-dark" : "btn-outline-secondary") rounded-pill px-3">
+            <i class="bi bi-clock me-1"></i> Chờ duyệt xuất
+        </a>
+        <a href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = "Đang chuẩn bị xuất", sortBy = Model.SortBy, priority = "all", branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.PriorityFilter != "urgent" && Model.SelectedStatus == "Đang chuẩn bị xuất" ? "btn-primary text-white" : "btn-outline-secondary") rounded-pill px-3">
+            <i class="bi bi-box-seam me-1"></i> Đang chuẩn bị xuất
+        </a>
+        <a href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = "Đã xuất kho", sortBy = Model.SortBy, priority = "all", branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.PriorityFilter != "urgent" && Model.SelectedStatus == "Đã xuất kho" ? "btn-info text-dark" : "btn-outline-secondary") rounded-pill px-3">
+            <i class="bi bi-truck me-1"></i> Đang vận chuyển
+        </a>
+        <a href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = "Đã nhận - Có hàng lỗi", sortBy = Model.SortBy, priority = "all", branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.PriorityFilter != "urgent" && Model.SelectedStatus == "Đã nhận - Có hàng lỗi" ? "btn-danger text-white" : "btn-outline-secondary") rounded-pill px-3">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> Có hàng lỗi
+        </a>
     </div>
 
     <!-- Error Alert -->
@@ -28,17 +60,19 @@
     <div class="card shadow-sm border-0 mb-4 rounded-3 bg-light">
         <div class="card-body py-3">
             <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-3 col-sm-6">
+                <input type="hidden" name="priority" value="@Model.PriorityFilter" />
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <label class="form-label small fw-bold text-muted text-uppercase mb-1">Từ ngày</label>
                     <input type="date" name="fromDate" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="form-control" />
                 </div>
                 
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đến ngày</label>
                     <input type="date" name="toDate" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="form-control" />
                 </div>
 
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <label class="form-label small fw-bold text-muted text-uppercase mb-1">Trạng thái</label>
                     <select name="status" class="form-select">
                         <option value="Tất cả" selected="@(Model.SelectedStatus == "Tất cả")">Tất cả</option>
@@ -52,9 +86,32 @@
                     </select>
                 </div>
 
-                <div class="col-md-3 col-sm-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-dark w-100 py-2 fw-bold">Xem yêu cầu</button>
-                    <a asp-action="ExportRequests" class="btn btn-outline-secondary py-2"><i class="bi bi-arrow-counterclockwise"></i></a>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1"><i class="bi bi-shop me-1"></i>Chi nhánh</label>
+                    <select name="branchId" class="form-select">
+                        <option value="">Tất cả</option>
+                        @foreach (var b in Model.Branches)
+                        {
+                            <option value="@b.BranchId" selected="@(Model.SelectedBranchId == b.BranchId)">@b.BranchName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">
+                        <i class="bi bi-sort-down text-primary me-1"></i>Sắp xếp
+                    </label>
+                    <select name="sortBy" class="form-select">
+                        <option value="expected_asc" selected="@(Model.SortBy == "expected_asc")">Hạn nhận (Gần nhất)</option>
+                        <option value="expected_desc" selected="@(Model.SortBy == "expected_desc")">Hạn nhận (Xa nhất)</option>
+                        <option value="request_desc" selected="@(Model.SortBy == "request_desc")">Ngày gửi (Mới nhất)</option>
+                        <option value="request_asc" selected="@(Model.SortBy == "request_asc")">Ngày gửi (Cũ nhất)</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100 py-2 fw-bold"><i class="bi bi-search me-1"></i> Lọc</button>
+                    <a asp-action="ExportRequests" class="btn btn-outline-secondary py-2" title="Làm mới bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
                 </div>
             </form>
         </div>
@@ -67,16 +124,18 @@
                 <table class="table table-hover table-sm align-middle m-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 15%;" class="ps-3">Mã đơn</th>
-                            <th style="width: 20%;">Ngày yêu cầu</th>
-                            <th style="width: 25%;">Chi nhánh</th>
-                            <th style="width: 20%;">Trạng thái</th>
-                            <th style="width: 20%;" class="text-center pe-3">Hành động</th>
+                            <th style="width: 12%;" class="ps-3">Mã đơn</th>
+                            <th style="width: 16%;">Ngày yêu cầu</th>
+                            <th style="width: 18%;">Ngày cần nhận</th>
+                            <th style="width: 20%;">Chi nhánh</th>
+                            <th style="width: 18%;">Trạng thái</th>
+                            <th style="width: 16%;" class="text-center pe-3">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (Model.Requests != null && Model.Requests.Any())
                         {
+                            var today = DateTime.Today;
                             foreach (var item in Model.Requests)
                             {
                                 string badgeClass = item.Status == "Chờ duyệt" ? "bg-warning text-dark" :
@@ -93,10 +152,48 @@
                                                    item.Status == "Đã nhận - Có hàng lỗi" ? "table-danger" :
                                                    item.Status == "Từ chối" ? "table-danger" : "";
 
+                                bool isPending = item.Status == "Chờ duyệt" || item.Status == "Đang chuẩn bị xuất";
+                                bool isOverdue = isPending && item.ExpectedDeliveryDate.HasValue && item.ExpectedDeliveryDate.Value.Date < today;
+                                bool isUrgent = isPending && item.ExpectedDeliveryDate.HasValue && item.ExpectedDeliveryDate.Value.Date >= today && item.ExpectedDeliveryDate.Value.Date <= today.AddDays(2);
+
                                 <tr class="@rowStyle" data-code="@item.RequestCode">
                                     <td class="ps-3 fw-bold">@item.RequestCode</td>
-                                    <td>@item.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm")</td>
-                                    <td>@item.Branch?.BranchName</td>
+                                    <td>
+                                        <div class="fw-semibold">@item.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>@item.RequestDate.ToRelativeTimeString()</div>
+                                    </td>
+                                    <td>
+                                        @if (item.ExpectedDeliveryDate.HasValue)
+                                        {
+                                            var relExpected = item.ExpectedDeliveryDate.Value.ToRelativeTimeString(isDateOnly: true);
+                                            <div>
+                                                <span class="fw-semibold">@item.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy")</span>
+                                                @if (isOverdue)
+                                                {
+                                                    <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 ms-1" title="Đã quá ngày nhận mong muốn">
+                                                        <i class="bi bi-exclamation-octagon-fill me-1"></i>Quá hạn
+                                                    </span>
+                                                }
+                                                else if (isUrgent)
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 ms-1" title="Cần giao gấp trong vòng 48 giờ">
+                                                        <i class="bi bi-lightning-fill me-1"></i>Gấp
+                                                    </span>
+                                                }
+                                            </div>
+                                            <div class="small @(isOverdue ? "text-danger fw-bold" : (isUrgent ? "text-warning-emphasis fw-semibold" : "text-muted"))">
+                                                <i class="bi bi-hourglass-split me-1"></i>@relExpected
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Không xác định</span>
+                                        }
+                                    </td>
+                                    <td class="fw-semibold text-dark">
+                                        <i class="bi bi-shop me-1 text-secondary"></i>
+                                        @(item.Branch?.BranchName ?? (!string.IsNullOrEmpty(item.BranchId) ? item.BranchId : "Chi nhánh không xác định"))
+                                    </td>
                                     <td class="status-cell"><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
                                     <td class="text-center pe-3">
                                         <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="viewExportRequestDetails('@item.RequestCode')">
@@ -109,7 +206,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-5">
+                                <td colspan="6" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary-subtle"></i>
                                     Không tìm thấy đơn yêu cầu xuất kho nào phù hợp.
                                 </td>
@@ -126,16 +223,16 @@
                     <nav aria-label="Page navigation">
                         <ul class="pagination pagination-sm m-0">
                             <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-                                <a class="page-link" href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, page = Model.CurrentPage - 1 })">&laquo;</a>
+                                <a class="page-link" href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, sortBy = Model.SortBy, priority = Model.PriorityFilter, branchId = Model.SelectedBranchId, page = Model.CurrentPage - 1 })">&laquo;</a>
                             </li>
                             @for (int p = 1; p <= Model.TotalPages; p++)
                             {
                                 <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
-                                    <a class="page-link" href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, page = p })">@p</a>
+                                    <a class="page-link" href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, sortBy = Model.SortBy, priority = Model.PriorityFilter, branchId = Model.SelectedBranchId, page = p })">@p</a>
                                 </li>
                             }
                             <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-                                <a class="page-link" href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, page = Model.CurrentPage + 1 })">&raquo;</a>
+                                <a class="page-link" href="@Url.Action("ExportRequests", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, sortBy = Model.SortBy, priority = Model.PriorityFilter, branchId = Model.SelectedBranchId, page = Model.CurrentPage + 1 })">&raquo;</a>
                             </li>
                         </ul>
                     </nav>
@@ -373,6 +470,72 @@
         let currentRequestCode = null;
         let requestDetails = null;
 
+        function formatRelativeTime(dateInput, referenceDate = null, isDateOnly = false) {
+            if (!dateInput) return '';
+            let target = new Date(dateInput);
+            if (isNaN(target.getTime())) return '';
+
+            // Flexible signature: support (dateInput, isDateOnly, referenceDate) as well as (dateInput, referenceDate, isDateOnly)
+            if (typeof referenceDate === 'boolean') {
+                let temp = referenceDate;
+                referenceDate = isDateOnly && typeof isDateOnly !== 'boolean' ? isDateOnly : null;
+                isDateOnly = temp;
+            }
+
+            let ref = referenceDate ? new Date(referenceDate) : new Date();
+            if (isNaN(ref.getTime())) ref = new Date();
+
+            if (isDateOnly) {
+                let tDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+                let rDate = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+                let diffMs = tDate.getTime() - rDate.getTime();
+                let diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) return 'Hôm nay';
+                if (diffDays === 1) return 'Ngày mai';
+                if (diffDays > 1 && diffDays <= 30) return `Trong ${diffDays} ngày`;
+                if (diffDays > 30) return `Trong ${Math.max(1, Math.round(diffDays / 30))} tháng`;
+                if (diffDays === -1) return 'Hôm qua (Quá hạn 1 ngày)';
+                return `Quá hạn ${Math.abs(diffDays)} ngày`;
+            }
+
+            let deltaMs = ref.getTime() - target.getTime();
+            let deltaSec = Math.floor(deltaMs / 1000);
+
+            if (deltaSec >= 0) {
+                if (deltaSec < 60) return 'Vừa xong';
+                let deltaMin = Math.floor(deltaSec / 60);
+                if (deltaMin < 60) return `${deltaMin} phút trước`;
+                let deltaHour = Math.floor(deltaMin / 60);
+                let isSameDay = target.getFullYear() === ref.getFullYear() && target.getMonth() === ref.getMonth() && target.getDate() === ref.getDate();
+                if (deltaHour < 24 && isSameDay) return `${deltaHour} giờ trước`;
+                let yesterday = new Date(ref);
+                yesterday.setDate(yesterday.getDate() - 1);
+                if (target.getFullYear() === yesterday.getFullYear() && target.getMonth() === yesterday.getMonth() && target.getDate() === yesterday.getDate()) {
+                    return 'Hôm qua';
+                }
+                let deltaDays = Math.floor(deltaHour / 24);
+                if (deltaDays < 30) return `${Math.max(1, deltaDays)} ngày trước`;
+                let deltaMonths = Math.floor(deltaDays / 30);
+                if (deltaDays < 365) return `${Math.max(1, deltaMonths)} tháng trước`;
+                return `${Math.max(1, Math.floor(deltaDays / 365))} năm trước`;
+            } else {
+                let futureMs = -deltaMs;
+                let futureDays = Math.floor(futureMs / (1000 * 60 * 60 * 24));
+                let isSameDay = target.getFullYear() === ref.getFullYear() && target.getMonth() === ref.getMonth() && target.getDate() === ref.getDate();
+                if (isSameDay) return 'Hôm nay';
+                let tomorrow = new Date(ref);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                if (target.getFullYear() === tomorrow.getFullYear() && target.getMonth() === tomorrow.getMonth() && target.getDate() === tomorrow.getDate()) {
+                    return 'Ngày mai';
+                }
+                if (futureDays < 30) return `Trong ${Math.max(1, futureDays)} ngày`;
+                if (futureDays < 365) return `Trong ${Math.max(1, Math.floor(futureDays / 30))} tháng`;
+                return `Trong ${Math.max(1, Math.floor(futureDays / 365))} năm`;
+            }
+        }
+        window.formatRelativeTime = formatRelativeTime;
+
         function getStatusBadgeHtml(status) {
             let badgeClass = "bg-secondary text-white";
             if (status === "Chờ duyệt") badgeClass = "bg-warning text-dark";
@@ -402,6 +565,9 @@
                     requestDetails = r;
                     $('#requestProcessModalLabel').text('Chi tiết đơn yêu cầu xuất kho: ' + r.requestCode);
 
+                    let reqRel = formatRelativeTime(r.requestDateUtc);
+                    let expRel = r.expectedDeliveryDateIso ? formatRelativeTime(r.expectedDeliveryDateIso, true) : '';
+
                     if (r.status === "Chờ duyệt") {
                         // Render Screen A
                         $('#hdrCodeA').text(r.requestCode);
@@ -409,8 +575,8 @@
                         $('#hdrStatusA').html(getStatusBadgeHtml(r.status));
                         $('#hdrReceiverA').text(r.receiverName || r.creatorName);
                         $('#hdrPhoneA').text(r.receiverPhone || r.creatorPhone);
-                        $('#hdrExpectedDateA').text(r.expectedDeliveryDate || 'Càng sớm càng tốt');
-                        $('#hdrDate').text(r.requestDate);
+                        $('#hdrExpectedDateA').html(r.expectedDeliveryDate ? `${r.expectedDeliveryDate} ${expRel ? `<span class="badge bg-light text-muted border ms-1"><i class="bi bi-hourglass-split me-1"></i>${expRel}</span>` : ''}` : 'Càng sớm càng tốt');
+                        $('#hdrDate').html(`${r.requestDate} ${reqRel ? `<span class="badge bg-light text-muted border ms-1"><i class="bi bi-clock-history me-1"></i>${reqRel}</span>` : ''}`);
                         $('#hdrRequestNoteA').text(r.requestNote || 'Không có ghi chú');
                         $('#warehouseNoteInput').val(r.warehouseNote);
 
@@ -459,8 +625,8 @@
                         $('#hdrStatusB').html(getStatusBadgeHtml(r.status));
                         $('#hdrReceiverB').text(r.receiverName || r.creatorName);
                         $('#hdrPhoneB').text(r.receiverPhone || r.creatorPhone);
-                        $('#hdrExpectedDateB').text(r.expectedDeliveryDate || 'Càng sớm càng tốt');
-                        $('#hdrDateB').text(r.requestDate);
+                        $('#hdrExpectedDateB').html(r.expectedDeliveryDate ? `${r.expectedDeliveryDate} ${expRel ? `<span class="badge bg-light text-muted border ms-1"><i class="bi bi-hourglass-split me-1"></i>${expRel}</span>` : ''}` : 'Càng sớm càng tốt');
+                        $('#hdrDateB').html(`${r.requestDate} ${reqRel ? `<span class="badge bg-light text-muted border ms-1"><i class="bi bi-clock-history me-1"></i>${reqRel}</span>` : ''}`);
                         $('#hdrApproverB').text(r.approvedBy || 'Warehouse Manager');
                         $('#hdrRequestNoteB').text(r.requestNote || 'Không có');
 
@@ -497,8 +663,8 @@
 
                         let receiverInfo = (r.receiverName || r.creatorName || 'Quản lý CN') + (r.receiverPhone ? ' / ' + r.receiverPhone : '');
                         $('#roReceiver').text(receiverInfo);
-                        $('#roExpectedDate').text(r.expectedDeliveryDate || 'Không hẹn');
-                        $('#roDate').text(r.requestDate);
+                        $('#roExpectedDate').html(r.expectedDeliveryDate ? `${r.expectedDeliveryDate} ${expRel ? `<span class="badge bg-light text-muted border ms-1"><i class="bi bi-hourglass-split me-1"></i>${expRel}</span>` : ''}` : 'Không hẹn');
+                        $('#roDate').html(`${r.requestDate} ${reqRel ? `<span class="badge bg-light text-muted border ms-1"><i class="bi bi-clock-history me-1"></i>${reqRel}</span>` : ''}`);
                         $('#roApprovedBy').text(r.approvedBy || 'Chưa duyệt');
                         
                         let delivererText = "Không có";

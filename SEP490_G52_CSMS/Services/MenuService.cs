@@ -141,7 +141,7 @@ namespace SEP490_G52_CSMS.Services
             }
         }
 
-        public async Task UpdateMenuProductsAsync(int menuId, List<int> productIds)
+        public async Task UpdateMenuProductsAsync(int menuId, List<int> productIds, string? menuName = null)
         {
             var variantIds = new List<int>();
             foreach (var pid in productIds)
@@ -155,6 +155,10 @@ namespace SEP490_G52_CSMS.Services
             var menu = await _menuRepository.GetMenuByIdAsync(menuId);
             if (menu != null)
             {
+                if (!string.IsNullOrWhiteSpace(menuName))
+                {
+                    menu.MenuName = menuName.Trim();
+                }
                 menu.UpdatedAt = DateTime.UtcNow;
                 await _menuRepository.UpdateMenuAsync(menu);
             }

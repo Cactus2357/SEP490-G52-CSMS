@@ -286,11 +286,20 @@ namespace SEP490_G52_CSMS.Controllers
                 return Json(new { success = false, message = "Không tìm thấy nguyên liệu trong kho chi nhánh." });
             }
 
+            if (model.LowStockThreshold.HasValue && model.LowStockThreshold.Value < 0)
+            {
+                return Json(new { success = false, message = "Ngưỡng cảnh báo tồn kho không được âm." });
+            }
+
             decimal oldStock = item.StockQuantity;
             decimal newStock = model.ActualStock;
             decimal diff = newStock - oldStock;
 
             item.StockQuantity = newStock;
+            if (model.LowStockThreshold.HasValue && model.LowStockThreshold.Value >= 0)
+            {
+                item.LowStockThreshold = model.LowStockThreshold.Value;
+            }
             await _context.SaveChangesAsync();
 
             // Send notification to Regional Manager
@@ -389,7 +398,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> RegisterBranchMaterial(int? materialId, string? materialName)
+        public async Task<IActionResult> RegisterBranchMaterial(int? materialId, string? materialName, decimal? lowStockThreshold = 10m)
         {
             try
             {
@@ -447,12 +456,14 @@ namespace SEP490_G52_CSMS.Controllers
                     return Json(new { success = false, message = $"Nguyên liệu '{material.MaterialName}' đã tồn tại trong danh sách tồn kho chi nhánh." });
                 }
 
+                decimal threshold = (lowStockThreshold.HasValue && lowStockThreshold.Value >= 0) ? lowStockThreshold.Value : 10m;
+
                 var branchInventory = new BranchInventory
                 {
                     BranchId = branchId,
                     MaterialId = material.MaterialId,
                     StockQuantity = 0,
-                    LowStockThreshold = 10m
+                    LowStockThreshold = threshold
                 };
 
                 _context.BranchInventories.Add(branchInventory);

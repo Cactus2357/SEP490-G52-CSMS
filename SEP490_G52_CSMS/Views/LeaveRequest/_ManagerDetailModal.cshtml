@@ -1,33 +1,30 @@
 @model SEP490_G52_CSMS.Models.ViewModels.LeaveRequestDetailViewModel
 
 <div class="modal fade" id="leaveDetailModal" tabindex="-1" aria-labelledby="leaveDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg rounded-3">
             
-            <!-- Modal Header -->
-            <div class="modal-header border-bottom py-3 px-4">
-                <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-link text-dark p-0 border-0 fs-5 text-decoration-none me-2" data-bs-dismiss="modal">
-                        <i class="bi bi-arrow-left"></i>
-                    </button>
-                    <h5 class="modal-title fw-bold text-dark m-0" id="leaveDetailModalLabel">Chi tiết yêu cầu</h5>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- Warehouse Template: Dark Header -->
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="leaveDetailModalLabel">
+                    <i class="bi bi-calendar-check me-2"></i>ĐƠN XIN NGHỈ PHÉP - @Model.EmployeeFullName.ToUpper()
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <div class="modal-body p-4">
                 
                 <!-- Employee Summary Card (Item 3 & 4) -->
-                <div class="card border border-secondary-subtle rounded-4 p-3 mb-4 bg-white shadow-sm">
+                <div class="card border border-secondary-subtle rounded-3 p-3 mb-3 bg-white shadow-sm">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-dark text-white fw-bold d-flex align-items-center justify-content-center shadow-sm"
-                                 style="width: 52px; height: 52px; font-size: 1.15rem; border: 2px solid #212529;">
+                            <div class="rounded-circle bg-dark text-white fw-bold d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                                 style="width: 50px; height: 50px; font-size: 1.15rem; border: 2px solid #212529;">
                                 @Model.EmployeeInitials
                             </div>
                             <div>
                                 <div class="fw-bold text-dark fs-6">@Model.EmployeeFullName</div>
-                                <div class="text-muted small">@Model.EmployeeUsername · @Model.EmployeeRole</div>
+                                <div class="text-muted small">@Model.EmployeeRole · Tên đăng nhập: @Model.EmployeeUsername · Mã: NV#@Model.EmployeeId</div>
                             </div>
                         </div>
                         <span class="badge @Model.StatusBadgeClass rounded-pill px-3 py-1.5 fs-7 fw-bold">
@@ -37,7 +34,7 @@
                 </div>
 
                 <!-- Request Core Details Block (Item 5, 6, 7, 8) -->
-                <div class="card border border-secondary-subtle rounded-3 p-3 mb-4 bg-light shadow-sm" style="border-style: dashed !important; border-width: 2px !important;">
+                <div class="card border border-secondary-subtle rounded-3 p-3 mb-3 bg-light shadow-sm" style="border-style: dashed !important; border-width: 2px !important;">
                     <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary-subtle">
                         <span class="text-muted fw-semibold small">Ngày nghỉ</span>
                         <span class="fw-bold text-dark">@Model.RequestDateStr</span>
@@ -47,18 +44,18 @@
                         <span class="fw-bold text-dark">@Model.ShiftDetails</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-start py-2 border-bottom border-secondary-subtle">
-                        <span class="text-muted fw-semibold small me-3">Lý do</span>
+                        <span class="text-muted fw-semibold small me-3">Lý do nghỉ</span>
                         <span class="fw-semibold text-dark text-end">@Model.Reason</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center py-2 pt-3">
+                    <div class="d-flex justify-content-between align-items-center py-2">
                         <span class="text-muted fw-semibold small">Thời gian gửi</span>
                         <span class="text-secondary small fw-bold">@Model.SubmittedAtStr</span>
                     </div>
                 </div>
 
                 <!-- Leave History Stats Container (Item 9) -->
-                <div class="card border border-secondary-subtle rounded-3 p-3 mb-4 bg-white shadow-sm" style="border-style: dashed !important; border-width: 2px !important;">
-                    <div class="fw-bold text-dark mb-2 fs-6">Lịch sử nghỉ phép (tháng @Model.CurrentMonth)</div>
+                <div class="card border border-secondary-subtle rounded-3 p-3 mb-3 bg-white shadow-sm" style="border-style: dashed !important; border-width: 2px !important;">
+                    <div class="fw-bold text-dark mb-2 fs-6"><i class="bi bi-clock-history me-1"></i>Lịch sử nghỉ phép (tháng @Model.CurrentMonth)</div>
                     
                     <div class="d-flex justify-content-between align-items-center py-1.5 border-bottom border-secondary-subtle">
                         <span class="text-muted small">Đã nghỉ</span>
@@ -77,8 +74,8 @@
                 <!-- Shift Warning Banner (Item 10) -->
                 @if (Model.HasShiftWarning)
                 {
-                    <div class="alert alert-warning border border-warning-subtle rounded-3 p-3 mb-4 d-flex align-items-start gap-3 shadow-sm" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill fs-3 text-warning flex-shrink-0"></i>
+                    <div class="alert alert-warning border border-warning-subtle rounded-3 p-3 mb-0 d-flex align-items-start gap-3 shadow-sm" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 text-warning flex-shrink-0 mt-0.5"></i>
                         <div>
                             <div class="fw-bold text-dark fs-6">Lưu ý lịch ca</div>
                             <div class="small text-dark mt-0.5">@Model.ShiftWarningMessage</div>
@@ -86,28 +83,20 @@
                     </div>
                 }
 
-                <!-- Action Buttons (Item 11 & 12) -->
-                <div class="d-flex gap-3 justify-content-end pt-2">
-                    @if (Model.CanProcess)
-                    {
-                        <button type="button" class="btn btn-outline-danger px-4 rounded-pill fw-bold" onclick="processRejectLeave(@Model.ApplicationId)">
-                            Từ chối
-                        </button>
-                        <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold shadow-sm" onclick="processApproveLeave(@Model.ApplicationId)">
-                            Phê duyệt
-                        </button>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn btn-outline-secondary px-4 rounded-pill fw-bold" disabled>
-                            Từ chối
-                        </button>
-                        <button type="button" class="btn btn-secondary px-4 rounded-pill fw-bold" disabled>
-                            Đã xử lý
-                        </button>
-                    }
-                </div>
+            </div>
 
+            <!-- Warehouse Template: Action Footer -->
+            <div class="modal-footer bg-light px-4 py-3">
+                <button type="button" class="btn btn-secondary fw-bold px-3" data-bs-dismiss="modal">Đóng</button>
+                @if (Model.CanProcess)
+                {
+                    <button type="button" class="btn btn-danger fw-bold px-4" onclick="processRejectLeave(@Model.ApplicationId)">
+                        <i class="bi bi-x-circle me-1"></i>Từ chối
+                    </button>
+                    <button type="button" class="btn btn-primary fw-bold px-4" onclick="processApproveLeave(@Model.ApplicationId)">
+                        <i class="bi bi-check-circle me-1"></i>Phê duyệt
+                    </button>
+                }
             </div>
         </div>
     </div>

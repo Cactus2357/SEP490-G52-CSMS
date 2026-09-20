@@ -56,7 +56,32 @@
 
     <form asp-action="Edit" method="post" id="editForm">
         <input type="hidden" asp-for="MenuId" />
-        <input type="hidden" asp-for="MenuName" />
+
+        <!-- Card: Tên thực đơn -->
+        <div class="card shadow-sm border rounded-3 mb-4 bg-white">
+            <div class="card-body p-3">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-6 col-lg-5">
+                        <label for="menuNameInput" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                            Tên thực đơn <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-card-heading"></i></span>
+                            <input type="text" name="MenuName" id="menuNameInput" class="form-control fw-bold fs-6" value="@Model.MenuName" placeholder="Nhập tên thực đơn..." required maxlength="100" />
+                        </div>
+                        <div class="text-danger small mt-1" id="menuNameError">
+                            <span asp-validation-for="MenuName"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-7">
+                        <div class="small text-muted d-flex align-items-center mt-md-3">
+                            <i class="bi bi-info-circle me-1 text-primary fs-5 flex-shrink-0"></i>
+                            <span>Tên thực đơn giúp nhận diện và phân biệt giữa các gói menu bán hàng tại chi nhánh.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- 2 Columns Product Selection Grid -->
         <div class="row g-4 mb-4">
@@ -228,9 +253,22 @@
         }
 
         function submitEditForm() {
+            var menuNameInput = document.getElementById('menuNameInput');
+            var menuName = menuNameInput ? menuNameInput.value.trim() : '';
+            var errEl = document.getElementById('menuNameError');
+
+            if (!menuName) {
+                if (menuNameInput) menuNameInput.classList.add('is-invalid');
+                if (errEl) errEl.innerText = 'Vui lòng nhập tên thực đơn.';
+                if (menuNameInput) menuNameInput.focus();
+                return;
+            }
+            if (menuNameInput) menuNameInput.classList.remove('is-invalid');
+            if (errEl) errEl.innerText = '';
+
             showConfirmModal(
                 'Xác nhận lưu thay đổi',
-                'Bạn có chắc chắn muốn lưu danh sách món cho thực đơn này không?',
+                `Bạn có chắc chắn muốn lưu cập nhật cho thực đơn "${menuName}" không?`,
                 function() {
                     document.getElementById('editForm').submit();
                 }

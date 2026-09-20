@@ -72,18 +72,20 @@ namespace SEP490_G52_CSMS.Repositories
                 var term = searchName.Trim();
                 if (_context.Database.IsSqlServer())
                 {
-                    query = query.Where(l => l.Employee != null && (
+                    query = query.Where(l => (l.Employee != null && (
                         EF.Functions.Collate(l.Employee.FullName, "SQL_Latin1_General_CP1_CI_AI").Contains(term) ||
                         EF.Functions.Collate(l.Employee.Username, "SQL_Latin1_General_CP1_CI_AI").Contains(term)
-                    ));
+                    )) || (l.Reason != null && EF.Functions.Collate(l.Reason, "SQL_Latin1_General_CP1_CI_AI").Contains(term))
+                       || (l.LeaveShifts != null && EF.Functions.Collate(l.LeaveShifts, "SQL_Latin1_General_CP1_CI_AI").Contains(term)));
                 }
                 else
                 {
                     var lowerTerm = term.ToLower();
-                    query = query.Where(l => l.Employee != null && (
+                    query = query.Where(l => (l.Employee != null && (
                         (l.Employee.FullName != null && l.Employee.FullName.ToLower().Contains(lowerTerm)) ||
                         (l.Employee.Username != null && l.Employee.Username.ToLower().Contains(lowerTerm))
-                    ));
+                    )) || (l.Reason != null && l.Reason.ToLower().Contains(lowerTerm))
+                       || (l.LeaveShifts != null && l.LeaveShifts.ToLower().Contains(lowerTerm)));
                 }
             }
 

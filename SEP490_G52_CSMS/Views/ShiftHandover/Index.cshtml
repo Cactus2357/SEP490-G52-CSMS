@@ -4,7 +4,9 @@
 
     string FormatMoney(decimal v) => v.ToString("N0") + " đ";
 
-    bool IsToday = Model.SelectedDate.Date == DateTime.Today;
+    bool IsToday = Model.FromDate.Date == DateTime.Today && Model.ToDate.Date == DateTime.Today;
+    bool IsSingleDay = Model.FromDate.Date == Model.ToDate.Date;
+    string PeriodLabel = IsToday ? "Hôm nay" : (IsSingleDay ? Model.FromDate.ToString("dd/MM/yyyy") : $"{Model.FromDate:dd/MM} - {Model.ToDate:dd/MM/yyyy}");
 }
 
 <style>
@@ -77,46 +79,57 @@
 </div>
 
 <div class="card-container mb-4">
-    <!-- Date pager + filters -->
+    <!-- Date range + filters -->
     <div class="card border-0 shadow-sm rounded-3 p-3 mb-3 bg-white">
-        <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2 mb-0">
-            <div class="input-group" style="width:auto;">
-                <a class="btn btn-outline-secondary"
-                   href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(-1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus, handoverType = Model.SelectedHandoverType })">
-                    &lsaquo;
-                </a>
-                <span class="input-group-text fw-semibold px-3 bg-white">
-                    <i class="bi bi-calendar3 me-2 text-primary"></i>@(IsToday ? "Hôm nay" : "Ngày") @Model.SelectedDate.ToString("dd/MM/yyyy")
-                </span>
-                <a class="btn btn-outline-secondary"
-                   href="@Url.Action("Index", new { date = Model.SelectedDate.AddDays(1).ToString("yyyy-MM-dd"), shiftId = Model.SelectedShiftId, status = Model.SelectedStatus, handoverType = Model.SelectedHandoverType })">
-                    &rsaquo;
-                </a>
+        <form method="get" asp-action="Index" class="row g-2 align-items-center mb-0">
+            <!-- Khoảng thời gian (Từ ngày ... Đến ngày ...) -->
+            <div class="col-xl-4 col-lg-5 col-md-12 d-flex align-items-center gap-2">
+                <div class="input-group">
+                    <span class="input-group-text bg-light fw-semibold small text-muted">Từ</span>
+                    <input type="date" name="fromDate" class="form-control fw-semibold" value="@(Model.FromDate.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="input-group">
+                    <span class="input-group-text bg-light fw-semibold small text-muted">Đến</span>
+                    <input type="date" name="toDate" class="form-control fw-semibold" value="@(Model.ToDate.ToString("yyyy-MM-dd"))" />
+                </div>
             </div>
 
-            <input type="hidden" name="date" value="@(Model.SelectedDate.ToString("yyyy-MM-dd"))" />
+            <!-- Ca trực -->
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+                <select name="shiftId" class="form-select" onchange="this.form.submit()">
+                    <option value="">Tất cả các ca</option>
+                    @foreach (var s in Model.AllShifts)
+                    {
+                        <option value="@s.ShiftId" selected="@(Model.SelectedShiftId == s.ShiftId)">@s.ShiftName</option>
+                    }
+                </select>
+            </div>
 
-            <select name="shiftId" class="form-select" style="max-width:180px;" onchange="this.form.submit()">
-                <option value="">Tất cả các ca</option>
-                @foreach (var s in Model.AllShifts)
-                {
-                    <option value="@s.ShiftId" selected="@(Model.SelectedShiftId == s.ShiftId)">@s.ShiftName</option>
-                }
-            </select>
+            <!-- Loại bàn giao -->
+            <div class="col-xl-2 col-lg-4 col-md-4 col-sm-6">
+                <select name="handoverType" class="form-select" onchange="this.form.submit()">
+                    <option value="">Loại bàn giao: Tất cả</option>
+                    <option value="FirstShift" selected="@(Model.SelectedHandoverType == "FirstShift")">Mở ca đầu ngày</option>
+                    <option value="MidShift" selected="@(Model.SelectedHandoverType == "MidShift")">Giao ca thường</option>
+                    <option value="Emergency" selected="@(Model.SelectedHandoverType == "Emergency")">Bàn giao đột xuất</option>
+                    <option value="LastShift" selected="@(Model.SelectedHandoverType == "LastShift")">Đóng ca cuối ngày</option>
+                </select>
+            </div>
 
-            <select name="handoverType" class="form-select" style="max-width:210px;" onchange="this.form.submit()">
-                <option value="">Loại bàn giao: Tất cả</option>
-                <option value="FirstShift" selected="@(Model.SelectedHandoverType == "FirstShift")">Mở ca đầu ngày</option>
-                <option value="MidShift" selected="@(Model.SelectedHandoverType == "MidShift")">Giao ca thường</option>
-                <option value="Emergency" selected="@(Model.SelectedHandoverType == "Emergency")">Bàn giao đột xuất</option>
-                <option value="LastShift" selected="@(Model.SelectedHandoverType == "LastShift")">Đóng ca cuối ngày</option>
-            </select>
+            <!-- Trạng thái -->
+            <div class="col-xl-2 col-lg-4 col-md-4 col-sm-6">
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                    <option value="">Trạng thái: Tất cả</option>
+                    <option value="Lệch tiền" selected="@(Model.SelectedStatus == "Lệch tiền")">Lệch tiền</option>
+                    <option value="Khớp tiền" selected="@(Model.SelectedStatus == "Khớp tiền")">Khớp tiền</option>
+                </select>
+            </div>
 
-            <select name="status" class="form-select" style="max-width:190px;" onchange="this.form.submit()">
-                <option value="">Trạng thái: Tất cả</option>
-                <option value="Lệch tiền" selected="@(Model.SelectedStatus == "Lệch tiền")">Lệch tiền</option>
-                <option value="Khớp tiền" selected="@(Model.SelectedStatus == "Khớp tiền")">Khớp tiền</option>
-            </select>
+            <!-- Action buttons -->
+            <div class="col-xl-2 col-lg-8 col-md-12 d-flex gap-2 justify-content-end">
+                <button type="submit" class="btn btn-dark fw-bold px-3 w-100"><i class="bi bi-search me-1"></i> Lọc</button>
+                <a asp-action="Index" class="btn btn-outline-secondary" title="Hôm nay / Làm mới bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
         </form>
     </div>
 
@@ -127,7 +140,7 @@
                 <i class="bi bi-cash-stack"></i>
             </div>
             <div>
-                <div class="kpi-label">Tổng Doanh Thu Hôm Nay</div>
+                <div class="kpi-label">Tổng Doanh Thu (@PeriodLabel)</div>
                 <div class="kpi-value text-success">@FormatMoney(Model.TotalRevenueToday)</div>
                 <small class="text-muted d-block" style="font-size: 0.75rem;">
                     TM: @FormatMoney(Model.TotalCashRevenueToday) | CK: @FormatMoney(Model.TotalBankRevenueToday)
@@ -171,7 +184,7 @@
     <!-- Handover history grid -->
     <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4 bg-white">
         <div class="table-responsive" style="max-height: 520px; overflow-y: auto; overflow-x: auto;">
-            <table class="table table-hover align-middle text-center mb-0 shift-history-table">
+            <table class="table table-hover align-middle text-center mb-0 shift-history-table" style="min-width: 1050px;">
                 <thead class="table-light">
                     <tr class="text-secondary small text-uppercase fw-semibold" style="letter-spacing: 0.5px; border-bottom: 2px solid #edf2f7; font-size: 0.78rem;">
                         <th style="width: 12%;">Thời Gian</th>
@@ -246,7 +259,7 @@
 
 <div class="card-container">
     <!-- Opening / Closing detail panel -->
-    <h2 class="mb-3 fw-bold h5 text-uppercase text-secondary"><i class="bi bi-calendar-event me-2"></i>Chi tiết mở &amp; đóng ca trong ngày:</h2>
+    <h2 class="mb-3 fw-bold h5 text-uppercase text-secondary"><i class="bi bi-calendar-event me-2"></i>Chi tiết mở &amp; đóng ca:</h2>
     <div class="row g-3">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm rounded-3 p-4 bg-white h-100">

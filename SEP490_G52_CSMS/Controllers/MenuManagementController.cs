@@ -55,7 +55,7 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(int id, [FromForm] System.Collections.Generic.List<int> SelectedProductIds)
+        public async Task<IActionResult> Edit(int id, string? MenuName, [FromForm] System.Collections.Generic.List<int> SelectedProductIds)
         {
             var model = await _menuService.GetMenuForEditAsync(id);
             if (model == null || model.BranchId != GetCurrentBranchId())
@@ -63,7 +63,14 @@ namespace SEP490_G52_CSMS.Controllers
                 return NotFound();
             }
 
-            await _menuService.UpdateMenuProductsAsync(id, SelectedProductIds);
+            if (string.IsNullOrWhiteSpace(MenuName))
+            {
+                ModelState.AddModelError("MenuName", "Tên thực đơn không được để trống.");
+                ViewBag.Categories = await _menuService.GetProductCategoriesAsync();
+                return View(model);
+            }
+
+            await _menuService.UpdateMenuProductsAsync(id, SelectedProductIds, MenuName.Trim());
             return RedirectToAction(nameof(Index));
         }
 

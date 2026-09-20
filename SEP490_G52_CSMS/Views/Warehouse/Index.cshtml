@@ -207,6 +207,9 @@
                         </div>
                         
                         <input type="hidden" id="selectedMaterialId" value="" />
+                        <a id="btnViewMaterialStats" href="#" class="btn btn-outline-primary w-100 py-2 mb-2 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                            <i class="bi bi-graph-up"></i> Xem thống kê biến động & xuất nhập
+                        </a>
                         <button type="button" class="btn btn-outline-dark w-100 py-2 fw-bold" onclick="openEditMaterialModal()">
                             <i class="bi bi-pencil-square me-2"></i> Chỉnh sửa
                         </button>
@@ -221,11 +224,11 @@
 
 <!-- Modal Screen A: Loại nguyên liệu -->
 <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold text-dark" id="categoryModalLabel">Loại nguyên liệu</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold text-white" id="categoryModalLabel">Loại nguyên liệu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row">
@@ -293,7 +296,7 @@
 
 <!-- Modal Screen B: Thêm nguyên liệu mới -->
 <div class="modal fade" id="createMaterialModal" tabindex="-1" aria-labelledby="createMaterialModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold" id="createMaterialModalLabel">Thêm nguyên liệu mới</h5>
@@ -367,7 +370,7 @@
 
 <!-- Modal: Chỉnh sửa thông tin nguyên liệu -->
 <div class="modal fade" id="editMaterialModal" tabindex="-1" aria-labelledby="editMaterialModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold" id="editMaterialModalLabel">Chỉnh sửa thông tin nguyên liệu</h5>
@@ -498,6 +501,7 @@
                     $('#lblSupplier').text(m.supplier ? m.supplier : "Không có");
                     $('#lblOrigin').text(m.origin ? m.origin : "Không có");
                     $('#lblStock').text(m.stockQuantity);
+                    $('#btnViewMaterialStats').attr('href', '/Warehouse/Statistics?materialId=' + m.materialId);
                     
                     $('#detailContent').removeClass('d-none');
                 },

@@ -15,7 +15,7 @@ namespace SEP490_G52_CSMS.Services.Interfaces
         Task<BranchSupplyRequestHistoryViewModel> GetBranchRequestHistoryAsync(string branchId, DateTime fromDate, DateTime toDate, string status, int page, int pageSize);
 
         // Central Warehouse Operations
-        Task<ExportRequestsViewModel> GetExportRequestsAsync(DateTime fromDate, DateTime toDate, string status, int page, int pageSize);
+        Task<ExportRequestsViewModel> GetExportRequestsAsync(DateTime fromDate, DateTime toDate, string status, int page, int pageSize, string? sortBy = "expected_asc", string? priorityFilter = "all", string? branchId = null);
         Task<object?> GetRequestDetailsJsonAsync(string requestCode, string? branchId = null);
         Task<(bool Success, string Message)> ApproveAndPrepareShipmentAsync(string requestCode, string approverName);
         Task<(bool Success, string Message)> ConfirmShipmentAsync(string requestCode, string? delivererName, string? delivererPhone, string? deliveryProvider);

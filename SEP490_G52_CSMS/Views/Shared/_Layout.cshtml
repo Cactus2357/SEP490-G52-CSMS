@@ -54,22 +54,9 @@
         int userId = 0;
         int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out userId);
         var branchId = User.FindFirst("BranchId")?.Value;
-        bool isCentralRole = userRole == "RManager" || userRole == "WarehouseManager" || userRole == "WManager";
-
         var allUnread = DbContext.Notifications.AsNoTracking().Where(n => !n.IsRead).ToList();
-        var userUnread = allUnread.Where(n =>
-        {
-            if (n.RecipientUserId.HasValue) return n.RecipientUserId.Value == userId;
-            bool roleMatches = string.IsNullOrEmpty(n.RecipientRole)
-                || n.RecipientRole == userRole
-                || (n.RecipientRole == "WarehouseManager" && (userRole == "WManager" || userRole == "WarehouseManager"))
-                || (n.RecipientRole == "WManager" && (userRole == "WManager" || userRole == "WarehouseManager"))
-                || isCentralRole;
-            bool branchMatches = string.IsNullOrEmpty(n.BranchId)
-                || n.BranchId == branchId
-                || isCentralRole;
-            return roleMatches && branchMatches;
-        }).OrderByDescending(n => n.CreatedTime).ToList();
+        var userUnread = allUnread.Where(n => SEP490_G52_CSMS.Services.NotificationService.IsTargetedForUser(n, userId, userRole, branchId))
+            .OrderByDescending(n => n.CreatedTime).ToList();
 
         unreadCount = userUnread.Count;
         notificationsList = userUnread.Take(5).ToList();
@@ -300,7 +287,7 @@
                         </button>
 
                         <div class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3 navbar-dropdown-menu"
-                             style="width: 440px; z-index: 10700 !important;"
+                             style="width: 440px;"
                              id="notificationDropdownMenu">
 
                             <!-- Header -->
@@ -659,6 +646,7 @@
                 { name: "Quản lý voucher", url: "/VoucherManagement" },
                 { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
                 { name: "Quản lý nguyên liệu kho", url: "/Warehouse/Index" },
+                { name: "Thống kê xuất nhập nguyên liệu", url: "/Warehouse/Statistics" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "WManager": [
@@ -666,6 +654,7 @@
                 { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
                 { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
                 { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
+                { name: "Thống kê xuất nhập nguyên liệu", url: "/Warehouse/Statistics" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "WarehouseManager": [
@@ -673,6 +662,7 @@
                 { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
                 { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
                 { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
+                { name: "Thống kê xuất nhập nguyên liệu", url: "/Warehouse/Statistics" },
                 { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
             ],
             "BranchManager": [

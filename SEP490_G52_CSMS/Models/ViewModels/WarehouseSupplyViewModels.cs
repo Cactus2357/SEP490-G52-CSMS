@@ -64,8 +64,13 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public DateTime FromDate { get; set; }
         public DateTime ToDate { get; set; }
         public string SelectedStatus { get; set; } = "Tất cả";
+        public string SortBy { get; set; } = "expected_asc";
+        public string PriorityFilter { get; set; } = "all";
+        public string? SelectedBranchId { get; set; }
+        public List<SEP490_G52_CSMS.Models.Core.Branch> Branches { get; set; } = new();
         public int CurrentPage { get; set; }
         public int TotalPages { get; set; }
+        public int UrgentCount { get; set; }
     }
 
     public class UpdateReleasedQuantitiesModel
@@ -106,6 +111,7 @@ namespace SEP490_G52_CSMS.Models.ViewModels
         public int? InventoryId { get; set; }
         public int? MaterialId { get; set; }
         public decimal ActualStock { get; set; }
+        public decimal? LowStockThreshold { get; set; }
         public string Reason { get; set; } = string.Empty;
         public string? Note { get; set; }
     }

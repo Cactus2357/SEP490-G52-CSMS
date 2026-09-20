@@ -72,7 +72,13 @@
                             {
                                 <tr>
                                     <td class="ps-3 fw-bold text-primary">@item.WarehouseReceipt?.ReceiptCode</td>
-                                    <td>@(item.WarehouseReceipt?.ImportDate.ToVietnamTimeString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                    <td>
+                                        <div class="fw-semibold">@(item.WarehouseReceipt?.ImportDate.ToVietnamTimeString("dd/MM/yyyy HH:mm") ?? "-")</div>
+                                        @if (item.WarehouseReceipt != null)
+                                        {
+                                            <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>@item.WarehouseReceipt.ImportDate.ToRelativeTimeString()</div>
+                                        }
+                                    </td>
                                     <td>@item.WarehouseReceipt?.Supplier</td>
                                     <td class="fw-semibold">@item.Material?.MaterialName</td>
                                     <td>@item.Quantity.ToString("G29") @item.Material?.StorageUnit</td>
@@ -216,7 +222,11 @@
                 success: function(r) {
                     $('#dtDeliverer').text(r.delivererName);
                     $('#dtPhone').text(r.delivererPhone);
-                    $('#dtTime').text(r.importDate);
+                    let timeText = r.importDate;
+                    if (r.importDateRelative) {
+                        timeText += ` (${r.importDateRelative})`;
+                    }
+                    $('#dtTime').text(timeText);
                     $('#dtTotal').text(r.totalAmount);
                     $('#dtCreator').text(r.createdBy);
                     $('#dtReceiver').text(r.receiverName);

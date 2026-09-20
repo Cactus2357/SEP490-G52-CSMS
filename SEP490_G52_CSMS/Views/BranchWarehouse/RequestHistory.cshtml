@@ -70,16 +70,18 @@
                 <table class="table table-hover align-middle m-0 table-sm">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 15%;" class="ps-3">Mã đơn</th>
-                            <th style="width: 20%;">Ngày gửi</th>
-                            <th style="width: 20%;">Trạng thái</th>
-                            <th style="width: 30%;">Ghi chú từ tổng kho</th>
-                            <th style="width: 15%;" class="text-center pe-3">Hành động</th>
+                            <th style="width: 12%;" class="ps-3">Mã đơn</th>
+                            <th style="width: 17%;">Ngày yêu cầu</th>
+                            <th style="width: 18%;">Ngày cần nhận</th>
+                            <th style="width: 16%;">Trạng thái</th>
+                            <th style="width: 23%;">Ghi chú từ tổng kho</th>
+                            <th style="width: 14%;" class="text-center pe-3">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (Model.Requests != null && Model.Requests.Any())
                         {
+                            var today = DateTime.Today;
                             foreach (var item in Model.Requests)
                             {
                                 string badgeClass = item.Status == "Chờ duyệt" ? "bg-warning text-dark" :
@@ -96,9 +98,42 @@
                                                    item.Status == "Đã nhận - Có hàng lỗi" ? "table-danger" :
                                                    item.Status == "Từ chối" ? "table-danger" : "";
 
+                                bool isPending = item.Status == "Chờ duyệt" || item.Status == "Đang chuẩn bị xuất";
+                                bool isOverdue = isPending && item.ExpectedDeliveryDate.HasValue && item.ExpectedDeliveryDate.Value.Date < today;
+                                bool isUrgent = isPending && item.ExpectedDeliveryDate.HasValue && item.ExpectedDeliveryDate.Value.Date >= today && item.ExpectedDeliveryDate.Value.Date <= today.AddDays(2);
+
                                 <tr class="@rowStyle">
                                     <td class="ps-3 fw-bold text-dark">@item.RequestCode</td>
-                                    <td>@item.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <div class="fw-semibold">@item.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>@item.RequestDate.ToRelativeTimeString()</div>
+                                    </td>
+                                    <td>
+                                        @if (item.ExpectedDeliveryDate.HasValue)
+                                        {
+                                            var relExpected = item.ExpectedDeliveryDate.Value.ToRelativeTimeString(isDateOnly: true);
+                                            <div>
+                                                <span class="fw-semibold">@item.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy")</span>
+                                                @if (isOverdue)
+                                                {
+                                                    <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 ms-1" title="Đã quá hạn ngày nhận">
+                                                        <i class="bi bi-exclamation-octagon-fill me-1"></i>Quá hạn
+                                                    </span>
+                                                }
+                                                else if (isUrgent)
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 ms-1" title="Cần nhận gấp trong vòng 48 giờ">
+                                                        <i class="bi bi-lightning-fill me-1"></i>Gấp
+                                                    </span>
+                                                }
+                                                <div class="small text-muted">@relExpected</div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">Càng sớm càng tốt</span>
+                                        }
+                                    </td>
                                     <td><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
                                     <td class="text-secondary small">@item.WarehouseNote</td>
                                     <td class="text-center pe-3">
@@ -112,7 +147,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-5">
+                                <td colspan="6" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary-subtle"></i>
                                     Không tìm thấy đơn yêu cầu phù hợp.
                                 </td>
@@ -344,9 +379,17 @@
 
                     // Populate info fields
                     $('#lblDetailReceiver').text(r.receiverName || 'Chưa chỉ định');
-                    $('#lblDetailReceiverPhone').text(r.receiverPhone || 'Không có');
-                    $('#lblDetailExpectedDate').text(r.expectedDeliveryDate || 'Càng sớm càng tốt');
-                    $('#lblDetailDate').text(r.requestDate);
+                    let expText = r.expectedDeliveryDate || 'Càng sớm càng tốt';
+                    if (r.expectedDeliveryDate && r.expectedDeliveryDateRelative) {
+                        expText += ` (${r.expectedDeliveryDateRelative})`;
+                    }
+                    $('#lblDetailExpectedDate').text(expText);
+
+                    let reqDateText = r.requestDate || '';
+                    if (r.requestDateRelative) {
+                        reqDateText += ` (${r.requestDateRelative})`;
+                    }
+                    $('#lblDetailDate').text(reqDateText);
                     $('#lblDetailApprover').text(r.approvedBy || 'Chưa duyệt');
 
                     let delivererText = "Chưa có";

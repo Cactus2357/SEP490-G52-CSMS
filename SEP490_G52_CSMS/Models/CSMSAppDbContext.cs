@@ -302,6 +302,14 @@ namespace SEP490_G52_CSMS.Models
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
+            modelBuilder.Entity<BranchSupplyRequest>(entity =>
+            {
+                entity.HasOne(r => r.Branch)
+                      .WithMany()
+                      .HasForeignKey(r => r.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
             //base.OnModelCreating(modelBuilder);
         }
     }

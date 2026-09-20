@@ -31,26 +31,67 @@ namespace SEP490_G52_CSMS.Services
             await _context.SaveChangesAsync();
         }
 
-        private static bool IsTargetedForUser(Notification n, int userId, string userRole, string? branchId)
+        public static bool IsRoleMatch(string? recipientRole, string userRole)
+        {
+            if (string.IsNullOrWhiteSpace(recipientRole)) return true; // Broadcast / system announcement
+            if (string.Equals(recipientRole, userRole, StringComparison.OrdinalIgnoreCase)) return true;
+
+            // Warehouse Manager aliases
+            if ((recipientRole.Equals("WarehouseManager", StringComparison.OrdinalIgnoreCase) || recipientRole.Equals("WManager", StringComparison.OrdinalIgnoreCase))
+                && (userRole.Equals("WarehouseManager", StringComparison.OrdinalIgnoreCase) || userRole.Equals("WManager", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            // Branch Manager aliases
+            if ((recipientRole.Equals("BranchManager", StringComparison.OrdinalIgnoreCase) || recipientRole.Equals("BManager", StringComparison.OrdinalIgnoreCase))
+                && (userRole.Equals("BranchManager", StringComparison.OrdinalIgnoreCase) || userRole.Equals("BManager", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            // Regional Manager aliases
+            if ((recipientRole.Equals("RegionalManager", StringComparison.OrdinalIgnoreCase) || recipientRole.Equals("RManager", StringComparison.OrdinalIgnoreCase))
+                && (userRole.Equals("RegionalManager", StringComparison.OrdinalIgnoreCase) || userRole.Equals("RManager", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            // Bartender / Barista aliases
+            if ((recipientRole.Equals("Bartender", StringComparison.OrdinalIgnoreCase) || recipientRole.Equals("Barista", StringComparison.OrdinalIgnoreCase))
+                && (userRole.Equals("Bartender", StringComparison.OrdinalIgnoreCase) || userRole.Equals("Barista", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsTargetedForUser(Notification n, int userId, string userRole, string? branchId)
         {
             if (n.RecipientUserId.HasValue)
             {
                 return n.RecipientUserId.Value == userId;
             }
 
-            bool isCentralRole = userRole == "RManager" || userRole == "WarehouseManager" || userRole == "WManager";
+            // Strict role matching
+            if (!IsRoleMatch(n.RecipientRole, userRole))
+            {
+                return false;
+            }
 
-            bool roleMatches = string.IsNullOrEmpty(n.RecipientRole)
-                || n.RecipientRole == userRole
-                || (n.RecipientRole == "WarehouseManager" && (userRole == "WManager" || userRole == "WarehouseManager"))
-                || (n.RecipientRole == "WManager" && (userRole == "WManager" || userRole == "WarehouseManager"))
-                || isCentralRole;
+            // Central roles receive targeted notifications across all branches
+            bool isCentralRole = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                              || userRole.Equals("RManager", StringComparison.OrdinalIgnoreCase)
+                              || userRole.Equals("RegionalManager", StringComparison.OrdinalIgnoreCase)
+                              || userRole.Equals("WarehouseManager", StringComparison.OrdinalIgnoreCase)
+                              || userRole.Equals("WManager", StringComparison.OrdinalIgnoreCase);
 
             bool branchMatches = string.IsNullOrEmpty(n.BranchId)
                 || n.BranchId == branchId
                 || isCentralRole;
 
-            return roleMatches && branchMatches;
+            return branchMatches;
         }
 
         /// <inheritdoc/>

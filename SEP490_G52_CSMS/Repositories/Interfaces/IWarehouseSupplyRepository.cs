@@ -9,8 +9,9 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         Task<BranchSupplyRequest?> GetRequestByIdAsync(int requestId);
         Task<List<BranchSupplyRequest>> GetBranchRequestsAsync(string branchId, DateTime fromDate, DateTime toDate, string status, int page, int pageSize);
         Task<int> GetBranchRequestsCountAsync(string branchId, DateTime fromDate, DateTime toDate, string status);
-        Task<List<BranchSupplyRequest>> GetCentralExportRequestsAsync(DateTime fromDate, DateTime toDate, string status, int page, int pageSize);
-        Task<int> GetCentralExportRequestsCountAsync(DateTime fromDate, DateTime toDate, string status);
+        Task<List<BranchSupplyRequest>> GetCentralExportRequestsAsync(DateTime fromDate, DateTime toDate, string status, int page, int pageSize, string? sortBy = "expected_asc", string? priorityFilter = "all", string? branchId = null);
+        Task<int> GetCentralExportRequestsCountAsync(DateTime fromDate, DateTime toDate, string status, string? priorityFilter = "all", string? branchId = null);
+        Task<int> GetUrgentRequestsCountAsync(DateTime fromDate, DateTime toDate, string? branchId = null);
         Task<string> GenerateNextRequestCodeAsync();
         Task AddRequestAsync(BranchSupplyRequest request);
         Task UpdateRequestAsync(BranchSupplyRequest request);

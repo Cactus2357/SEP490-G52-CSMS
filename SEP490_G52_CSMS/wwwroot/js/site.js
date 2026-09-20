@@ -174,6 +174,79 @@
         }
     };
 
+    /**
+     * Chuyển đổi mốc thời gian thành chuỗi tương đối (relative time).
+     * @param {string|Date|number} dateInput - Mốc thời gian cần chuyển đổi.
+     * @param {string|Date|number|null} [referenceDate=null] - Mốc thời gian so sánh (optional, mặc định là hiện tại).
+     * @param {boolean} [isDateOnly=false] - Chế độ chỉ so sánh ngày (bỏ qua giờ phút giây).
+     * @returns {string}
+     */
+    function formatRelativeTime(dateInput, referenceDate, isDateOnly) {
+        if (!dateInput) return '';
+        var target = new Date(dateInput);
+        if (isNaN(target.getTime())) return '';
+
+        // Flexible signature: support (dateInput, isDateOnly, referenceDate) as well as (dateInput, referenceDate, isDateOnly)
+        if (typeof referenceDate === 'boolean') {
+            var temp = referenceDate;
+            referenceDate = isDateOnly && typeof isDateOnly !== 'boolean' ? isDateOnly : null;
+            isDateOnly = temp;
+        }
+
+        var ref = referenceDate ? new Date(referenceDate) : new Date();
+        if (isNaN(ref.getTime())) ref = new Date();
+
+        if (isDateOnly) {
+            var tDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+            var rDate = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+            var diffMs = tDate.getTime() - rDate.getTime();
+            var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return 'Hôm nay';
+            if (diffDays === 1) return 'Ngày mai';
+            if (diffDays > 1 && diffDays <= 30) return 'Trong ' + diffDays + ' ngày';
+            if (diffDays > 30) return 'Trong ' + Math.max(1, Math.round(diffDays / 30)) + ' tháng';
+            if (diffDays === -1) return 'Hôm qua (Quá hạn 1 ngày)';
+            return 'Quá hạn ' + Math.abs(diffDays) + ' ngày';
+        }
+
+        var deltaMs = ref.getTime() - target.getTime();
+        var deltaSec = Math.floor(deltaMs / 1000);
+
+        if (deltaSec >= 0) {
+            if (deltaSec < 60) return 'Vừa xong';
+            var deltaMin = Math.floor(deltaSec / 60);
+            if (deltaMin < 60) return deltaMin + ' phút trước';
+            var deltaHour = Math.floor(deltaMin / 60);
+            var isSameDay = target.getFullYear() === ref.getFullYear() && target.getMonth() === ref.getMonth() && target.getDate() === ref.getDate();
+            if (deltaHour < 24 && isSameDay) return deltaHour + ' giờ trước';
+            var yesterday = new Date(ref);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (target.getFullYear() === yesterday.getFullYear() && target.getMonth() === yesterday.getMonth() && target.getDate() === yesterday.getDate()) {
+                return 'Hôm qua';
+            }
+            var deltaDays = Math.floor(deltaHour / 24);
+            if (deltaDays < 30) return Math.max(1, deltaDays) + ' ngày trước';
+            var deltaMonths = Math.floor(deltaDays / 30);
+            if (deltaDays < 365) return Math.max(1, deltaMonths) + ' tháng trước';
+            return Math.max(1, Math.floor(deltaDays / 365)) + ' năm trước';
+        } else {
+            var futureMs = -deltaMs;
+            var futureDays = Math.floor(futureMs / (1000 * 60 * 60 * 24));
+            var isSameDayFuture = target.getFullYear() === ref.getFullYear() && target.getMonth() === ref.getMonth() && target.getDate() === ref.getDate();
+            if (isSameDayFuture) return 'Hôm nay';
+            var tomorrow = new Date(ref);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (target.getFullYear() === tomorrow.getFullYear() && target.getMonth() === tomorrow.getMonth() && target.getDate() === tomorrow.getDate()) {
+                return 'Ngày mai';
+            }
+            if (futureDays < 30) return 'Trong ' + Math.max(1, futureDays) + ' ngày';
+            if (futureDays < 365) return 'Trong ' + Math.max(1, Math.floor(futureDays / 30)) + ' tháng';
+            return 'Trong ' + Math.max(1, Math.floor(futureDays / 365)) + ' năm';
+        }
+    }
+
     window.CSMSSearch = CSMSSearch;
+    window.formatRelativeTime = formatRelativeTime;
 })(window);
 

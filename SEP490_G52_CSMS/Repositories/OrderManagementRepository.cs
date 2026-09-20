@@ -46,16 +46,29 @@ namespace SEP490_G52_CSMS.Repositories
 
             if (!string.IsNullOrEmpty(searchCashier))
             {
+                var kw = searchCashier.Trim();
                 if (_context.Database.IsSqlServer())
                 {
-                    query = query.Where(o => o.Cashier != null && (
-                        EF.Functions.Collate(o.Cashier.FullName, "SQL_Latin1_General_CP1_CI_AI").Contains(searchCashier) ||
-                        EF.Functions.Collate(o.Cashier.Username, "SQL_Latin1_General_CP1_CI_AI").Contains(searchCashier)
-                    ));
+                    query = query.Where(o =>
+                        (o.OrderId != null && o.OrderId.Contains(kw)) ||
+                        (o.CustomerName != null && EF.Functions.Collate(o.CustomerName, "SQL_Latin1_General_CP1_CI_AI").Contains(kw)) ||
+                        (o.RecipientName != null && EF.Functions.Collate(o.RecipientName, "SQL_Latin1_General_CP1_CI_AI").Contains(kw)) ||
+                        (o.TableNumber != null && EF.Functions.Collate(o.TableNumber, "SQL_Latin1_General_CP1_CI_AI").Contains(kw)) ||
+                        (o.Cashier != null && (
+                            EF.Functions.Collate(o.Cashier.FullName, "SQL_Latin1_General_CP1_CI_AI").Contains(kw) ||
+                            EF.Functions.Collate(o.Cashier.Username, "SQL_Latin1_General_CP1_CI_AI").Contains(kw)
+                        ))
+                    );
                 }
                 else
                 {
-                    query = query.Where(o => o.Cashier != null && (o.Cashier.FullName.Contains(searchCashier) || o.Cashier.Username.Contains(searchCashier)));
+                    query = query.Where(o =>
+                        (o.OrderId != null && o.OrderId.Contains(kw)) ||
+                        (o.CustomerName != null && o.CustomerName.Contains(kw)) ||
+                        (o.RecipientName != null && o.RecipientName.Contains(kw)) ||
+                        (o.TableNumber != null && o.TableNumber.Contains(kw)) ||
+                        (o.Cashier != null && (o.Cashier.FullName.Contains(kw) || o.Cashier.Username.Contains(kw)))
+                    );
                 }
             }
 

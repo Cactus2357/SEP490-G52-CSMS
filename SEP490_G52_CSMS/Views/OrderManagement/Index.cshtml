@@ -40,9 +40,6 @@
         <h3 class="fw-bold mb-0 text-uppercase text-dark">
             <i class="bi bi-cart-check-fill text-success me-2"></i>Quản lý Đơn Hàng
         </h3>
-        <div class="fs-5 fw-semibold text-primary">
-            <i class="bi bi-shop me-1"></i>@Model.BranchName
-        </div>
     </div>
 
     <!-- Bộ lọc & Tìm kiếm -->
@@ -50,10 +47,10 @@
         <div class="card-body">
             <form method="get" asp-action="Index" id="filterForm" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold text-secondary">Tìm kiếm nhân viên</label>
+                    <label class="form-label fw-semibold text-secondary">Tìm kiếm từ khóa</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-secondary"><i class="bi bi-search"></i></span>
-                        <input type="text" name="searchCashier" class="form-control" placeholder="Tên thu ngân..." value="@Model.SearchCashier">
+                        <input type="text" name="searchCashier" class="form-control" placeholder="Mã đơn, khách hàng, thu ngân, bàn..." value="@Model.SearchCashier">
                     </div>
                 </div>
                 

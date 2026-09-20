@@ -33,7 +33,7 @@ namespace SEP490_G52_CSMS.Controllers
             return ("", "");
         }
 
-        public async Task<IActionResult> Index(DateTime? fromDate, DateTime? toDate, string searchCashier = "", string status = "Tất cả", string? cursor = null, string direction = "next")
+        public async Task<IActionResult> Index(DateTime? fromDate, DateTime? toDate, string searchCashier = "", string? keyword = null, string status = "Tất cả", string? cursor = null, string direction = "next")
         {
             var (branchId, branchName) = await GetUserBranchAsync();
             if (string.IsNullOrEmpty(branchId) && !User.IsInRole("RManager"))
@@ -47,7 +47,8 @@ namespace SEP490_G52_CSMS.Controllers
                 branchName = "Toàn hệ thống (RManager)";
             }
 
-            var model = await _orderManagementService.GetOrderManagementListAsync(branchId, branchName, searchCashier, status, fromDate, toDate, cursor, direction, 15);
+            var search = !string.IsNullOrWhiteSpace(keyword) ? keyword : searchCashier;
+            var model = await _orderManagementService.GetOrderManagementListAsync(branchId, branchName, search, status, fromDate, toDate, cursor, direction, 15);
             return View(model);
         }
 

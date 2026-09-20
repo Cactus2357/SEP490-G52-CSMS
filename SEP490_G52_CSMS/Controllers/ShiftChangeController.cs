@@ -56,7 +56,7 @@ namespace SEP490_G52_CSMS.Controllers
 
         [Authorize(Roles = "BranchManager")]
         [HttpGet]
-        public async Task<IActionResult> Index(int? employeeId, string? status, int page = 1)
+        public async Task<IActionResult> Index(int? employeeId = null, string? status = null, string? keyword = null, int page = 1)
         {
             var branchId = User.GetBranchId() ?? "";
 
@@ -69,6 +69,20 @@ namespace SEP490_G52_CSMS.Controllers
 
             if (!string.IsNullOrWhiteSpace(status))
                 query = query.Where(r => r.Status == status);
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var kw = keyword.Trim().ToLower();
+                query = query.Where(r =>
+                    (r.RequestingEmployee != null && (
+                        (r.RequestingEmployee.FullName != null && r.RequestingEmployee.FullName.ToLower().Contains(kw)) ||
+                        (r.RequestingEmployee.Username != null && r.RequestingEmployee.Username.ToLower().Contains(kw)) ||
+                        (r.RequestingEmployee.PhoneNumber != null && r.RequestingEmployee.PhoneNumber.Contains(kw))
+                    )) ||
+                    (r.Reason != null && r.Reason.ToLower().Contains(kw)) ||
+                    (r.Aspiration != null && r.Aspiration.ToLower().Contains(kw))
+                );
+            }
 
             query = query.OrderByDescending(r => r.SubmittedAt);
 
@@ -92,6 +106,7 @@ namespace SEP490_G52_CSMS.Controllers
                 EmployeeOptions = employeeOptions,
                 SelectedEmployeeId = employeeId,
                 SelectedStatus = status,
+                Keyword = keyword?.Trim(),
                 CurrentPage = page,
                 TotalPages = totalPages
             };
@@ -261,6 +276,7 @@ namespace SEP490_G52_CSMS.Controllers
         public List<Employee> EmployeeOptions { get; set; } = new();
         public int? SelectedEmployeeId { get; set; }
         public string? SelectedStatus { get; set; }
+        public string? Keyword { get; set; }
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
     }

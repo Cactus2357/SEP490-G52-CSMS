@@ -480,7 +480,8 @@ namespace SEP490_G52_CSMS.Controllers
             return Json(new
             {
                 receiptCode = receipt.ReceiptCode,
-                importDate = receipt.ImportDate.ToVietnamTimeString("dd/MM/yyyy : HH\\hmm"),
+                importDate = receipt.ImportDate.ToVietnamTimeString("dd/MM/yyyy HH:mm"),
+                importDateRelative = receipt.ImportDate.ToRelativeTimeString(),
                 supplier = receipt.Supplier,
                 totalAmount = receipt.TotalAmount.ToString("N0") + " đ",
                 delivererName = receipt.DelivererName,
@@ -492,7 +493,8 @@ namespace SEP490_G52_CSMS.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportRequests(DateTime? fromDate, DateTime? toDate, string status = "Tất cả", int page = 1)
+        public async Task<IActionResult> ExportRequests(
+            DateTime? fromDate, DateTime? toDate, string status = "Tất cả", int page = 1, string sortBy = "expected_asc", string priority = "all", string? branchId = null)
         {
             var today = DateTime.Today;
             var defaultFrom = today.AddMonths(-3);
@@ -504,15 +506,18 @@ namespace SEP490_G52_CSMS.Controllers
             if (filterTo < filterFrom)
             {
                 TempData["ExportError"] = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.";
-                return RedirectToAction("ExportRequests", new { fromDate = defaultFrom.ToString("yyyy-MM-dd"), toDate = defaultTo.ToString("yyyy-MM-dd"), status = status });
+                return RedirectToAction("ExportRequests", new { fromDate = defaultFrom.ToString("yyyy-MM-dd"), toDate = defaultTo.ToString("yyyy-MM-dd"), status = status, sortBy = sortBy, priority = priority, branchId = branchId });
             }
 
-            var viewModel = await _warehouseSupplyService.GetExportRequestsAsync(filterFrom, filterTo, status, page, 10);
+            var viewModel = await _warehouseSupplyService.GetExportRequestsAsync(filterFrom, filterTo, status, page, 10, sortBy, priority, branchId);
+            var branches = await _context.Branches.AsNoTracking().Where(b => b.Status == "Active").OrderBy(b => b.BranchName).ToListAsync();
+            viewModel.Branches = branches;
+            viewModel.SelectedBranchId = branchId;
             return View(viewModel);
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportRequestsCsv(DateTime? fromDate, DateTime? toDate, string status)
+        public async Task<IActionResult> ExportRequestsCsv(DateTime? fromDate, DateTime? toDate, string status, string sortBy = "expected_asc", string priority = "all", string? branchId = null)
         {
             var today = DateTime.Today;
             var defaultFrom = new DateTime(today.Year, today.Month, 1);
@@ -528,6 +533,11 @@ namespace SEP490_G52_CSMS.Controllers
             if (!string.IsNullOrEmpty(status) && status != "Tất cả")
             {
                 query = query.Where(r => r.Status == status);
+            }
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                query = query.Where(r => r.BranchId == branchId);
             }
 
             var list = await query.OrderByDescending(r => r.RequestDate).ToListAsync();
@@ -597,6 +607,287 @@ namespace SEP490_G52_CSMS.Controllers
             var approverName = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "Warehouse Manager";
             var result = await _warehouseSupplyService.RejectSupplyRequestAsync(code, approverName, reason);
             return Json(new { success = result.Success, message = result.Message });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Statistics(
+            int? materialId, string? category, string? search, string? range = "month", DateTime? fromDate = null, DateTime? toDate = null, string? branchId = null)
+        {
+            var today = DateTime.Today;
+            DateTime start;
+            DateTime end;
+
+            switch (range?.ToLower())
+            {
+                case "7days":
+                    start = today.AddDays(-6);
+                    end = today;
+                    break;
+                case "quarter":
+                    int currentQuarter = (today.Month - 1) / 3;
+                    start = new DateTime(today.Year, currentQuarter * 3 + 1, 1);
+                    end = today;
+                    break;
+                case "year":
+                    start = new DateTime(today.Year, 1, 1);
+                    end = today;
+                    break;
+                case "custom":
+                    start = fromDate ?? today.AddMonths(-1);
+                    end = toDate ?? today;
+                    break;
+                case "month":
+                default:
+                    range = "month";
+                    start = fromDate ?? new DateTime(today.Year, today.Month, 1);
+                    end = toDate ?? today;
+                    break;
+            }
+
+            if (end < start)
+            {
+                (start, end) = (end, start);
+            }
+
+            var startUtc = start.Date;
+            var endUtc = end.Date.AddDays(1).AddTicks(-1);
+
+            // 1. Fetch materials list for dropdown and table
+            var allMaterials = await _context.Materials.AsNoTracking().OrderBy(m => m.MaterialName).ToListAsync();
+            var categories = allMaterials.Select(m => m.Category).Where(c => !string.IsNullOrEmpty(c)).Distinct().OrderBy(c => c).ToList();
+
+            var filteredMaterials = allMaterials.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(category) && category != "Tất cả")
+            {
+                filteredMaterials = filteredMaterials.Where(m => m.Category == category);
+            }
+            if (materialId.HasValue && materialId.Value > 0)
+            {
+                filteredMaterials = filteredMaterials.Where(m => m.MaterialId == materialId.Value);
+            }
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                filteredMaterials = filteredMaterials.Where(m => (m.MaterialName ?? "").ToLower().Contains(term) || (m.MaterialCode ?? "").ToLower().Contains(term));
+            }
+            var targetMaterialsList = filteredMaterials.ToList();
+
+            // 2. Fetch Import Items in range
+            var importQuery = _context.WarehouseReceiptItems.AsNoTracking()
+                .Include(i => i.WarehouseReceipt)
+                .Where(i => i.WarehouseReceipt != null && i.WarehouseReceipt.ImportDate >= startUtc && i.WarehouseReceipt.ImportDate <= endUtc);
+
+            if (materialId.HasValue && materialId.Value > 0)
+            {
+                importQuery = importQuery.Where(i => i.MaterialId == materialId.Value);
+            }
+            var importItems = await importQuery.ToListAsync();
+
+            // 3. Fetch Export Items in range (Approved/Shipped/Completed)
+            var validExportStatuses = new[] { "Đã xuất kho", "Đã hoàn thành", "Đã nhận - Có hàng lỗi" };
+            var exportQuery = _context.BranchSupplyRequestItems.AsNoTracking()
+                .Include(i => i.BranchSupplyRequest)
+                .ThenInclude(r => r.Branch)
+                .Include(i => i.Material)
+                .Where(i => i.BranchSupplyRequest != null && validExportStatuses.Contains(i.BranchSupplyRequest.Status)
+                    && i.BranchSupplyRequest.RequestDate >= startUtc && i.BranchSupplyRequest.RequestDate <= endUtc);
+
+            if (materialId.HasValue && materialId.Value > 0)
+            {
+                exportQuery = exportQuery.Where(i => i.MaterialId == materialId.Value);
+            }
+            if (!string.IsNullOrWhiteSpace(branchId))
+            {
+                exportQuery = exportQuery.Where(i => i.BranchSupplyRequest!.BranchId == branchId);
+            }
+            var exportItems = await exportQuery.ToListAsync();
+
+            // 4. Build Detailed Rows
+            var statRows = new List<MaterialStatRowDto>();
+            foreach (var mat in targetMaterialsList)
+            {
+                var matImports = importItems.Where(i => i.MaterialId == mat.MaterialId).ToList();
+                var matExports = exportItems.Where(i => i.MaterialId == mat.MaterialId).ToList();
+
+                decimal impQty = matImports.Sum(i => i.Quantity);
+                decimal impCost = matImports.Sum(i => i.Amount);
+                decimal expQty = matExports.Sum(i => i.QuantityReleased ?? i.QuantityRequested);
+                decimal expValue = expQty * mat.UnitPrice;
+
+                statRows.Add(new MaterialStatRowDto
+                {
+                    MaterialId = mat.MaterialId,
+                    MaterialCode = mat.MaterialCode,
+                    MaterialName = mat.MaterialName,
+                    Category = mat.Category,
+                    StorageUnit = mat.StorageUnit,
+                    CurrentStock = mat.StockQuantity,
+                    UnitPrice = mat.UnitPrice,
+                    ImportQuantity = impQty,
+                    ImportCost = impCost,
+                    ExportQuantity = expQty,
+                    ExportEstimatedValue = expValue
+                });
+            }
+
+            // 5. Chart 1: Bar Chart (So sánh Nhập vs Xuất theo Top 7 nguyên liệu)
+            var barChart = new ChartComparisonDto();
+            var topActive = statRows.OrderByDescending(r => r.ImportQuantity + r.ExportQuantity).Take(7).ToList();
+            foreach (var r in topActive)
+            {
+                barChart.Labels.Add(r.MaterialName);
+                barChart.ImportQuantities.Add(r.ImportQuantity);
+                barChart.ExportQuantities.Add(r.ExportQuantity);
+            }
+
+            // 6. Chart 2: Line Chart (Xu hướng dòng thời gian - Timeline trend)
+            var lineChart = new ChartTimelineDto();
+            var dayCount = (end.Date - start.Date).Days + 1;
+            if (dayCount <= 31)
+            {
+                for (var d = start.Date; d <= end.Date; d = d.AddDays(1))
+                {
+                    var dayImports = importItems.Where(i => i.WarehouseReceipt?.ImportDate.Date == d).Sum(i => i.Quantity);
+                    var dayExports = exportItems.Where(i => i.BranchSupplyRequest?.RequestDate.Date == d).Sum(i => i.QuantityReleased ?? i.QuantityRequested);
+                    lineChart.Dates.Add(d.ToString("dd/MM"));
+                    lineChart.ImportQuantities.Add(dayImports);
+                    lineChart.ExportQuantities.Add(dayExports);
+                }
+            }
+            else
+            {
+                var currentPeriod = start.Date;
+                while (currentPeriod <= end.Date)
+                {
+                    var periodEnd = currentPeriod.AddDays(6);
+                    if (periodEnd > end.Date) periodEnd = end.Date;
+
+                    var periodImports = importItems.Where(i => i.WarehouseReceipt != null && i.WarehouseReceipt.ImportDate.Date >= currentPeriod && i.WarehouseReceipt.ImportDate.Date <= periodEnd).Sum(i => i.Quantity);
+                    var periodExports = exportItems.Where(i => i.BranchSupplyRequest != null && i.BranchSupplyRequest.RequestDate.Date >= currentPeriod && i.BranchSupplyRequest.RequestDate.Date <= periodEnd).Sum(i => i.QuantityReleased ?? i.QuantityRequested);
+
+                    lineChart.Dates.Add($"{currentPeriod:dd/MM}-{periodEnd:dd/MM}");
+                    lineChart.ImportQuantities.Add(periodImports);
+                    lineChart.ExportQuantities.Add(periodExports);
+
+                    currentPeriod = periodEnd.AddDays(1);
+                }
+            }
+
+            // 7. Chart 3: Horizontal Bar Chart (Top 8 nguyên liệu xuất kho nhiều nhất)
+            var horizontalChart = new ChartRankDto();
+            var topExported = statRows.Where(r => r.ExportQuantity > 0).OrderByDescending(r => r.ExportQuantity).Take(8).ToList();
+            if (!topExported.Any())
+            {
+                topExported = statRows.OrderByDescending(r => r.ImportQuantity).Take(8).ToList();
+            }
+            foreach (var r in topExported)
+            {
+                horizontalChart.Labels.Add(r.MaterialName);
+                horizontalChart.Quantities.Add(r.ExportQuantity > 0 ? r.ExportQuantity : r.ImportQuantity);
+                horizontalChart.Units.Add(r.StorageUnit);
+            }
+
+            var vm = new WarehouseStatisticsViewModel
+            {
+                FromDate = start,
+                ToDate = end,
+                SelectedRange = range,
+                SearchTerm = search,
+                SelectedCategory = category,
+                SelectedMaterialId = materialId,
+                TotalImportQuantity = importItems.Sum(i => i.Quantity),
+                TotalImportCost = importItems.Sum(i => i.Amount),
+                TotalExportQuantity = exportItems.Sum(i => i.QuantityReleased ?? i.QuantityRequested),
+                TotalExportEstimatedValue = exportItems.Sum(i => (i.QuantityReleased ?? i.QuantityRequested) * (i.Material?.UnitPrice ?? 0)),
+                TotalImportReceiptsCount = importItems.Select(i => i.ReceiptId).Distinct().Count(),
+                TotalExportRequestsCount = exportItems.Select(i => i.RequestId).Distinct().Count(),
+                TotalMaterialsCount = allMaterials.Count,
+                LowStockCount = allMaterials.Count(m => m.StockQuantity <= 10),
+                Categories = categories,
+                MaterialOptions = allMaterials.Select(m => new MaterialSelectOptionDto
+                {
+                    MaterialId = m.MaterialId,
+                    MaterialCode = m.MaterialCode,
+                    MaterialName = m.MaterialName,
+                    Category = m.Category
+                }).ToList(),
+                MaterialStats = statRows,
+                BarChartData = barChart,
+                LineChartData = lineChart,
+                HorizontalBarChartData = horizontalChart,
+                Branches = await _context.Branches.AsNoTracking().Where(b => b.Status == "Active").OrderBy(b => b.BranchName).ToListAsync(),
+                SelectedBranchId = branchId
+            };
+
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportStatisticsCsv(
+            int? materialId, string? category, string? search, string? range = "month", DateTime? fromDate = null, DateTime? toDate = null, string? branchId = null)
+        {
+            var today = DateTime.Today;
+            DateTime start = fromDate ?? new DateTime(today.Year, today.Month, 1);
+            DateTime end = toDate ?? today;
+
+            if (range == "7days") { start = today.AddDays(-6); end = today; }
+            else if (range == "quarter") { start = new DateTime(today.Year, ((today.Month - 1) / 3) * 3 + 1, 1); end = today; }
+            else if (range == "year") { start = new DateTime(today.Year, 1, 1); end = today; }
+
+            if (end < start) (start, end) = (end, start);
+            var startUtc = start.Date;
+            var endUtc = end.Date.AddDays(1).AddTicks(-1);
+
+            var materials = await _context.Materials.AsNoTracking().OrderBy(m => m.MaterialName).ToListAsync();
+            var filtered = materials.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(category) && category != "Tất cả")
+                filtered = filtered.Where(m => m.Category == category);
+            if (materialId.HasValue && materialId.Value > 0)
+                filtered = filtered.Where(m => m.MaterialId == materialId.Value);
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                filtered = filtered.Where(m => (m.MaterialName ?? "").ToLower().Contains(term) || (m.MaterialCode ?? "").ToLower().Contains(term));
+            }
+            var targetMaterials = filtered.ToList();
+
+            var importItems = await _context.WarehouseReceiptItems.AsNoTracking()
+                .Include(i => i.WarehouseReceipt)
+                .Where(i => i.WarehouseReceipt != null && i.WarehouseReceipt.ImportDate >= startUtc && i.WarehouseReceipt.ImportDate <= endUtc)
+                .ToListAsync();
+
+            var validExportStatuses = new[] { "Đã xuất kho", "Đã hoàn thành", "Đã nhận - Có hàng lỗi" };
+            var exportItemsQuery = _context.BranchSupplyRequestItems.AsNoTracking()
+                .Include(i => i.BranchSupplyRequest)
+                .Where(i => i.BranchSupplyRequest != null && validExportStatuses.Contains(i.BranchSupplyRequest.Status)
+                    && i.BranchSupplyRequest.RequestDate >= startUtc && i.BranchSupplyRequest.RequestDate <= endUtc);
+
+            if (!string.IsNullOrWhiteSpace(branchId))
+            {
+                exportItemsQuery = exportItemsQuery.Where(i => i.BranchSupplyRequest!.BranchId == branchId);
+            }
+            var exportItems = await exportItemsQuery.ToListAsync();
+
+            var csvBuilder = new System.Text.StringBuilder();
+            csvBuilder.AppendLine("Mã nguyên liệu,Tên nguyên liệu,Loại,Đơn vị lưu kho,Đơn giá (VNĐ),Lượng nhập trong kỳ,Chi phí nhập (VNĐ),Lượng xuất trong kỳ,Giá trị xuất ước tính (VNĐ),Biến động ròng,Tồn kho hiện tại");
+
+            foreach (var mat in targetMaterials)
+            {
+                var impQty = importItems.Where(i => i.MaterialId == mat.MaterialId).Sum(i => i.Quantity);
+                var impCost = importItems.Where(i => i.MaterialId == mat.MaterialId).Sum(i => i.Amount);
+                var expQty = exportItems.Where(i => i.MaterialId == mat.MaterialId).Sum(i => i.QuantityReleased ?? i.QuantityRequested);
+                var expVal = expQty * mat.UnitPrice;
+                var net = impQty - expQty;
+
+                var nameEscaped = $"\"{mat.MaterialName.Replace("\"", "\"\"")}\"";
+                var catEscaped = $"\"{mat.Category?.Replace("\"", "\"\"")}\"";
+
+                csvBuilder.AppendLine($"\"{mat.MaterialCode}\",{nameEscaped},{catEscaped},\"{mat.StorageUnit}\",{mat.UnitPrice},{impQty},{impCost},{expQty},{expVal},{net},{mat.StockQuantity}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csvBuilder.ToString())).ToArray();
+            var fileName = $"ThongKe_XuatNhapKho_{start:yyyyMMdd}_{end:yyyyMMdd}.csv";
+            return File(bytes, "text/csv; charset=utf-8", fileName);
         }
     }
 

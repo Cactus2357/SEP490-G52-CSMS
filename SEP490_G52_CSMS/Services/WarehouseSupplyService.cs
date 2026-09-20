@@ -389,10 +389,11 @@ namespace SEP490_G52_CSMS.Services
         // =========================================================================
 
         public async Task<ExportRequestsViewModel> GetExportRequestsAsync(
-            DateTime fromDate, DateTime toDate, string status, int page, int pageSize)
+            DateTime fromDate, DateTime toDate, string status, int page, int pageSize, string? sortBy = "expected_asc", string? priorityFilter = "all", string? branchId = null)
         {
-            var requests = await _repository.GetCentralExportRequestsAsync(fromDate, toDate, status, page, pageSize);
-            var totalCount = await _repository.GetCentralExportRequestsCountAsync(fromDate, toDate, status);
+            var requests = await _repository.GetCentralExportRequestsAsync(fromDate, toDate, status, page, pageSize, sortBy, priorityFilter, branchId);
+            var totalCount = await _repository.GetCentralExportRequestsCountAsync(fromDate, toDate, status, priorityFilter, branchId);
+            var urgentCount = await _repository.GetUrgentRequestsCountAsync(fromDate, toDate, branchId);
             int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
             return new ExportRequestsViewModel
@@ -401,8 +402,12 @@ namespace SEP490_G52_CSMS.Services
                 FromDate = fromDate,
                 ToDate = toDate,
                 SelectedStatus = status,
+                SortBy = sortBy ?? "expected_asc",
+                PriorityFilter = priorityFilter ?? "all",
+                SelectedBranchId = branchId,
                 CurrentPage = page,
-                TotalPages = totalPages > 0 ? totalPages : 1
+                TotalPages = totalPages > 0 ? totalPages : 1,
+                UrgentCount = urgentCount
             };
         }
 
@@ -432,9 +437,15 @@ namespace SEP490_G52_CSMS.Services
             return new
             {
                 requestCode = req.RequestCode,
+                branchId = req.BranchId,
+                branchName = req.Branch?.BranchName ?? req.BranchId,
                 status = req.Status,
                 requestDate = req.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm"),
+                requestDateUtc = req.RequestDate.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                requestDateRelative = req.RequestDate.ToRelativeTimeString(),
                 expectedDeliveryDate = req.ExpectedDeliveryDate.HasValue ? req.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy") : null,
+                expectedDeliveryDateIso = req.ExpectedDeliveryDate.HasValue ? req.ExpectedDeliveryDate.Value.ToString("yyyy-MM-dd") : null,
+                expectedDeliveryDateRelative = req.ExpectedDeliveryDate.HasValue ? req.ExpectedDeliveryDate.Value.ToRelativeTimeString(isDateOnly: true) : null,
                 receiverName = req.ReceiverName ?? "",
                 receiverPhone = req.ReceiverPhone ?? "",
                 requestNote = req.RequestNote ?? "",
