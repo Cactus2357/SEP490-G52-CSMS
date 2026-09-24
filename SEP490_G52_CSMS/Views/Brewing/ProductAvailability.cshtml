@@ -58,19 +58,18 @@
     }
 </style>
 
-<div class="container-fluid px-4 pt-3 pb-5">
-    @if (ViewBag.NotInShift == true)
-    {
-        <!-- Large Blocking Modal preventing screen interaction for Bartender -->
-        <div class="modal fade show d-block" id="notInShiftModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="false" style="background-color: rgba(0,0,0,0.75); z-index: 50;">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
-                    <div class="modal-header bg-danger text-white py-3 border-0">
-                        <h5 class="modal-title fw-bold">
+@if (ViewBag.NotInShift == true)
+{
+    <div class="container py-4 my-auto" style="min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center;">
+        <div class="row justify-content-center w-100">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden my-3">
+                    <div class="card-header bg-danger text-white py-3 px-4 border-0">
+                        <h5 class="card-title fw-bold mb-0">
                             <i class="bi bi-exclamation-octagon-fill me-2"></i>CHƯA ĐỦ ĐIỀU KIỆN VÀO MÀN HÌNH QUẢN LÝ SẢN PHẨM
                         </h5>
                     </div>
-                    <div class="modal-body p-4 p-md-5 text-center">
+                    <div class="card-body p-4 p-md-5 text-center">
                         <div class="mb-4">
                             <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 90px; height: 90px;">
                                 <i class="bi bi-cup-straw fs-1"></i>
@@ -98,10 +97,13 @@
                                 <a href="/Auth/Logout" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
                                     <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất để Chấm công Face Login
                                 </a>
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-outline-primary btn-lg px-4 py-2.5 rounded-pill fw-semibold shadow-sm">
+                                    <i class="bi bi-calendar-check me-2"></i>Xem lịch làm việc
+                                </a>
                             }
                             else
                             {
-                                <a href="/WorkSchedule/EmployeeIndex" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
                                     <i class="bi bi-calendar-check me-2"></i>Xem Lịch Làm Việc
                                 </a>
                             }
@@ -113,10 +115,13 @@
                 </div>
             </div>
         </div>
-    }
-
-    <!-- Header -->
-    <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom flex-wrap gap-2">
+    </div>
+}
+else
+{
+    <div class="container-fluid px-4 pt-3 pb-5">
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom flex-wrap gap-2">
         <div>
             <div class="d-flex align-items-center gap-2">
                 <h3 class="fw-bold text-dark mb-0">
@@ -374,6 +379,7 @@
         </div>
     </div>
 </div>
+}
 
 @section Scripts {
     <script>

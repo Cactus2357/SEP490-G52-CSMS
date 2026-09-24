@@ -15,11 +15,27 @@ namespace SEP490_G52_CSMS.Controllers
     {
         private readonly ICashHandoverService _cashHandoverService;
         private readonly CSMSAppDbContext _context;
+        private readonly ICashierWorkEligibilityService? _eligibilityService;
 
-        public CashHandoverController(ICashHandoverService cashHandoverService, CSMSAppDbContext context)
+        public CashHandoverController(
+            ICashHandoverService cashHandoverService, 
+            CSMSAppDbContext context,
+            ICashierWorkEligibilityService? eligibilityService = null)
         {
             _cashHandoverService = cashHandoverService;
             _context = context;
+            _eligibilityService = eligibilityService;
+        }
+
+        private async Task<(bool isEligible, string reasonCode, string message)> CheckCashierEligibilityAsync(int employeeId, string branchId)
+        {
+            if (_eligibilityService == null || User.IsInRole("RManager") || User.IsInRole("BranchManager"))
+            {
+                return (true, "Eligible", "Hợp lệ");
+            }
+
+            var result = await _eligibilityService.CheckEligibilityAsync(employeeId, branchId);
+            return (result.IsEligible, result.ReasonCode, result.Message);
         }
 
         private async Task<string> GetUserBranchIdAsync()
@@ -64,6 +80,38 @@ namespace SEP490_G52_CSMS.Controllers
             if (effectiveCashierId <= 0)
             {
                 return RedirectToAction(nameof(SelectCashier));
+            }
+
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.EmployeeId == loggedInUserId);
+                if (employee == null || (employee.Role != CashHandoverConstants.CashierRole && employee.Role != "Cashier"))
+                {
+                    TempData["ErrorMessage"] = "Bạn không có quyền truy cập quản lý ca thu ngân (Chỉ dành cho nhân viên Thu ngân).";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(effectiveCashierId, branchId);
+                if (!isEligible && _eligibilityService != null)
+                {
+                    if (reasonCode == "FirstShiftNotOpened")
+                    {
+                        return RedirectToAction(nameof(OpenShift));
+                    }
+                    if (reasonCode == "MidShiftNotHandedOver")
+                    {
+                        var openModel = await _cashHandoverService.GetOpenShiftModelAsync(effectiveCashierId);
+                        if (openModel != null)
+                        {
+                            return RedirectToAction(nameof(OpenShift));
+                        }
+                        TempData["ErrorMessage"] = message;
+                        return RedirectToAction(nameof(History));
+                    }
+
+                    TempData["ErrorMessage"] = message;
+                    return RedirectToAction(nameof(History));
+                }
             }
 
             // Nhận diện giai đoạn ca
@@ -141,6 +189,22 @@ namespace SEP490_G52_CSMS.Controllers
 
             var userBranchId = await GetUserBranchIdAsync();
 
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(targetCashierId, userBranchId);
+                if (isEligible)
+                {
+                    TempData["InfoMessage"] = "Ca làm việc của bạn hiện đang mở và đang hoạt động.";
+                    return RedirectToAction("CreateOrder", "SaleManagement");
+                }
+
+                if (reasonCode != "FirstShiftNotOpened" && reasonCode != "MidShiftNotHandedOver")
+                {
+                    TempData["ErrorMessage"] = message;
+                    return RedirectToAction(nameof(History));
+                }
+            }
+
             try
             {
                 var model = await _cashHandoverService.GetOpenShiftModelAsync(targetCashierId);
@@ -153,12 +217,8 @@ namespace SEP490_G52_CSMS.Controllers
                         return RedirectToAction(nameof(History));
                     }
 
-                    var phase = await _cashHandoverService.DetermineCurrentShiftPhaseAsync(targetCashierId, userBranchId);
-                    if (phase == CashHandoverConstants.HandoverTypeLastShift)
-                    {
-                        return RedirectToAction(nameof(CloseShift));
-                    }
-                    return RedirectToAction(nameof(Handover));
+                    TempData["ErrorMessage"] = "Không thể mở ca làm việc. Vui lòng kiểm tra lại Lịch làm việc và Chấm công.";
+                    return RedirectToAction(nameof(History));
                 }
                 return View(model);
             }
@@ -185,6 +245,28 @@ namespace SEP490_G52_CSMS.Controllers
             else if (!User.IsInRole("RManager"))
             {
                 model.BranchId = User.GetBranchId() ?? model.BranchId;
+            }
+
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(model.CashierId, model.BranchId);
+                if (reasonCode != "FirstShiftNotOpened" && reasonCode != "MidShiftNotHandedOver")
+                {
+                    ModelState.AddModelError(string.Empty, message);
+                    var reloadModel = await _cashHandoverService.GetOpenShiftModelAsync(model.CashierId);
+                    if (reloadModel != null)
+                    {
+                        model.CashierName = reloadModel.CashierName;
+                        model.ShiftName = reloadModel.ShiftName;
+                        model.ShiftTimeRange = reloadModel.ShiftTimeRange;
+                        model.PreviousCashierName = reloadModel.PreviousCashierName;
+                        model.PreviousShiftName = reloadModel.PreviousShiftName;
+                        model.PreviousHandoverDate = reloadModel.PreviousHandoverDate;
+                        model.PreviousInitialCash = reloadModel.PreviousInitialCash;
+                        model.PreviousApproverName = reloadModel.PreviousApproverName;
+                    }
+                    return View(model);
+                }
             }
 
             if (!ModelState.IsValid)
@@ -252,6 +334,22 @@ namespace SEP490_G52_CSMS.Controllers
             if (targetCashierId <= 0)
                 return RedirectToAction(nameof(History));
 
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(targetCashierId, userBranchId);
+                if (!isEligible)
+                {
+                    if (reasonCode == "FirstShiftNotOpened")
+                    {
+                        TempData["InfoMessage"] = "Chưa có ca làm việc nào được mở hôm nay. Vui lòng mở ca trước.";
+                        return RedirectToAction(nameof(OpenShift));
+                    }
+
+                    TempData["ErrorMessage"] = message;
+                    return RedirectToAction(nameof(History));
+                }
+            }
+
             var model = await _cashHandoverService.GetHandoverModelAsync(targetCashierId);
             if (model == null)
             {
@@ -293,6 +391,30 @@ namespace SEP490_G52_CSMS.Controllers
             else if (!User.IsInRole("RManager"))
             {
                 model.BranchId = userBranchId;
+            }
+
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(model.OutgoingCashierId, model.BranchId);
+                if (!isEligible)
+                {
+                    ModelState.AddModelError(string.Empty, message);
+                    var freshModel = await _cashHandoverService.GetHandoverModelAsync(model.OutgoingCashierId);
+                    if (freshModel != null)
+                    {
+                        model.IncomingCashiers = freshModel.IncomingCashiers;
+                        model.InitialCash = freshModel.InitialCash;
+                        model.MachineCashRevenue = freshModel.MachineCashRevenue;
+                        model.BankTransferRevenue = freshModel.BankTransferRevenue;
+                        model.CashRefundAmount = freshModel.CashRefundAmount;
+                        model.OutgoingCashierName = freshModel.OutgoingCashierName;
+                        model.ShiftName = freshModel.ShiftName;
+                        model.TargetShiftName = freshModel.TargetShiftName;
+                        model.TargetShiftTimeRange = freshModel.TargetShiftTimeRange;
+                        model.DelivererName = freshModel.DelivererName;
+                    }
+                    return View(model);
+                }
             }
 
             decimal theoretical = model.InitialCash + model.MachineCashRevenue - model.CashRefundAmount;
@@ -398,6 +520,22 @@ namespace SEP490_G52_CSMS.Controllers
             if (targetCashierId <= 0)
                 return RedirectToAction(nameof(History));
 
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(targetCashierId, userBranchId);
+                if (!isEligible)
+                {
+                    if (reasonCode == "FirstShiftNotOpened")
+                    {
+                        TempData["InfoMessage"] = "Chưa có ca làm việc nào được mở hôm nay. Vui lòng mở ca trước.";
+                        return RedirectToAction(nameof(OpenShift));
+                    }
+
+                    TempData["ErrorMessage"] = message;
+                    return RedirectToAction(nameof(History));
+                }
+            }
+
             var model = await _cashHandoverService.GetCloseShiftModelAsync(targetCashierId);
             if (model == null)
             {
@@ -440,6 +578,28 @@ namespace SEP490_G52_CSMS.Controllers
             else if (!User.IsInRole("RManager"))
             {
                 model.BranchId = userBranchId;
+            }
+
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(model.OutgoingCashierId, model.BranchId);
+                if (!isEligible)
+                {
+                    ModelState.AddModelError(string.Empty, message);
+                    var freshModel = await _cashHandoverService.GetCloseShiftModelAsync(model.OutgoingCashierId);
+                    if (freshModel != null)
+                    {
+                        model.InitialCash = freshModel.InitialCash;
+                        model.MachineCashRevenue = freshModel.MachineCashRevenue;
+                        model.BankTransferRevenue = freshModel.BankTransferRevenue;
+                        model.CashRefundAmount = 0;
+                        model.CashierName = freshModel.CashierName;
+                        model.ShiftName = freshModel.ShiftName;
+                        model.ShiftTimeRange = freshModel.ShiftTimeRange;
+                    }
+                    ViewBag.ReceiverSuggestions = await GetReceiverSuggestionsAsync(userBranchId);
+                    return View(model);
+                }
             }
 
             if (string.IsNullOrWhiteSpace(model.Notes))
@@ -512,6 +672,16 @@ namespace SEP490_G52_CSMS.Controllers
             if (targetCashierId <= 0)
                 return RedirectToAction(nameof(History));
 
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(targetCashierId, userBranchId);
+                if (!isEligible)
+                {
+                    TempData["ErrorMessage"] = message;
+                    return RedirectToAction(nameof(History));
+                }
+            }
+
             var model = await _cashHandoverService.GetEmergencyHandoverModelAsync(targetCashierId);
             if (model == null && !string.IsNullOrEmpty(userBranchId))
             {
@@ -564,6 +734,27 @@ namespace SEP490_G52_CSMS.Controllers
             else if (!User.IsInRole("RManager"))
             {
                 model.BranchId = userBranchId;
+            }
+
+            if (_eligibilityService != null && !User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(model.OutgoingCashierId, model.BranchId);
+                if (!isEligible)
+                {
+                    ModelState.AddModelError(string.Empty, message);
+                    var freshModel = await _cashHandoverService.GetEmergencyHandoverModelAsync(model.OutgoingCashierId);
+                    if (freshModel != null)
+                    {
+                        model.IncomingCashiers = freshModel.IncomingCashiers;
+                        model.InitialCash = freshModel.InitialCash;
+                        model.MachineCashRevenue = freshModel.MachineCashRevenue;
+                        model.BankTransferRevenue = freshModel.BankTransferRevenue;
+                        model.CashRefundAmount = freshModel.CashRefundAmount;
+                        model.OutgoingCashierName = freshModel.OutgoingCashierName;
+                        model.ShiftName = freshModel.ShiftName;
+                    }
+                    return View(model);
+                }
             }
 
             if (string.IsNullOrWhiteSpace(model.EmergencyReason))

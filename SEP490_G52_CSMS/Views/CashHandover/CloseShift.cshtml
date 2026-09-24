@@ -76,13 +76,13 @@
                                         <td class="pe-3 py-2 text-end fw-bold text-success fs-6">+@Model.MachineCashRevenue.ToString("N0") đ</td>
                                     </tr>
                                     <tr class="border-bottom">
-                                        <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu CK (Không vào két):</td>
+                                        <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu chuyển khoản:</td>
                                         <td class="pe-3 py-2 text-end fw-bold text-secondary fs-6">@Model.BankTransferRevenue.ToString("N0") đ</td>
                                     </tr>
                                     <tr class="table-primary border-top">
                                         <td class="ps-3 py-2.5 text-primary">
-                                            <span class="fw-bold d-block">☑ Tổng tiền mặt lý thuyết trong két:</span>
-                                            <small class="text-muted d-block" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
+                                            <span class="fw-bold d-block">Tổng tiền mặt lý thuyết trong két:</span>
+                                            @* <small class="text-muted d-block" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small> *@
                                         </td>
                                         <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="displayTheoretical">
                                             @Model.TheoreticalCash.ToString("N0") đ
@@ -309,17 +309,49 @@
             }
         }
 
-        document.getElementById('closeShiftForm').addEventListener('submit', function (e) {
+        const closeShiftForm = document.getElementById('closeShiftForm');
+        const submitCloseBtn = document.getElementById('submitCloseShiftBtn');
+        const originalCloseBtnHtml = submitCloseBtn ? submitCloseBtn.innerHTML : '<i class="bi bi-lock-fill me-2"></i>Xác Nhận Đóng Ca Cuối Ngày';
+
+        function resetCloseShiftButton() {
+            if (submitCloseBtn) {
+                submitCloseBtn.disabled = false;
+                submitCloseBtn.innerHTML = originalCloseBtnHtml;
+            }
+            if (closeShiftForm) {
+                closeShiftForm.dataset.submitting = 'false';
+                closeShiftForm.dataset.confirmed = 'false';
+            }
+        }
+
+        if (window.jQuery && closeShiftForm) {
+            $(closeShiftForm).on('invalid-form.validate', function () {
+                resetCloseShiftButton();
+            });
+        }
+
+        closeShiftForm.addEventListener('submit', function (e) {
+            // First check jQuery validation or HTML5 validation before proceeding
+            if (window.jQuery && $(this).valid && !$(this).valid()) {
+                e.preventDefault();
+                resetCloseShiftButton();
+                return false;
+            }
+
             if (this.dataset.confirmed === 'true') {
+                if (window.jQuery && $(this).valid && !$(this).valid()) {
+                    e.preventDefault();
+                    resetCloseShiftButton();
+                    return false;
+                }
                 if (this.dataset.submitting === 'true') {
                     e.preventDefault();
                     return false;
                 }
                 this.dataset.submitting = 'true';
-                const btn = document.getElementById('submitCloseShiftBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                if (submitCloseBtn) {
+                    submitCloseBtn.disabled = true;
+                    submitCloseBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
                 }
                 return true;
             }

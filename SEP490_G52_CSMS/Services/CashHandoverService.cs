@@ -365,6 +365,11 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Không tìm thấy ca đang mở. Vui lòng kiểm tra lại.");
             }
 
+            if (model.OutgoingCashierId > 0 && handover.OutgoingCashierId != model.OutgoingCashierId)
+            {
+                return OperationResult.Fail("Chỉ thu ngân đang phụ trách ca trực này mới được thực hiện thao tác bàn giao ca.");
+            }
+
             var nextShift = await _cashHandoverRepository.GetNextFixedShiftAsync(handover.ShiftId);
             if (nextShift == null)
             {
@@ -536,6 +541,11 @@ namespace SEP490_G52_CSMS.Services
                 return OperationResult.Fail("Không tìm thấy ca làm việc đang mở để đóng cuối ngày.");
             }
 
+            if (model.OutgoingCashierId > 0 && handover.OutgoingCashierId != model.OutgoingCashierId)
+            {
+                return OperationResult.Fail("Chỉ thu ngân đang phụ trách ca trực này mới được thực hiện thao tác đóng ca.");
+            }
+
             if (string.IsNullOrWhiteSpace(model.ReceiverName))
             {
                 return OperationResult.Fail("Vui lòng nhập thông tin người nhận tiền đóng ca.");
@@ -682,6 +692,11 @@ namespace SEP490_G52_CSMS.Services
             if (handover == null || handover.Status != CashHandoverConstants.ActiveStatus)
             {
                 return OperationResult.Fail("Không tìm thấy ca làm việc đang mở.");
+            }
+
+            if (model.OutgoingCashierId > 0 && handover.OutgoingCashierId != model.OutgoingCashierId)
+            {
+                return OperationResult.Fail("Chỉ thu ngân đang phụ trách ca trực này mới được thực hiện bàn giao đột xuất.");
             }
 
             if (!model.IncomingCashierId.HasValue || model.IncomingCashierId <= 0)

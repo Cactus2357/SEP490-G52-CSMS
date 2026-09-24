@@ -111,38 +111,39 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<bool> UpdateMenuDetailsAvailabilityAsync(int menuId, int productId, bool isAvailable, int updatedByEmployeeId)
         {
-            var details = await _context.MenuDetails
-                .Include(md => md.ProductVariant)
-                .Where(md => md.MenuId == menuId && md.ProductVariant != null && md.ProductVariant.ProductId == productId)
+            var allVariants = await _context.ProductVariants
+                .Where(pv => pv.ProductId == productId)
+                .ToListAsync();
+
+            if (!allVariants.Any()) return false;
+
+            var variantIds = allVariants.Select(v => v.VariantId).ToList();
+
+            var existingDetails = await _context.MenuDetails
+                .Where(md => md.MenuId == menuId && variantIds.Contains(md.VariantId))
                 .ToListAsync();
 
             var now = DateTime.UtcNow;
 
-            if (!details.Any())
+            foreach (var d in existingDetails)
             {
-                var variants = await _context.ProductVariants.Where(pv => pv.ProductId == productId).ToListAsync();
-                if (!variants.Any()) return false;
-
-                foreach (var v in variants)
-                {
-                    _context.MenuDetails.Add(new MenuDetail
-                    {
-                        MenuId = menuId,
-                        VariantId = v.VariantId,
-                        IsAvailable = isAvailable,
-                        UpdatedBy = updatedByEmployeeId,
-                        UpdatedAt = now
-                    });
-                }
+                d.IsAvailable = isAvailable;
+                d.UpdatedBy = updatedByEmployeeId;
+                d.UpdatedAt = now;
             }
-            else
+
+            var existingVariantIds = existingDetails.Select(d => d.VariantId).ToHashSet();
+            var missingVariants = allVariants.Where(v => !existingVariantIds.Contains(v.VariantId)).ToList();
+            foreach (var v in missingVariants)
             {
-                foreach (var d in details)
+                _context.MenuDetails.Add(new MenuDetail
                 {
-                    d.IsAvailable = isAvailable;
-                    d.UpdatedBy = updatedByEmployeeId;
-                    d.UpdatedAt = now;
-                }
+                    MenuId = menuId,
+                    VariantId = v.VariantId,
+                    IsAvailable = isAvailable,
+                    UpdatedBy = updatedByEmployeeId,
+                    UpdatedAt = now
+                });
             }
 
             await _context.SaveChangesAsync();

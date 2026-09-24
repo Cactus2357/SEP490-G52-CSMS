@@ -236,7 +236,7 @@ namespace SEP490_G52_CSMS.Services
                         VariantId = v.VariantId,
                         SizeVariant = v.SizeVariant ?? "S",
                         SellingPrice = v.SellingPrice,
-                        IsAvailable = md == null || md.IsAvailable
+                        IsAvailable = md != null ? md.IsAvailable : isAvailable
                     };
                 }).ToList();
 

@@ -289,17 +289,49 @@
             }
         }
 
-        document.getElementById('emergencyHandoverForm').addEventListener('submit', function (e) {
+        const emergencyHandoverForm = document.getElementById('emergencyHandoverForm');
+        const submitEmergencyBtn = document.getElementById('submitEmergencyBtn');
+        const originalEmergencyBtnHtml = submitEmergencyBtn ? submitEmergencyBtn.innerHTML : '<i class="bi bi-shield-exclamation me-2"></i>Xác Nhận Bàn Giao Đột Xuất';
+
+        function resetEmergencyButton() {
+            if (submitEmergencyBtn) {
+                submitEmergencyBtn.disabled = false;
+                submitEmergencyBtn.innerHTML = originalEmergencyBtnHtml;
+            }
+            if (emergencyHandoverForm) {
+                emergencyHandoverForm.dataset.submitting = 'false';
+                emergencyHandoverForm.dataset.confirmed = 'false';
+            }
+        }
+
+        if (window.jQuery && emergencyHandoverForm) {
+            $(emergencyHandoverForm).on('invalid-form.validate', function () {
+                resetEmergencyButton();
+            });
+        }
+
+        emergencyHandoverForm.addEventListener('submit', function (e) {
+            // First check jQuery validation or HTML5 validation before proceeding
+            if (window.jQuery && $(this).valid && !$(this).valid()) {
+                e.preventDefault();
+                resetEmergencyButton();
+                return false;
+            }
+
             if (this.dataset.confirmed === 'true') {
+                if (window.jQuery && $(this).valid && !$(this).valid()) {
+                    e.preventDefault();
+                    resetEmergencyButton();
+                    return false;
+                }
                 if (this.dataset.submitting === 'true') {
                     e.preventDefault();
                     return false;
                 }
                 this.dataset.submitting = 'true';
-                const btn = document.getElementById('submitEmergencyBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                if (submitEmergencyBtn) {
+                    submitEmergencyBtn.disabled = true;
+                    submitEmergencyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
                 }
                 return true;
             }

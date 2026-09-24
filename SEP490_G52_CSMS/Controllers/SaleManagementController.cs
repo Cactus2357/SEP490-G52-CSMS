@@ -228,15 +228,23 @@ namespace SEP490_G52_CSMS.Controllers
             {
                 if (master.ProductVariants == null || !master.ProductVariants.Any()) continue;
 
+                var productMenuDetails = menu?.MenuDetails?
+                    .Where(d => (d.ProductVariant != null && d.ProductVariant.ProductId == master.ProductId)
+                             || master.ProductVariants.Any(pv => pv.VariantId == d.VariantId))
+                    .ToList();
+
+                bool hasProductDetails = productMenuDetails != null && productMenuDetails.Any();
+                bool isProductGenerallyAvailable = !hasProductDetails || productMenuDetails!.Any(d => d.IsAvailable);
+
                 var variants = master.ProductVariants.Select(pv =>
                 {
-                    var md = menu?.MenuDetails?.FirstOrDefault(d => d.VariantId == pv.VariantId);
+                    var md = productMenuDetails?.FirstOrDefault(d => d.VariantId == pv.VariantId);
                     return new SaleVariantViewModel
                     {
                         VariantId = pv.VariantId,
                         SizeVariant = pv.SizeVariant ?? "S",
                         SellingPrice = pv.SellingPrice,
-                        IsAvailable = md == null || md.IsAvailable
+                        IsAvailable = md != null ? md.IsAvailable : isProductGenerallyAvailable
                     };
                 }).ToList();
 

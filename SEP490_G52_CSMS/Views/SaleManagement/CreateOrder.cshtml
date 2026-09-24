@@ -58,19 +58,18 @@
     }
 </style>
 
-<div class="create-order-container pt-2">
-    @if (ViewBag.NotInShift == true)
-    {
-        <!-- Large Blocking Modal with Static Backdrop preventing screen interaction -->
-        <div class="modal fade show d-block" id="notInShiftModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="false" style="background-color: rgba(0,0,0,0.75); z-index: 50;">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                    <div class="modal-header bg-danger text-white py-3 border-0">
-                        <h4 class="modal-title fw-bold">
+@if (ViewBag.NotInShift == true)
+{
+    <div class="container py-4 my-auto" style="min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center;">
+        <div class="row justify-content-center w-100">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden my-3">
+                    <div class="card-header bg-danger text-white py-3 px-4 border-0">
+                        <h4 class="card-title fw-bold mb-0">
                             <i class="bi bi-exclamation-octagon-fill me-2"></i>CHƯA ĐỦ ĐIỀU KIỆN MỞ BÁN HÀNG
                         </h4>
                     </div>
-                    <div class="modal-body p-4 p-md-5 text-center">
+                    <div class="card-body p-4 p-md-5 text-center">
                         <div class="mb-4">
                             <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 100px; height: 100px;">
                                 <i class="bi bi-clock-history display-4"></i>
@@ -105,6 +104,9 @@
                                 <button type="button" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm" onclick="confirmLogoutForFaceCheckin()">
                                     <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất để Chấm công Face Login
                                 </button>
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-outline-primary btn-lg px-4 py-2.5 rounded-pill fw-semibold shadow-sm">
+                                    <i class="bi bi-calendar-check me-2"></i>Xem lịch làm việc
+                                </a>
                             }
                             else if (!string.IsNullOrEmpty(ViewBag.RedirectAction))
                             {
@@ -120,9 +122,13 @@
                 </div>
             </div>
         </div>
-    }
-    <!-- Main Two Columns -->
-    <div class="create-order-row">
+    </div>
+}
+else
+{
+    <div class="create-order-container pt-2">
+        <!-- Main Two Columns -->
+        <div class="create-order-row">
         <!-- Left Column: Product Catalog -->
         <div class="catalog-column">
             <div class="catalog-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
@@ -165,7 +171,7 @@
                     @foreach (var product in Model.MenuProducts)
                     {
                         bool isProductAvailable = product.IsAvailable;
-                        <div class="col-xl-6 col-12 product-card" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()" data-available="@(isProductAvailable ? "true" : "false")">
+                        <div class="col-xl-6 col-12 product-card" data-product-id="@product.ProductId" data-category="@product.CategoryId" data-name="@product.ProductName.ToLower()" data-available="@(isProductAvailable ? "true" : "false")">
                             <div class="card border shadow-sm p-2 d-flex flex-row align-items-center bg-white product-item-card @(!isProductAvailable ? "product-unavailable" : "")"
                                  style="min-height: 90px; height: auto;"
                                  onclick='handleCardClick(@product.ProductId, "@product.ProductName", @Html.Raw(Json.Serialize(product.Variants)), @(isProductAvailable ? "true" : "false"))'>
@@ -638,6 +644,7 @@
         </div>
     </div>
 </div>
+}
 
 @section Scripts {
     <script>
@@ -659,6 +666,10 @@
         }
 
         document.addEventListener("DOMContentLoaded", function() {
+            @if (ViewBag.NotInShift == true)
+            {
+                <text>return;</text>
+            }
             var urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('showCheckout') === 'true') {
                 currentOrderId = urlParams.get('orderId');
@@ -1670,22 +1681,65 @@
             );
         }
 
-        // Periodically poll product availability status (every 12s) to keep POS in sync with bartender
-        setInterval(function() {
-            fetch('/api/sale/product-availability')
-                .then(res => res.json())
-                .then(data => {
-                    if (!data) return;
-                    const unavailVids = new Set(data.unavailableVariantIds || []);
-                    let warned = false;
-                    cart.forEach(item => {
-                        if (unavailVids.has(item.selectedVariantId) && !warned) {
-                            showToast(`⚠️ Món [${item.name}] vừa được Bartender cập nhật tạm hết nguyên liệu!`, 'warning');
-                            warned = true;
+        @if (ViewBag.NotInShift != true)
+        {
+            <text>
+            // Periodically poll product availability status (every 12s) to keep POS in sync with bartender
+            setInterval(function() {
+                fetch('/api/sale/product-availability')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data) return;
+                        const unavailVids = new Set(data.unavailableVariantIds || []);
+                        const unavailPids = new Set(data.unavailableProductIds || []);
+
+                        let stateChanged = false;
+                        document.querySelectorAll('.product-card').forEach(card => {
+                            const pidStr = card.getAttribute('data-product-id');
+                            if (pidStr) {
+                                const pid = parseInt(pidStr, 10);
+                                const shouldBeUnavailable = unavailPids.has(pid);
+                                const isCurrentlyAvailable = card.getAttribute('data-available') === 'true';
+
+                                if (shouldBeUnavailable && isCurrentlyAvailable) {
+                                    card.setAttribute('data-available', 'false');
+                                    const innerCard = card.querySelector('.product-item-card');
+                                    if (innerCard) innerCard.classList.add('product-unavailable');
+                                    const btnContainer = card.querySelector('div[style*="flex-shrink: 0"]');
+                                    if (btnContainer) {
+                                        btnContainer.innerHTML = '<button type="button" class="btn btn-secondary btn-sm fw-semibold px-2 py-1 opacity-75" disabled title="Món tạm hết nguyên liệu">Hết</button>';
+                                    }
+                                    const nameWrap = card.querySelector('.flex-grow-1 .d-flex');
+                                    if (nameWrap && !nameWrap.querySelector('.badge.bg-danger')) {
+                                        nameWrap.insertAdjacentHTML('beforeend', '<span class="badge bg-danger text-white px-2 py-0.5 fw-semibold ms-1" style="font-size: 0.65rem;"><i class="bi bi-slash-circle me-1"></i>Tạm hết</span>');
+                                    }
+                                    stateChanged = true;
+                                } else if (!shouldBeUnavailable && !isCurrentlyAvailable) {
+                                    card.setAttribute('data-available', 'true');
+                                    const innerCard = card.querySelector('.product-item-card');
+                                    if (innerCard) innerCard.classList.remove('product-unavailable');
+                                    const badge = card.querySelector('.badge.bg-danger');
+                                    if (badge) badge.remove();
+                                    stateChanged = true;
+                                }
+                            }
+                        });
+
+                        if (stateChanged && typeof filterProducts === 'function') {
+                            filterProducts();
                         }
-                    });
-                })
-                .catch(() => {});
-        }, 12000);
+
+                        let warned = false;
+                        cart.forEach(item => {
+                            if (unavailVids.has(item.selectedVariantId) && !warned) {
+                                showToast(`⚠️ Món [${item.name}] vừa được Bartender cập nhật tạm hết nguyên liệu!`, 'warning');
+                                warned = true;
+                            }
+                        });
+                    })
+                    .catch(() => {});
+            }, 12000);
+            </text>
+        }
     </script>
 }

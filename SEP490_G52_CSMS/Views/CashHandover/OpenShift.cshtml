@@ -186,17 +186,49 @@
             }
         })();
 
-        document.querySelector('form').addEventListener('submit', function (e) {
+        const openShiftForm = document.querySelector('form');
+        const confirmOpenBtn = document.getElementById('confirmBtn');
+        const originalConfirmBtnHtml = confirmOpenBtn ? confirmOpenBtn.innerHTML : '<i class="bi bi-check2-circle me-1"></i>Xác nhận mở ca';
+
+        function resetOpenShiftButton() {
+            if (confirmOpenBtn) {
+                confirmOpenBtn.disabled = false;
+                confirmOpenBtn.innerHTML = originalConfirmBtnHtml;
+            }
+            if (openShiftForm) {
+                openShiftForm.dataset.submitting = 'false';
+                openShiftForm.dataset.confirmed = 'false';
+            }
+        }
+
+        if (window.jQuery && openShiftForm) {
+            $(openShiftForm).on('invalid-form.validate', function () {
+                resetOpenShiftButton();
+            });
+        }
+
+        openShiftForm.addEventListener('submit', function (e) {
+            // First check jQuery validation or HTML5 validation before proceeding
+            if (window.jQuery && $(this).valid && !$(this).valid()) {
+                e.preventDefault();
+                resetOpenShiftButton();
+                return false;
+            }
+
             if (this.dataset.confirmed === 'true') {
+                if (window.jQuery && $(this).valid && !$(this).valid()) {
+                    e.preventDefault();
+                    resetOpenShiftButton();
+                    return false;
+                }
                 if (this.dataset.submitting === 'true') {
                     e.preventDefault();
                     return false;
                 }
                 this.dataset.submitting = 'true';
-                const btn = document.getElementById('confirmBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                if (confirmOpenBtn) {
+                    confirmOpenBtn.disabled = true;
+                    confirmOpenBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
                 }
                 return true;
             }

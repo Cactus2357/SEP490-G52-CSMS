@@ -276,17 +276,49 @@
             }
         }
 
-        document.getElementById('handoverForm').addEventListener('submit', function (e) {
+        const handoverForm = document.getElementById('handoverForm');
+        const submitHandoverBtn = document.getElementById('submitHandoverBtn');
+        const originalHandoverBtnHtml = submitHandoverBtn ? submitHandoverBtn.innerHTML : '<i class="bi bi-send-check me-2"></i>Ký Xác Nhận Bàn Giao Ca';
+
+        function resetHandoverButton() {
+            if (submitHandoverBtn) {
+                submitHandoverBtn.disabled = false;
+                submitHandoverBtn.innerHTML = originalHandoverBtnHtml;
+            }
+            if (handoverForm) {
+                handoverForm.dataset.submitting = 'false';
+                handoverForm.dataset.confirmed = 'false';
+            }
+        }
+
+        if (window.jQuery && handoverForm) {
+            $(handoverForm).on('invalid-form.validate', function () {
+                resetHandoverButton();
+            });
+        }
+
+        handoverForm.addEventListener('submit', function (e) {
+            // First check jQuery validation or HTML5 validation before proceeding
+            if (window.jQuery && $(this).valid && !$(this).valid()) {
+                e.preventDefault();
+                resetHandoverButton();
+                return false;
+            }
+
             if (this.dataset.confirmed === 'true') {
+                if (window.jQuery && $(this).valid && !$(this).valid()) {
+                    e.preventDefault();
+                    resetHandoverButton();
+                    return false;
+                }
                 if (this.dataset.submitting === 'true') {
                     e.preventDefault();
                     return false;
                 }
                 this.dataset.submitting = 'true';
-                const btn = document.getElementById('submitHandoverBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                if (submitHandoverBtn) {
+                    submitHandoverBtn.disabled = true;
+                    submitHandoverBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
                 }
                 return true;
             }
