@@ -30,6 +30,8 @@ namespace SEP490_G52_CSMS.Services
         public string? Username { get; set; }
 
         public string Role { get; set; }
+
+        public bool IsCheckedIn { get; set; }
     }
 
     public class AddWorkScheduleVM
@@ -71,7 +73,7 @@ namespace SEP490_G52_CSMS.Services
         public async Task<string> UpsertAsync(CreateRosterVM vm)
         {
             if (vm == null || string.IsNullOrWhiteSpace(vm.BranchId))
-                return "Invalid request.";
+                return "Yêu cầu không hợp lệ.";
 
             var existingRosters = await _repository.GetRosterForShiftAsync(vm.BranchId, vm.AssignmentDate, vm.ShiftId);
 
@@ -80,6 +82,25 @@ namespace SEP490_G52_CSMS.Services
             {
                 if (existingRosters.Count > 0)
                 {
+                    var checkedInRosters = existingRosters.Where(r => r.AttendanceLogs != null &&
+                        r.AttendanceLogs.Any(a => a.CheckInTime != null || a.OverallStatus == "Present" || a.CheckInStatus == "OnTime" || a.CheckInStatus == "Late")).ToList();
+
+                    if (checkedInRosters.Count > 0)
+                    {
+                        var names = string.Join(", ", checkedInRosters.Select(r => r.Employee?.FullName ?? $"NV#{r.EmployeeId}"));
+                        var shiftName = checkedInRosters.First().FixedShift?.ShiftName ?? $"Ca #{vm.ShiftId}";
+                        return $"Không thể xóa ca làm việc ngày {vm.AssignmentDate:dd/MM/yyyy} ({shiftName}) vì nhân viên ({names}) đã điểm danh vào ca.";
+                    }
+
+                    // Remove dummy/orphan attendance logs if any before deleting rosters to avoid FK conflict
+                    var dummyLogs = existingRosters.SelectMany(r => r.AttendanceLogs ?? Enumerable.Empty<AttendanceLog>())
+                        .Where(a => a.CheckInTime == null && a.OverallStatus != "Present")
+                        .ToList();
+                    if (dummyLogs.Count > 0)
+                    {
+                        _repository.RemoveAttendanceLogs(dummyLogs);
+                    }
+
                     _repository.RemoveRange(existingRosters);
                     await _repository.SaveAsync();
                 }
@@ -111,6 +132,25 @@ namespace SEP490_G52_CSMS.Services
 
             if (toRemove.Count > 0)
             {
+                var checkedInToRemove = toRemove.Where(r => r.AttendanceLogs != null &&
+                    r.AttendanceLogs.Any(a => a.CheckInTime != null || a.OverallStatus == "Present" || a.CheckInStatus == "OnTime" || a.CheckInStatus == "Late")).ToList();
+
+                if (checkedInToRemove.Count > 0)
+                {
+                    var names = string.Join(", ", checkedInToRemove.Select(r => r.Employee?.FullName ?? $"NV#{r.EmployeeId}"));
+                    var shiftName = checkedInToRemove.First().FixedShift?.ShiftName ?? $"Ca #{vm.ShiftId}";
+                    return $"Không thể xóa hoặc thay thế nhân viên ({names}) khỏi ca {shiftName} ngày {vm.AssignmentDate:dd/MM/yyyy} do nhân viên đã điểm danh vào ca làm việc.";
+                }
+
+                // Clean up dummy/orphan attendance logs without check-in before removing rosters
+                var dummyLogs = toRemove.SelectMany(r => r.AttendanceLogs ?? Enumerable.Empty<AttendanceLog>())
+                    .Where(a => a.CheckInTime == null && a.OverallStatus != "Present")
+                    .ToList();
+                if (dummyLogs.Count > 0)
+                {
+                    _repository.RemoveAttendanceLogs(dummyLogs);
+                }
+
                 _repository.RemoveRange(toRemove);
             }
 
@@ -149,7 +189,8 @@ namespace SEP490_G52_CSMS.Services
                     EmployeeId = row.EmployeeId,
                     EmployeeName = row.Employee?.FullName ?? $"NV#{row.EmployeeId}",
                     Username = row.Employee?.Username,
-                    Role = row.Employee?.Role ?? ""
+                    Role = row.Employee?.Role ?? "",
+                    IsCheckedIn = row.AttendanceLogs != null && row.AttendanceLogs.Any(a => a.CheckInTime != null || a.OverallStatus == "Present" || a.CheckInStatus == "OnTime" || a.CheckInStatus == "Late")
                 })
                 // Defensive: a stray row outside 0..6 (bad data / timezone edge case)
                 // would break the grid's day columns, so drop it instead of crashing.

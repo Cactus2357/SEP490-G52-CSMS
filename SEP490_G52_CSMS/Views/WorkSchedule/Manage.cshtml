@@ -238,6 +238,7 @@
             <div class="modal-body p-4">
                 <!-- Cashier: mandatory single select (BR01) -->
                 <div class="mb-3">
+                    <div id="cashierCheckedInNotice" class="d-none"></div>
                     <label class="form-label fw-bold text-primary mb-1">
                         <i class="bi bi-person-fill me-1"></i>Nhân viên thu ngân (Bắt buộc)
                     </label>
@@ -395,7 +396,8 @@
                 const entry = { 
                     id: row.employeeId, 
                     name: row.employeeName || ('NV#' + row.employeeId),
-                    username: row.username || ''
+                    username: row.username || '',
+                    isCheckedIn: !!row.isCheckedIn
                 };
 
                 if (row.role === 'Cashier') {
@@ -465,20 +467,23 @@
                 // 1. Cashier (primary blue)
                 if (data.cashier) {
                     const uname = data.cashier.username ? ' (@@' + escapeHtml(data.cashier.username) + ')' : '';
-                    html += '<div class="employee-entry fw-semibold text-primary mb-1" title="' + escapeHtml(data.cashier.name) + uname + '"><i class="bi bi-person-fill me-1"></i>' + escapeHtml(data.cashier.name) + '</div>';
+                    const checkedBadge = data.cashier.isCheckedIn ? ' <span class="badge bg-success-subtle text-success border border-success-subtle px-1 py-0 ms-1" style="font-size: 0.7rem;" title="Đã điểm danh"><i class="bi bi-check-circle-fill"></i></span>' : '';
+                    html += '<div class="employee-entry fw-semibold text-primary mb-1" title="' + escapeHtml(data.cashier.name) + uname + (data.cashier.isCheckedIn ? ' (Đã điểm danh)' : '') + '"><i class="bi bi-person-fill me-1"></i>' + escapeHtml(data.cashier.name) + checkedBadge + '</div>';
                 }
                 // 2. Bartenders (success green)
                 (data.bartenders || []).forEach(b => {
                     if (b) {
                         const uname = b.username ? ' (@@' + escapeHtml(b.username) + ')' : '';
-                        html += '<div class="employee-entry fw-semibold text-success mb-1" title="' + escapeHtml(b.name) + uname + '"><i class="bi bi-person-fill me-1"></i>' + escapeHtml(b.name) + '</div>';
+                        const checkedBadge = b.isCheckedIn ? ' <span class="badge bg-success-subtle text-success border border-success-subtle px-1 py-0 ms-1" style="font-size: 0.7rem;" title="Đã điểm danh"><i class="bi bi-check-circle-fill"></i></span>' : '';
+                        html += '<div class="employee-entry fw-semibold text-success mb-1" title="' + escapeHtml(b.name) + uname + (b.isCheckedIn ? ' (Đã điểm danh)' : '') + '"><i class="bi bi-person-fill me-1"></i>' + escapeHtml(b.name) + checkedBadge + '</div>';
                     }
                 });
                 // 3. Bussers (warning amber)
                 (data.bussers || []).forEach(b => {
                     if (b) {
                         const uname = b.username ? ' (@@' + escapeHtml(b.username) + ')' : '';
-                        html += '<div class="employee-entry fw-semibold text-warning-emphasis mb-1" title="' + escapeHtml(b.name) + uname + '"><i class="bi bi-person-fill me-1"></i>' + escapeHtml(b.name) + '</div>';
+                        const checkedBadge = b.isCheckedIn ? ' <span class="badge bg-success-subtle text-success border border-success-subtle px-1 py-0 ms-1" style="font-size: 0.7rem;" title="Đã điểm danh"><i class="bi bi-check-circle-fill"></i></span>' : '';
+                        html += '<div class="employee-entry fw-semibold text-warning-emphasis mb-1" title="' + escapeHtml(b.name) + uname + (b.isCheckedIn ? ' (Đã điểm danh)' : '') + '"><i class="bi bi-person-fill me-1"></i>' + escapeHtml(b.name) + checkedBadge + '</div>';
                     }
                 });
             }
@@ -519,17 +524,26 @@
 
                 const span = document.createElement('span');
                 span.className = 'small fw-medium ' + (roleColorClass || 'text-dark');
-                span.innerHTML = '<i class="bi bi-person-fill me-1"></i>' + escapeHtml(item.name || ('NV#' + item.id));
+                const checkedBadge = item.isCheckedIn ? ' <span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.7rem;"><i class="bi bi-check-circle-fill me-1"></i>Đã điểm danh</span>' : '';
+                span.innerHTML = '<i class="bi bi-person-fill me-1"></i>' + escapeHtml(item.name || ('NV#' + item.id)) + checkedBadge;
                 li.appendChild(span);
 
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'btn btn-sm btn-link text-danger p-0 text-decoration-none';
-                btn.innerHTML = '<i class="bi bi-x-circle-fill"></i>';
-                btn.title = 'Xóa';
-                btn.addEventListener('click', () => onRemove(index));
+                if (item.isCheckedIn) {
+                    const lockSpan = document.createElement('span');
+                    lockSpan.className = 'text-muted small px-1';
+                    lockSpan.title = 'Nhân viên đã điểm danh vào ca làm việc, không thể xóa khỏi ca.';
+                    lockSpan.innerHTML = '<i class="bi bi-lock-fill"></i>';
+                    li.appendChild(lockSpan);
+                } else {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-sm btn-link text-danger p-0 text-decoration-none';
+                    btn.innerHTML = '<i class="bi bi-x-circle-fill"></i>';
+                    btn.title = 'Xóa';
+                    btn.addEventListener('click', () => onRemove(index));
+                    li.appendChild(btn);
+                }
 
-                li.appendChild(btn);
                 ul.appendChild(li);
             });
         }
@@ -563,8 +577,22 @@
 
             const existing = scheduleData[cellKey(day, shiftId)];
             const cashierSelect = document.getElementById('cashierSelect');
+            const noticeEl = document.getElementById('cashierCheckedInNotice');
+            const isCashierCheckedIn = existing && existing.cashier && existing.cashier.isCheckedIn;
+
             if (cashierSelect) {
                 cashierSelect.value = existing && existing.cashier ? existing.cashier.id : '';
+                cashierSelect.disabled = !!isCashierCheckedIn;
+            }
+
+            if (noticeEl) {
+                if (isCashierCheckedIn) {
+                    noticeEl.className = 'alert alert-warning py-2 px-3 small mb-2 d-flex align-items-center shadow-sm';
+                    noticeEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning flex-shrink-0"></i><div><strong>Thu ngân ' + escapeHtml(existing.cashier.name) + ' đã điểm danh vào ca.</strong> Không thể đổi hoặc xóa thu ngân khỏi ca làm việc đang hoạt động.</div>';
+                } else {
+                    noticeEl.className = 'd-none';
+                    noticeEl.innerHTML = '';
+                }
             }
 
             tempBartenders = existing && Array.isArray(existing.bartenders) ? existing.bartenders.slice() : [];
@@ -620,12 +648,27 @@
         const btnClearAllStaff = document.getElementById('btnClearAllStaff');
         if (btnClearAllStaff) {
             btnClearAllStaff.addEventListener('click', () => {
-                const cashierSelect = document.getElementById('cashierSelect');
-                if (cashierSelect) cashierSelect.value = '';
-                tempBartenders = [];
-                tempBussers = [];
+                const key = cellKey(currentDay, currentShiftId);
+                const existing = scheduleData[key];
+                const isCashierCheckedIn = existing && existing.cashier && existing.cashier.isCheckedIn;
+
+                if (isCashierCheckedIn) {
+                    const cashierSelect = document.getElementById('cashierSelect');
+                    if (cashierSelect) cashierSelect.value = String(existing.cashier.id);
+                } else {
+                    const cashierSelect = document.getElementById('cashierSelect');
+                    if (cashierSelect) cashierSelect.value = '';
+                }
+
+                tempBartenders = tempBartenders.filter(b => b.isCheckedIn);
+                tempBussers = tempBussers.filter(b => b.isCheckedIn);
                 renderTempLists();
-                showToast('Đã xóa hết thông tin nhân viên của ca.', 'info');
+
+                if (isCashierCheckedIn || tempBartenders.length > 0 || tempBussers.length > 0) {
+                    showToast('Đã xóa các nhân viên chưa điểm danh. Không thể xóa nhân viên đã điểm danh.', 'info');
+                } else {
+                    showToast('Đã xóa hết thông tin nhân viên của ca.', 'info');
+                }
             });
         }
 
@@ -633,12 +676,22 @@
         const btnConfirmCell = document.getElementById('btnConfirmCell');
         if (btnConfirmCell) {
             btnConfirmCell.addEventListener('click', () => {
+                const key = cellKey(currentDay, currentShiftId);
+                const existing = scheduleData[key];
+                const wasCashierCheckedIn = existing && existing.cashier && existing.cashier.isCheckedIn;
+
                 const cashierSelect = document.getElementById('cashierSelect');
-                const cashierId = cashierSelect ? parseInt(cashierSelect.value, 10) : NaN;
+                let cashierId = cashierSelect ? parseInt(cashierSelect.value, 10) : NaN;
+                if (wasCashierCheckedIn) {
+                    cashierId = existing.cashier.id;
+                }
 
                 // If completely empty (cleared)
                 if ((!cashierId || Number.isNaN(cashierId)) && tempBartenders.length === 0 && tempBussers.length === 0) {
-                    const key = cellKey(currentDay, currentShiftId);
+                    if (wasCashierCheckedIn) {
+                        showToast('Không thể xóa ca làm việc vì thu ngân ' + existing.cashier.name + ' đã điểm danh vào ca.', 'warning');
+                        return;
+                    }
                     scheduleData[key] = {
                         cashier: null,
                         bartenders: [],
@@ -655,13 +708,24 @@
                     return;
                 }
 
-                const selectedOption = cashierSelect.options[cashierSelect.selectedIndex];
-                const cashierName = selectedOption.text;
-                const cashierUsername = selectedOption.title ? selectedOption.title.replace(/^@@/, '') : '';
+                let cashierName = '';
+                let cashierUsername = '';
+                if (wasCashierCheckedIn && cashierId === existing.cashier.id) {
+                    cashierName = existing.cashier.name;
+                    cashierUsername = existing.cashier.username;
+                } else {
+                    const selectedOption = cashierSelect.options[cashierSelect.selectedIndex];
+                    cashierName = selectedOption ? selectedOption.text : '';
+                    cashierUsername = selectedOption && selectedOption.title ? selectedOption.title.replace(/^@@/, '') : '';
+                }
 
-                const key = cellKey(currentDay, currentShiftId);
                 scheduleData[key] = {
-                    cashier: { id: cashierId, name: cashierName, username: cashierUsername },
+                    cashier: { 
+                        id: cashierId, 
+                        name: cashierName, 
+                        username: cashierUsername, 
+                        isCheckedIn: wasCashierCheckedIn && cashierId === existing.cashier.id 
+                    },
                     bartenders: tempBartenders.slice(),
                     bussers: tempBussers.slice()
                 };

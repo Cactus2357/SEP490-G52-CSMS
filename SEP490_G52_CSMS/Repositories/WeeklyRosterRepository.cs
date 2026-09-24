@@ -51,6 +51,7 @@ namespace SEP490_G52_CSMS.Repositories
         {
             return await _context.WeeklyRosterGrids
                 .Include(w => w.Employee)
+                .Include(w => w.AttendanceLogs)
                 .Where(w => w.BranchId == branchId
                             && w.AssignmentDate.Date >= weekStart.Date
                             && w.AssignmentDate.Date <= weekEnd.Date)
@@ -60,6 +61,9 @@ namespace SEP490_G52_CSMS.Repositories
         public async Task<List<WeeklyRosterGrid>> GetRosterForShiftAsync(string branchId, DateTime assignmentDate, int shiftId)
         {
             return await _context.WeeklyRosterGrids
+                .Include(w => w.Employee)
+                .Include(w => w.FixedShift)
+                .Include(w => w.AttendanceLogs)
                 .Where(w => w.BranchId == branchId
                             && w.AssignmentDate.Date == assignmentDate.Date
                             && w.ShiftId == shiftId)
@@ -69,6 +73,11 @@ namespace SEP490_G52_CSMS.Repositories
         public void RemoveRange(IEnumerable<WeeklyRosterGrid> rosters)
         {
             _context.WeeklyRosterGrids.RemoveRange(rosters);
+        }
+
+        public void RemoveAttendanceLogs(IEnumerable<AttendanceLog> logs)
+        {
+            _context.AttendanceLogs.RemoveRange(logs);
         }
     }
 }

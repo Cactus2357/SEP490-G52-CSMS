@@ -205,14 +205,25 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest("Không thể thêm lịch làm việc cho ca đã kết thúc trong quá khứ.");
             }
 
-            string result = await _service.CreateAsync(vm);
-
-            if (result != "Success")
+            try
             {
-                return BadRequest(result);
-            }
+                string result = await _service.CreateAsync(vm);
 
-            return Ok(result);
+                if (result != "Success")
+                {
+                    return BadRequest(result);
+                }
+
+                return Ok(result);
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+            {
+                return BadRequest("Lỗi ràng buộc dữ liệu khi tạo lịch làm việc.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi hệ thống: {ex.Message}");
+            }
         }
 
         [HttpPost]
@@ -221,7 +232,7 @@ namespace SEP490_G52_CSMS.Controllers
         {
             if (vm == null || string.IsNullOrWhiteSpace(vm.BranchId))
             {
-                return BadRequest("Invalid request.");
+                return BadRequest("Yêu cầu không hợp lệ.");
             }
 
             var loggedInBranchId = await GetUserBranchIdAsync();
@@ -235,14 +246,25 @@ namespace SEP490_G52_CSMS.Controllers
                 return BadRequest("Không thể chỉnh sửa lịch làm việc cho ca đã kết thúc trong quá khứ.");
             }
 
-            string result = await _service.UpdateAsync(vm);
-
-            if (result != "Success")
+            try
             {
-                return BadRequest(result);
-            }
+                string result = await _service.UpdateAsync(vm);
 
-            return Ok(result);
+                if (result != "Success")
+                {
+                    return BadRequest(result);
+                }
+
+                return Ok(result);
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+            {
+                return BadRequest("Lỗi ràng buộc dữ liệu. Không thể xóa hoặc thay đổi nhân viên đã có dữ liệu chấm công / giao dịch trong ca.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi hệ thống: {ex.Message}");
+            }
         }
 
         [HttpPost]
@@ -269,14 +291,25 @@ namespace SEP490_G52_CSMS.Controllers
                 if (await IsShiftInPastAsync(vm.AssignmentDate, vm.ShiftId))
                     continue; // Skip past shifts silently
 
-                string result = await _service.UpsertAsync(vm);
-                if (result == "Success")
+                try
                 {
-                    savedCount++;
+                    string result = await _service.UpsertAsync(vm);
+                    if (result == "Success")
+                    {
+                        savedCount++;
+                    }
+                    else
+                    {
+                        errors.Add($"{vm.AssignmentDate:dd/MM/yyyy} (Ca {vm.ShiftId}): {result}");
+                    }
                 }
-                else
+                catch (Microsoft.EntityFrameworkCore.DbUpdateException)
                 {
-                    errors.Add($"{vm.AssignmentDate:dd/MM/yyyy} (Ca {vm.ShiftId}): {result}");
+                    errors.Add($"{vm.AssignmentDate:dd/MM/yyyy} (Ca {vm.ShiftId}): Lỗi ràng buộc dữ liệu. Không thể xóa hoặc thay đổi nhân viên đã có dữ liệu chấm công / giao dịch trong ca.");
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{vm.AssignmentDate:dd/MM/yyyy} (Ca {vm.ShiftId}): Lỗi hệ thống: {ex.Message}");
                 }
             }
 

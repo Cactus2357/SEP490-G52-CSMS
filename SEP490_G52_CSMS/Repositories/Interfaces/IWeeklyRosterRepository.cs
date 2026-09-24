@@ -12,6 +12,7 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
         Task<List<WeeklyRosterGrid>> GetRosterForWeekAsync(string branchId, DateTime weekStart, DateTime weekEnd);
         Task<List<WeeklyRosterGrid>> GetRosterForShiftAsync(string branchId, DateTime assignmentDate, int shiftId);
         void RemoveRange(IEnumerable<WeeklyRosterGrid> rosters);
+        void RemoveAttendanceLogs(IEnumerable<AttendanceLog> logs);
         Task SaveAsync();
     }
 }
