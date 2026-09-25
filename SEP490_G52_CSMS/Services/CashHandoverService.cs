@@ -11,10 +11,17 @@ namespace SEP490_G52_CSMS.Services
     public class CashHandoverService : ICashHandoverService
     {
         private readonly ICashHandoverRepository _cashHandoverRepository;
+        private readonly IShiftChangeRepository? _shiftChangeRepository;
+        private readonly INotificationService? _notificationService;
 
-        public CashHandoverService(ICashHandoverRepository cashHandoverRepository)
+        public CashHandoverService(
+            ICashHandoverRepository cashHandoverRepository,
+            IShiftChangeRepository? shiftChangeRepository = null,
+            INotificationService? notificationService = null)
         {
             _cashHandoverRepository = cashHandoverRepository;
+            _shiftChangeRepository = shiftChangeRepository;
+            _notificationService = notificationService;
         }
 
         private static string FormatShiftTimeRange(FixedShift? shift)
@@ -734,11 +741,17 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
-            var theoretical = handover.InitialCash + cashRev;
-            var discrepancy = model.ActualCash - theoretical;
+            var theoretical = handover.InitialCash + cashRev - cashRefunds;
 
-            string emergencyNote = $"[BÀN GIAO ĐỘT XUẤT GIỮA CA] Lý do: {model.EmergencyReason ?? "Nhân viên ốm/nghỉ đột xuất"}. " + (model.Notes ?? "");
+            var handoverTime = DateTime.Now;
+            var outgoingEmployee = handover.OutgoingCashier ?? await _cashHandoverRepository.GetEmployeeByIdAsync(handover.OutgoingCashierId);
+            string outgoingName = outgoingEmployee?.FullName ?? outgoingEmployee?.Username ?? model.OutgoingCashierName ?? "Thu ngân";
+            string incomingName = incomingEmployee.FullName ?? incomingEmployee.Username ?? "Thu ngân tiếp nhận";
+            string shiftDisplayName = handover.FixedShift?.ShiftName ?? $"Ca {handover.ShiftId}";
 
+            string emergencyNote = $"[BÀN GIAO ĐỘT XUẤT] Bàn giao lúc: {handoverTime:HH:mm dd/MM/yyyy}. Thu ngân bàn giao: {outgoingName} -> Thu ngân nhận: {incomingName}. Tiền kiểm kê két: {model.ActualCash:N0} đ. Lý do: {model.EmergencyReason ?? "Nghỉ đột xuất"}. {(string.IsNullOrWhiteSpace(model.Notes) ? "" : "Ghi chú: " + model.Notes)}";
+
+            // Cập nhật thông tin bàn giao đột xuất vào ca làm việc hiện tại
             handover.IncomingCashierId = model.IncomingCashierId.Value;
             handover.MachineCashRevenue = cashRev;
             handover.BankTransferRevenue = bankRev;
@@ -750,37 +763,50 @@ namespace SEP490_G52_CSMS.Services
             handover.DelivererName = model.DelivererName;
             handover.IsPasswordConfirmed = true;
             handover.HandoverType = CashHandoverConstants.HandoverTypeEmergency;
-            handover.Status = CashHandoverConstants.ClosedStatus;
-            handover.ClosedAt = DateTime.UtcNow;
+            // Thu ngân sau sẽ dùng tiếp tài khoản của thu ngân trước để bán hàng, giữ trạng thái ca là Active
+            handover.Status = CashHandoverConstants.ActiveStatus;
 
             await _cashHandoverRepository.UpdateHandoverAsync(handover);
-            await _cashHandoverRepository.SyncAttendanceOnCloseShiftAsync(handover.OutgoingCashierId, handover.ShiftId, handover.HandoverDate);
 
-            // Mở phiên tiếp tục cho người nhận ủy quyền trong cùng ca
-            var continueHandover = new CashHandover
+            // Tự động tạo 1 đơn xin đổi ca cho quản lý để ghi lại sự thay đổi ca làm việc của thu ngân ca hôm đó
+            var shiftRequest = new ShiftChangeRequest
             {
-                BranchId = handover.BranchId,
-                HandoverDate = handover.HandoverDate,
-                ShiftId = handover.ShiftId,
-                OutgoingCashierId = model.IncomingCashierId.Value,
-                IncomingCashierId = model.IncomingCashierId.Value,
-                InitialCash = model.ActualCash,
-                MachineCashRevenue = 0,
-                BankTransferRevenue = 0,
-                CashRefundAmount = 0,
-                TheoreticalCash = model.ActualCash,
-                ActualCash = 0,
-                IsPasswordConfirmed = false,
-                HandoverType = CashHandoverConstants.HandoverTypeEmergency,
-                Notes = $"Tiếp quản ca từ {handover.OutgoingCashier?.FullName} do nghỉ đột xuất.",
-                Status = CashHandoverConstants.ActiveStatus,
-                OpenedAt = DateTime.UtcNow
+                RequestingEmployeeId = handover.OutgoingCashierId,
+                SubmittedAt = DateTime.UtcNow,
+                Status = "Submitted",
+                Aspiration = $"Bàn giao ca đột xuất: Thu ngân bàn giao [{outgoingName}] -> Thu ngân nhận ca [{incomingName}]. Ca: {shiftDisplayName} ngày {handover.HandoverDate:dd/MM/yyyy}. Thời gian bàn giao: {handoverTime:HH:mm dd/MM/yyyy}.",
+                Reason = $"Bàn giao ca đột xuất giữa ca. Lý do: {model.EmergencyReason ?? "Nghỉ đột xuất"}. Tiền mặt kiểm kê: {model.ActualCash:N0} đ. {(string.IsNullOrWhiteSpace(model.Notes) ? "" : "Ghi chú: " + model.Notes)}"
             };
 
-            await _cashHandoverRepository.AddHandoverAsync(continueHandover);
-            await _cashHandoverRepository.SyncAttendanceOnOpenShiftAsync(model.IncomingCashierId.Value, handover.ShiftId, handover.HandoverDate);
+            if (_shiftChangeRepository != null)
+            {
+                await _shiftChangeRepository.AddRequestAsync(shiftRequest);
+            }
+            else
+            {
+                await _cashHandoverRepository.AddShiftChangeRequestAsync(shiftRequest);
+            }
 
-            return OperationResult.Ok($"Đã xử lý bàn giao đột xuất thành công. Ca đã được chuyển giao cho {incomingEmployee.FullName}.");
+            // Gửi thông báo đến Quản lý chi nhánh
+            if (_notificationService != null)
+            {
+                try
+                {
+                    await _notificationService.SendAsync(new NotificationEvent(
+                        Title: "Đơn đổi ca đột xuất mới",
+                        Message: $"Thu ngân {outgoingName} đã bàn giao ca đột xuất ({shiftDisplayName}) cho {incomingName} lúc {handoverTime:HH:mm dd/MM/yyyy}. Lý do: {model.EmergencyReason ?? "Nghỉ đột xuất"}.",
+                        RecipientRole: "BranchManager",
+                        BranchId: handover.BranchId,
+                        ResourceUrl: "/ShiftChange/Index"
+                    ));
+                }
+                catch
+                {
+                    // Tránh làm gián đoạn quy trình bàn giao nếu việc gửi thông báo gặp lỗi
+                }
+            }
+
+            return OperationResult.Ok($"Bàn giao ca đột xuất thành công! Hệ thống đã tự động gửi đơn đổi ca tới Quản lý chi nhánh. Thu ngân tiếp quản ({incomingName}) sẽ tiếp tục sử dụng phiên làm việc hiện tại để bán hàng.");
         }
 
         public async Task<bool> IsDayClosedAsync(string branchId, DateTime date)

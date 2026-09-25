@@ -689,5 +689,11 @@ namespace SEP490_G52_CSMS.Repositories
                 }
             }
         }
+
+        public async Task AddShiftChangeRequestAsync(ShiftChangeRequest request)
+        {
+            _context.ShiftChangeRequests.Add(request);
+            await _context.SaveChangesAsync();
+        }
     }
 }

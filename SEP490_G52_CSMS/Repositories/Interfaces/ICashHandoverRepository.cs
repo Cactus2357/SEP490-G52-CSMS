@@ -79,5 +79,8 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
 
         /// <summary> Kiểm tra xem ca làm việc cụ thể tại chi nhánh đã bị đóng (Closed) chưa </summary>
         Task<CashHandover?> GetClosedHandoverByShiftAsync(string branchId, int shiftId, DateTime date);
+
+        /// <summary> Thêm đơn xin đổi ca tự động khi bàn giao ca đột xuất </summary>
+        Task AddShiftChangeRequestAsync(ShiftChangeRequest request);
     }
 }

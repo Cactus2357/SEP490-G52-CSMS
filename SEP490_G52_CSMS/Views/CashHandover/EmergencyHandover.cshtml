@@ -27,9 +27,9 @@
         <div>
             <strong>Quy trình Bàn Giao Đột Xuất:</strong>
             <ul class="mb-0 ps-3 small">
-                <li>Đối soát dòng tiền thực tế trong két tại đúng thời điểm bàn giao.</li>
-                <li>Doanh thu và đơn hàng tính từ thời điểm mở ca đến hiện tại sẽ được chốt cho người bàn giao.</li>
-                <li>Nhân viên nhận ủy quyền (hoặc Quản lý) nhập mật khẩu xác nhận để tiếp quản bán hàng trong ca này.</li>
+                <li>Kiểm kê và xác nhận số tiền mặt thực tế trong két tại thời điểm bàn giao đột xuất.</li>
+                <li>Hệ thống sẽ <strong>tự động tạo và gửi đơn yêu cầu đổi ca</strong> cho Quản lý chi nhánh để ghi nhận sự thay đổi ca làm việc (thu ngân bàn giao, thu ngân nhận ca, thời gian bàn giao).</li>
+                <li>Sau khi xác nhận, <strong>thu ngân tiếp nhận sẽ dùng tiếp tài khoản của thu ngân trước</strong> để tiếp tục bán hàng trong ca trực này.</li>
             </ul>
         </div>
     </div>
@@ -340,7 +340,7 @@
             const form = this;
             showConfirmModal(
                 'Xác nhận bàn giao đột xuất',
-                'Bạn có chắc chắn muốn bàn giao ca đột xuất giữa chừng cho người tiếp quản không?',
+                'Bạn có chắc chắn muốn bàn giao ca đột xuất giữa chừng? Hệ thống sẽ tự động gửi đơn đổi ca tới Quản lý và thu ngân tiếp nhận sẽ dùng tiếp phiên làm việc này để bán hàng.',
                 function () {
                     form.dataset.confirmed = 'true';
                     $(form).submit();

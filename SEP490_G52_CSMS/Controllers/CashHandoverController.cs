@@ -797,6 +797,10 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             TempData["SuccessMessage"] = result.Message;
+            if (!User.IsInRole("BranchManager") && !User.IsInRole("RManager"))
+            {
+                return RedirectToAction("CreateOrder", "SaleManagement");
+            }
             return RedirectToAction(nameof(History));
         }
 
