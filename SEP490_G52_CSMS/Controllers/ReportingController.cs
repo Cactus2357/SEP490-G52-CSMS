@@ -262,7 +262,7 @@ namespace SEP490_G52_CSMS.Controllers
             foreach (var order in orders)
             {
                 var branchName = order.Branch?.BranchName ?? order.BranchId ?? "";
-                var timeStr = order.CreatedAt.ToVietnamTimeString("dd/MM/yyyy HH:mm:ss");
+                var timeStr = order.CreatedAt.EnsureVietnamTimeString("dd/MM/yyyy HH:mm:ss");
                 var cashierName = order.Cashier?.FullName ?? order.Cashier?.Username ?? (order.CashierId > 0 ? order.CashierId.ToString() : "");
                 var itemsSummary = string.Join("; ", order.OrderItems.Select(oi =>
                 {

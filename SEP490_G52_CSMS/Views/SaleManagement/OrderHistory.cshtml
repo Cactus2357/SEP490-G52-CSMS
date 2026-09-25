@@ -352,6 +352,14 @@
                         </div>
                     </div>
 
+                    <!-- Payment details in receipt -->
+                    <div class="pb-2 mb-2 border-bottom border-dark" id="recPaymentSection" style="font-size: 12px;">
+                        <div class="d-flex justify-content-between">
+                            <span>Hình thức TT:</span>
+                            <span id="recPaymentMethod" class="fw-semibold">Tiền mặt</span>
+                        </div>
+                    </div>
+
                     <!-- Footer -->
                     <div class="text-center pt-1">
                         <div>Cảm ơn quý khách &amp; Hẹn gặp lại!</div>
@@ -895,6 +903,19 @@
                     }
 
                     document.getElementById('recTotal').innerText = data.totalAmount.toLocaleString('vi-VN') + ' đ';
+
+                    // Payment Method (Tiền mặt, CK hoặc CK + Tiền mặt)
+                    var payMethodEl = document.getElementById('recPaymentMethod');
+                    if (payMethodEl) {
+                        var pMethod = (data.paymentMethod || '').trim();
+                        if (pMethod === 'Split' || (data.cashAmount > 0 && data.bankAmount > 0) || pMethod.indexOf('Thu thêm') !== -1 || pMethod.indexOf('+') !== -1) {
+                            payMethodEl.innerText = 'CK + Tiền mặt';
+                        } else if (pMethod === 'Bank Transfer' || pMethod === 'BankTransfer' || pMethod === 'Transfer' || pMethod === 'CK') {
+                            payMethodEl.innerText = 'CK';
+                        } else {
+                            payMethodEl.innerText = 'Tiền mặt';
+                        }
+                    }
 
                     var modal = new bootstrap.Modal(document.getElementById('receiptPrintModal'));
                     modal.show();

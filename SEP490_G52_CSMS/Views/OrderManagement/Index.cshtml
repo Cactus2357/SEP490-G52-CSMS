@@ -124,7 +124,7 @@
                                     <div class="small text-muted">Thu ngân: <span class="fw-medium text-dark">@item.CashierName</span> &bull; @item.TotalItems món</div>
                                 </td>
                                 <td>
-                                    <div class="small text-dark fw-medium">@item.CreatedAt.ToVietnamTimeString("dd/MM/yyyy HH:mm:ss")</div>
+                                    <div class="small text-dark fw-medium">@item.CreatedAt.EnsureVietnamTimeString("dd/MM/yyyy HH:mm:ss")</div>
                                 </td>
                                 <td class="text-end fw-bold text-dark">
                                     @item.TotalAmount.ToString("N0")đ
@@ -328,14 +328,6 @@
                             <span>Hình thức TT:</span>
                             <span id="recPaymentMethod" class="fw-semibold">Tiền mặt</span>
                         </div>
-                        <div class="d-flex justify-content-between d-none" id="recSplitCashRow">
-                            <span>- Tiền mặt:</span>
-                            <span id="recCashAmount" class="font-monospace">0 đ</span>
-                        </div>
-                        <div class="d-flex justify-content-between d-none" id="recSplitBankRow">
-                            <span>- Chuyển khoản:</span>
-                            <span id="recBankAmount" class="font-monospace">0 đ</span>
-                        </div>
                     </div>
 
                     <!-- Delivery Summary (Shown only in Delivery Mode) -->
@@ -490,30 +482,16 @@
 
                     document.getElementById('recTotal').innerText = data.totalAmount.toLocaleString('vi-VN') + ' đ';
 
-                    // Payment Method & Split breakdown
+                    // Payment Method (Tiền mặt, CK hoặc CK + Tiền mặt)
                     var payMethodEl = document.getElementById('recPaymentMethod');
                     if (payMethodEl) {
-                        if (data.paymentMethod === 'Split' || (data.cashAmount > 0 && data.bankAmount > 0)) {
-                            payMethodEl.innerText = 'Kết hợp (TM + CK)';
-                            var splitCashRow = document.getElementById('recSplitCashRow');
-                            var splitBankRow = document.getElementById('recSplitBankRow');
-                            if (splitCashRow) {
-                                splitCashRow.classList.remove('d-none');
-                                document.getElementById('recCashAmount').innerText = (data.cashAmount || 0).toLocaleString('vi-VN') + ' đ';
-                            }
-                            if (splitBankRow) {
-                                splitBankRow.classList.remove('d-none');
-                                document.getElementById('recBankAmount').innerText = (data.bankAmount || 0).toLocaleString('vi-VN') + ' đ';
-                            }
+                        var pMethod = (data.paymentMethod || '').trim();
+                        if (pMethod === 'Split' || (data.cashAmount > 0 && data.bankAmount > 0) || pMethod.indexOf('Thu thêm') !== -1 || pMethod.indexOf('+') !== -1) {
+                            payMethodEl.innerText = 'CK + Tiền mặt';
+                        } else if (pMethod === 'Bank Transfer' || pMethod === 'BankTransfer' || pMethod === 'Transfer' || pMethod === 'CK') {
+                            payMethodEl.innerText = 'CK';
                         } else {
-                            var pMethodText = 'Tiền mặt';
-                            if (data.paymentMethod === 'Bank Transfer') pMethodText = 'Chuyển khoản';
-                            else if (data.paymentMethod) pMethodText = data.paymentMethod;
-                            payMethodEl.innerText = pMethodText;
-                            var splitCashRow = document.getElementById('recSplitCashRow');
-                            var splitBankRow = document.getElementById('recSplitBankRow');
-                            if (splitCashRow) splitCashRow.classList.add('d-none');
-                            if (splitBankRow) splitBankRow.classList.add('d-none');
+                            payMethodEl.innerText = 'Tiền mặt';
                         }
                     }
 

@@ -19,7 +19,7 @@
     {
         <div class="mb-2 alert alert-warning py-1 px-2 small text-danger fw-bold"><i class="bi bi-chat-left-dots-fill me-1"></i>Ghi chú: @Model.OrderNotes</div>
     }
-    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">Thời gian :</span> @Model.OrderTime.ToVietnamTimeString("dd/MM/yyyy HH:mm")</div>
+    <div class="mb-2"><span class="fw-bold" style="width: 150px; display: inline-block;">Thời gian :</span> @Model.OrderTime.EnsureVietnamTimeString("dd/MM/yyyy HH:mm")</div>
     <div class="mb-4"><span class="fw-bold" style="width: 150px; display: inline-block;">Trạng thái :</span> @Model.DisplayStatus</div>
 
     <table class="table table-bordered border-dark text-center">

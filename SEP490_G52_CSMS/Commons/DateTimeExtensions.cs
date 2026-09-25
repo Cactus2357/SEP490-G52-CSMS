@@ -52,6 +52,34 @@ namespace SEP490_G52_CSMS.Commons
         }
 
         /// <summary>
+        /// Đảm bảo thời gian theo giờ Việt Nam. Nếu là UTC thì chuyển sang GMT+7; nếu đã là giờ Local/Unspecified (được lưu theo giờ VN) thì giữ nguyên.
+        /// </summary>
+        public static DateTime EnsureVietnamTime(this DateTime dt)
+        {
+            if (dt.Kind == DateTimeKind.Utc)
+            {
+                return TimeZoneInfo.ConvertTimeFromUtc(dt, VietnamTimeZone);
+            }
+            return dt;
+        }
+
+        public static DateTime? EnsureVietnamTime(this DateTime? dt)
+        {
+            if (!dt.HasValue) return null;
+            return dt.Value.EnsureVietnamTime();
+        }
+
+        public static string EnsureVietnamTimeString(this DateTime dt, string format = "dd/MM/yyyy HH:mm")
+        {
+            return dt.EnsureVietnamTime().ToString(format);
+        }
+
+        public static string EnsureVietnamTimeString(this DateTime? dt, string format = "dd/MM/yyyy HH:mm")
+        {
+            return dt.HasValue ? dt.Value.EnsureVietnamTimeString(format) : "";
+        }
+
+        /// <summary>
         /// Chuyển đổi mốc thời gian (UTC) thành chuỗi hiển thị khoảng thời gian tương đối (relative time).
         /// Hỗ trợ cả thời điểm quá khứ (vừa xong, phút trước, giờ trước, hôm qua, ngày trước...)
         /// và thời điểm tương lai / hạn chót (hôm nay, ngày mai, trong X ngày, quá hạn X ngày...).

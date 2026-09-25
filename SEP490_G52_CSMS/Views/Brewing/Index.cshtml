@@ -415,7 +415,23 @@ else
 
         function getTimeAgo(dateStrOrRaw) {
             if (!dateStrOrRaw) return '';
-            const date = new Date(dateStrOrRaw);
+            let date = new Date(dateStrOrRaw);
+            if (isNaN(date.getTime())) {
+                const parts = String(dateStrOrRaw).split(' ');
+                if (parts.length >= 2) {
+                    const dParts = parts[0].split('/');
+                    const tParts = parts[1].split(':');
+                    if (dParts.length === 3 && tParts.length >= 2) {
+                        const day = parseInt(dParts[0], 10);
+                        const month = parseInt(dParts[1], 10) - 1;
+                        const year = parseInt(dParts[2], 10);
+                        const hours = parseInt(tParts[0], 10);
+                        const mins = parseInt(tParts[1], 10);
+                        const secs = tParts.length > 2 ? parseInt(tParts[2], 10) : 0;
+                        date = new Date(year, month, day, hours, mins, secs);
+                    }
+                }
+            }
             if (isNaN(date.getTime())) return '';
             const now = new Date();
             const diffSecs = Math.max(0, Math.floor((now - date) / 1000));
@@ -468,14 +484,8 @@ else
                 type: 'POST',
                 data: { orderId: orderId, variantId: variantId, isCompleted: isChecked },
                 success: function (res) {
-                    if (res && res.orderCompleted) {
-                        // Nếu đơn hoàn thành 100%, xóa keys và reload danh sách đơn
-                        const keysToRemove = Array.from(checkedItemKeys).filter(k => k.startsWith(`${orderId}_`));
-                        keysToRemove.forEach(k => checkedItemKeys.delete(k));
-                        saveCheckedState();
-                        expandedOrderIds.delete(orderId);
-                        fetchLiveOrders();
-                    }
+                    // Không tự động hoàn thành đơn khi check hết món.
+                    // Đơn hàng chỉ hoàn thành khi bartender chủ động bấm nút "Hoàn thành đơn".
                 },
                 error: function (xhr) {
                     // Nếu lỗi thì revert lại trạng thái giao diện
@@ -505,10 +515,15 @@ else
             }
 
             if (isChecked) {
-                // Tích chọn toàn bộ -> Hoàn thành toàn bộ đơn
-                executeCompleteOrder(orderId);
+                // Tích chọn toàn bộ món trong đơn (không tự động hoàn thành đơn)
+                order.items.forEach(it => {
+                    const key = `${orderId}_${it.variantId}`;
+                    if (!checkedItemKeys.has(key)) {
+                        toggleItemCheck(orderId, it.variantId, true);
+                    }
+                });
             } else {
-                // Hủy tích chọn toàn bộ
+                // Hủy tích chọn toàn bộ món trong đơn
                 order.items.forEach(it => {
                     const key = `${orderId}_${it.variantId}`;
                     if (checkedItemKeys.has(key)) {

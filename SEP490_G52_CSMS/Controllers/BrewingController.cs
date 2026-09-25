@@ -161,8 +161,8 @@ namespace SEP490_G52_CSMS.Controllers
                 tableNumber = o.TableNumber,
                 customerName = o.CustomerName,
                 orderNotes = o.OrderNotes,
-                orderTime = o.OrderTime.ToVietnamTimeString("dd/MM/yyyy HH:mm"),
-                orderTimeRaw = o.OrderTime.ToString("o"),
+                orderTime = o.OrderTime.EnsureVietnamTimeString("dd/MM/yyyy HH:mm"),
+                orderTimeRaw = o.OrderTime.EnsureVietnamTime().ToString("yyyy-MM-ddTHH:mm:ss"),
                 brewingStatus = o.BrewingStatus,
                 displayStatus = o.DisplayStatus,
                 items = o.Items.Select((item, index) => new

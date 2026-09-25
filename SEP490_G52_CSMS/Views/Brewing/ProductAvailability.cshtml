@@ -350,7 +350,7 @@ else
                                                 <i class="bi bi-person-fill text-muted me-1"></i>@(item.UpdatedByName ?? "Nhân viên")
                                             </div>
                                             <div class="text-muted" style="font-size: 0.78rem;">
-                                                <i class="bi bi-clock me-1"></i>@item.UpdatedAt.Value.ToLocalTime().ToString("HH:mm - dd/MM/yyyy")
+                                                <i class="bi bi-clock me-1"></i>@item.UpdatedAt.Value.ToVietnamTime().ToString("HH:mm - dd/MM/yyyy")
                                             </div>
                                         }
                                         else

@@ -303,32 +303,26 @@ namespace SEP490_G52_CSMS.Services
             int completedItems = order.OrderItems?.Count(oi => oi.IsCompleted) ?? 0;
             bool allCompleted = totalItems > 0 && completedItems == totalItems;
 
-            if (allCompleted)
+            if (order.BrewingStatus == "Waiting for Brewing" || order.BrewingStatus == "Waiting")
             {
-                if (order.BrewingStatus != "Completed" && order.BrewingStatus != "Done")
+                if (completedItems > 0)
                 {
-                    order.BrewingStatus = "Completed";
+                    order.BrewingStatus = "Brewing in Progress";
                 }
             }
-            else
+            else if (!allCompleted && (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done"))
             {
-                if (order.BrewingStatus == "Completed" || order.BrewingStatus == "Done")
-                {
-                    order.BrewingStatus = "Brewing in Progress";
-                }
-                else if (order.BrewingStatus == "Waiting for Brewing" && completedItems > 0)
-                {
-                    order.BrewingStatus = "Brewing in Progress";
-                }
+                order.BrewingStatus = "Brewing in Progress";
             }
 
             await _orderRepo.UpdateOrderAsync(order);
 
             string msg = allCompleted
-                ? "Đơn hàng đã hoàn thành tất cả các món!"
+                ? "Đã pha chế xong tất cả các món. Vui lòng bấm [Hoàn thành đơn] để kết thúc đơn hàng."
                 : (newStatus ? "Đã đánh dấu món hoàn thành." : "Đã chuyển món về đang pha chế.");
 
-            return (true, msg, allCompleted, completedItems, totalItems);
+            // Mặc dù tất cả các item của đơn đã hoàn thành nhưng phải đợi bartender click hoàn thành đơn mới được tính là đơn hoàn thành
+            return (true, msg, false, completedItems, totalItems);
         }
 
         public async Task<bool> ReportMissingIngredientsAsync(string orderId, List<int> missingVariantIds, string? reason, int bartenderUserId)

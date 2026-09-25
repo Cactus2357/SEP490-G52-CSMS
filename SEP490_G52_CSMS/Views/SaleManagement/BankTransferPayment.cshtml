@@ -448,15 +448,7 @@
                     <div class="pb-2 mb-2 border-bottom border-dark" id="recPaymentSection" style="font-size: 12px;">
                         <div class="d-flex justify-content-between">
                             <span>Hình thức TT:</span>
-                            <span id="recPaymentMethod" class="fw-semibold">Chuyển khoản</span>
-                        </div>
-                        <div class="d-flex justify-content-between d-none" id="recSplitCashRow">
-                            <span>- Tiền mặt:</span>
-                            <span id="recCashAmount" class="font-monospace">0 đ</span>
-                        </div>
-                        <div class="d-flex justify-content-between d-none" id="recSplitBankRow">
-                            <span>- Chuyển khoản:</span>
-                            <span id="recBankAmount" class="font-monospace">0 đ</span>
+                            <span id="recPaymentMethod" class="fw-semibold">CK</span>
                         </div>
                     </div>
 
@@ -1017,30 +1009,16 @@
 
                     document.getElementById('recTotal').innerText = data.totalAmount.toLocaleString('vi-VN') + ' đ';
 
-                    // Payment Method & Split breakdown
+                    // Payment Method (Tiền mặt, CK hoặc CK + Tiền mặt)
                     var payMethodEl = document.getElementById('recPaymentMethod');
                     if (payMethodEl) {
-                        if (data.paymentMethod === 'Split' || (data.cashAmount > 0 && data.bankAmount > 0)) {
-                            payMethodEl.innerText = 'Kết hợp (TM + CK)';
-                            var splitCashRow = document.getElementById('recSplitCashRow');
-                            var splitBankRow = document.getElementById('recSplitBankRow');
-                            if (splitCashRow) {
-                                splitCashRow.classList.remove('d-none');
-                                document.getElementById('recCashAmount').innerText = (data.cashAmount || 0).toLocaleString('vi-VN') + ' đ';
-                            }
-                            if (splitBankRow) {
-                                splitBankRow.classList.remove('d-none');
-                                document.getElementById('recBankAmount').innerText = (data.bankAmount || 0).toLocaleString('vi-VN') + ' đ';
-                            }
+                        var pMethod = (data.paymentMethod || '').trim();
+                        if (pMethod === 'Split' || (data.cashAmount > 0 && data.bankAmount > 0) || pMethod.indexOf('Thu thêm') !== -1 || pMethod.indexOf('+') !== -1) {
+                            payMethodEl.innerText = 'CK + Tiền mặt';
+                        } else if (pMethod === 'Bank Transfer' || pMethod === 'BankTransfer' || pMethod === 'Transfer' || pMethod === 'CK') {
+                            payMethodEl.innerText = 'CK';
                         } else {
-                            var pMethodText = 'Chuyển khoản';
-                            if (data.paymentMethod === 'Cash') pMethodText = 'Tiền mặt';
-                            else if (data.paymentMethod) pMethodText = data.paymentMethod;
-                            payMethodEl.innerText = pMethodText;
-                            var splitCashRow = document.getElementById('recSplitCashRow');
-                            var splitBankRow = document.getElementById('recSplitBankRow');
-                            if (splitCashRow) splitCashRow.classList.add('d-none');
-                            if (splitBankRow) splitBankRow.classList.add('d-none');
+                            payMethodEl.innerText = 'Tiền mặt';
                         }
                     }
 

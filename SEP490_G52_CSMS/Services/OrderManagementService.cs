@@ -128,9 +128,9 @@ namespace SEP490_G52_CSMS.Services
                 TransactionId = "#TXN" + new Random().Next(1000, 9999), // Mock transaction id
                 TotalItems = order.OrderItems.Sum(oi => oi.Quantity),
                 TotalAmount = order.TotalAmount,
-                CreatedAtStr = order.CreatedAt.ToVietnamTimeString("HH:mm"),
-                PaidAtStr = order.CreatedAt.AddMinutes(2).ToVietnamTimeString("HH:mm"),
-                CompletedAtStr = order.CreatedAt.AddMinutes(4).ToVietnamTimeString("HH:mm")
+                CreatedAtStr = order.CreatedAt.EnsureVietnamTimeString("HH:mm"),
+                PaidAtStr = order.CreatedAt.AddMinutes(2).EnsureVietnamTimeString("HH:mm"),
+                CompletedAtStr = order.CreatedAt.AddMinutes(4).EnsureVietnamTimeString("HH:mm")
             };
 
             foreach (var item in order.OrderItems)
