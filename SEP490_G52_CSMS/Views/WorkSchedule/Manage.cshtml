@@ -238,7 +238,6 @@
             <div class="modal-body p-4">
                 <!-- Cashier: mandatory single select (BR01) -->
                 <div class="mb-3">
-                    <div id="cashierCheckedInNotice" class="d-none"></div>
                     <label class="form-label fw-bold text-primary mb-1">
                         <i class="bi bi-person-fill me-1"></i>Nhân viên thu ngân (Bắt buộc)
                     </label>
@@ -577,22 +576,11 @@
 
             const existing = scheduleData[cellKey(day, shiftId)];
             const cashierSelect = document.getElementById('cashierSelect');
-            const noticeEl = document.getElementById('cashierCheckedInNotice');
             const isCashierCheckedIn = existing && existing.cashier && existing.cashier.isCheckedIn;
 
             if (cashierSelect) {
                 cashierSelect.value = existing && existing.cashier ? existing.cashier.id : '';
                 cashierSelect.disabled = !!isCashierCheckedIn;
-            }
-
-            if (noticeEl) {
-                if (isCashierCheckedIn) {
-                    noticeEl.className = 'alert alert-warning py-2 px-3 small mb-2 d-flex align-items-center shadow-sm';
-                    noticeEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning flex-shrink-0"></i><div><strong>Thu ngân ' + escapeHtml(existing.cashier.name) + ' đã điểm danh vào ca.</strong> Không thể đổi hoặc xóa thu ngân khỏi ca làm việc đang hoạt động.</div>';
-                } else {
-                    noticeEl.className = 'd-none';
-                    noticeEl.innerHTML = '';
-                }
             }
 
             tempBartenders = existing && Array.isArray(existing.bartenders) ? existing.bartenders.slice() : [];
