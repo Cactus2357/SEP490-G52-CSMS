@@ -367,7 +367,7 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> CreateReceipt()
         {
-            ViewBag.CurrentTime = DateTime.UtcNow.ToString("dd/MM/yyyy : HH\\hmm");
+            ViewBag.CurrentTime = DateTime.UtcNow.ToVietnamTimeString("dd/MM/yyyy : HH\\hmm");
             var materials = await _context.Materials.OrderBy(m => m.MaterialName).ToListAsync();
             return View(materials);
         }

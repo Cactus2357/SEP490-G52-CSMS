@@ -1,3 +1,4 @@
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Models;
 using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.ViewModels;
@@ -47,7 +48,7 @@ namespace SEP490_G52_CSMS.Services
                 model.Items.Add(new LeaveRequestItemViewModel
                 {
                     ApplicationId = item.ApplicationId,
-                    SubmittedAt = item.SubmittedAt.ToString("dd/MM/yyyy"),
+                    SubmittedAt = item.SubmittedAt.ToVietnamTimeString("HH:mm - dd/MM/yyyy"),
                     Status = displayStatus,
                     StartDate = item.StartDate.ToString("dd/MM/yyyy"),
                     EndDate = item.EndDate.ToString("dd/MM/yyyy"),
@@ -213,7 +214,7 @@ namespace SEP490_G52_CSMS.Services
             var initials = GetInitials(emp.FullName);
             var shiftDetails = string.IsNullOrWhiteSpace(request.LeaveShifts) ? "Ca sáng - 07:00-14:00" : request.LeaveShifts;
             var dateStr = request.StartDate.ToString("dd/MM/yyyy");
-            var submittedStr = request.SubmittedAt.ToString("dd/MM - HH:mm");
+            var submittedStr = request.SubmittedAt.ToVietnamTimeString("HH:mm - dd/MM/yyyy");
 
             var displayStatus = request.Status switch
             {

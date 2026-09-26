@@ -749,14 +749,14 @@ namespace SEP490_G52_CSMS.Services
             string incomingName = incomingEmployee.FullName ?? incomingEmployee.Username ?? "Thu ngân tiếp nhận";
             string shiftDisplayName = handover.FixedShift?.ShiftName ?? $"Ca {handover.ShiftId}";
 
-            string emergencyNote = $"[BÀN GIAO ĐỘT XUẤT] Bàn giao lúc: {handoverTime:HH:mm dd/MM/yyyy}. Thu ngân bàn giao: {outgoingName} -> Thu ngân nhận: {incomingName}. Tiền kiểm kê két: {model.ActualCash:N0} đ. Lý do: {model.EmergencyReason ?? "Nghỉ đột xuất"}. {(string.IsNullOrWhiteSpace(model.Notes) ? "" : "Ghi chú: " + model.Notes)}";
+            string emergencyNote = $"[BÀN GIAO ĐỘT XUẤT] Bàn giao lúc: {handoverTime:HH:mm dd/MM/yyyy}. Thu ngân bàn giao: {outgoingName} -> Thu ngân nhận: {incomingName}. Lý do: {model.EmergencyReason ?? "Nghỉ đột xuất"}. {(string.IsNullOrWhiteSpace(model.Notes) ? "" : "Ghi chú: " + model.Notes)}";
 
             // Cập nhật thông tin bàn giao đột xuất vào ca làm việc hiện tại
             handover.IncomingCashierId = model.IncomingCashierId.Value;
             handover.MachineCashRevenue = cashRev;
             handover.BankTransferRevenue = bankRev;
             handover.CashRefundAmount = cashRefunds;
-            handover.ActualCash = model.ActualCash;
+            handover.ActualCash = theoretical;
             handover.TheoreticalCash = theoretical;
             handover.Notes = emergencyNote;
             handover.EmergencyReason = model.EmergencyReason;
@@ -775,7 +775,7 @@ namespace SEP490_G52_CSMS.Services
                 SubmittedAt = DateTime.UtcNow,
                 Status = "Submitted",
                 Aspiration = $"Bàn giao ca đột xuất: Thu ngân bàn giao [{outgoingName}] -> Thu ngân nhận ca [{incomingName}]. Ca: {shiftDisplayName} ngày {handover.HandoverDate:dd/MM/yyyy}. Thời gian bàn giao: {handoverTime:HH:mm dd/MM/yyyy}.",
-                Reason = $"Bàn giao ca đột xuất giữa ca. Lý do: {model.EmergencyReason ?? "Nghỉ đột xuất"}. Tiền mặt kiểm kê: {model.ActualCash:N0} đ. {(string.IsNullOrWhiteSpace(model.Notes) ? "" : "Ghi chú: " + model.Notes)}"
+                Reason = $"Bàn giao ca đột xuất giữa ca. Lý do: {model.EmergencyReason ?? "Nghỉ đột xuất"}. {(string.IsNullOrWhiteSpace(model.Notes) ? "" : "Ghi chú: " + model.Notes)}"
             };
 
             if (_shiftChangeRepository != null)

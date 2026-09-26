@@ -27,9 +27,9 @@
         <div>
             <strong>Quy trình Bàn Giao Đột Xuất:</strong>
             <ul class="mb-0 ps-3 small">
-                <li>Kiểm kê và xác nhận số tiền mặt thực tế trong két tại thời điểm bàn giao đột xuất.</li>
+                <li>Bàn giao ca đột xuất <strong>không yêu cầu kiểm kê hay khai báo tiền mặt</strong>. Người tiếp nhận sẽ tiếp tục sử dụng két tiền và phiên làm việc hiện tại.</li>
                 <li>Hệ thống sẽ <strong>tự động tạo và gửi đơn yêu cầu đổi ca</strong> cho Quản lý chi nhánh để ghi nhận sự thay đổi ca làm việc (thu ngân bàn giao, thu ngân nhận ca, thời gian bàn giao).</li>
-                <li>Sau khi xác nhận, <strong>thu ngân tiếp nhận sẽ dùng tiếp tài khoản của thu ngân trước</strong> để tiếp tục bán hàng trong ca trực này.</li>
+                <li>Sau khi xác nhận mật khẩu người tiếp nhận, <strong>thu ngân tiếp nhận sẽ dùng tiếp tài khoản của thu ngân trước</strong> để tiếp tục bán hàng trong ca trực này.</li>
             </ul>
         </div>
     </div>
@@ -56,6 +56,7 @@
         <input type="hidden" asp-for="InitialCash" id="initialCashHidden" />
         <input type="hidden" asp-for="MachineCashRevenue" id="machineRevenueHidden" />
         <input type="hidden" asp-for="CashRefundAmount" id="cashRefundHidden" />
+        <input type="hidden" asp-for="ActualCash" value="@Model.TheoreticalCash" />
 
         <div class="row g-3">
             <!-- CỘT TRÁI: DOANH THU ĐẾN THỜI ĐIỂM BÀN GIAO -->
@@ -95,39 +96,8 @@
                             </table>
                         </div>
 
-                        <hr class="my-3" />
-
-                        <h6 class="fw-bold mb-3 text-dark">
-                            <i class="bi bi-cash-stack me-1"></i>ĐỐI SOÁT KÉT TẠI THỜI ĐIỂM NGHỈ ĐỘT XUẤT
-                        </h6>
-
-                        <div class="mb-3">
-                            <label asp-for="ActualCash" class="form-label fw-semibold small text-dark mb-1">
-                                Tiền mặt thực tế trong két bàn giao lại: <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="text" class="form-control form-control-lg fw-bold" id="actualCashDisplay"
-                                       placeholder="Nhập số tiền thực tế trong két" value="@Model.ActualCash.ToString("N0")" inputmode="numeric" autocomplete="off" required />
-                                <input asp-for="ActualCash" type="hidden" id="actualCashInput" value="@Model.ActualCash" />
-                                <span class="input-group-text bg-light fw-bold">đ</span>
-                            </div>
-                            <span asp-validation-for="ActualCash" class="text-danger small"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small text-muted mb-1">Chênh lệch két:</label>
-                            <div class="input-group input-group-sm">
-                                <input type="text" class="form-control bg-light fw-bold"
-                                       id="discrepancyDisplay" readonly value="0 đ" />
-                                <span class="input-group-text bg-light">đ</span>
-                            </div>
-                        </div>
-
-                        <div class="mb-0">
-                            <label asp-for="Notes" class="form-label small text-muted mb-1">Ghi chú bổ sung:</label>
-                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="2"
-                                      placeholder="Ghi chú thêm nếu cần..."></textarea>
-                            <span asp-validation-for="Notes" class="text-danger small"></span>
+                        <div class="alert alert-info py-2 px-3 mb-0 small">
+                            <i class="bi bi-info-circle-fill me-1"></i> <strong>Lưu ý:</strong> Do bàn giao ca đột xuất, hệ thống <strong>không yêu cầu kiểm kê hay khai báo tiền mặt</strong>. Két tiền và phiên làm việc sẽ được nhân viên tiếp nhận tiếp tục sử dụng để bán hàng.
                         </div>
                     </div>
                 </div>
@@ -185,7 +155,7 @@
                             <span asp-validation-for="IncomingCashierId" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label asp-for="IncomingPassword" class="form-label small fw-semibold text-dark mb-1">
                                 Mật khẩu của người tiếp quản: <span class="text-danger">*</span>
                             </label>
@@ -199,6 +169,13 @@
                                 </button>
                             </div>
                             <span asp-validation-for="IncomingPassword" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Notes" class="form-label small text-muted mb-1">Ghi chú bổ sung:</label>
+                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="2"
+                                      placeholder="Ghi chú thêm nếu cần..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger small"></span>
                         </div>
 
                         <div class="d-flex gap-2 mt-4">
@@ -219,15 +196,8 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script>
-        const initialCash   = @Model.InitialCash;
-        const machineRevenue = @Model.MachineCashRevenue;
-        const theoretical   = initialCash + machineRevenue;
-
-        const actualDisplay = document.getElementById('actualCashDisplay');
-        const actualInput   = document.getElementById('actualCashInput');
-        const discDisplay   = document.getElementById('discrepancyDisplay');
-        const reasonSelect  = document.getElementById('reasonSelect');
-        const customReason  = document.getElementById('customReasonInput');
+        const reasonSelect = document.getElementById('reasonSelect');
+        const customReason = document.getElementById('customReasonInput');
 
         reasonSelect.addEventListener('change', function() {
             if (this.value === 'Khác') {
@@ -244,38 +214,6 @@
                 reasonSelect.options[reasonSelect.selectedIndex].value = this.value || 'Khác';
             }
         });
-
-        function updateCalculations() {
-            const actual = parseFloat(actualInput.value) || 0;
-            const diff   = actual - theoretical;
-            const fmt    = new Intl.NumberFormat('vi-VN').format(Math.abs(diff));
-
-            if (diff > 0) {
-                discDisplay.value = '+' + fmt + ' đ';
-                discDisplay.classList.remove('text-danger');
-                discDisplay.classList.add('text-success');
-            } else if (diff < 0) {
-                discDisplay.value = '-' + fmt + ' đ';
-                discDisplay.classList.remove('text-success');
-                discDisplay.classList.add('text-danger');
-            } else {
-                discDisplay.value = '0 đ';
-                discDisplay.classList.remove('text-success', 'text-danger');
-            }
-        }
-
-        if (actualDisplay) {
-            actualDisplay.addEventListener('input', function () {
-                const raw = this.value.replace(/\D/g, '');
-                const num = parseInt(raw, 10) || 0;
-                this.value = num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : (raw === '0' ? '0' : '');
-                actualInput.value = num;
-                updateCalculations();
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', updateCalculations);
-        updateCalculations();
 
         function togglePassword() {
             const input = document.getElementById('passwordInput');

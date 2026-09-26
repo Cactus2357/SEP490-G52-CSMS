@@ -408,7 +408,9 @@
 
                         let inspectRows = "";
                         r.items.forEach(item => {
-                            let released = parseFloat(item.quantityReleased) || parseFloat(item.quantityRequested) || 0;
+                            let released = (item.quantityReleased !== null && item.quantityReleased !== undefined && item.quantityReleased !== '')
+                                ? (parseFloat(item.quantityReleased) || 0)
+                                : (parseFloat(item.quantityRequested) || 0);
                             let catText = item.category ? item.category : (item.materialKind || '');
 
                             inspectRows += `
@@ -487,8 +489,8 @@
                             let catText = item.category ? item.category : (item.materialKind || '');
                             let inspCols = "";
                             if (hasInspection) {
-                                let qRec = item.quantityReceived || '-';
-                                let qAcc = item.quantityAccepted || '-';
+                                let qRec = (item.quantityReceived !== null && item.quantityReceived !== undefined && item.quantityReceived !== '') ? item.quantityReceived : '-';
+                                let qAcc = (item.quantityAccepted !== null && item.quantityAccepted !== undefined && item.quantityAccepted !== '') ? item.quantityAccepted : '-';
                                 let qDef = item.quantityDefective ? parseFloat(item.quantityDefective) : 0;
                                 let defHtml = `<span class="text-success fw-bold">0</span>`;
                                 if (qDef > 0) {
