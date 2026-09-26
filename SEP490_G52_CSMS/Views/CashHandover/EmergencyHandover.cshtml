@@ -134,7 +134,7 @@
                                 <option value="Nhân viên ốm/sốt đột xuất">Nhân viên ốm / sốt / vấn đề sức khỏe</option>
                                 <option value="Gia đình có việc khẩn cấp">Gia đình có việc khẩn cấp</option>
                                 <option value="Sự cố kỹ thuật / Thiết bị">Sự cố kỹ thuật / Thiết bị</option>
-                                <option value="Khác">Lý do khác (nhập bên dưới)</option>
+                                <option value="Khác" id="otherReasonOption" data-is-other="true">Lý do khác (nhập bên dưới)</option>
                             </select>
                             <input type="text" id="customReasonInput" class="form-control form-control-sm d-none"
                                    placeholder="Nhập chi tiết lý do đột xuất..." />
@@ -198,22 +198,32 @@
     <script>
         const reasonSelect = document.getElementById('reasonSelect');
         const customReason = document.getElementById('customReasonInput');
+        const otherReasonOption = document.getElementById('otherReasonOption');
+
+        function isOtherSelected() {
+            return reasonSelect.selectedOptions[0]?.dataset?.isOther === 'true';
+        }
+
+        function syncCustomReason() {
+            if (isOtherSelected() && otherReasonOption) {
+                const text = customReason.value.trim();
+                otherReasonOption.value = text ? text : 'Khác';
+            }
+        }
 
         reasonSelect.addEventListener('change', function() {
-            if (this.value === 'Khác') {
+            if (isOtherSelected()) {
                 customReason.classList.remove('d-none');
                 customReason.required = true;
+                syncCustomReason();
+                customReason.focus();
             } else {
                 customReason.classList.add('d-none');
                 customReason.required = false;
             }
         });
 
-        customReason.addEventListener('input', function() {
-            if (reasonSelect.value === 'Khác') {
-                reasonSelect.options[reasonSelect.selectedIndex].value = this.value || 'Khác';
-            }
-        });
+        customReason.addEventListener('input', syncCustomReason);
 
         function togglePassword() {
             const input = document.getElementById('passwordInput');
@@ -249,6 +259,7 @@
         }
 
         emergencyHandoverForm.addEventListener('submit', function (e) {
+            syncCustomReason();
             // First check jQuery validation or HTML5 validation before proceeding
             if (window.jQuery && $(this).valid && !$(this).valid()) {
                 e.preventDefault();
@@ -257,6 +268,7 @@
             }
 
             if (this.dataset.confirmed === 'true') {
+                syncCustomReason();
                 if (window.jQuery && $(this).valid && !$(this).valid()) {
                     e.preventDefault();
                     resetEmergencyButton();
@@ -275,11 +287,13 @@
             }
 
             e.preventDefault();
+            syncCustomReason();
             const form = this;
             showConfirmModal(
                 'Xác nhận bàn giao đột xuất',
                 'Bạn có chắc chắn muốn bàn giao ca đột xuất giữa chừng? Hệ thống sẽ tự động gửi đơn đổi ca tới Quản lý và thu ngân tiếp nhận sẽ dùng tiếp phiên làm việc này để bán hàng.',
                 function () {
+                    syncCustomReason();
                     form.dataset.confirmed = 'true';
                     $(form).submit();
                 },

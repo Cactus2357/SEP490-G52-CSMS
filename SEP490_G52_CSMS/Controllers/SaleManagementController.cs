@@ -514,6 +514,57 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpGet]
         public async Task<IActionResult> BankTransferPayment(string orderId)
         {
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible)
+            {
+                ViewBag.NotInShift = true;
+                ViewBag.ReasonCode = reasonCode;
+                ViewBag.NotInShiftMessage = message;
+
+                if (reasonCode == "OutsideOperatingHours")
+                {
+                    ViewBag.RedirectAction = "Index";
+                    ViewBag.RedirectController = "Home";
+                    ViewBag.RedirectButtonText = "Về Trang Chủ";
+                }
+                else if (reasonCode == "NotScheduled" || reasonCode == "NotCheckedIn" || reasonCode == "ShiftEnded")
+                {
+                    if (reasonCode == "NotCheckedIn")
+                    {
+                        ViewBag.IsLogoutRequired = true;
+                        ViewBag.RedirectButtonText = "Đăng xuất để Chấm công Face Login";
+                    }
+                    else
+                    {
+                        ViewBag.RedirectAction = "EmployeeIndex";
+                        ViewBag.RedirectController = "WorkSchedule";
+                        ViewBag.RedirectButtonText = "Xem lịch làm việc";
+                    }
+                }
+                else if (reasonCode == "FirstShiftNotOpened")
+                {
+                    ViewBag.RedirectAction = "OpenShift";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Đến màn hình Mở ca";
+                }
+                else if (reasonCode == "MidShiftNotHandedOver")
+                {
+                    ViewBag.RedirectAction = "Handover";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Đến màn hình Nhận bàn giao";
+                }
+                else
+                {
+                    ViewBag.RedirectAction = "History";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Xem lịch sử giao ca";
+                }
+
+                return View(new SaleOrderDetailViewModel { OrderId = orderId ?? "" });
+            }
+
             var details = await _orderService.GetOrderDetailsAsync(orderId);
             if (details == null)
             {
@@ -522,7 +573,6 @@ namespace SEP490_G52_CSMS.Controllers
             }
 
             DbInitializer.EnsureTablesCreated(_context);
-            var branchId = await GetUserBranchIdAsync();
             var branchSetting = await _context.BranchSettings.FirstOrDefaultAsync(s => s.BranchId == branchId && s.IsSePayActive);
             if (branchSetting == null)
             {
@@ -549,6 +599,11 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> SelectBankTransfer(string orderId)
         {
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible) return BadRequest(new { success = false, message });
+
             var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
@@ -562,6 +617,11 @@ namespace SEP490_G52_CSMS.Controllers
         [HttpPost]
         public async Task<IActionResult> SimulateBankTransferSuccess(string orderId)
         {
+            var branchId = await GetUserBranchIdAsync();
+            var cashierId = await GetUserCashierIdAsync();
+            var (isEligible, reasonCode, message) = await CheckCashierEligibilityAsync(cashierId, branchId);
+            if (!isEligible) return BadRequest(new { success = false, message });
+
             var order = await _context.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.OrderId == orderId);
             if (order == null) return NotFound(new { success = false, message = "Order not found" });
 
@@ -571,9 +631,6 @@ namespace SEP490_G52_CSMS.Controllers
             string txCode = "QR-MANUAL-" + DateTime.UtcNow.ToString("HHmmss") + "-" + Random.Shared.Next(100, 999);
             order.PaymentStatus = "TransferSuccessPending";
             order.PaymentMethod = order.CashPaid > 0 ? $"Split (CK:{transferRemaining:N0}đ + TM:{order.CashPaid:N0}đ)" : $"Bank Transfer (Xác nhận thủ công #{txCode} - Đã nhận:{transferRemaining:N0}đ)";
-
-            var cashierId = await GetUserCashierIdAsync();
-            var branchId = await GetUserBranchIdAsync();
 
             var payment = new Payment
             {

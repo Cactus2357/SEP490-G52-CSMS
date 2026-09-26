@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
+using SEP490_G52_CSMS.Services;
 using SEP490_G52_CSMS.Services.Interfaces;
 using System.Security.Claims;
 
@@ -15,12 +16,14 @@ namespace SEP490_G52_CSMS.Controllers
         private readonly IOrderService _orderService;
         private readonly IMenuService _menuService;
         private readonly CSMSAppDbContext _context;
+        private readonly ICashierWorkEligibilityService _cashierEligibilityService;
 
-        public BrewingController(IOrderService orderService, IMenuService menuService, CSMSAppDbContext context)
+        public BrewingController(IOrderService orderService, IMenuService menuService, CSMSAppDbContext context, ICashierWorkEligibilityService? cashierEligibilityService = null)
         {
             _orderService = orderService;
             _menuService = menuService;
             _context = context;
+            _cashierEligibilityService = cashierEligibilityService ?? new CashierWorkEligibilityService(context);
         }
 
         private async Task<string> GetUserBranchIdAsync()
@@ -53,9 +56,15 @@ namespace SEP490_G52_CSMS.Controllers
 
         private async Task<(bool isEligible, string reasonCode, string message)> CheckBartenderEligibilityAsync(int bartenderId, string branchId)
         {
-            if (User.IsInRole("RManager") || User.IsInRole("BranchManager") || User.IsInRole("Cashier"))
+            if (User.IsInRole("RManager") || User.IsInRole("BranchManager"))
             {
                 return (true, "Eligible", "Hợp lệ");
+            }
+
+            if (User.IsInRole("Cashier"))
+            {
+                var cashierResult = await _cashierEligibilityService.CheckEligibilityAsync(bartenderId, branchId);
+                return (cashierResult.IsEligible, cashierResult.ReasonCode, cashierResult.Message);
             }
 
             var today = DateTime.Today;
@@ -284,6 +293,46 @@ namespace SEP490_G52_CSMS.Controllers
                 ViewBag.NotInShift = true;
                 ViewBag.ReasonCode = reasonCode;
                 ViewBag.NotInShiftMessage = message;
+
+                if (reasonCode == "OutsideOperatingHours")
+                {
+                    ViewBag.RedirectAction = "Index";
+                    ViewBag.RedirectController = "Home";
+                    ViewBag.RedirectButtonText = "Về Trang Chủ";
+                }
+                else if (reasonCode == "NotScheduled" || reasonCode == "NotCheckedIn" || reasonCode == "ShiftEnded")
+                {
+                    if (reasonCode == "NotCheckedIn")
+                    {
+                        ViewBag.IsLogoutRequired = true;
+                        ViewBag.RedirectButtonText = "Đăng xuất để Chấm công Face Login";
+                    }
+                    else
+                    {
+                        ViewBag.RedirectAction = "EmployeeIndex";
+                        ViewBag.RedirectController = "WorkSchedule";
+                        ViewBag.RedirectButtonText = "Xem lịch làm việc";
+                    }
+                }
+                else if (reasonCode == "FirstShiftNotOpened")
+                {
+                    ViewBag.RedirectAction = "OpenShift";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Đến màn hình Mở ca";
+                }
+                else if (reasonCode == "MidShiftNotHandedOver")
+                {
+                    ViewBag.RedirectAction = "Handover";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Đến màn hình Nhận bàn giao";
+                }
+                else
+                {
+                    ViewBag.RedirectAction = "History";
+                    ViewBag.RedirectController = "CashHandover";
+                    ViewBag.RedirectButtonText = "Xem lịch sử giao ca";
+                }
+
                 return View(new BartenderProductAvailabilityViewModel { BranchId = branchId });
             }
 

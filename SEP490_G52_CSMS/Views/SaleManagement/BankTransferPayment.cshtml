@@ -60,6 +60,74 @@
     }
 </style>
 
+@if (ViewBag.NotInShift == true)
+{
+    <div class="container py-4 my-auto" style="min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center;">
+        <div class="row justify-content-center w-100">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden my-3">
+                    <div class="card-header bg-danger text-white py-3 px-4 border-0">
+                        <h4 class="card-title fw-bold mb-0">
+                            <i class="bi bi-exclamation-octagon-fill me-2"></i>CHƯA ĐỦ ĐIỀU KIỆN MỞ BÁN HÀNG
+                        </h4>
+                    </div>
+                    <div class="card-body p-4 p-md-5 text-center">
+                        <div class="mb-4">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 100px; height: 100px;">
+                                <i class="bi bi-clock-history display-4"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-2">
+                                @(ViewBag.ReasonCode == "OutsideOperatingHours" ? "Ngoài Khung Giờ Bán Hàng (06:00 - 24:00)" :
+                                 (ViewBag.ReasonCode == "NotScheduled" ? "Chưa Có Lịch Ca Trực Hiện Tại" : 
+                                 (ViewBag.ReasonCode == "NotCheckedIn" ? "Chưa Điểm Danh Chấm Công Vào Ca" : 
+                                 (ViewBag.ReasonCode == "FirstShiftNotOpened" ? "Ca Đầu Ngày Chưa Được Mở Ca" : 
+                                 (ViewBag.ReasonCode == "ShiftClosed" ? "Ca Làm Việc Đã Được Đóng / Khóa Sổ" : 
+                                 (ViewBag.ReasonCode == "ShiftEnded" ? "Ca Làm Việc Đã Kết Thúc (Đã Ra Ca)" : "Chưa Nhận Bàn Giao Ca"))))))
+                            </h4>
+                            <p class="text-muted fs-5 mb-0">
+                                @ViewBag.NotInShiftMessage
+                            </p>
+                        </div>
+
+                        <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-dark py-3 px-4 rounded-3 text-start small mb-4">
+                            <i class="bi bi-info-circle-fill me-2 text-warning"></i>
+                            <strong>Quy định bán hàng cho Thu ngân:</strong> Bạn chỉ được phép mở màn hình bán hàng và thanh toán khi thỏa mãn:
+                            <ul class="mb-0 mt-1">
+                                <li>Trong khung giờ mở bán chính thức của hệ thống (<strong>06:00 – 24:00 hàng ngày</strong>).</li>
+                                <li>Có ca làm việc trong lịch phân công tại thời điểm hiện tại.</li>
+                                <li>Đã <strong>điểm danh chấm công (Check-in)</strong> vào ca làm việc.</li>
+                                <li>Đã thực hiện <strong>Mở ca đầu ngày</strong> (nếu ca 1) hoặc <strong>Nhận bàn giao ca</strong> (nếu ca 2, 3...).</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            @if (ViewBag.IsLogoutRequired == true || ViewBag.ReasonCode == "NotCheckedIn")
+                            {
+                                <a href="@Url.Action("Logout", "Auth")" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất để Chấm công Face Login
+                                </a>
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-outline-primary btn-lg px-4 py-2.5 rounded-pill fw-semibold shadow-sm">
+                                    <i class="bi bi-calendar-check me-2"></i>Xem lịch làm việc
+                                </a>
+                            }
+                            else if (!string.IsNullOrEmpty(ViewBag.RedirectAction))
+                            {
+                                <a asp-action="@ViewBag.RedirectAction" asp-controller="@ViewBag.RedirectController" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>@ViewBag.RedirectButtonText
+                                </a>
+                            }
+                            <a href="/Home/Index" class="btn btn-outline-secondary btn-lg px-4 py-2.5 rounded-pill fw-semibold">
+                                <i class="bi bi-house me-2"></i>Về Trang Chủ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
 <div class="container-fluid mt-3 pb-5">
     <div class="row g-4">
         <!-- Left Column: Order Review -->
@@ -444,14 +512,6 @@
                         </div>
                     </div>
 
-                    <!-- Payment details in receipt (Hidden in Delivery Mode) -->
-                    <div class="pb-2 mb-2 border-bottom border-dark" id="recPaymentSection" style="font-size: 12px;">
-                        <div class="d-flex justify-content-between">
-                            <span>Hình thức TT:</span>
-                            <span id="recPaymentMethod" class="fw-semibold">CK</span>
-                        </div>
-                    </div>
-
                     <!-- Delivery Summary (Shown only in Delivery Mode) -->
                     <div id="recDeliveryTotalItemsBox" class="pb-2 mb-2 border-bottom border-dark d-none">
                         <div class="d-flex justify-content-between fw-bold">
@@ -480,8 +540,11 @@
         </div>
     </div>
 </div>
+}
 
 @section Scripts {
+@if (ViewBag.NotInShift != true)
+{
     <script>
         // Hàm định dạng số tiền chuẩn VNĐ (vd: 12500 -> "12.500")
         function formatCurrency(amount) {
@@ -1037,3 +1100,5 @@
         }
     </script>
 }
+}
+
