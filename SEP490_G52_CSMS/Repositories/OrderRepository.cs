@@ -52,8 +52,9 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<int> GetOrdersCountByDateAsync(DateTime date)
         {
+            string prefix = $"MH{date:yyMMdd}-";
             return await _context.Orders
-                .Where(o => o.CreatedAt.Date == date.Date)
+                .Where(o => o.OrderId != null && o.OrderId.StartsWith(prefix))
                 .CountAsync();
         }
 

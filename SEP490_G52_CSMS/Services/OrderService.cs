@@ -94,7 +94,7 @@ namespace SEP490_G52_CSMS.Services
                 VoucherCode = appliedVoucherCode,
                 BranchId = branchId,
                 CashierId = cashierId,
-                CreatedAt = date,
+                CreatedAt = DateTime.UtcNow,
                 TotalAmount = totalAmount,
                 PaymentStatus = "Unpaid",
                 BrewingStatus = "Waiting",

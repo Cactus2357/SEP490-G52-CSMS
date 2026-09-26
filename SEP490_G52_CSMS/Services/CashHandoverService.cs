@@ -433,7 +433,7 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
-            var theoretical = handover.InitialCash + cashRev;
+            var theoretical = handover.InitialCash + cashRev - cashRefunds;
             var discrepancy = model.ActualCash - theoretical;
 
             if (discrepancy != 0 && string.IsNullOrWhiteSpace(model.Notes))
@@ -523,7 +523,7 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 activeHandover.BranchId, activeHandover.OutgoingCashierId, activeHandover.OpenedAt, null);
 
-            var theoretical = activeHandover.InitialCash + cashRev;
+            var theoretical = activeHandover.InitialCash + cashRev - cashRefunds;
 
             return new CloseShiftViewModel
             {
@@ -538,7 +538,7 @@ namespace SEP490_G52_CSMS.Services
                 InitialCash = activeHandover.InitialCash,
                 MachineCashRevenue = cashRev,
                 BankTransferRevenue = bankRev,
-                CashRefundAmount = 0,
+                CashRefundAmount = cashRefunds,
                 ActualCash = theoretical,
                 RetainedCashForTomorrow = 0,
                 ReceiverName = string.Empty,
@@ -597,7 +597,7 @@ namespace SEP490_G52_CSMS.Services
             var (cashRev, bankRev, cashRefunds) = await _cashHandoverRepository.GetShiftSalesStatsAsync(
                 handover.BranchId, handover.OutgoingCashierId, handover.OpenedAt, DateTime.UtcNow);
 
-            var theoretical = handover.InitialCash + cashRev;
+            var theoretical = handover.InitialCash + cashRev - cashRefunds;
             var discrepancy = model.ActualCash - theoretical;
 
             handover.IncomingCashierId = model.OutgoingCashierId;
@@ -849,7 +849,7 @@ namespace SEP490_G52_CSMS.Services
                 TotalCount = total,
                 Items = items.Select(ch =>
                 {
-                    var theoretical = ch.InitialCash + ch.MachineCashRevenue;
+                    var theoretical = ch.TheoreticalCash > 0 ? ch.TheoreticalCash : (ch.InitialCash + ch.MachineCashRevenue - ch.CashRefundAmount);
                     var discrepancy = ch.ActualCash - theoretical;
 
                     string sessionType;

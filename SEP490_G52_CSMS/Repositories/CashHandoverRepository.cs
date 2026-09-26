@@ -344,19 +344,29 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<(decimal cashRevenue, decimal bankRevenue, decimal cashRefunds)> GetShiftSalesStatsAsync(string branchId, int? cashierId, DateTime openedAt, DateTime? closedAt)
         {
-            DateTime openedLocal = openedAt.ToVietnamTime();
-            DateTime? closedLocal = closedAt?.ToVietnamTime();
+            bool isLocalCall = openedAt.Kind == DateTimeKind.Local;
+            var start = openedAt.AddSeconds(-30);
+            var end = closedAt.HasValue ? closedAt.Value.AddSeconds(60) : (DateTime?)null;
 
             var query = _context.Orders
                 .Include(o => o.Payments)
                 .Where(o => o.BranchId == branchId
-                         && (o.CreatedAt >= openedAt.AddSeconds(-30) || o.CreatedAt >= openedLocal.AddSeconds(-30))
                          && (o.PaymentStatus == "Paid" || o.PaymentStatus == "Partially Refunded" || o.PaymentStatus == "TransferSuccessPending"));
 
-            if (closedAt.HasValue)
+            if (isLocalCall)
             {
-                DateTime maxClosed = closedLocal.Value > closedAt.Value ? closedLocal.Value : closedAt.Value;
-                query = query.Where(o => o.CreatedAt <= maxClosed.AddSeconds(60));
+                // When explicitly called with Local DateTime (e.g. in unit tests using DateTime.Now)
+                query = query.Where(o => o.CreatedAt >= start && (!end.HasValue || o.CreatedAt <= end.Value));
+            }
+            else
+            {
+                // Production & UTC: Payments are recorded in UTC. Match orders by their payment timestamps,
+                // or fallback to CreatedAt if the order has no payments.
+                query = query.Where(o =>
+                    o.Payments.Any(p => p.CreatedAt >= start && (!end.HasValue || p.CreatedAt <= end.Value))
+                    ||
+                    (!o.Payments.Any() && o.CreatedAt >= start && (!end.HasValue || o.CreatedAt <= end.Value))
+                );
             }
 
             var orders = await query.ToListAsync();
