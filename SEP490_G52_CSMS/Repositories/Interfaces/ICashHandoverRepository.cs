@@ -82,5 +82,8 @@ namespace SEP490_G52_CSMS.Repositories.Interfaces
 
         /// <summary> Thêm đơn xin đổi ca tự động khi bàn giao ca đột xuất </summary>
         Task AddShiftChangeRequestAsync(ShiftChangeRequest request);
+
+        /// <summary> Tự động đóng các ca làm việc còn đang mở (Active) từ các ngày trước khi sang ngày mới </summary>
+        Task<int> AutoCloseStaleActiveHandoversAsync(string? branchId = null);
     }
 }

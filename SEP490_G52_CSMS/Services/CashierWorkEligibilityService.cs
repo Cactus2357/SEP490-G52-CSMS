@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Commons;
 using SEP490_G52_CSMS.Commons.Constants;
 using SEP490_G52_CSMS.Models;
 using SEP490_G52_CSMS.Models.ViewModels;
+using SEP490_G52_CSMS.Repositories.Interfaces;
 using SEP490_G52_CSMS.Services.Interfaces;
 
 namespace SEP490_G52_CSMS.Services
@@ -9,14 +11,40 @@ namespace SEP490_G52_CSMS.Services
     public class CashierWorkEligibilityService : ICashierWorkEligibilityService
     {
         private readonly CSMSAppDbContext _context;
+        private readonly ICashHandoverRepository? _cashHandoverRepository;
 
-        public CashierWorkEligibilityService(CSMSAppDbContext context)
+        public CashierWorkEligibilityService(CSMSAppDbContext context, ICashHandoverRepository? cashHandoverRepository = null)
         {
             _context = context;
+            _cashHandoverRepository = cashHandoverRepository;
         }
 
         public async Task<CashierEligibilityResult> CheckEligibilityAsync(int cashierId, string branchId)
         {
+            if (_cashHandoverRepository != null)
+            {
+                await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync(branchId);
+            }
+            else
+            {
+                var vtToday = DateTime.UtcNow.ToVietnamTime().Date;
+                var staleList = await _context.CashHandovers
+                    .Where(ch => ch.BranchId == branchId && ch.Status == CashHandoverConstants.ActiveStatus && ch.HandoverDate.Date < vtToday)
+                    .ToListAsync();
+                if (staleList.Any())
+                {
+                    foreach (var s in staleList)
+                    {
+                        s.Status = CashHandoverConstants.ClosedStatus;
+                        s.ClosedAt = s.OpenedAt.AddHours(8);
+                        s.ActualCash = s.ActualCash > 0 ? s.ActualCash : (s.InitialCash + s.MachineCashRevenue - s.CashRefundAmount);
+                        s.RetainedCash = s.ActualCash;
+                        s.Notes = (s.Notes ?? "") + " [TỰ ĐỘNG ĐÓNG CA DO QUA NGÀY MỚI]";
+                    }
+                    await _context.SaveChangesAsync();
+                }
+            }
+
             var today = DateTime.Today;
             var yesterday = today.AddDays(-1);
             var nowTime = DateTime.Now.TimeOfDay;

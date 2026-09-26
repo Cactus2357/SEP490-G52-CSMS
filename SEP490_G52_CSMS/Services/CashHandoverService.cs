@@ -37,7 +37,8 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<string> DetermineCurrentShiftPhaseAsync(int cashierId, string branchId)
         {
-            var today = DateTime.Today;
+            await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync(branchId);
+            var today = DateTime.UtcNow.ToVietnamTime().Date;
             var activeHandover = await _cashHandoverRepository.GetActiveHandoverAsync(cashierId, today)
                               ?? await _cashHandoverRepository.GetCurrentActiveHandoverForBranchAsync(branchId, today);
 
@@ -67,11 +68,13 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<OpenShiftViewModel?> GetOpenShiftModelAsync(int cashierId)
         {
-            var today = DateTime.Today;
+            var today = DateTime.UtcNow.ToVietnamTime().Date;
 
             var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(cashierId);
             var roster = await _cashHandoverRepository.GetCurrentRosterAsync(cashierId, today);
             var branchId = roster?.BranchId ?? cashierEmployee?.BranchId ?? "CN001";
+
+            await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync(branchId);
 
             // Chỉ thu ngân có lịch làm việc hôm nay mới được mở ca
             if (roster == null)
@@ -182,7 +185,8 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<OperationResult> OpenShiftAsync(OpenShiftViewModel model)
         {
-            var today = DateTime.Today;
+            await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync(model.BranchId);
+            var today = DateTime.UtcNow.ToVietnamTime().Date;
 
             var cashierEmployee = await _cashHandoverRepository.GetEmployeeByIdAsync(model.CashierId);
             var roster = await _cashHandoverRepository.GetCurrentRosterAsync(model.CashierId, today);
@@ -299,7 +303,8 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<HandoverViewModel?> GetHandoverModelAsync(int cashierId)
         {
-            var today = DateTime.Today;
+            await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync();
+            var today = DateTime.UtcNow.ToVietnamTime().Date;
 
             var activeHandover = await _cashHandoverRepository.GetActiveHandoverAsync(cashierId, today);
             if (activeHandover == null)
@@ -497,7 +502,8 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<CloseShiftViewModel?> GetCloseShiftModelAsync(int cashierId)
         {
-            var today = DateTime.Today;
+            await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync();
+            var today = DateTime.UtcNow.ToVietnamTime().Date;
 
             var activeHandover = await _cashHandoverRepository.GetActiveHandoverAsync(cashierId, today);
             if (activeHandover == null)
@@ -622,7 +628,8 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<HandoverViewModel?> GetEmergencyHandoverModelAsync(int cashierId)
         {
-            var today = DateTime.Today;
+            await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync();
+            var today = DateTime.UtcNow.ToVietnamTime().Date;
             var activeHandover = await _cashHandoverRepository.GetActiveHandoverAsync(cashierId, today);
 
             if (activeHandover == null)
@@ -829,6 +836,7 @@ namespace SEP490_G52_CSMS.Services
 
         public async Task<HandoverHistoryViewModel> GetHistoryAsync(string branchId, int pageIndex)
         {
+            await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync(branchId);
             var pageSize = CashHandoverConstants.HistoryPageSize;
             var items = await _cashHandoverRepository.GetHandoverHistoryAsync(branchId, pageIndex, pageSize);
             var total = await _cashHandoverRepository.GetHandoverCountAsync(branchId);
@@ -985,6 +993,11 @@ namespace SEP490_G52_CSMS.Services
         public async Task<int?> GetCurrentCashierIdAsync(string branchId)
         {
             return await _cashHandoverRepository.GetCurrentCashierIdAsync(branchId, DateTime.Today, DateTime.Now.TimeOfDay);
+        }
+
+        public async Task<int> AutoCloseStaleActiveHandoversAsync(string? branchId = null)
+        {
+            return await _cashHandoverRepository.AutoCloseStaleActiveHandoversAsync(branchId);
         }
     }
 }

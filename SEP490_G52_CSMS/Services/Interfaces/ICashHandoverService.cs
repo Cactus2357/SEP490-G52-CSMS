@@ -48,5 +48,8 @@ namespace SEP490_G52_CSMS.Services.Interfaces
 
         /// <summary> Xác định loại ca hiện tại: FirstShift, MidShift, LastShift </summary>
         Task<string> DetermineCurrentShiftPhaseAsync(int cashierId, string branchId);
+
+        /// <summary> Tự động đóng các ca làm việc còn đang mở (Active) từ các ngày trước khi sang ngày mới </summary>
+        Task<int> AutoCloseStaleActiveHandoversAsync(string? branchId = null);
     }
 }

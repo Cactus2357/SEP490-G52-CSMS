@@ -136,6 +136,7 @@ builder.Services.AddScoped<IBranchService, SEP490_G52_CSMS.Services.BranchServic
 // CashHandover
 builder.Services.AddScoped<ICashHandoverRepository, SEP490_G52_CSMS.Repositories.CashHandoverRepository>();
 builder.Services.AddScoped<ICashHandoverService, SEP490_G52_CSMS.Services.CashHandoverService>();
+builder.Services.AddHostedService<ShiftAutoCloseBackgroundService>();
 
 // OrderManagement
 builder.Services.AddScoped<IOrderManagementRepository, SEP490_G52_CSMS.Repositories.OrderManagementRepository>();

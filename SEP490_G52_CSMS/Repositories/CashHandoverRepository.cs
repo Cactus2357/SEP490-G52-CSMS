@@ -19,6 +19,8 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<CashHandover?> GetActiveHandoverAsync(int cashierId, DateTime date)
         {
+            await AutoCloseStaleActiveHandoversAsync();
+
             var handover = await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
@@ -26,45 +28,16 @@ namespace SEP490_G52_CSMS.Repositories
                 .Include(ch => ch.Branch)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ch =>
-                    ch.OutgoingCashierId == cashierId &&
+                    (ch.OutgoingCashierId == cashierId || ch.IncomingCashierId == cashierId) &&
                     ch.HandoverDate.Date == date.Date &&
                     ch.Status == CashHandoverConstants.ActiveStatus);
-
-            if (handover == null)
-            {
-                handover = await _context.CashHandovers
-                    .Include(ch => ch.FixedShift)
-                    .Include(ch => ch.OutgoingCashier)
-                    .Include(ch => ch.IncomingCashier)
-                    .Include(ch => ch.Branch)
-                    .AsNoTracking()
-                    .Where(ch => ch.OutgoingCashierId == cashierId && ch.Status == CashHandoverConstants.ActiveStatus)
-                    .OrderByDescending(ch => ch.OpenedAt)
-                    .FirstOrDefaultAsync();
-            }
 
             return handover;
         }
 
         public async Task<CashHandover?> GetLastClosedHandoverForBranchAsync(string branchId)
         {
-            // Auto-close any leftover Active handovers from PAST days for this branch
-            var today = DateTime.Today;
-            var staleActiveHandovers = await _context.CashHandovers
-                .Where(ch => ch.BranchId == branchId && ch.Status == CashHandoverConstants.ActiveStatus && ch.HandoverDate.Date < today.Date)
-                .ToListAsync();
-
-            if (staleActiveHandovers.Any())
-            {
-                foreach (var stale in staleActiveHandovers)
-                {
-                    stale.Status = CashHandoverConstants.ClosedStatus;
-                    stale.ClosedAt = stale.OpenedAt.AddHours(8);
-                    stale.ActualCash = stale.ActualCash > 0 ? stale.ActualCash : (stale.InitialCash + stale.MachineCashRevenue - stale.CashRefundAmount);
-                    stale.Notes = (stale.Notes ?? "") + " [TỰ ĐỘNG ĐÓNG CA QUÁ HẠN KHI MỞ NGÀY MỚI]";
-                }
-                await _context.SaveChangesAsync();
-            }
+            await AutoCloseStaleActiveHandoversAsync(branchId);
 
             return await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
@@ -415,6 +388,7 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<(bool isEligible, string reasonCode, string message, int? activeShiftId, string? shiftPhase)> CheckCashierSaleEligibilityAsync(int cashierId, string branchId)
         {
+            await AutoCloseStaleActiveHandoversAsync(branchId);
             var today = DateTime.Today;
             var yesterday = today.AddDays(-1);
             var nowTime = DateTime.Now.TimeOfDay;
@@ -572,6 +546,8 @@ namespace SEP490_G52_CSMS.Repositories
 
         public async Task<CashHandover?> GetCurrentActiveHandoverForBranchAsync(string branchId, DateTime date)
         {
+            await AutoCloseStaleActiveHandoversAsync(branchId);
+
             var handover = await _context.CashHandovers
                 .Include(ch => ch.FixedShift)
                 .Include(ch => ch.OutgoingCashier)
@@ -579,19 +555,6 @@ namespace SEP490_G52_CSMS.Repositories
                 .Include(ch => ch.Branch)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(ch => ch.BranchId == branchId && ch.HandoverDate.Date == date.Date && ch.Status == CashHandoverConstants.ActiveStatus);
-
-            if (handover == null)
-            {
-                handover = await _context.CashHandovers
-                    .Include(ch => ch.FixedShift)
-                    .Include(ch => ch.OutgoingCashier)
-                    .Include(ch => ch.IncomingCashier)
-                    .Include(ch => ch.Branch)
-                    .AsNoTracking()
-                    .Where(ch => ch.BranchId == branchId && ch.Status == CashHandoverConstants.ActiveStatus)
-                    .OrderByDescending(ch => ch.OpenedAt)
-                    .FirstOrDefaultAsync();
-            }
 
             return handover;
         }
@@ -694,6 +657,58 @@ namespace SEP490_G52_CSMS.Repositories
         {
             _context.ShiftChangeRequests.Add(request);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> AutoCloseStaleActiveHandoversAsync(string? branchId = null)
+        {
+            var today = DateTime.UtcNow.ToVietnamTime().Date;
+            var query = _context.CashHandovers
+                .Where(ch => ch.Status == CashHandoverConstants.ActiveStatus && ch.HandoverDate.Date < today);
+
+            if (!string.IsNullOrEmpty(branchId))
+            {
+                query = query.Where(ch => ch.BranchId == branchId);
+            }
+
+            var staleHandovers = await query.ToListAsync();
+            if (!staleHandovers.Any())
+            {
+                return 0;
+            }
+
+            foreach (var stale in staleHandovers)
+            {
+                var closedTime = stale.OpenedAt.AddHours(8);
+                var endOfDay = stale.HandoverDate.Date.AddDays(1).AddSeconds(-1);
+                if (closedTime > endOfDay)
+                {
+                    closedTime = endOfDay;
+                }
+
+                var (cashRev, bankRev, cashRefunds) = await GetShiftSalesStatsAsync(
+                    stale.BranchId, stale.OutgoingCashierId, stale.OpenedAt, closedTime);
+
+                var theoretical = stale.InitialCash + cashRev - cashRefunds;
+                stale.MachineCashRevenue = cashRev;
+                stale.BankTransferRevenue = bankRev;
+                stale.CashRefundAmount = cashRefunds;
+                stale.TheoreticalCash = theoretical;
+                stale.ActualCash = stale.ActualCash > 0 ? stale.ActualCash : theoretical;
+                stale.RetainedCash = stale.ActualCash;
+                stale.Status = CashHandoverConstants.ClosedStatus;
+                stale.ClosedAt = closedTime;
+                stale.HandoverType = CashHandoverConstants.HandoverTypeLastShift;
+                stale.Notes = (string.IsNullOrWhiteSpace(stale.Notes) ? "" : stale.Notes + " ") + "[TỰ ĐỘNG ĐÓNG CA DO QUA NGÀY MỚI]";
+
+                await SyncAttendanceOnCloseShiftAsync(stale.OutgoingCashierId, stale.ShiftId, stale.HandoverDate);
+                if (stale.IncomingCashierId > 0 && stale.IncomingCashierId != stale.OutgoingCashierId)
+                {
+                    await SyncAttendanceOnCloseShiftAsync(stale.IncomingCashierId, stale.ShiftId, stale.HandoverDate);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return staleHandovers.Count;
         }
     }
 }
