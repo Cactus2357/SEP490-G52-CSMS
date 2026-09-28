@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Core
 {
@@ -26,6 +24,16 @@ namespace SEP490_G52_CSMS.Models.Core
         [Required]
         [Column("address")]
         public string Address { get; set; }
+
+        /// <summary> Số điện thoại chi nhánh </summary>
+        [Column("phone_number")]
+        [StringLength(20)]
+        public string? PhoneNumber { get; set; }
+
+        /// <summary> Email chi nhánh </summary>
+        [Column("email")]
+        [StringLength(150)]
+        public string? Email { get; set; }
 
         /// <summary> Giờ mở cửa </summary>
         [Required]

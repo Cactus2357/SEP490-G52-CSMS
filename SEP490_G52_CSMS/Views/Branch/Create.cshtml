@@ -1,0 +1,114 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchCreateViewModel
+
+@{
+    ViewData["Title"] = "Thêm chi nhánh mới";
+}
+
+<div class="container-fluid px-4 pt-3">
+
+    <section class="branch-main">
+        <div class="branch-header stretch">
+            <div class="w-100 mb-3">
+                <div class="alert alert-info">Vui lòng điền thông tin chi nhánh. Các trường có dấu <span class="text-danger">*</span> là bắt buộc.</div>
+            </div>
+            <div>
+                <h2 class="page-title">THÊM CHI NHÁNH MỚI</h2>
+            </div>
+        </div>
+
+        <div class="branch-form-wrapper">
+            <div class="mb-3">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" data-valmsg-summary="true"></div>
+            </div>
+            <form asp-action="Create" method="post" class="row gx-4 gy-4">
+                <div class="col-lg-7">
+                    <div class="card section-card">
+                        <div class="card-header">Thông tin cơ bản</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="BranchName" class="form-label"></label>
+                                <span class="text-danger">*</span>
+                                <input asp-for="BranchName" class="form-control form-control-lg" />
+                                <span asp-validation-for="BranchName" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="Address" class="form-label"></label>
+                                <span class="text-danger">*</span>
+                                <input asp-for="Address" class="form-control form-control-lg" />
+                                <span asp-validation-for="Address" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <input asp-for="PhoneNumber" type="tel" class="form-control form-control-lg" maxlength="10" placeholder="VD: 0912345678" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control form-control-lg" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card section-card mb-4">
+                        <div class="card-header">Thông tin vận hành</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="OpeningTime" class="form-label"></label>
+                                <input asp-for="OpeningTime" class="form-control form-control-lg" type="time" />
+                                <span asp-validation-for="OpeningTime" class="text-danger"></span>
+                            </div>
+                            <div class="mb-3">
+                                <label asp-for="ClosingTime" class="form-label"></label>
+                                <input asp-for="ClosingTime" class="form-control form-control-lg" type="time" />
+                                <span asp-validation-for="ClosingTime" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card section-card mb-4">
+                        <div class="card-header">Thống tin quản lý</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="ManagerId" class="form-label"></label>
+                                <select asp-for="ManagerId" class="form-select form-select-lg">
+                                    <option value="">Chọn nhân viên quản lý</option>
+                                    @foreach (var manager in Model.Managers)
+                                    {
+                                        <option value="@manager.ManagerId">@manager.ManagerName</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary flex-fill">Lưu dữ liệu</button>
+                        <a class="btn btn-secondary flex-fill" asp-controller="Branch" asp-action="Index">Hủy bỏ</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $('form').on('submit', function(e) {
+            if ($(this).data('confirmed')) return true;
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận tạo chi nhánh',
+                'Bạn có chắc chắn muốn thêm chi nhánh mới này không?',
+                function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                }
+            );
+        });
+    </script>
+}

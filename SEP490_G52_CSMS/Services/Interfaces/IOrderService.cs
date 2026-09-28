@@ -1,0 +1,21 @@
+using SEP490_G52_CSMS.Models.Sales;
+using SEP490_G52_CSMS.Models.ViewModels;
+
+namespace SEP490_G52_CSMS.Services.Interfaces
+{
+    public interface IOrderService
+    {
+        Task<Order> CreateOrderAsync(string recipientName, string branchId, int cashierId, List<OrderItem> items, string? tableNumber = null, string? customerName = null, decimal? subtotalAmount = null, decimal? discountAmount = null, decimal? tradeDiscountAmount = null, string? orderNotes = null, string? voucherCode = null);
+        Task<bool> ProcessPaymentAsync(string orderId, string paymentMethod, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null);
+        Task<bool> ProcessSplitPaymentAsync(string orderId, decimal cashAmount, decimal bankAmount, decimal? customerCash = null, decimal? changeAmount = null, string? bankTransactionCode = null);
+        Task<bool> StartBrewingAsync(string orderId);
+        Task<bool> CompleteBrewingAsync(string orderId);
+        Task<bool> ReportMissingIngredientsAsync(string orderId, List<int> missingVariantIds, string? reason, int bartenderUserId);
+        Task<(bool success, string message, decimal additionalAmount)> ExchangeOrderItemsAsync(string orderId, List<OrderItemExchangeSubmission> newItems, string paymentMethod, decimal? customerCash, decimal? changeAmount, string? reason, int cashierId);
+        Task<OrderHistoryViewModel> GetOrderHistoryAsync(string branchId, string status, DateTime? fromDate, DateTime? toDate, string search, int page = 1);
+        Task<IEnumerable<OrderSummaryViewModel>> GetWaitingAndBrewingOrdersAsync(string? branchId = null);
+        Task<SaleOrderDetailViewModel?> GetOrderDetailsAsync(string orderId);
+        Task<(bool success, string message)> MarkOrderAsDeliveredAsync(string orderId);
+        Task<(bool Success, string Message, bool OrderCompleted, int CompletedItems, int TotalItems)> ToggleOrderItemBrewingAsync(string orderId, int variantId, bool? targetStatus = null);
+    }
+}

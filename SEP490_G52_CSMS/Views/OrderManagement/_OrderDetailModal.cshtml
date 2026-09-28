@@ -1,0 +1,135 @@
+@model SEP490_G52_CSMS.Models.ViewModels.OrderDetailViewModel
+
+<div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border border-dark rounded-0" style="border-width: 2px !important;">
+            
+            <!-- Modal Header -->
+            <div class="modal-header border-0 pb-0">
+                <h4 class="modal-title fw-bold d-flex align-items-center">
+                    <button type="button" class="btn btn-link text-dark p-0 me-2 text-decoration-none fs-4 shadow-none" data-bs-dismiss="modal"><i class="bi bi-arrow-left"></i></button>
+                    Chi tiết đặt hàng
+                </h4>
+            </div>
+            
+            <div class="modal-body px-4 py-3">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="fw-semibold fs-5">@Model.OrderId</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm fw-bold shadow-sm" onclick="printReceiptFromOrderMgmt('@Model.OrderId')">
+                            <i class="bi bi-printer me-1"></i>In Hóa Đơn
+                        </button>
+                        <div class="border border-dark px-3 py-1 fw-semibold">
+                            Trạng thái: @Model.Status
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="border border-dark p-3 h-100" style="border-width: 2px !important;">
+                            <div class="fw-semibold mb-2">Thu ngân</div>
+                            <div class="d-flex align-items-center mt-3">
+                                <div class="rounded-circle border border-dark d-flex align-items-center justify-content-center fw-bold me-3" style="width: 50px; height: 50px;">
+                                    @{ 
+                                        var names = Model.CashierName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                        var initials = names.Length > 1 ? (names[0][0].ToString() + names.Last()[0].ToString()).ToUpper() : Model.CashierName.Substring(0, 1).ToUpper();
+                                    }
+                                    @initials
+                                </div>
+                                <div>
+                                    <div class="fw-bold fs-5">@Model.CashierName</div>
+                                    <div class="text-muted">@Model.ShiftInfo</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border border-dark p-3 h-100" style="border-width: 2px !important;">
+                            <div class="fw-semibold mb-2">Thanh toán</div>
+                            <div class="mt-3">
+                                <div class="fw-bold fs-5">@Model.PaymentMethod</div>
+                                <div class="text-muted">Giao dịch: @Model.TransactionId</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Item List -->
+                <div class="border border-dark p-3 mb-4" style="border-width: 2px !important;">
+                    <div class="fw-semibold mb-3">Danh sách món - @Model.TotalItems món</div>
+                    
+                    <div style="max-height: 250px; overflow-y: auto; padding-right: 6px;">
+                        @foreach (var item in Model.Items)
+                        {
+                            <div class="d-flex justify-content-between mb-2">
+                                <div>
+                                    <div class="fw-semibold">@item.ProductName</div>
+                                    <div class="text-muted small">Size @item.Size x @item.Quantity</div>
+                                </div>
+                                <div class="fw-semibold">
+                                    @item.TotalPrice.ToString("N0") đ
+                                </div>
+                            </div>
+                            <div class="border-bottom border-dark border-1 border-dashed mb-2" style="border-style: dashed !important;"></div>
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3 fw-bold fs-5 pt-2 border-top border-secondary-subtle">
+                        <div>Tổng cộng</div>
+                        <div>@Model.TotalAmount.ToString("N0") đ</div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="mb-2">
+                    <div class="fw-semibold mb-3">Dòng thời gian</div>
+                    <div class="position-relative d-flex justify-content-between px-3 mt-4">
+                        <!-- Horizontal Line -->
+                        <div class="position-absolute border-top border-dark" style="top: 10px; left: 40px; right: 40px; border-width: 2px !important; z-index: 1;"></div>
+                        
+                        <!-- Point 1: Order tạo (Luôn có) -->
+                        <div class="text-center position-relative" style="z-index: 2;">
+                            <div class="rounded-circle bg-dark mx-auto border border-white" style="width: 20px; height: 20px; border-width: 3px !important;"></div>
+                            <div class="mt-2 fw-semibold">@Model.CreatedAtStr</div>
+                            <div class="text-muted small">Order tạo</div>
+                        </div>
+
+                        @if (Model.Status == "Đã hủy")
+                        {
+                            <!-- Point Hủy -->
+                            <div class="text-center position-relative" style="z-index: 2;">
+                                <div class="rounded-circle bg-danger mx-auto border border-white" style="width: 20px; height: 20px; border-width: 3px !important;"></div>
+                                <div class="mt-2 fw-semibold text-danger">@Model.PaidAtStr</div>
+                                <div class="text-danger small fw-semibold">Đã hủy</div>
+                            </div>
+                            <div class="text-center position-relative" style="z-index: 2; opacity: 0;">
+                                <div class="rounded-circle bg-secondary mx-auto border border-white" style="width: 20px; height: 20px; border-width: 3px !important;"></div>
+                            </div>
+                        }
+                        else
+                        {
+                            bool isPaid = Model.PaymentMethod != "Cash" || Model.Status == "Hoàn thành";
+                            bool isDone = Model.Status == "Hoàn thành";
+
+                            <!-- Point 2: Thanh toán -->
+                            <div class="text-center position-relative" style="z-index: 2;">
+                                <div class="rounded-circle @(isPaid ? "bg-dark" : "bg-secondary") mx-auto border border-white" style="width: 20px; height: 20px; border-width: 3px !important;"></div>
+                                <div class="mt-2 fw-semibold @(isPaid ? "" : "text-muted")">@(isPaid ? Model.PaidAtStr : "--:--")</div>
+                                <div class="text-muted small">Thanh toán<br/>thành công</div>
+                            </div>
+
+                            <!-- Point 3: Hoàn thành -->
+                            <div class="text-center position-relative" style="z-index: 2;">
+                                <div class="rounded-circle @(isDone ? "bg-dark" : "bg-secondary") mx-auto border border-white" style="width: 20px; height: 20px; border-width: 3px !important;"></div>
+                                <div class="mt-2 fw-semibold @(isDone ? "" : "text-muted")">@(isDone ? Model.CompletedAtStr : "--:--")</div>
+                                <div class="text-muted small">Hoàn thành</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

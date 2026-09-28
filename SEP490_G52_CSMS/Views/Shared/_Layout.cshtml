@@ -1,49 +1,1006 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@inject SEP490_G52_CSMS.Models.CSMSAppDbContext DbContext
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    // Returns "active" when the current request matches the given controller (and optionally action).
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+
+    Func<string?, string> translateRole = role => role switch
+    {
+        "RManager" => "Tổng công ty",
+        "WarehouseManager" or "WManager" => "Quản lý kho",
+        "BranchManager" => "Quản lý chi nhánh",
+        "Cashier" => "Thu ngân",
+        "Bartender" or "Barista" => "Pha chế",
+        "Busser" => "Phục vụ",
+        "Staff" or "Employee" => "Nhân viên",
+        _ => role ?? "Nhân viên"
+    };
+
+    string? userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+    var displayTitle = "Khách";
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        if (userRole == "RManager")
+        {
+            displayTitle = "Tổng công ty";
+        }
+        else if (userRole == "WarehouseManager" || userRole == "WManager")
+        {
+            displayTitle = "Kho tổng";
+        }
+        else
+        {
+            var branchId = User.FindFirst("BranchId")?.Value;
+            var branch = !string.IsNullOrEmpty(branchId) ? DbContext.Branches.FirstOrDefault(b => b.BranchId == branchId) : null;
+            displayTitle = branch?.BranchName ?? translateRole(userRole);
+        }
+    }
+
+    int unreadCount = 0;
+    List<Notification> notificationsList = new();
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        int userId = 0;
+        int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out userId);
+        var branchId = User.FindFirst("BranchId")?.Value;
+        var allUnread = DbContext.Notifications.AsNoTracking().Where(n => !n.IsRead).ToList();
+        var userUnread = allUnread.Where(n => SEP490_G52_CSMS.Services.NotificationService.IsTargetedForUser(n, userId, userRole, branchId))
+            .OrderByDescending(n => n.CreatedTime).ToList();
+
+        unreadCount = userUnread.Count;
+        notificationsList = userUnread.Take(5).ToList();
+    }
+
+    string shiftDisplayInfo = "";
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        var userIdStr = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdStr, out int empId))
+        {
+            var today = DateTime.Today;
+            var rostersToday = DbContext.WeeklyRosterGrids
+                .Include(r => r.FixedShift)
+                .Where(r => r.EmployeeId == empId && r.AssignmentDate.Date == today)
+                .OrderBy(r => r.FixedShift.StartTime)
+                .ToList();
+
+            if (rostersToday.Any())
+            {
+                var mergedShifts = new List<string>();
+                int i = 0;
+                while (i < rostersToday.Count)
+                {
+                    var current = rostersToday[i];
+                    var startShiftName = current.FixedShift?.ShiftName ?? "Ca";
+                    var startTime = current.FixedShift?.StartTime ?? TimeSpan.Zero;
+                    var endTime = current.FixedShift?.EndTime ?? TimeSpan.Zero;
+                    var endShiftName = startShiftName;
+
+                    int j = i + 1;
+                    while (j < rostersToday.Count)
+                    {
+                        var next = rostersToday[j];
+                        if (next.FixedShift != null && Math.Abs((next.FixedShift.StartTime - endTime).TotalMinutes) <= 5)
+                        {
+                            endTime = next.FixedShift.EndTime;
+                            endShiftName = next.FixedShift.ShiftName;
+                            j++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    var endStr = (endTime.Hours == 23 && endTime.Minutes >= 59) ? "24:00" : endTime.ToString(@"hh\:mm");
+                    string timeRange = $"{startTime:hh\\:mm}-{endStr}";
+                    if (i == j - 1)
+                    {
+                        mergedShifts.Add($"{startShiftName} ({timeRange})");
+                    }
+                    else
+                    {
+                        mergedShifts.Add($"{startShiftName} + {endShiftName} ({timeRange})");
+                    }
+
+                    i = j;
+                }
+                shiftDisplayInfo = string.Join(", ", mergedShifts);
+            }
+            else
+            {
+                shiftDisplayInfo = "Không trong ca";
+            }
+        }
+    }
+}
+<!DOCTYPE html>
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - SEP490_G52_CSMS</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <title>@ViewData["Title"] - CSMS</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/SEP490_G52_CSMS.styles.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+
+    <script>
+        // Persist and restore user theme selection early to prevent color flashing
+        (function () {
+            const savedTheme = localStorage.getItem('user-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.setAttribute('data-theme', savedTheme);
+                
+                // Sync toggle switch state on load
+                const toggleSwitch = document.getElementById('themeToggleSwitch');
+                if (toggleSwitch) {
+                    toggleSwitch.checked = (savedTheme === 'dark');
+                }
+            });
+        })();
+
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            document.body.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('user-theme', nextTheme);
+            
+            const toggleSwitch = document.getElementById('themeToggleSwitch');
+            if (toggleSwitch) {
+                toggleSwitch.checked = (nextTheme === 'dark');
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('toggleIcon');
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+
+            icon.className = isCollapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
+            localStorage.setItem('sidebar-collapsed', isCollapsed ? 'true' : 'false');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                // Remove the no-transition class to allow smooth hover/toggle animations after page load
+                setTimeout(() => {
+                    sidebar.classList.remove('no-transition');
+                }, 50);
+            }
+        });
+    </script>
 </head>
+
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SEP490_G52_CSMS</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+
+    <div class="app-layout">
+        <div class="sidebar no-transition" id="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-text">CSMS</span>
+                <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Thu gọn / Mở rộng sidebar">
+                    <i class="bi bi-chevron-left" id="toggleIcon"></i>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+            <ul class="sidebar-menu">
+                @if (User.IsInRole("RManager"))
+                {
+                    <partial name="_Sidebar.RManager" />
+                }
+                else if (User.IsInRole("WarehouseManager"))
+                {
+                    <partial name="_Sidebar.WarehouseManager" />
+                }
+                else if (User.IsInRole("BranchManager"))
+                {
+                    <partial name="_Sidebar.BranchManager" />
+                }
+                else if (User.IsInRole("Cashier"))
+                {
+                    <partial name="_Sidebar.Cashier" />
+                }
+                else if (User.IsInRole("Bartender") || User.IsInRole("Barista"))
+                {
+                    <partial name="_Sidebar.Bartender" />
+                }
+                else if (User.IsInRole("Busser"))
+                {
+                    <partial name="_Sidebar.Busser" />
+                }
+            </ul>
+            <script>
+                (function () {
+                    const savedCollapsed = localStorage.getItem('sidebar-collapsed');
+                    if (savedCollapsed === 'true') {
+                        document.getElementById('sidebar').classList.add('collapsed');
+                        const icon = document.getElementById('toggleIcon');
+                        if (icon) icon.className = 'bi bi-chevron-right';
+                    }
+                })();
+            </script>
+        </div>
+
+        <div class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left d-flex align-items-center gap-3">
+                    <!-- Search Input Box Container -->
+                    <div class="position-relative" style="width: 340px; max-width: 100%; flex-shrink: 0;">
+                        <div class="input-group">
+                            <span class="input-group-text border-end-0 rounded-start-pill header-search-icon py-1.5 px-3">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" id="navbarSearchInput" class="form-control border-start-0 rounded-end-pill header-search-input py-1.5" placeholder="Tìm kiếm..." autocomplete="off" oninput="handleNavbarSearch(this.value)" style="font-size: 0.85rem;">
+                        </div>
+                        <div id="navbarSearchSuggestions" class="list-group position-absolute w-100 mt-1 shadow-lg d-none" style="top: 100%; left: 0; z-index: 2000; max-height: 250px; overflow-y: auto; border-radius: 8px;">
+                            <!-- Suggestions will render here -->
+                        </div>
+                    </div>
+
+                    <!-- Pure Plain Text: Live Clock (No seconds) & Shift Info (No icons, No badges) -->
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    {
+                        <div class="text-nowrap text-secondary fw-medium" style="font-size: 0.88rem;">
+                            <span id="navLiveDateTime">@DateTime.UtcNow.ToVietnamTimeString("dd/MM/yyyy HH:mm")</span>
+                            @if (!string.IsNullOrEmpty(shiftDisplayInfo))
+                            {
+                                <span> - @shiftDisplayInfo</span>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="header-branch">
+                    <span class="h5 fw-bold mb-0 header-title-text">@displayTitle</span>
+                </div>
+                <div class="header-right">
+                    <!-- =========================================================
+                         NOTIFICATION BELL DROPDOWN
+                    ========================================================== -->
+                    <div class="dropdown me-2" id="notificationDropdownWrapper">
+                        <button class="btn btn-link position-relative p-0 header-icon-btn border-0 text-decoration-none dropdown-toggle no-caret rounded-circle d-flex align-items-center justify-content-center"
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notificationBellBtn">
+                            <i class="bi bi-bell fs-5"></i>
+                            @if (unreadCount > 0)
+                            {
+                                <span class="position-absolute badge rounded-pill bg-danger"
+                                      id="notificationBadgeCount"
+                                      style="font-size: 0.62rem; padding: 0.25em 0.4em; top: -2px; right: -2px; line-height: 1;">
+                                    @unreadCount
+                                </span>
+                            }
+                        </button>
+
+                        <div class="dropdown-menu dropdown-menu-end p-0 shadow border-0 rounded-3 navbar-dropdown-menu"
+                             style="width: 440px;"
+                             id="notificationDropdownMenu">
+
+                            <!-- Header -->
+                            <div class="bg-dark text-white rounded-top-3 px-3 py-2 d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-uppercase small">Thông báo</span>
+                                <span class="badge bg-secondary" id="notifHeaderCount">@unreadCount mới</span>
+                            </div>
+
+                            <!-- Notification list (scrollable) -->
+                            <ul class="list-unstyled m-0" id="notificationListContainer"
+                                style="max-height: 480px; overflow-y: auto;">
+                                @if (notificationsList != null && notificationsList.Any())
+                                {
+                                    foreach (var n in notificationsList)
+                                    {
+                                        <li class="notif-item border-bottom px-3 py-2 @(n.IsRead ? "" : "notif-unread")"
+                                            data-id="@n.NotificationId"
+                                            data-url="@n.ResourceUrl"
+                                            role="button"
+                                            style="cursor: pointer; transition: background 0.15s;">
+                                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        @if (!n.IsRead)
+                                                        {
+                                                            <span class="d-inline-block rounded-circle bg-primary flex-shrink-0"
+                                                                  style="width: 8px; height: 8px;"></span>
+                                                        }
+                                                        <strong class="notif-item-title" style="font-size: 0.82rem;">@n.Title</strong>
+                                                    </div>
+                                                    <p class="m-0 mt-1 text-secondary text-wrap" style="font-size: 0.78rem; line-height: 1.35;">@n.Message</p>
+                                                    @if (!string.IsNullOrEmpty(n.ResourceUrl))
+                                                    {
+                                                        <span class="small text-primary fw-bold text-decoration-none" style="font-size: 0.72rem;">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Chi tiết
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <small class="text-muted flex-shrink-0" style="font-size: 0.7rem; white-space: nowrap;">@n.CreatedTime.ToVietnamTimeString("HH:mm dd/MM")</small>
+                                            </div>
+                                        </li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li class="p-4 text-center text-muted small" id="notifEmptyMsg">Không có thông báo mới nào.</li>
+                                }
+                            </ul>
+
+                            <!-- Footer -->
+                            <div class="border-top px-3 py-2 d-flex justify-content-between align-items-center notif-footer rounded-bottom-3">
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary"
+                                        onclick="openAllNotificationsModal(); event.stopPropagation();">
+                                    <i class="bi bi-list-ul me-1"></i>Xem tất cả
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-danger"
+                                        onclick="clearAllNotifications(); event.stopPropagation();">
+                                    <i class="bi bi-check2-all me-1"></i>Đánh dấu tất cả đã đọc
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="btn user-avatar-btn rounded-circle p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="userAvatarDropdownBtn">
+                            <div class="user-avatar-img rounded-circle d-flex align-items-center justify-content-center @(User.Identity?.IsAuthenticated == true ? "" : "unauthenticated")"
+                                 style="width: 40px; height: 40px; overflow: hidden;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end navbar-dropdown-menu">
+                            @if (User.Identity != null && User.Identity.IsAuthenticated)
+                            {
+                                <li class="dropdown-header">
+                                    <div class="fw-bold user-name-text">@User.Identity.Name</div>
+                                    <small class="user-role-text text-muted">Vai trò: @translateRole(userRole)</small>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Auth" asp-action="Profile">
+                                        <i class="bi bi-person-circle me-2"></i> Hồ sơ cá nhân
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <div class="px-3 d-flex align-items-center justify-content-between">
+                                        <div class="small user-theme-text text-muted fw-semibold m-0">
+                                            <i class="bi bi-moon-stars me-2"></i> Giao diện
+                                        </div>
+                                        <div class="form-check form-switch m-0 p-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="themeToggleSwitch" onclick="toggleTheme()" style="cursor: pointer;">
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                                    </button>
+                                </li>
+                            }
+                            else
+                            {
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Auth" asp-action="Login">
+                                        <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content-area">
+                <div class="container-fluid px-4">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["InfoMessage"] != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+                            <i class="bi bi-info-circle-fill me-2"></i>@TempData["InfoMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                </div>
+                @RenderBody()
+            </main>
+        </div>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - SEP490_G52_CSMS - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_LogoutModal" />
+
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Toast Containers -->
+    <!-- Bottom Right Container (for Success) -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+        <div id="appToastBottom" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i id="toastIconBottom" class="bi"></i>
+                    <span id="toastMessageBottom" class="fw-semibold"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Center Container (for Warning and Danger) -->
+    <div class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1100; margin-top: 60px;">
+        <div id="appToastTop" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i id="toastIconTop" class="bi"></i>
+                    <span id="toastMessageTop" class="fw-semibold"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .no-caret::after {
+            display: none !important;
+        }
+        .hover-bg-light:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+
+    <script>
+        function showToast(message, type = 'success') {
+            const isTop = (type === 'warning' || type === 'danger' || type === 'error');
+            const toastEl = document.getElementById(isTop ? 'appToastTop' : 'appToastBottom');
+            if (!toastEl) return;
+
+            toastEl.className = 'toast align-items-center border-0 shadow';
+            const iconEl = document.getElementById(isTop ? 'toastIconTop' : 'toastIconBottom');
+            const msgEl = document.getElementById(isTop ? 'toastMessageTop' : 'toastMessageBottom');
+            const closeBtn = toastEl.querySelector('.btn-close');
+
+            toastEl.classList.remove('text-white', 'text-dark', 'bg-success', 'bg-warning', 'bg-danger');
+
+            if (type === 'success') {
+                toastEl.classList.add('bg-success', 'text-white');
+                iconEl.className = 'bi bi-check-circle-fill fs-5 text-white';
+                closeBtn.classList.add('btn-close-white');
+            } else if (type === 'warning') {
+                toastEl.classList.add('bg-warning', 'text-dark');
+                iconEl.className = 'bi bi-exclamation-triangle-fill fs-5 text-dark';
+                closeBtn.classList.remove('btn-close-white');
+            } else {
+                toastEl.classList.add('bg-danger', 'text-white');
+                iconEl.className = 'bi bi-x-circle-fill fs-5 text-white';
+                closeBtn.classList.add('btn-close-white');
+            }
+
+            msgEl.textContent = message;
+
+            const toast = new bootstrap.Toast(toastEl, { delay: 7000 });
+            toast.show();
+        }
+
+        // ── Notification: click item to mark read ────────────────────────────
+        $(document).on('click', '.notif-item', function (e) {
+            e.stopPropagation();
+            const $item = $(this);
+            const id = $item.data('id');
+            const url = $item.data('url');
+
+            $.post('/Notification/MarkRead/' + id, function (res) {
+                if (res.success) {
+                    // Remove unread dot & styling
+                    $item.removeClass('notif-unread');
+                    $item.find('.bg-primary.rounded-circle').remove();
+
+                    // Decrement badge
+                    var $badge = $('#notificationBadgeCount');
+                    var current = parseInt($badge.text()) || 0;
+                    var next = Math.max(0, current - 1);
+                    if (next === 0) {
+                        $badge.fadeOut();
+                        $('#notifHeaderCount').text('0 mới');
+                    } else {
+                        $badge.text(next);
+                        $('#notifHeaderCount').text(next + ' mới');
+                    }
+                }
+            });
+
+            // Navigate to resource URL if present
+            if (url && url.trim() !== '') {
+                setTimeout(function () { window.location.href = url; }, 250);
+            }
+        });
+
+        // ── Notification: clear all ──────────────────────────────────────────
+        function clearAllNotifications() {
+            $.post('/Notification/ClearAll', function (res) {
+                if (res.success) {
+                    $('#notificationBadgeCount').fadeOut();
+                    $('#notifHeaderCount').text('0 mới');
+                    // Remove unread dots
+                    $('#notificationListContainer .notif-unread').removeClass('notif-unread');
+                    $('#notificationListContainer .bg-primary.rounded-circle').remove();
+                    showToast('Đã đánh dấu tất cả thông báo là đã đọc.', 'success');
+                }
+            });
+        }
+
+        // ── Notification: open full history modal ────────────────────────────
+        function openAllNotificationsModal() {
+            var dropdownEl = document.getElementById('notificationBellBtn');
+            var dd = dropdownEl ? bootstrap.Dropdown.getInstance(dropdownEl) : null;
+
+            function loadNotifications() {
+                $('#allNotificationsModalBody').html('<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm me-2"></div> Đang tải...</div>');
+                $.getJSON('/Notification/All', function (data) {
+                    if (!data || data.length === 0) {
+                        $('#allNotificationsModalBody').html('<div class="p-5 text-center text-muted"><i class="bi bi-bell-slash fs-2 d-block mb-2"></i>Chưa có thông báo nào.</div>');
+                        return;
+                    }
+                    var html = '<ul class="list-unstyled m-0">';
+                    data.forEach(function (n) {
+                        var unreadDot = !n.isRead
+                            ? '<span class="d-inline-block rounded-circle bg-primary flex-shrink-0 me-2" style="width:8px;height:8px;"></span>'
+                            : '<span class="d-inline-block flex-shrink-0 me-2" style="width:8px;height:8px;"></span>';
+                        var linkBtn = n.resourceUrl
+                            ? '<a href="' + n.resourceUrl + '" class="small text-primary text-decoration-none"><i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết</a>'
+                            : '';
+                        var readCls = n.isRead ? 'opacity-65' : 'fw-semibold';
+                        html += '<li class="border-bottom px-4 py-3 ' + (n.isRead ? '' : 'bg-primary bg-opacity-10') + '">';
+                        html += '<div class="d-flex align-items-start gap-2">';
+                        html += unreadDot;
+                        html += '<div class="flex-grow-1">';
+                        html += '<div class="d-flex justify-content-between align-items-center">';
+                        html += '<strong class="' + readCls + '" style="font-size:0.85rem;">' + n.title + '</strong>';
+                        html += '<small class="text-muted ms-2" style="font-size:0.72rem;white-space:nowrap;">' + n.createdTime + '</small>';
+                        html += '</div>';
+                        html += '<p class="mb-1 mt-1 text-secondary" style="font-size:0.8rem;line-height:1.35;">' + n.message + '</p>';
+                        html += linkBtn;
+                        html += '</div></div></li>';
+                    });
+                    html += '</ul>';
+                    $('#allNotificationsModalBody').html(html);
+                }).fail(function () {
+                    $('#allNotificationsModalBody').html('<div class="p-4 text-danger text-center">Không thể tải thông báo.</div>');
+                });
+            }
+
+            function showModal() {
+                var modalEl = document.getElementById('allNotificationsModal');
+                var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+                loadNotifications();
+            }
+
+            if (dd) {
+                // Wait until dropdown finishes hiding to avoid backdrop z-index conflict
+                var wrapper = document.getElementById('notificationDropdownWrapper');
+                function onHidden() {
+                    wrapper.removeEventListener('hidden.bs.dropdown', onHidden);
+                    showModal();
+                }
+                wrapper.addEventListener('hidden.bs.dropdown', onHidden);
+                dd.hide();
+            } else {
+                showModal();
+            }
+        }
+
+        // Accent-insensitive diacritics removal for Javascript client-side search
+        function removeVietnameseDiacritics(str) {
+            if (!str) return '';
+            return str.normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .replace(/đ/g, 'd')
+                      .replace(/Đ/g, 'D')
+                      .toLowerCase();
+        }
+
+        const currentUserRole = '@(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")';
+        const rolePages = {
+            "RManager": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Quản lý - quản lý chi nhánh", url: "/BranchManager" },
+                { name: "Quản lý chi nhánh", url: "/Branch" },
+                { name: "Quản lý danh mục", url: "/ProductCategories" },
+                { name: "Quản lý sản phẩm", url: "/Product" },
+                { name: "Báo cáo doanh thu", url: "/Reporting/Revenue" },
+                { name: "Xuất file báo cáo", url: "/Reporting/Export" },
+                { name: "Quản lý nhân viên", url: "/Employee" },
+                { name: "Quản lý thực đơn", url: "/MenuManagement" },
+                { name: "Quản lý đơn đặt hàng", url: "/OrderManagement" },
+                { name: "Quản lý voucher", url: "/VoucherManagement" },
+                { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
+                { name: "Quản lý nguyên liệu kho", url: "/Warehouse/Index" },
+                { name: "Thống kê xuất nhập nguyên liệu", url: "/Warehouse/Statistics" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "WManager": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
+                { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
+                { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
+                { name: "Thống kê xuất nhập nguyên liệu", url: "/Warehouse/Statistics" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "WarehouseManager": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Quản lý nguyên liệu", url: "/Warehouse/Index" },
+                { name: "Quản lý nhập kho", url: "/Warehouse/ImportHistory" },
+                { name: "Quản lý xuất kho", url: "/Warehouse/ExportRequests" },
+                { name: "Thống kê xuất nhập nguyên liệu", url: "/Warehouse/Statistics" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "BranchManager": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Quản lý nhân viên", url: "/Employee" },
+                { name: "Quản lý lịch làm việc", url: "/WorkSchedule" },
+                { name: "Quản lý thực đơn", url: "/MenuManagement" },
+                { name: "Quản lý sản phẩm", url: "/Brewing/ProductAvailability" },
+                { name: "Quản lý nghỉ phép", url: "/LeaveRequest/ManagerIndex" },
+                { name: "Quản lý đổi ca", url: "/ShiftChange" },
+                { name: "Bàn giao ca", url: "/ShiftHandover" },
+                { name: "Quản lý đơn đặt hàng", url: "/OrderManagement" },
+                { name: "Quản lý voucher", url: "/VoucherManagement" },
+                { name: "Cài đặt chung", url: "/Settings" },
+                { name: "Tồn kho chi nhánh", url: "/BranchWarehouse" },
+                { name: "Đặt hàng kho", url: "/BranchWarehouse/CreateRequest" },
+                { name: "Lịch sử đặt hàng", url: "/BranchWarehouse/RequestHistory" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Cashier": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Bán hàng", url: "/SaleManagement/CreateOrder" },
+                { name: "Lịch sử đơn hàng", url: "/SaleManagement/OrderHistory" },
+                { name: "Đóng, Mở/Bàn giao ca", url: "/CashHandover" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Bartender": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Danh sách đơn hàng", url: "/Brewing" },
+                { name: "Quản lý sản phẩm", url: "/Brewing/ProductAvailability" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Barista": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Danh sách đơn hàng", url: "/Brewing" },
+                { name: "Quản lý sản phẩm", url: "/Brewing/ProductAvailability" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Busser": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Staff": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ],
+            "Employee": [
+                { name: "Trang chủ", url: "/Home" },
+                { name: "Lịch làm việc", url: "/WorkSchedule/EmployeeIndex" },
+                { name: "Xin nghỉ phép", url: "/LeaveRequest" },
+                { name: "Xin chuyển ca", url: "/ShiftChange/EmployeeIndex" },
+                { name: "Hồ sơ cá nhân", url: "/Auth/Profile" }
+            ]
+        };
+
+        let selectedSuggestionIndex = -1;
+        let filteredSuggestions = [];
+
+        function handleNavbarSearch(val) {
+            const listEl = document.getElementById('navbarSearchSuggestions');
+            if (!val.trim()) {
+                listEl.classList.add('d-none');
+                listEl.innerHTML = '';
+                filteredSuggestions = [];
+                selectedSuggestionIndex = -1;
+                return;
+            }
+
+            const cleanVal = removeVietnameseDiacritics(val);
+            const pages = rolePages[currentUserRole] || [];
+            
+            filteredSuggestions = pages.filter(p => {
+                if (window.CSMSSearch) {
+                    return window.CSMSSearch.fuzzyMatchAny(val, [p.name, p.url]);
+                }
+                return removeVietnameseDiacritics(p.name).includes(cleanVal) || 
+                       removeVietnameseDiacritics(p.url).includes(cleanVal);
+            });
+
+            if (filteredSuggestions.length === 0) {
+                listEl.classList.add('d-none');
+                listEl.innerHTML = '';
+                selectedSuggestionIndex = -1;
+                return;
+            }
+
+            let itemsHtml = "";
+            filteredSuggestions.forEach((item, index) => {
+                itemsHtml += `
+                    <a href="${item.url}" class="list-group-item list-group-item-action py-2 px-3 small border-0 d-flex justify-content-between align-items-center" id="nav-sugg-${index}">
+                        <span class="fw-semibold nav-sugg-title">${item.name}</span>
+                        <span class="text-muted" style="font-size: 0.75rem;">${item.url}</span>
+                    </a>
+                `;
+            });
+
+            listEl.innerHTML = itemsHtml;
+            listEl.classList.remove('d-none');
+            selectedSuggestionIndex = -1;
+        }
+
+        // Close on clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#navbarSearchInput, #navbarSearchSuggestions').length) {
+                $('#navbarSearchSuggestions').addClass('d-none');
+            }
+        });
+
+        // Key navigation (arrow keys + Enter)
+        $(document).on('keydown', '#navbarSearchInput', function(e) {
+            const listEl = $('#navbarSearchSuggestions');
+            if (listEl.hasClass('d-none') || filteredSuggestions.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedSuggestionIndex = (selectedSuggestionIndex + 1) % filteredSuggestions.length;
+                highlightSuggestion();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedSuggestionIndex = (selectedSuggestionIndex - 1 + filteredSuggestions.length) % filteredSuggestions.length;
+                highlightSuggestion();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < filteredSuggestions.length) {
+                    window.location.href = filteredSuggestions[selectedSuggestionIndex].url;
+                } else if (filteredSuggestions.length > 0) {
+                    window.location.href = filteredSuggestions[0].url;
+                }
+            }
+        });
+
+        function highlightSuggestion() {
+            $('#navbarSearchSuggestions a').removeClass('active bg-light text-primary');
+            if (selectedSuggestionIndex >= 0) {
+                const activeItem = $(`#nav-sugg-${selectedSuggestionIndex}`);
+                activeItem.addClass('active bg-light text-primary');
+                // Auto-fill input text with suggestion name
+                $('#navbarSearchInput').val(filteredSuggestions[selectedSuggestionIndex].name);
+
+                // Auto-scroll parent container to keep highlighted item visible
+                if (activeItem.length) {
+                    activeItem[0].scrollIntoView({ block: 'nearest' });
+                }
+            }
+        }
+    </script>
+
+<!-- =========================================================
+     FULL NOTIFICATION HISTORY MODAL — body-level to avoid z-index stacking
+========================================================== -->
+<div class="modal fade" id="allNotificationsModal" tabindex="-1"
+     aria-labelledby="allNotificationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 1050px;">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="allNotificationsModalLabel">
+                    <i class="bi bi-bell me-2"></i>Tất cả thông báo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="allNotificationsModalBody">
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div> Đang tải...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #allNotificationsModal {
+        z-index: 10850 !important;
+    }
+    #bsConfirmModal {
+        z-index: 10999 !important;
+    }
+    .confirm-modal-backdrop {
+        z-index: 10990 !important;
+    }
+</style>
+
+<!-- Reusable Bootstrap Dynamic Confirm Modal (1.5x Larger Scale & Font Size) -->
+<div class="modal fade" id="bsConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 840px;">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white px-4 py-3.5">
+                <h3 class="modal-title fs-3 fw-bold mb-0" id="bsConfirmTitle">Xác nhận</h3>
+                <button type="button" class="btn-close btn-close-white p-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-5 fs-4 text-dark lh-base" id="bsConfirmMessage">
+                Bạn có chắc chắn muốn thực hiện thao tác này?
+            </div>
+            <div class="modal-footer border-top-0 p-4 pt-0 gap-3 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary btn-lg fs-4 px-5 py-2.5 rounded-pill fw-bold" id="bsConfirmCancelBtn" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary btn-lg fs-4 px-5 py-2.5 rounded-pill fw-bold" id="bsConfirmSubmitBtn">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let confirmModalInstance = null;
+    let confirmCallback = null;
+
+    function showConfirmModal(title, message, onConfirm, confirmText, cancelText) {
+        if (typeof message === 'function' && onConfirm === undefined) {
+            onConfirm = message;
+            message = title;
+            title = 'Xác nhận';
+        }
+        $('#bsConfirmTitle').text(title || 'Xác nhận');
+        $('#bsConfirmMessage').html(message || 'Bạn có chắc chắn muốn thực hiện thao tác này?');
+        $('#bsConfirmCancelBtn').text(cancelText || 'Hủy');
+        $('#bsConfirmSubmitBtn').text(confirmText || 'Xác nhận');
+        confirmCallback = onConfirm;
+
+        const modalEl = document.getElementById('bsConfirmModal');
+        if (!confirmModalInstance && modalEl) {
+            confirmModalInstance = new bootstrap.Modal(modalEl);
+        }
+        if (confirmModalInstance) {
+            confirmModalInstance.show();
+        }
+    }
+
+    window.showToast = function (message, type = 'success') {
+        const bgClass = (type === 'danger' || type === 'error') ? 'bg-danger text-white' :
+                        type === 'warning' ? 'bg-warning text-dark' :
+                        type === 'info' ? 'bg-info text-dark' : 'bg-success text-white';
+        const icon = (type === 'danger' || type === 'error') ? 'bi-exclamation-triangle-fill' :
+                     type === 'warning' ? 'bi-exclamation-circle-fill' :
+                     type === 'info' ? 'bi-info-circle-fill' : 'bi-check-circle-fill';
+
+        let container = document.getElementById('globalToastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'globalToastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '11000';
+            document.body.appendChild(container);
+        }
+
+        const toastId = 'toast_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center ${bgClass} border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body fs-6 fw-semibold">
+                        <i class="bi ${icon} me-2"></i>${message}
+                    </div>
+                    <button type="button" class="btn-close ${bgClass.includes('text-white') ? 'btn-close-white' : ''} me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>`;
+
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        bsToast.show();
+        toastEl.addEventListener('hidden.bs.toast', function () {
+            toastEl.remove();
+        });
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalEl = document.getElementById('bsConfirmModal');
+        // Live clock update (no seconds)
+        setInterval(function() {
+            const el = document.getElementById('navLiveDateTime');
+            if (el) {
+                const now = new Date();
+                const d = String(now.getDate()).padStart(2, '0');
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                el.textContent = `${d}/${m}/${y} ${hh}:${mm}`;
+            }
+        }, 1000);
+        
+        // Initialize Bootstrap Popovers and Tooltips globally
+        window.initAppTooltipsAndPopovers = function() {
+            const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+            [...popoverTriggerList].map(el => bootstrap.Popover.getOrCreateInstance(el, { trigger: 'hover focus', html: true }));
+
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(el => bootstrap.Tooltip.getOrCreateInstance(el, { trigger: 'hover focus', html: true }));
+        };
+
+        window.initAppTooltipsAndPopovers();
+
+        if (modalEl) {
+            modalEl.addEventListener('show.bs.modal', function () {
+                modalEl.style.zIndex = '10999';
+                setTimeout(function() {
+                    $('.modal-backdrop').not('.confirm-modal-backdrop').last().addClass('confirm-modal-backdrop').css('z-index', '10990');
+                }, 10);
+            });
+            modalEl.addEventListener('shown.bs.modal', function () {
+                const cancelBtn = document.getElementById('bsConfirmCancelBtn');
+                if (cancelBtn) {
+                    cancelBtn.focus();
+                }
+            });
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                $('.confirm-modal-backdrop').remove();
+                if ($('.modal.show').length > 0) {
+                    document.body.classList.add('modal-open');
+                }
+            });
+        }
+    });
+
+    $(document).on('click', '#bsConfirmSubmitBtn', function() {
+        if (confirmModalInstance) {
+            confirmModalInstance.hide();
+        }
+        if (typeof confirmCallback === 'function') {
+            confirmCallback();
+        }
+    });
+</script>
+
 </body>
 </html>

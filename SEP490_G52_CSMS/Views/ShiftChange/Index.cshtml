@@ -1,0 +1,274 @@
+@model SEP490_G52_CSMS.Controllers.ManagerShiftChangeListViewModel
+@{
+    ViewData["Title"] = "Quản lý đổi ca";
+
+    string GetStatusLabel(string? status) => status switch
+    {
+        "Submitted" => "Chờ duyệt",
+        "Approved" => "Đã duyệt",
+        "Rejected" => "Từ chối",
+        _ => status ?? "-"
+    };
+
+    string GetStatusBadgeClass(string? status) => status switch
+    {
+        "Submitted" => "bg-warning text-dark",
+        "Approved" => "bg-success text-white",
+        "Rejected" => "bg-danger text-white",
+        _ => "bg-secondary text-white"
+    };
+}
+
+<div class="warehouse-page p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark m-0">DANH SÁCH YÊU CẦU ĐỔI CA</h2>
+            <span class="text-secondary fw-semibold fs-5"><i class="bi bi-arrow-left-right text-primary me-1"></i>Xét duyệt &amp; Quản lý đổi ca nhân viên</span>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm border-0 mb-4 rounded-3 bg-light">
+        <div class="card-body py-3">
+            <form method="get" asp-action="Index" id="shiftChangeFilterForm" class="row g-3 align-items-end">
+                <!-- Search keyword box -->
+                <div class="col-md-4 col-sm-12">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tìm kiếm từ khóa</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="keyword" value="@Model.Keyword" class="form-control border-start-0" placeholder="Tên nhân viên, tài khoản, lý do..." autocomplete="off" />
+                        @if (!string.IsNullOrWhiteSpace(Model.Keyword))
+                        {
+                            <a href="@Url.Action("Index", new { employeeId = Model.SelectedEmployeeId, status = Model.SelectedStatus })" class="input-group-text bg-white border-start-0 text-muted text-decoration-none" title="Xóa tìm kiếm">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <!-- Employee Select -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Nhân viên</label>
+                    <select name="employeeId" class="form-select">
+                        <option value="">-- Tất cả nhân viên --</option>
+                        @foreach (var emp in Model.EmployeeOptions)
+                        {
+                            <option value="@emp.EmployeeId" selected="@(Model.SelectedEmployeeId == emp.EmployeeId)">
+                                @(emp.FullName ?? $"NV#{emp.EmployeeId}")
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Status Select -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Trạng thái</label>
+                    <select name="status" class="form-select">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SelectedStatus))">Tất cả trạng thái</option>
+                        <option value="Submitted" selected="@(Model.SelectedStatus == "Submitted")">Chờ duyệt</option>
+                        <option value="Approved" selected="@(Model.SelectedStatus == "Approved")">Đã duyệt</option>
+                        <option value="Rejected" selected="@(Model.SelectedStatus == "Rejected")">Từ chối</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="col-md-2 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100 py-2 fw-bold">Tìm kiếm</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary py-2" title="Đặt lại bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shift change requests table -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0 table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 24%;" class="ps-3">Nhân Viên</th>
+                            <th style="width: 32%;">Nguyện Vọng</th>
+                            <th style="width: 18%;">Thời Gian Gửi</th>
+                            <th style="width: 14%;">Trạng Thái</th>
+                            <th style="width: 12%;" class="text-center pe-3">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Requests.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary-subtle"></i>
+                                    Không tìm thấy yêu cầu đổi ca nào phù hợp.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var req in Model.Requests)
+                            {
+                                string rowStyle = req.Status == "Submitted" ? "table-warning" :
+                                                   req.Status == "Approved" ? "table-success" :
+                                                   req.Status == "Rejected" ? "table-danger" : "";
+
+                                <tr class="@rowStyle">
+                                    <td class="ps-3">
+                                        <div class="fw-bold text-dark">@(req.RequestingEmployee?.FullName ?? $"NV#{req.RequestingEmployeeId}")</div>
+                                        <div class="text-muted small">@req.RequestingEmployee?.Role · @(req.RequestingEmployee?.Username ?? "")</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark text-truncate" style="max-width: 380px;" title="@req.Aspiration">
+                                            @req.Aspiration
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark fw-semibold">@req.SubmittedAt.ToVietnamTimeString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>@req.SubmittedAt.ToRelativeTimeString()</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(req.Status) rounded-pill px-3 py-2">
+                                            @GetStatusLabel(req.Status)
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="showShiftChangeDetail(@req.RequestId)">
+                                            Chi tiết
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+                    <nav aria-label="Phân trang">
+                        <ul class="pagination pagination-sm m-0">
+                            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { keyword = Model.Keyword, employeeId = Model.SelectedEmployeeId, status = Model.SelectedStatus, page = Model.CurrentPage - 1 })">&laquo;</a>
+                            </li>
+                            @for (var p = 1; p <= Model.TotalPages; p++)
+                            {
+                                @if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.CurrentPage) <= 1)
+                                {
+                                    <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { keyword = Model.Keyword, employeeId = Model.SelectedEmployeeId, status = Model.SelectedStatus, page = p })">@p</a>
+                                    </li>
+                                }
+                                else if (p == 2 || p == Model.TotalPages - 1)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                            }
+                            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { keyword = Model.Keyword, employeeId = Model.SelectedEmployeeId, status = Model.SelectedStatus, page = Model.CurrentPage + 1 })">&raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Shift Change Detail Modal (content injected via AJAX) -->
+<div class="modal fade" id="shiftDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-3" id="shiftDetailModalContent">
+            <!-- populated by /ShiftChange/DetailPartial/{id} -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .warehouse-page {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 70px);
+    }
+    .table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #adb5bd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        const shiftDetailModalEl = document.getElementById('shiftDetailModal');
+        const shiftDetailModal = shiftDetailModalEl ? new bootstrap.Modal(shiftDetailModalEl) : null;
+
+        function showShiftChangeDetail(requestId) {
+            fetch(`/ShiftChange/DetailPartial/${requestId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Không thể tải chi tiết yêu cầu.');
+                    return res.text();
+                })
+                .then(html => {
+                    document.getElementById('shiftDetailModalContent').innerHTML = html;
+                    if (shiftDetailModal) shiftDetailModal.show();
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Mất kết nối với hệ thống. Vui lòng tải lại trang hoặc thử lại sau!', 'danger');
+                });
+        }
+
+        // Event delegation: Approve / Reject / Cancel buttons live inside the
+        // AJAX-injected partial, so we bind on the (static) modal container instead.
+        document.getElementById('shiftDetailModalContent').addEventListener('click', async (e) => {
+            const approveBtn = e.target.closest('.btn-shift-approve');
+            const rejectBtn = e.target.closest('.btn-shift-reject');
+
+            if (approveBtn) {
+                const requestId = parseInt(approveBtn.dataset.requestId, 10);
+                showConfirmModal('Xác nhận phê duyệt', 'Xác nhận phê duyệt đơn đổi ca này?', async function() {
+                    await submitDecision('/ShiftChange/Approve', requestId, 'Phê duyệt đơn đổi ca thành công!');
+                });
+            } else if (rejectBtn) {
+                const requestId = parseInt(rejectBtn.dataset.requestId, 10);
+                showConfirmModal('Xác nhận từ chối', 'Xác nhận từ chối đơn đổi ca này?', async function() {
+                    await submitDecision('/ShiftChange/Reject', requestId, 'Đã từ chối đơn đổi ca.');
+                });
+            }
+        });
+
+        async function submitDecision(url, requestId, successMessage) {
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId })
+                });
+                const result = await res.json();
+
+                if (!result.success) {
+                    showToast(result.errorMessage || 'Đã xảy ra lỗi. Vui lòng thử lại.', 'danger');
+                    return;
+                }
+
+                if (shiftDetailModal) shiftDetailModal.hide();
+                showToast(successMessage, 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (err) {
+                console.error(err);
+                showToast('Mất kết nối với hệ thống. Vui lòng thử lại!', 'danger');
+            }
+        }
+    </script>
+}

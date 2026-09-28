@@ -1,0 +1,203 @@
+@model SEP490_G52_CSMS.Models.ViewModels.EmployeeScheduleViewModel
+
+@{
+    ViewData["Title"] = "Lịch làm việc nhân viên";
+    var nowTime = DateTime.Now.TimeOfDay;
+}
+
+<style>
+    .today-cell {
+        background-color: rgba(13, 110, 253, 0.08) !important;
+    }
+    .today-header {
+        background-color: rgba(13, 110, 253, 0.15) !important;
+        border-bottom: 3px solid #0d6efd !important;
+    }
+    .schedule-table td {
+        min-height: 100px;
+        height: 120px;
+        vertical-align: top;
+        padding: 12px 10px !important;
+    }
+    .attendance-toggle-link {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-block;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+    .attendance-toggle-link:hover {
+        background-color: rgba(13, 110, 253, 0.1);
+        text-decoration: underline !important;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                <i class="bi bi-calendar3-week text-primary me-2"></i>LỊCH LÀM VIỆC CỦA BẠN
+            </h1>
+            <p class="text-muted small mb-0">Theo dõi ca làm việc cá nhân và trạng thái điểm danh trong tuần</p>
+        </div>
+        <div class="btn-group shadow-xs" role="group">
+            <a asp-action="EmployeeIndex" asp-route-weekStart="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")" 
+               class="btn btn-outline-secondary btn-sm px-3">
+                <i class="bi bi-chevron-left me-1"></i>Tuần trước
+            </a>
+            <a asp-action="EmployeeIndex" 
+               class="btn btn-outline-primary btn-sm px-3 fw-semibold">
+                Tuần này
+            </a>
+            <a asp-action="EmployeeIndex" asp-route-weekStart="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")" 
+               class="btn btn-outline-secondary btn-sm px-3">
+                Tuần sau<i class="bi bi-chevron-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Schedule Card -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <span class="fw-bold text-dark">
+                <i class="bi bi-calendar-range text-secondary me-2"></i>
+                Tuần từ @Model.WeekStart.ToString("dd/MM/yyyy") đến @Model.WeekEnd.ToString("dd/MM/yyyy")
+            </span>
+            <span class="badge bg-light text-dark border px-3 py-2">
+                <i class="bi bi-person-fill me-1 text-primary"></i>@Model.FullName
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm align-middle text-center mb-0 schedule-table" style="table-layout: fixed; min-width: 980px;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-start ps-3 py-2" style="width: 160px;">Ca Làm Việc</th>
+                        @foreach (var day in Model.Days)
+                        {
+                            bool isToday = day.Date == DateTime.Today;
+                            var dayName = day.DayOfWeek == DayOfWeek.Sunday ? "Chủ Nhật" : "Thứ " + ((int)day.DayOfWeek + 1);
+                            <th style="width: 12.14%;" class="py-2 @(isToday ? "today-header" : "")">
+                                <div class="fw-bold @(isToday ? "text-primary" : "text-dark")">
+                                    @dayName
+                                </div>
+                                <div class="small fw-normal @(isToday ? "text-primary fw-bold" : "text-muted")">@day.ToString("dd/MM")</div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var shift in Model.Shifts)
+                    {
+                        <tr>
+                            <td class="text-start ps-3 bg-body-tertiary py-3">
+                                <div class="fw-bold text-dark">@shift.ShiftName</div>
+                                <div class="small text-muted">(@shift.StartTime.ToString(@"hh\:mm") - @(shift.EndTime.Hours == 23 && shift.EndTime.Minutes >= 59 ? "24:00" : shift.EndTime.ToString(@"hh\:mm")))</div>
+                            </td>
+                            @foreach (var day in Model.Days)
+                            {
+                                bool isToday = day.Date == DateTime.Today;
+                                bool isFuture = day.Date > DateTime.Today || (isToday && nowTime < shift.StartTime);
+                                var hasShift = Model.ScheduleData.TryGetValue((shift.ShiftId, day.Date), out var detail);
+
+                                bool isCurrentTimeInShift = isToday && (nowTime >= shift.StartTime && nowTime <= shift.EndTime);
+                                double progressPct = 0;
+                                if (isCurrentTimeInShift)
+                                {
+                                    double totalMins = (shift.EndTime - shift.StartTime).TotalMinutes;
+                                    if (totalMins <= 0) totalMins += 1440;
+                                    double elapsedMins = (nowTime - shift.StartTime).TotalMinutes;
+                                    progressPct = Math.Clamp((elapsedMins / totalMins) * 100.0, 5.0, 95.0);
+                                }
+                                
+                                <td class="p-2 align-top position-relative @(isToday ? "today-cell" : "")">
+                                    @if (isCurrentTimeInShift)
+                                    {
+                                        <div class="position-absolute w-100" style="top: @(progressPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%; left: 0; right: 0; z-index: 10; pointer-events: none;" title="Thời gian hiện tại: @DateTime.Now.ToString("HH:mm")">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded-circle shadow-sm" style="width: 8px; height: 8px; margin-left: -4px; flex-shrink: 0;"></div>
+                                                <div class="bg-primary flex-grow-1" style="height: 2px; opacity: 0.85;"></div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    @if (hasShift && detail != null && detail.IsAssigned)
+                                    {
+                                        <div class="fw-bold text-success mb-1 small">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Có ca làm
+                                        </div>
+                                        
+                                        @if (detail.OverallStatus == "Present")
+                                        {
+                                            <div class="small text-success fw-bold attendance-toggle-link"
+                                                 onclick="toggleCheckInEmployee(@shift.ShiftId, '@day.ToString("yyyy-MM-dd")', '@shift.ShiftName', true)"
+                                                 title="Bấm vào đây để chuyển về (Chưa điểm danh) - Phục vụ Test">
+                                                <i class="bi bi-check-lg me-1"></i>(Đã điểm danh)
+                                                @if (detail.CheckInTime.HasValue)
+                                                {
+                                                    <div class="text-muted fw-normal" style="font-size: 0.75rem;">@detail.CheckInTime.Value.ToLocalTime().ToString("HH:mm")</div>
+                                                }
+                                            </div>
+                                        }
+                                        else if (isFuture)
+                                        {
+                                            <div class="small text-muted fw-semibold" title="Chưa đến giờ làm việc của ca này">
+                                                <i class="bi bi-clock me-1"></i>(Chưa tới giờ)
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="small text-danger fw-bold attendance-toggle-link"
+                                                 onclick="toggleCheckInEmployee(@shift.ShiftId, '@day.ToString("yyyy-MM-dd")', '@shift.ShiftName', false)"
+                                                 title="Bấm vào đây để chuyển sang (Đã điểm danh) - Phục vụ Test">
+                                                <i class="bi bi-clock-history me-1"></i>(Chưa điểm danh)
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted">&mdash;</div>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleCheckInEmployee(shiftId, dateStr, shiftName, isCurrentlyCheckedIn) {
+            var actionText = isCurrentlyCheckedIn ? 'chuyển về (Chưa điểm danh)' : 'xác nhận điểm danh';
+            showConfirmModal(
+                'Toggle điểm danh (Chế độ Test)',
+                `Thực hiện <strong>${actionText}</strong> cho ca <strong>${shiftName}</strong> (Ngày: <strong>${dateStr}</strong>)?`,
+                function () {
+                    $.ajax({
+                        url: '/WorkSchedule/ToggleCheckIn',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ shiftId: shiftId, date: dateStr }),
+                        success: function (res) {
+                            if (res.message) {
+                                showToast(res.message, res.isCheckedIn ? 'success' : 'info');
+                            }
+                            setTimeout(function() {
+                                location.reload();
+                            }, 600);
+                        },
+                        error: function (xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Thao tác thất bại.';
+                            showToast(msg, 'danger');
+                        }
+                    });
+                },
+                'Xác nhận',
+                'Hủy'
+            );
+        }
+    </script>
+}

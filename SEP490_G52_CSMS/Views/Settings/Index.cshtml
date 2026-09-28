@@ -1,0 +1,364 @@
+@model SEP490_G52_CSMS.Models.Core.BranchSetting
+
+@{
+    ViewData["Title"] = "Cài đặt chung chi nhánh";
+    // FIX 1: Default tab is now "general" instead of "sepay"
+    string activeTab = ViewBag.ActiveTab as string ?? "general";
+}
+
+<div class="container-fluid mt-4 pb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-11 col-xl-9">
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1"><i class="bi bi-gear-wide-connected me-2 text-primary"></i>CÀI ĐẶT CHUNG CHI NHÁNH</h3>
+                    <p class="text-muted mb-0">Quản lý cấu hình chung, thông tin chi nhánh và tài khoản ngân hàng nhận tiền tự động.</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs (Bootstrap Navs & Tabs) -->
+            <ul class="nav nav-tabs mb-4" id="settingsTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold px-4 py-2 @(activeTab == "general" ? "active" : "")"
+                            id="general-tab" data-bs-toggle="tab" data-bs-target="#tab-general"
+                            type="button" role="tab" aria-controls="tab-general"
+                            aria-selected="@(activeTab == "general" ? "true" : "false")">
+                        <i class="bi bi-building me-2"></i>Cài Đặt Chung Chi Nhánh
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold px-4 py-2 @(activeTab == "sepay" ? "active" : "")"
+                            id="sepay-tab" data-bs-toggle="tab" data-bs-target="#tab-sepay"
+                            type="button" role="tab" aria-controls="tab-sepay"
+                            aria-selected="@(activeTab == "sepay" ? "true" : "false")">
+                        <i class="bi bi-qr-code-scan me-2"></i>Tài Khoản Ngân Hàng & SePay
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="settingsTabContent">
+
+                <!-- =========================================================
+                     TAB 1: CÀI ĐẶT CHUNG CHI NHÁNH
+                ========================================================== -->
+                <div class="tab-pane fade @(activeTab == "general" ? "show active" : "")"
+                     id="tab-general" role="tabpanel" aria-labelledby="general-tab">
+                    <div class="card border shadow-sm rounded-3">
+                        <div class="card-body p-4">
+                            <form asp-action="SaveGeneralSettings" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" asp-for="SettingId" />
+                                <input type="hidden" asp-for="BranchId" />
+                                <input type="hidden" name="activeTab" value="general" />
+
+                                <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom">
+                                    <i class="bi bi-info-circle me-2"></i>Thông Tin Cửa Hàng / Chi Nhánh
+                                </h6>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="BranchDisplayName" class="form-label fw-semibold">Tên Chi Nhánh / Quán</label>
+                                        <input asp-for="BranchDisplayName" class="form-control" placeholder="Tên chi nhánh..." required />
+                                        <span asp-validation-for="BranchDisplayName" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="ContactPhone" class="form-label fw-semibold">Số điện thoại liên hệ</label>
+                                        <input asp-for="ContactPhone" type="tel" class="form-control" placeholder="VD: 0912345678" pattern="^0\d{9}$" maxlength="10" />
+                                        <div class="invalid-feedback">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label asp-for="Address" class="form-label fw-semibold">Địa chỉ chi nhánh</label>
+                                        <input asp-for="Address" class="form-control" placeholder="Địa chỉ chi nhánh..." />
+                                    </div>
+                                </div>
+
+                                <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom">
+                                    <i class="bi bi-sliders me-2"></i>Tùy Chọn Hệ Thống
+                                </h6>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12 d-flex flex-column gap-3">
+                                        <div class="form-check form-switch">
+                                            <input asp-for="AutoPrintReceipt" class="form-check-input" type="checkbox" role="switch" id="autoPrintSwitch" />
+                                            <label class="form-check-label fw-semibold" for="autoPrintSwitch">Tự động chuyển đơn hàng sang Pha chế khi hoàn tất thanh toán</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input asp-for="EnableSoundNotification" class="form-check-input" type="checkbox" role="switch" id="soundNotifSwitch" />
+                                            <label class="form-check-label fw-semibold" for="soundNotifSwitch">Bật chuông thông báo âm thanh khi có đơn hàng mới</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary px-4 py-2 fw-bold shadow-sm">
+                                        <i class="bi bi-save me-2"></i>Lưu Cài Đặt Chung
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========================================================
+                     TAB 2: TÀI KHOẢN NGÂN HÀNG & SEPAY CONFIG
+                ========================================================== -->
+                <div class="tab-pane fade @(activeTab == "sepay" ? "show active" : "")"
+                     id="tab-sepay" role="tabpanel" aria-labelledby="sepay-tab">
+                    <div class="card border shadow-sm rounded-3">
+                        <div class="card-body p-4">
+                            <form asp-action="SaveSePay" method="post" class="needs-validation" novalidate>
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" asp-for="SettingId" />
+                                <input type="hidden" asp-for="BranchId" />
+                                <input type="hidden" name="activeTab" value="sepay" />
+
+                                <!-- Section 1: Bank Info -->
+                                <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom">
+                                    <i class="bi bi-bank me-2"></i>1. Thông Tin Tài Khoản Ngân Hàng Nhận Tiền
+                                </h6>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-4">
+                                        <label asp-for="BankCode" class="form-label fw-semibold">Ngân hàng (Bank Code)</label>
+                                        <select asp-for="BankCode" class="form-select" required>
+                                            <option value="MBBank">MBBank (MB)</option>
+                                            <option value="Vietcombank">Vietcombank (VCB)</option>
+                                            <option value="Techcombank">Techcombank (TCB)</option>
+                                            <option value="ACB">ACB</option>
+                                            <option value="VPBank">VPBank</option>
+                                            <option value="TPBank">TPBank</option>
+                                            <option value="BIDV">BIDV</option>
+                                            <option value="VietinBank">VietinBank (ICB)</option>
+                                            <option value="Agribank">Agribank</option>
+                                        </select>
+                                        <span asp-validation-for="BankCode" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="AccountNumber" class="form-label fw-semibold">Số tài khoản ngân hàng</label>
+                                        <input asp-for="AccountNumber" class="form-control" placeholder="Ví dụ: 0333333333" required />
+                                        <span asp-validation-for="AccountNumber" class="text-danger small"></span>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="AccountName" class="form-label fw-semibold">Tên chủ tài khoản (Viết hoa)</label>
+                                        <input asp-for="AccountName" class="form-control" placeholder="Ví dụ: CSMS CAFE" required />
+                                        <span asp-validation-for="AccountName" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Section 2: SePay API & Webhook Settings -->
+                                <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                                    <span><i class="bi bi-key-fill me-2"></i>2. Cấu Hình Cổng Tự Động SePay.vn</span>
+                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#sepayGuideModal" title="Hướng dẫn chi tiết cài đặt SePay">
+                                        <i class="bi bi-question-circle me-1"></i>Hướng dẫn
+                                    </button>
+                                </h6>
+
+                                <div class="mb-3">
+                                    <label asp-for="SePayApiKey" class="form-label fw-semibold">SePay API Key / Token</label>
+                                    <div class="input-group">
+                                        <input asp-for="SePayApiKey" id="sepayApiKeyInput" type="password" class="form-control" placeholder="Dán Bearer API Key từ my.sepay.vn" />
+                                        <button type="button" class="btn btn-outline-secondary" onclick="toggleApiKeyVisibility()">
+                                            <i class="bi bi-eye" id="toggleApiKeyIcon"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary fw-semibold" onclick="testSePayConnection()">
+                                            <i class="bi bi-plug-fill me-1"></i>Kiểm tra kết nối
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Mã API Token lấy tại bảng điều khiển SePay (<a href="https://my.sepay.vn" target="_blank" class="text-decoration-none">my.sepay.vn</a>)</div>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="TransferPrefix" class="form-label fw-semibold">Tiền tố cú pháp chuyển khoản (Prefix)</label>
+                                        <input asp-for="TransferPrefix" class="form-control" placeholder="Ví dụ: CSMS" required />
+                                        <div class="form-text">Ví dụ với prefix <code>CSMS</code>: Cú pháp CK sẽ là <strong>CSMS MH260814007</strong></div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="WebhookSecretToken" class="form-label fw-semibold">Webhook Secret Token (Tùy chọn)</label>
+                                        <div class="input-group">
+                                            <input asp-for="WebhookSecretToken" id="webhookSecretTokenInput" type="password" class="form-control" placeholder="Token xác thực Webhook từ SePay" />
+                                            <button type="button" class="btn btn-outline-secondary" onclick="toggleSecretTokenVisibility()">
+                                                <i class="bi bi-eye" id="toggleSecretTokenIcon"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Dùng để xác thực bảo mật request từ Webhook SePay</div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 3: Webhook URL Information -->
+                                <div class="card bg-light border mb-4">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-broadcast me-2 text-primary"></i>Địa chỉ Webhook nhận giao dịch SePay (Webhook URL)</h6>
+                                        <p class="small text-muted mb-2">Đăng ký địa chỉ URL bên dưới vào trang quản trị <strong>SePay Webhook Settings</strong> để nhận thông báo chuyển khoản tức thì:</p>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control bg-white fw-bold text-primary" id="webhookUrlInput" value="@ViewBag.WebhookUrl" readonly />
+                                            <button type="button" class="btn btn-outline-primary" onclick="copyWebhookUrl()">
+                                                <i class="bi bi-clipboard me-1"></i>Sao chép URL
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 4: Settings Switches -->
+                                <h6 class="text-uppercase text-secondary fw-bold mb-3 pb-2 border-bottom">
+                                    <i class="bi bi-sliders me-2"></i>3. Cài Đặt Tự Động Hóa
+                                </h6>
+
+                                <div class="form-check form-switch mb-3">
+                                    <input asp-for="AutoConfirmOrder" class="form-check-input" type="checkbox" role="switch" id="autoConfirmSwitch" />
+                                    <label class="form-check-label fw-semibold" for="autoConfirmSwitch">
+                                        Tự động chuyển trạng thái đơn hàng sang Pha chế khi SePay nhận đúng số tiền
+                                    </label>
+                                </div>
+
+                                <div class="form-check form-switch mb-4">
+                                    <input asp-for="IsSePayActive" class="form-check-input" type="checkbox" role="switch" id="isActiveSwitch" />
+                                    <label class="form-check-label fw-semibold" for="isActiveSwitch">
+                                        Kích hoạt thanh toán SePay cho chi nhánh này
+                                    </label>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="submit" class="btn btn-primary px-4 py-2 fw-bold shadow-sm">
+                                        <i class="bi bi-save me-2"></i>Lưu Cấu Hình SePay
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Hướng Dẫn Cài Đặt SePay -->
+<div class="modal fade" id="sepayGuideModal" tabindex="-1" aria-labelledby="sepayGuideModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="sepayGuideModalLabel"><i class="bi bi-question-circle-fill me-2"></i>Hướng Dẫn Chi Tiết Cấu Hình SePay Auto Payment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="timeline-steps">
+                    <div class="step-item mb-4 pb-3 border-bottom">
+                        <h6 class="fw-bold text-primary mb-2"><span class="badge bg-primary me-2">Bước 1</span>Đăng ký & Liên kết Tài Khoản Ngân Hàng</h6>
+                        <p class="text-secondary mb-0">Truy cập <a href="https://my.sepay.vn" target="_blank" class="fw-bold text-decoration-none">my.sepay.vn</a> &rarr; Thêm số tài khoản ngân hàng nhận tiền của quán (MBBank, TPBank, Vietcombank...).</p>
+                    </div>
+                    <div class="step-item mb-4 pb-3 border-bottom">
+                        <h6 class="fw-bold text-primary mb-2"><span class="badge bg-primary me-2">Bước 2</span>Lấy SePay API Key / Token</h6>
+                        <p class="text-secondary mb-0">Vào mục <strong>Cài đặt công ty / API Token</strong> trên SePay.vn &rarr; Copy mã Token và dán vào ô <strong>SePay API Key</strong> trên trang này &rarr; Bấm nút <em>Kiểm tra kết nối</em>.</p>
+                    </div>
+                    <div class="step-item mb-4 pb-3 border-bottom">
+                        <h6 class="fw-bold text-primary mb-2"><span class="badge bg-primary me-2">Bước 3</span>Đăng Ký Webhook URL lên SePay</h6>
+                        <p class="text-secondary mb-0">Bấm nút <strong>Sao chép URL</strong> ở mục 3 trên trang này &rarr; Dán địa chỉ URL đó vào mục <strong>Cấu hình Webhook Settings</strong> trên SePay.vn.</p>
+                    </div>
+                    <div class="step-item">
+                        <h6 class="fw-bold text-primary mb-2"><span class="badge bg-primary me-2">Bước 4</span>Hoàn tất & Kiểm tra</h6>
+                        <p class="text-secondary mb-0">Hoàn tất! Khi khách quét VietQR chuyển khoản (ví dụ cú pháp <code>CSMS MH260814007</code>), SePay sẽ tự động báo tiền về và hoàn tất đơn trên POS tức thì.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Tôi Đã Hiểu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleApiKeyVisibility() {
+            var input = document.getElementById('sepayApiKeyInput');
+            var icon = document.getElementById('toggleApiKeyIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        function toggleSecretTokenVisibility() {
+            var input = document.getElementById('webhookSecretTokenInput');
+            var icon = document.getElementById('toggleSecretTokenIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        function copyWebhookUrl() {
+            var input = document.getElementById('webhookUrlInput');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(function() {
+                showToast("Đã sao chép Webhook URL!", "success");
+            }).catch(function(err) {
+                showToast("Không thể sao chép URL: " + err, "danger");
+            });
+        }
+
+        function testSePayConnection() {
+            var apiKey = document.getElementById('sepayApiKeyInput').value;
+            if (!apiKey) {
+                showToast("Vui lòng nhập SePay API Key để kiểm tra.", "warning");
+                return;
+            }
+
+            fetch('@Url.Action("TestConnection", "Settings")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'apiKey=' + encodeURIComponent(apiKey)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, "success");
+                } else {
+                    showToast(data.message, "danger");
+                }
+            })
+            .catch(err => {
+                showToast("Lỗi kiểm tra kết nối: " + err, "danger");
+            });
+        }
+
+        // FIX 3: keep the active tab in sync with the URL hash so a page
+        // refresh (F5) or a shared link opens the same tab the user was on.
+        document.addEventListener('DOMContentLoaded', function () {
+            var hash = window.location.hash;
+            if (hash) {
+                var triggerEl = document.querySelector('#settingsTab button[data-bs-target="' + hash + '"]');
+                if (triggerEl) {
+                    new bootstrap.Tab(triggerEl).show();
+                }
+            }
+
+            document.querySelectorAll('#settingsTab button[data-bs-toggle="tab"]').forEach(function (tabEl) {
+                tabEl.addEventListener('shown.bs.tab', function (event) {
+                    history.replaceState(null, null, event.target.getAttribute('data-bs-target'));
+                });
+            });
+        });
+    </script>
+}

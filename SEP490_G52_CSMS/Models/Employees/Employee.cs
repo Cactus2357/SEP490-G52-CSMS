@@ -1,5 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Employees
@@ -57,7 +55,7 @@ namespace SEP490_G52_CSMS.Models.Employees
         [EmailAddress]
         public string? Email { get; set; }
 
-        /// <summary> Vai trò (Cashier, Barista, Bartender, Busser, BranchManager) </summary>
+        /// <summary> Vai trò (Cashier, Bartender, Busser, BranchManager, Admin) </summary>
         [Required]
         [Column("role")]
         [StringLength(50)]
@@ -79,6 +77,11 @@ namespace SEP490_G52_CSMS.Models.Employees
         [Column("contract_file_path")]
         [StringLength(255)]
         public string? ContractFilePath { get; set; }
+
+        /// <summary> Đường dẫn lưu file ảnh CCCD (PDF/JPG) </summary>
+        [Column("cccd_file_path")]
+        [StringLength(255)]
+        public string? CccdFilePath { get; set; }
 
         /// <summary> Trạng thái tài khoản (Active, Inactive) </summary>
         [Column("status")]

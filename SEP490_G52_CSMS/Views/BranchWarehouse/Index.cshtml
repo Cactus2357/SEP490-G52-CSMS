@@ -1,0 +1,850 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchInventoryIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản Lý Tồn Kho Chi Nhánh";
+}
+
+<div class="warehouse-page p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark m-0">QUẢN LÝ TỒN KHO CHI NHÁNH</h2>
+            <span class="text-secondary fw-semibold fs-5"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Chi nhánh: @ViewBag.BranchName</span>
+        </div>
+        <div class="header-actions d-flex gap-2">
+            <a href="@Url.Action("CreateRequest", "BranchWarehouse")" class="btn btn-outline-secondary">
+                <i class="bi bi-box-arrow-in-right"></i> Tạo đơn nhập
+            </a>
+            <button type="button" class="btn btn-outline-dark fw-bold" data-bs-toggle="modal" data-bs-target="#addMaterialModal" onclick="prepareAddMaterialModal()">
+                <i class="bi bi-plus-lg"></i> Nguyên liệu mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm border-0 mb-4 rounded-3 bg-light">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-center">
+                <div class="col-md-4 col-sm-12">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" value="@Model.SearchString" class="form-control border-start-0" placeholder="Tìm kiếm theo tên nguyên liệu..." />
+                    </div>
+                </div>
+                
+                <div class="col-md-3 col-sm-6">
+                    <select name="selectedCategory" class="form-select">
+                        <option value="">-- Loại nguyên liệu --</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            if (cat == Model.SelectedCategory)
+                            {
+                                <option value="@cat" selected>@cat</option>
+                            }
+                            else
+                            {
+                                <option value="@cat">@cat</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-sm-6">
+                    <select name="selectedKind" class="form-select">
+                        <option value="">-- Kiểu nguyên liệu --</option>
+                        @foreach (var kind in Model.Kinds)
+                        {
+                            if (kind == Model.SelectedKind)
+                            {
+                                <option value="@kind" selected>@kind</option>
+                            }
+                            else
+                            {
+                                <option value="@kind">@kind</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100">Tìm kiếm</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main side-by-side content -->
+    <div class="row">
+        <!-- Left Panel: Branch Inventory Grid -->
+        <div class="col-lg-8 col-md-12 mb-4 mb-lg-0">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle m-0 table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%;" class="ps-3">STT</th>
+                                    <th style="width: 14%;">Mã NgL</th>
+                                    <th style="width: 25%;">Tên nguyên liệu</th>
+                                    <th style="width: 14%;">Kiểu NgL</th>
+                                    <th style="width: 11%;">Loại NgL</th>
+                                    <th style="width: 14%;">Tồn kho</th>
+                                    <th style="width: 17%;" class="text-center pe-3">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Items != null && Model.Items.Any())
+                                {
+                                    int sttOffset = (Model.CurrentPage - 1) * 10;
+                                    for (int i = 0; i < Model.Items.Count; i++)
+                                    {
+                                        var item = Model.Items[i];
+                                        bool isLow = item.StockQuantity <= item.LowStockThreshold;
+                                        <tr>
+                                            <td class="ps-3">@(sttOffset + i + 1)</td>
+                                            <td class="fw-bold">@item.Material?.MaterialCode</td>
+                                            <td>@item.Material?.MaterialName</td>
+                                            <td>@item.Material?.MaterialKind</td>
+                                            <td>@item.Material?.Category</td>
+                                            <td class="fw-semibold">
+                                                @item.StockQuantity.ToString("G29") @item.Material?.StorageUnit
+                                                @if (isLow)
+                                                {
+                                                    if (item.StockQuantity == 0)
+                                                    {
+                                                        <span class="badge bg-danger-subtle text-danger ms-1">Hết hàng</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning-subtle text-warning-emphasis ms-1">Sắp hết</span>
+                                                    }
+                                                }
+                                            </td>
+                                            <td class="text-center pe-3 text-nowrap">
+                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold me-1" onclick="loadInventoryDetails(@item.InventoryId)" title="Xem chi tiết">
+                                                    <i class="bi bi-eye"></i> Chi tiết
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 fw-semibold btn-adjust-stock"
+                                                        data-inventory-id="@item.InventoryId"
+                                                        data-material-id="@item.MaterialId"
+                                                        data-material-name="@(item.Material?.MaterialName ?? "")"
+                                                        data-material-code="@(item.Material?.MaterialCode ?? "")"
+                                                        data-stock-quantity="@item.StockQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                        data-threshold="@item.LowStockThreshold.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                        data-storage-unit="@(item.Material?.StorageUnit ?? "")"
+                                                        onclick="openAdjustStockFromButton(this)"
+                                                        title="Cập nhật số lượng kho thực tế (Kiểm kê)">
+                                                    <i class="bi bi-pencil-square"></i> Cập nhật tồn
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">Không tìm thấy nguyên liệu phù hợp.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (Model.TotalPages > 1)
+                    {
+                        <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-sm m-0">
+                                    <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { searchString = Model.SearchString, selectedCategory = Model.SelectedCategory, selectedKind = Model.SelectedKind, page = Model.CurrentPage - 1 })">&laquo;</a>
+                                    </li>
+                                    @for (int p = 1; p <= Model.TotalPages; p++)
+                                    {
+                                        <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                            <a class="page-link" href="@Url.Action("Index", new { searchString = Model.SearchString, selectedCategory = Model.SelectedCategory, selectedKind = Model.SelectedKind, page = p })">@p</a>
+                                        </li>
+                                    }
+                                    <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { searchString = Model.SearchString, selectedCategory = Model.SelectedCategory, selectedKind = Model.SelectedKind, page = Model.CurrentPage + 1 })">&raquo;</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Side Detail Panel -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card shadow-sm border-0 rounded-3 sticky-lg-top" style="top: 24px; z-index: 100;">
+                <div class="card-header bg-dark text-white py-3 rounded-top-3">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-info-circle me-2 text-warning"></i>Chi tiết tồn chi nhánh</h5>
+                </div>
+                <div class="card-body p-4" id="detailPanelBody">
+                    <div class="text-center text-muted py-5" id="detailPlaceholder">
+                        <i class="bi bi-box fs-1 mb-3 d-block text-secondary-subtle"></i>
+                        <span>Chọn nguyên liệu muốn xem từ bảng</span>
+                    </div>
+                    
+                    <div class="d-none" id="detailContent">
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Mã nguyên liệu</label>
+                            <span class="fs-5 fw-bold text-dark" id="lblCode"></span>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Tên nguyên liệu</label>
+                            <span class="fs-6 fw-bold text-dark" id="lblName"></span>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col border-end pb-2">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Kiểu NgL</label>
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-2" id="lblKind"></span>
+                            </div>
+                            <div class="col pb-2 ps-3">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Loại NgL</label>
+                                <span class="fw-semibold text-dark" id="lblCategory"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col border-end pb-2">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Trạng thái vật lý</label>
+                                <span class="fw-semibold text-dark" id="lblState"></span>
+                            </div>
+                            <div class="col pb-2 ps-3">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Đơn vị</label>
+                                <span class="fw-semibold text-dark" id="lblUnit"></span>
+                            </div>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Nhà cung cấp chính</label>
+                            <span class="text-dark" id="lblSupplier"></span>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Xuất xứ</label>
+                            <span class="text-dark" id="lblOrigin"></span>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col border-end pb-2">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Tồn kho chi nhánh</label>
+                                <span class="fs-4 fw-bold text-primary" id="lblStock"></span>
+                            </div>
+                            <div class="col pb-2 ps-3">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Ngưỡng cảnh báo</label>
+                                <span class="fs-4 fw-bold text-danger" id="lblThreshold"></span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm" id="btnDetailAdjustStock" onclick="openAdjustFromDetail()">
+                                <i class="bi bi-clipboard2-check me-1"></i> Cập nhật tồn kho thực tế
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal: Cập nhật tồn kho thực tế (Kiểm kê kho) -->
+<div class="modal fade" id="adjustStockModal" tabindex="-1" aria-labelledby="adjustStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="adjustStockModalLabel">
+                    <i class="bi bi-clipboard2-check me-2 text-warning"></i>Cập nhật số lượng tồn kho thực tế
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="adjustInventoryId" />
+                <input type="hidden" id="adjustMaterialId" />
+
+                <!-- Thông tin nguyên liệu -->
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small fw-bold text-uppercase">Nguyên liệu</span>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis" id="adjustMaterialCode"></span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-0" id="adjustMaterialName"></h5>
+                </div>
+
+                <!-- Tồn hệ thống vs Tồn thực tế vs Ngưỡng cảnh báo -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tồn hệ thống</label>
+                        <div class="input-group">
+                            <input type="text" id="adjustCurrentStock" class="form-control bg-light fw-bold text-primary" readonly />
+                            <span class="input-group-text bg-light adjustUnitLabel"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-dark text-uppercase mb-1">
+                            Tồn thực tế <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" step="any" min="0" id="adjustActualStock" class="form-control fw-bold border-primary" placeholder="Nhập SL..." oninput="calculateAdjustmentDiff()" />
+                            <span class="input-group-text bg-white adjustUnitLabel fw-bold"></span>
+                        </div>
+                        <div class="invalid-feedback" id="valAdjustActualStock"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-dark text-uppercase mb-1">
+                            Ngưỡng cảnh báo tồn thấp
+                        </label>
+                        <div class="input-group">
+                            <input type="number" step="any" min="0" id="adjustLowStockThreshold" class="form-control fw-bold border-warning" placeholder="Nhập ngưỡng..." />
+                            <span class="input-group-text bg-white adjustUnitLabel fw-bold"></span>
+                        </div>
+                        <div class="invalid-feedback" id="valAdjustThreshold"></div>
+                    </div>
+                </div>
+
+                <!-- Chênh lệch kiểm kê (Badge chênh lệch real-time) -->
+                <div class="mb-3 p-3 rounded-3 border bg-white text-center" id="diffContainer">
+                    <span class="text-muted small d-block mb-1">Chênh lệch kiểm đếm:</span>
+                    <div id="diffBadge">
+                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6">
+                            <i class="bi bi-dash-circle me-1"></i> Chưa nhập số lượng thực tế
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Lý do điều chỉnh -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold mb-1">Lý do sai lệch / điều chỉnh <span class="text-danger">*</span></label>
+                    <select id="adjustReason" class="form-select" onchange="onReasonChange()">
+                        <option value="">-- Chọn lý do điều chỉnh --</option>
+                        <option value="Kiểm kê định kỳ (Đồng bộ số liệu thực tế)">Kiểm kê định kỳ (Đồng bộ số liệu thực tế)</option>
+                        <option value="Hao hụt / Rơi vãi / Bay hơi tự nhiên">Hao hụt / Rơi vãi / Bay hơi tự nhiên</option>
+                        <option value="Hư hỏng / Hết hạn sử dụng (Cần hủy bỏ)">Hư hỏng / Hết hạn sử dụng (Cần hủy bỏ)</option>
+                        <option value="Pha hỏng / Hao hụt quầy bar pha chế">Pha hỏng / Hao hụt quầy bar pha chế</option>
+                        <option value="Sai sót kiểm đếm / Giao nhận ca trước">Sai sót kiểm đếm / Giao nhận ca trước</option>
+                        <option value="Khác">Khác (Vui lòng ghi rõ ở ghi chú bên dưới)</option>
+                    </select>
+                    <div class="invalid-feedback" id="valAdjustReason"></div>
+                </div>
+
+                <!-- Ghi chú chi tiết -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold mb-1">Ghi chú chi tiết</label>
+                    <textarea id="adjustNote" class="form-control" rows="2" placeholder="Nhập chi tiết biên bản kiểm kê, nguyên nhân hư hỏng, người liên quan (nếu có)..."></textarea>
+                    <div class="invalid-feedback" id="valAdjustNote"></div>
+                </div>
+
+                <div class="alert alert-info py-2 px-3 m-0 small d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill fs-5 text-info me-2"></i>
+                    <div>Tồn kho chi nhánh sẽ được cập nhật trực tiếp và hệ thống sẽ tự động gửi thông báo kiểm kê đến Quản lý vùng.</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success px-4 fw-bold" id="btnSubmitAdjust" onclick="submitStockAdjustment()">
+                    <i class="bi bi-check-lg me-1"></i> Lưu cập nhật
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thêm nguyên liệu (Screen B) -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1" aria-labelledby="addMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="addMaterialModalLabel">
+                    <i class="bi bi-plus-circle me-2 text-warning"></i>Thêm nguyên liệu mới vào kho chi nhánh
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Info Header Banner -->
+                <div class="card bg-light border-0 mb-4 rounded-3">
+                    <div class="card-body py-3 small text-dark fs-6">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-7">
+                                <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                                Chọn nguyên liệu đã được định nghĩa từ <strong>Kho Tổng</strong> để bắt đầu quản lý và theo dõi tồn kho tại chi nhánh.
+                            </div>
+                            <div class="col-md-5 text-md-end">
+                                <span class="text-secondary"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Chi nhánh: <strong>@ViewBag.BranchName</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Cột 1: Tìm kiếm & Gợi ý từ Kho Tổng -->
+                    <div class="col-lg-6 border-end">
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-search text-primary me-1"></i> 1. Tìm kiếm danh mục Kho Tổng
+                        </h6>
+                        <div class="mb-3 position-relative">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tên nguyên liệu <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="addMatName" class="form-control border-start-0" placeholder="Nhập tên nguyên liệu để tìm kiếm..." autocomplete="off" oninput="searchCatalogSuggestions(this.value)" onfocus="searchCatalogSuggestions(this.value)" onclick="searchCatalogSuggestions(this.value)" />
+                            </div>
+                            <div id="autocompleteResults" class="list-group position-absolute w-100 mt-1 shadow-sm d-none" style="z-index: 1050; max-height: 250px; overflow-y: auto;">
+                                <!-- Autocomplete items -->
+                            </div>
+                            <div class="invalid-feedback" id="valAddMatName"></div>
+                        </div>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="small text-muted mb-1"><i class="bi bi-lightbulb text-warning me-1"></i><strong>Hướng dẫn:</strong></div>
+                            <p class="m-0 small text-secondary">
+                                Nhập từ khóa để tìm các nguyên liệu có trong kho tổng nhưng chưa có tại chi nhánh. Khi chọn từ danh sách gợi ý, thông tin loại, kiểu và đơn vị sẽ được tự động điền.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Cột 2: Thông tin chi tiết & Ngưỡng cảnh báo -->
+                    <div class="col-lg-6">
+                        <h6 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-card-checklist text-primary me-1"></i> 2. Thông tin & Cấu hình tồn kho
+                        </h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Loại nguyên liệu</label>
+                                <select id="addMatCategory" class="form-select bg-light" disabled>
+                                    <option value="">-- Tự động điền --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Kiểu nguyên liệu</label>
+                                <input type="text" id="addMatKind" class="form-control bg-light" placeholder="Tự động điền..." readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đơn vị lưu kho</label>
+                                <input type="text" id="addMatUnit" class="form-control bg-light" placeholder="Tự động điền..." readonly />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark text-uppercase mb-1">Ngưỡng cảnh báo tồn thấp</label>
+                                <div class="input-group">
+                                    <input type="number" step="any" min="0" id="addMatThreshold" class="form-control fw-bold border-warning" value="10" placeholder="Mặc định: 10" />
+                                    <span class="input-group-text bg-white fw-bold addMatUnitText">đơn vị</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                            <p class="m-0 text-danger small">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                Tên nguyên liệu phải khớp với danh mục từ kho tổng. Sau khi thêm, tồn kho ban đầu sẽ là <strong>0</strong>. Bạn có thể cập nhật tồn thực tế hoặc tạo đơn yêu cầu nhập kho.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-dark px-4 fw-bold shadow-sm" onclick="addMaterialSubmit()">
+                    <i class="bi bi-plus-lg me-1"></i> Thêm nguyên liệu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .warehouse-page {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 70px);
+    }
+    .table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #adb5bd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function triggerAction(actionName) {
+            showToast(`Tính năng "${actionName}" (UC62) đang được phát triển.`, 'warning');
+        }
+
+        // --- 1. VIEW DETAILS ---
+        let currentDetailItem = null;
+
+        function loadInventoryDetails(id) {
+            $('#detailPlaceholder').addClass('d-none');
+            $('#detailContent').addClass('d-none');
+
+            $.ajax({
+                url: '/BranchWarehouse/GetInventoryDetails',
+                type: 'GET',
+                data: { id: id },
+                success: function(m) {
+                    currentDetailItem = m;
+                    $('#lblCode').text(m.materialCode);
+                    $('#lblName').text(m.materialName);
+                    $('#lblKind').text(m.materialKind);
+                    $('#lblCategory').text(m.category);
+                    $('#lblState').text(m.physicalState);
+                    $('#lblUnit').text(m.storageUnit);
+                    $('#lblSupplier').text(m.supplier);
+                    $('#lblOrigin').text(m.origin);
+                    $('#lblStock').text(m.stockQuantity);
+                    $('#lblThreshold').text(m.lowStockThreshold);
+
+                    $('#detailContent').removeClass('d-none');
+                },
+                error: function() {
+                    showToast('Lỗi tải thông tin chi tiết tồn kho.', 'danger');
+                    $('#detailPlaceholder').removeClass('d-none');
+                }
+            });
+        }
+
+        // --- 2. AUTOCOMPLETE SUGGESTIONS ---
+        let catalogList = [];
+        let selectedMaterialId = null;
+
+        function prepareAddMaterialModal() {
+            selectedMaterialId = null;
+            $('#addMatName').val('').removeClass('is-invalid');
+            $('#addMatCategory').html('<option value="">-- Tự động điền --</option>').val('');
+            $('#addMatKind').val('');
+            $('#addMatUnit').val('');
+            $('.addMatUnitText').text('đơn vị');
+            $('#addMatThreshold').val('10');
+            $('#autocompleteResults').addClass('d-none').html('');
+            searchCatalogSuggestions('');
+        }
+
+        function searchCatalogSuggestions(term) {
+            term = term || '';
+            $.ajax({
+                url: '/BranchWarehouse/SearchCentralCatalog',
+                type: 'GET',
+                data: { term: term },
+                success: function(list) {
+                    catalogList = list || [];
+                    let items = "";
+                    catalogList.forEach((item, index) => {
+                        let unitStr = item.storageUnit ? ` · ${item.storageUnit}` : '';
+                        items += `
+                            <button type="button" class="list-group-item list-group-item-action py-2" onclick="selectSuggestion(${index})">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong class="text-dark">${item.materialName}</strong>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${item.category}${unitStr}</span>
+                                </div>
+                            </button>
+                        `;
+                    });
+                    if (catalogList.length === 0) {
+                        items = '<div class="list-group-item text-muted small">Không tìm thấy nguyên liệu phù hợp trong kho tổng.</div>';
+                    }
+                    $('#autocompleteResults').removeClass('d-none').html(items);
+
+                    // Check exact or accent-insensitive match if user typed term
+                    if (term.trim()) {
+                        let exact = catalogList.find(c => {
+                            if (window.CSMSSearch) {
+                                return window.CSMSSearch.removeVietnameseTones(c.materialName) === window.CSMSSearch.removeVietnameseTones(term.trim());
+                            }
+                            return c.materialName.toLowerCase() === term.trim().toLowerCase();
+                        });
+                        if (exact) {
+                            selectedMaterialId = exact.materialId;
+                            $('#addMatCategory').html(`<option value="${exact.category}" selected>${exact.category}</option>`);
+                            $('#addMatKind').val(exact.materialKind);
+                            $('#addMatUnit').val(exact.storageUnit || '');
+                            $('.addMatUnitText').text(exact.storageUnit || 'đơn vị');
+                            $('#addMatName').removeClass('is-invalid');
+                        }
+                    }
+                },
+                error: function() {
+                    $('#autocompleteResults').addClass('d-none').html('');
+                }
+            });
+        }
+
+        function selectSuggestion(index) {
+            let item = catalogList[index];
+            selectedMaterialId = item.materialId;
+            $('#addMatName').val(item.materialName).removeClass('is-invalid');
+            
+            // Auto fill category, kind, unit
+            let catOpt = `<option value="${item.category}" selected>${item.category}</option>`;
+            $('#addMatCategory').html(catOpt);
+            $('#addMatKind').val(item.materialKind);
+            $('#addMatUnit').val(item.storageUnit || '');
+            $('.addMatUnitText').text(item.storageUnit || 'đơn vị');
+
+            $('#autocompleteResults').addClass('d-none').html('');
+        }
+
+        // Close suggestion list on clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#addMatName, #autocompleteResults').length) {
+                $('#autocompleteResults').addClass('d-none');
+            }
+        });
+
+        // --- 3. REGISTER MATERIAL SUBMIT ---
+        function addMaterialSubmit() {
+            let name = $('#addMatName').val().trim();
+            $('#addMatName').removeClass('is-invalid');
+
+            if (!name && !selectedMaterialId) {
+                $('#addMatName').addClass('is-invalid');
+                $('#valAddMatName').text('Tên nguyên liệu là bắt buộc.');
+                return;
+            }
+
+            let thresholdVal = parseFloat($('#addMatThreshold').val());
+            if (isNaN(thresholdVal) || thresholdVal < 0) thresholdVal = 10;
+
+            $.ajax({
+                url: '/BranchWarehouse/RegisterBranchMaterial',
+                type: 'POST',
+                data: { 
+                    materialId: selectedMaterialId,
+                    materialName: name,
+                    lowStockThreshold: thresholdVal
+                },
+                success: function(res) {
+                    if (res.success) {
+                        $('#addMaterialModal').modal('hide');
+                        showToast(res.message, 'success');
+                        setTimeout(() => location.reload(), 600);
+                    } else {
+                        $('#addMatName').addClass('is-invalid');
+                        $('#valAddMatName').text(res.message);
+                        showToast(res.message, 'warning');
+                    }
+                },
+                error: function(xhr) {
+                    let errMsg = 'Lỗi kết nối máy chủ.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    showToast(errMsg, 'danger');
+                }
+            });
+        }
+
+        // --- 4. STOCK ADJUSTMENT (KIỂM KÊ KHO) ---
+        let adjustModalInstance = null;
+
+        function openAdjustStockFromButton(btn) {
+            let $b = $(btn);
+            let invId = $b.data('inventory-id');
+            let matId = $b.data('material-id');
+            let matName = $b.data('material-name');
+            let matCode = $b.data('material-code');
+            let stock = parseFloat($b.data('stock-quantity')) || 0;
+            let unit = $b.data('storage-unit');
+            let threshold = parseFloat($b.data('threshold'));
+
+            openAdjustStockModal(invId, matId, matName, matCode, stock, unit, isNaN(threshold) ? null : threshold);
+        }
+
+        function openAdjustFromDetail() {
+            if (!currentDetailItem) {
+                showToast('Vui lòng chọn một nguyên liệu từ danh sách trước.', 'warning');
+                return;
+            }
+            let stock = currentDetailItem.rawStockQuantity !== undefined ? currentDetailItem.rawStockQuantity : (parseFloat(currentDetailItem.stockQuantity) || 0);
+            let threshold = currentDetailItem.rawLowStockThreshold !== undefined ? currentDetailItem.rawLowStockThreshold : (parseFloat(currentDetailItem.lowStockThreshold) || null);
+            openAdjustStockModal(
+                currentDetailItem.inventoryId,
+                currentDetailItem.materialId,
+                currentDetailItem.materialName,
+                currentDetailItem.materialCode,
+                stock,
+                currentDetailItem.storageUnit,
+                threshold
+            );
+        }
+
+        function openAdjustStockModal(invId, matId, matName, matCode, stock, unit, threshold) {
+            $('#adjustInventoryId').val(invId);
+            $('#adjustMaterialId').val(matId);
+            $('#adjustMaterialCode').text(matCode);
+            $('#adjustMaterialName').text(matName);
+            $('#adjustCurrentStock').val(stock);
+            $('.adjustUnitLabel').text(unit || '');
+            
+            // Populate threshold
+            $('#adjustLowStockThreshold').val(threshold !== null && threshold !== undefined ? threshold : '').removeClass('is-invalid');
+            $('#valAdjustThreshold').text('');
+
+            // Default actual stock to current stock so user can easily adjust or verify
+            $('#adjustActualStock').val(stock).removeClass('is-invalid');
+            $('#adjustReason').val('').removeClass('is-invalid');
+            $('#adjustNote').val('').removeClass('is-invalid');
+            $('#valAdjustActualStock').text('');
+            $('#valAdjustReason').text('');
+            $('#valAdjustNote').text('');
+
+            calculateAdjustmentDiff();
+
+            let modalEl = document.getElementById('adjustStockModal');
+            if (modalEl) {
+                adjustModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                adjustModalInstance.show();
+            }
+
+            setTimeout(function() {
+                $('#adjustActualStock').focus().select();
+            }, 500);
+        }
+
+        function calculateAdjustmentDiff() {
+            let curStock = parseFloat($('#adjustCurrentStock').val()) || 0;
+            let actualStr = $('#adjustActualStock').val();
+            let unit = $('.adjustUnitLabel').first().text();
+
+            if (actualStr === '' || isNaN(parseFloat(actualStr))) {
+                $('#diffBadge').html(`
+                    <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6">
+                        <i class="bi bi-dash-circle me-1"></i> Chưa nhập số lượng thực tế
+                    </span>
+                `);
+                return;
+            }
+
+            let actualStock = parseFloat(actualStr);
+            let diff = Math.round((actualStock - curStock) * 1000) / 1000;
+
+            if (diff === 0) {
+                $('#diffBadge').html(`
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis px-3 py-2 fs-6 border">
+                        <i class="bi bi-check-circle-fill me-1 text-success"></i> Số lượng khớp hoàn toàn (Chênh lệch: 0 ${unit})
+                    </span>
+                `);
+            } else if (diff > 0) {
+                let formattedDiff = '+' + diff.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+                $('#diffBadge').html(`
+                    <span class="badge bg-success-subtle text-success px-3 py-2 fs-6 border border-success-subtle">
+                        <i class="bi bi-arrow-up-circle-fill me-1"></i> Thừa tồn kho (${formattedDiff} ${unit})
+                    </span>
+                `);
+            } else {
+                let formattedDiff = diff.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+                $('#diffBadge').html(`
+                    <span class="badge bg-danger-subtle text-danger px-3 py-2 fs-6 border border-danger-subtle">
+                        <i class="bi bi-arrow-down-circle-fill me-1"></i> Hao hụt / Thiếu tồn (${formattedDiff} ${unit})
+                    </span>
+                `);
+            }
+        }
+
+        function onReasonChange() {
+            let reason = $('#adjustReason').val();
+            $('#adjustReason').removeClass('is-invalid');
+            if (reason === 'Khác') {
+                $('#adjustNote').focus();
+            }
+        }
+
+        function submitStockAdjustment() {
+            let invId = parseInt($('#adjustInventoryId').val()) || 0;
+            let matId = parseInt($('#adjustMaterialId').val()) || 0;
+            let actualStr = $('#adjustActualStock').val().trim();
+            let reason = $('#adjustReason').val().trim();
+            let note = $('#adjustNote').val().trim();
+
+            let thresholdStr = $('#adjustLowStockThreshold').val().trim();
+            let thresholdVal = null;
+
+            let isValid = true;
+            $('#adjustActualStock, #adjustLowStockThreshold, #adjustReason, #adjustNote').removeClass('is-invalid');
+
+            if (actualStr === '' || isNaN(parseFloat(actualStr))) {
+                $('#adjustActualStock').addClass('is-invalid');
+                $('#valAdjustActualStock').text('Vui lòng nhập số lượng tồn thực tế.');
+                isValid = false;
+            } else if (parseFloat(actualStr) < 0) {
+                $('#adjustActualStock').addClass('is-invalid');
+                $('#valAdjustActualStock').text('Số lượng tồn thực tế không được âm.');
+                isValid = false;
+            }
+
+            if (thresholdStr !== '') {
+                if (isNaN(parseFloat(thresholdStr)) || parseFloat(thresholdStr) < 0) {
+                    $('#adjustLowStockThreshold').addClass('is-invalid');
+                    $('#valAdjustThreshold').text('Ngưỡng cảnh báo phải là số không âm.');
+                    isValid = false;
+                } else {
+                    thresholdVal = parseFloat(thresholdStr);
+                }
+            }
+
+            if (!reason) {
+                $('#adjustReason').addClass('is-invalid');
+                $('#valAdjustReason').text('Vui lòng chọn lý do điều chỉnh.');
+                isValid = false;
+            } else if (reason === 'Khác' && !note) {
+                $('#adjustNote').addClass('is-invalid');
+                $('#valAdjustNote').text('Vui lòng nhập giải thích chi tiết khi chọn lý do "Khác".');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            let actualVal = parseFloat(actualStr);
+            let $btn = $('#btnSubmitAdjust');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Đang lưu...');
+
+            $.ajax({
+                url: '/BranchWarehouse/AdjustStockQuantity',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    inventoryId: invId,
+                    materialId: matId,
+                    actualStock: actualVal,
+                    lowStockThreshold: thresholdVal,
+                    reason: reason,
+                    note: note
+                }),
+                success: function(res) {
+                    if (res.success) {
+                        let modalEl = document.getElementById('adjustStockModal');
+                        if (modalEl) {
+                            let inst = bootstrap.Modal.getInstance(modalEl);
+                            if (inst) inst.hide();
+                        }
+                        showToast(res.message, 'success');
+
+                        // Refresh page after short delay to update grid and alerts
+                        setTimeout(function() {
+                            location.reload();
+                        }, 700);
+                    } else {
+                        showToast(res.message || 'Cập nhật thất bại.', 'danger');
+                    }
+                },
+                error: function(xhr) {
+                    let errMsg = 'Lỗi kết nối máy chủ khi cập nhật tồn kho.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    showToast(errMsg, 'danger');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html('<i class="bi bi-check-lg me-1"></i> Lưu cập nhật');
+                }
+            });
+        }
+    </script>
+}

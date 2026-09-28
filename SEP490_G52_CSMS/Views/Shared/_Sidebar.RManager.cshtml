@@ -1,0 +1,68 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+}
+
+<li class="menu-item">
+    <a asp-controller="BranchManager" asp-action="Index" class="menu-link @ActiveIf("BranchManager", "Index")" title="Quản lý chi nhánh">
+        <i class="bi bi-person-badge-fill"></i>
+        <span>Quản lý - quản lý chi nhánh</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Branch" asp-action="Index" class="menu-link @ActiveIf("Branch", "Index")" title="Chi nhánh">
+        <i class="bi bi-git"></i>
+        <span>Quản lý chi nhánh</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ProductCategories" asp-action="Index" class="menu-link @ActiveIf("ProductCategories", "Index")" title="Quản lý danh mục">
+        <i class="bi bi-tags-fill"></i>
+        <span>Quản lý danh mục</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Product" asp-action="Index" class="menu-link @ActiveIf("Product", "Index")" title="Quản lý sản phẩm">
+        <i class="bi bi-cup-hot-fill"></i>
+        <span>Quản lý sản phẩm</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Reporting" asp-action="Revenue" class="menu-link @ActiveIf("Reporting", "Revenue")" title="Báo cáo doanh thu">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>Báo cáo doanh thu</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Reporting" asp-action="Warehouse" class="menu-link @ActiveIf("Reporting", "Warehouse")" title="Báo cáo xuất - nhập kho">
+        <i class="bi bi-box-seam"></i>
+        <span>Báo cáo xuất - nhập kho</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Reporting" asp-action="CashHandover" class="menu-link @ActiveIf("Reporting", "CashHandover")" title="Báo cáo bàn giao ca">
+        <i class="bi bi-cash-coin"></i>
+        <span>Báo cáo bàn giao ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Reporting" asp-action="Export" class="menu-link @ActiveIf("Reporting", "Export")" title="Xuất file">
+        <i class="bi bi-file-earmark-arrow-down-fill"></i>
+        <span>Xuất file</span>
+    </a>
+</li>
+

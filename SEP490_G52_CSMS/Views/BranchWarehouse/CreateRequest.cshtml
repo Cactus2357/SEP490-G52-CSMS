@@ -1,0 +1,464 @@
+@model List<SEP490_G52_CSMS.Models.Sales.BranchInventory>
+
+@{
+    ViewData["Title"] = "Đơn Nhập Hàng Từ Kho Tổng";
+}
+
+<div class="warehouse-page p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark m-0">ĐƠN NHẬP HÀNG TỪ KHO TỔNG</h2>
+            <span class="text-secondary fw-semibold fs-5"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Chi nhánh: @ViewBag.BranchName</span>
+        </div>
+        <span class="badge bg-secondary p-2 fs-6">Tạo đơn yêu cầu</span>
+    </div>
+
+    <div class="row">
+        <!-- Left: Filter Panel & Materials List -->
+        <div class="col-lg-5 col-md-12 mb-4 mb-lg-0">
+            <!-- Part A: Filter & Search Panel -->
+            <div class="card shadow-sm border-0 rounded-3 mb-3">
+                <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold m-0 text-dark">
+                        <i class="bi bi-funnel-fill text-primary me-2"></i>Bộ lọc nguyên liệu
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0" onclick="resetFilters()" title="Xóa toàn bộ bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Đặt lại
+                    </button>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="filterKeyword" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm tên nguyên liệu..." oninput="filterMaterials()" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <select id="filterCategory" class="form-select form-select-sm" onchange="filterMaterials()">
+                                <option value="">Tất cả loại NgL</option>
+                                @{
+                                    var kinds = Model?.Where(m => m.Material != null && !string.IsNullOrWhiteSpace(m.Material.MaterialKind))
+                                                      .Select(m => m.Material!.MaterialKind)
+                                                      .Distinct()
+                                                      .OrderBy(k => k)
+                                                      .ToList() ?? new List<string>();
+                                    foreach (var kind in kinds)
+                                    {
+                                        <option value="@kind">@kind</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <select id="filterStockStatus" class="form-select form-select-sm" onchange="filterMaterials()">
+                                <option value="">Tất cả tồn kho</option>
+                                <option value="low">Sắp hết / Thiếu</option>
+                                <option value="normal">Tồn an toàn</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part B: Materials List -->
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold m-0 text-dark d-inline">Danh sách nguyên liệu</h6>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill ms-1" id="matCountBadge">@(Model?.Count ?? 0)</span>
+                    </div>
+                    <button class="btn btn-sm btn-dark fw-bold px-3" onclick="bulkAddSelected()">
+                        <i class="bi bi-plus-lg me-1"></i>Thêm vào đơn
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+                        <table class="table table-sm align-middle m-0 small" id="materialsTable">
+                            <thead class="table-light sticky-top" style="z-index: 10;">
+                                <tr>
+                                    <th style="width: 5%;" class="ps-2 text-center">
+                                        <input type="checkbox" id="checkAllBulk" class="form-check-input" style="cursor: pointer;" onchange="toggleSelectAllBulk(this)" title="Chọn/Bỏ chọn tất cả đang hiển thị" />
+                                    </th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th style="width: 30%;">Tồn kho</th>
+                                    <th style="width: 28%;">Số lượng cần</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    for (int i = 0; i < Model.Count; i++)
+                                    {
+                                        var inv = Model[i];
+                                        var mat = inv.Material;
+                                        if (mat != null)
+                                        {
+                                            var isLow = inv.StockQuantity <= inv.LowStockThreshold;
+                                            var warningClass = isLow ? "table-danger text-danger fw-bold" : "";
+                                            <tr class="mat-item-row @warningClass" 
+                                                data-bulk-id="@mat.MaterialId" 
+                                                data-name="@mat.MaterialName" 
+                                                data-kind="@mat.MaterialKind" 
+                                                data-unit="@mat.StorageUnit" 
+                                                data-is-low="@(isLow ? "true" : "false")"
+                                                onclick="toggleRowCheckbox(event, this)" 
+                                                style="cursor: pointer;">
+                                                <td class="ps-2 text-center">
+                                                    <input type="checkbox" class="form-check-input bulk-checkbox" style="cursor: pointer;" />
+                                                </td>
+                                                <td>
+                                                    <span>@mat.MaterialName</span>
+                                                    @if (isLow)
+                                                    {
+                                                        <span class="badge bg-danger ms-1 p-1 small" style="font-size:0.65rem;">Sắp hết</span>
+                                                    }
+                                                </td>
+                                                <td class="text-secondary small">
+                                                    @inv.StockQuantity.ToString("G29") @mat.StorageUnit
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm bulk-qty-input" placeholder="0" min="0.001" step="any" style="padding: 2px 5px;" oninput="onBulkQtyInput(this)" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                }
+                                <tr id="noFilterResultRow" class="d-none">
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="bi bi-funnel text-secondary fs-4 d-block mb-1"></i>
+                                        Không tìm thấy nguyên liệu phù hợp với bộ lọc.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 bg-light p-3 rounded border border-light-subtle">
+                <p class="m-0 text-danger small fw-semibold"><i class="bi bi-info-circle-fill me-1"></i> Lưu ý:</p>
+                <p class="m-0 mt-1 text-danger small">Nhập những loại nguyên liệu cần để pha chế đồ uống.</p>
+                <p class="m-0 mt-1 text-danger small">Số lượng nguyên liệu là số lượng cần dùng để pha chế đồ uống tại chi nhánh.</p>
+            </div>
+        </div>
+
+        <!-- Right: Draft Supply Request Lines -->
+        <div class="col-lg-7 col-md-12">
+            <!-- Delivery & Receiver Info Card -->
+            <div class="card shadow-sm border-0 rounded-3 mb-3">
+                <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center">
+                    <i class="bi bi-person-badge-fill text-primary me-2"></i>
+                    <h6 class="fw-bold m-0 text-dark">Thông tin người nhận & Thời gian giao nhận hàng</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Người nhận hàng tại chi nhánh <span class="text-danger">*</span></label>
+                            <input type="text" id="inputReceiverName" class="form-control form-control-sm" placeholder="Họ tên người nhận..." value="@ViewBag.DefaultReceiverName" required />
+                            <div class="invalid-feedback" id="valInputReceiverName">Vui lòng nhập họ tên người nhận.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Số điện thoại người nhận <span class="text-danger">*</span></label>
+                            <input type="tel" id="inputReceiverPhone" class="form-control form-control-sm" placeholder="VD: 0912345678" value="@ViewBag.DefaultReceiverPhone" pattern="^0\d{9}$" maxlength="10" required />
+                            <div class="invalid-feedback" id="valInputReceiverPhone">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Ngày mong muốn nhận hàng</label>
+                            <input type="date" id="inputExpectedDeliveryDate" class="form-control form-control-sm" min="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Ghi chú đơn hàng (nếu có)</label>
+                            <input type="text" id="inputRequestNote" class="form-control form-control-sm" placeholder="Ghi chú về thời gian giao, bảo quản..." maxlength="255" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-dark text-white py-3">
+                    <h6 class="fw-bold m-0"><i class="bi bi-list-check me-2 text-warning"></i>Danh sách nguyên liệu yêu cầu</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="min-height: 250px;">
+                        <table class="table align-middle m-0 table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 10%;" class="ps-3">STT</th>
+                                    <th style="width: 45%;">Tên nguyên liệu</th>
+                                    <th style="width: 20%;">Loại nguyên liệu</th>
+                                    <th style="width: 20%;">Số lượng cần dùng</th>
+                                    <th style="width: 5%;" class="text-center">Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestTableBody">
+                                <tr id="emptyRow">
+                                    <td colspan="5" class="text-center text-muted py-5">
+                                        <i class="bi bi-clipboard-plus fs-1 d-block mb-2 text-secondary-subtle"></i>
+                                        Chưa có nguyên liệu nào trong danh sách.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top p-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2 fw-bold" onclick="cancelRequestDraft()">Hủy đơn</button>
+                    <button type="button" class="btn btn-success px-5 py-2 fw-bold" onclick="submitSupplyRequest()">Tạo đơn yêu cầu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .warehouse-page {
+        background-color: #f8f9fa;
+        /* min-height: calc(100vh - 70px); */
+    }
+    .table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #adb5bd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let requestItems = [];
+
+        // --- 1. FILTERING MATERIALS ---
+        function filterMaterials() {
+            let kw = ($('#filterKeyword').val() || '').trim();
+            let cat = ($('#filterCategory').val() || '').trim().toLowerCase();
+            let stock = ($('#filterStockStatus').val() || '').trim();
+
+            let visibleCount = 0;
+
+            $('#materialsTable tbody tr.mat-item-row').each(function() {
+                let name = $(this).attr('data-name') || '';
+                let kind = ($(this).attr('data-kind') || '').toLowerCase();
+                let isLow = $(this).attr('data-is-low') === 'true';
+
+                let matchKw = !kw || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatch(name, kw) : name.toLowerCase().includes(kw.toLowerCase()));
+                let matchCat = !cat || kind === cat;
+                let matchStock = true;
+                if (stock === 'low') matchStock = isLow;
+                else if (stock === 'normal') matchStock = !isLow;
+
+                if (matchKw && matchCat && matchStock) {
+                    $(this).removeClass('d-none');
+                    visibleCount++;
+                } else {
+                    $(this).addClass('d-none');
+                }
+            });
+
+            $('#matCountBadge').text(visibleCount);
+            if (visibleCount === 0) {
+                $('#noFilterResultRow').removeClass('d-none');
+            } else {
+                $('#noFilterResultRow').addClass('d-none');
+            }
+        }
+
+        function resetFilters() {
+            $('#filterKeyword').val('');
+            $('#filterCategory').val('');
+            $('#filterStockStatus').val('');
+            filterMaterials();
+        }
+
+        function toggleSelectAllBulk(headerCb) {
+            let isChecked = $(headerCb).is(':checked');
+            $('#materialsTable tbody tr.mat-item-row:not(.d-none)').each(function() {
+                $(this).find('.bulk-checkbox').prop('checked', isChecked);
+            });
+        }
+
+        function onBulkQtyInput(input) {
+            let val = parseFloat($(input).val());
+            let row = $(input).closest('tr');
+            let cb = row.find('.bulk-checkbox');
+            if (!isNaN(val) && val > 0) {
+                cb.prop('checked', true);
+            }
+        }
+
+        // --- 2. BULK REQUEST ADD ---
+        function bulkAddSelected() {
+            let addedCount = 0;
+
+            $('tr[data-bulk-id]').each(function() {
+                let checkbox = $(this).find('.bulk-checkbox');
+                if (checkbox.is(':checked')) {
+                    let id = parseInt($(this).attr('data-bulk-id'));
+                    let name = $(this).attr('data-name');
+                    let kind = $(this).attr('data-kind');
+                    let unit = $(this).attr('data-unit');
+                    let qtyInput = $(this).find('.bulk-qty-input');
+                    let qty = parseFloat(qtyInput.val());
+
+                    if (isNaN(qty) || qty <= 0) {
+                        showToast(`Số lượng cho "${name}" phải lớn hơn 0.`, 'warning');
+                        return;
+                    }
+
+                    let exists = requestItems.find(item => item.materialId === id);
+                    if (exists) {
+                        exists.quantity += qty;
+                    } else {
+                        requestItems.push({
+                            materialId: id,
+                            materialName: name,
+                            category: kind,
+                            storageUnit: unit,
+                            quantity: qty
+                        });
+                    }
+
+                    // reset
+                    qtyInput.val('');
+                    checkbox.prop('checked', false);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                renderRequestTable();
+                showToast(`Đã thêm hàng loạt ${addedCount} nguyên liệu vào đơn nháp!`, 'success');
+            } else {
+                showToast('Vui lòng tích chọn nguyên liệu và điền số lượng cần trước khi nhấn Thêm hàng loạt.', 'warning');
+            }
+        }
+
+        function removeRequestLine(id) {
+            requestItems = requestItems.filter(item => item.materialId !== id);
+            renderRequestTable();
+        }
+
+        function renderRequestTable() {
+            $('#emptyRow').addClass('d-none');
+            $('#requestTableBody').find('.draft-row').remove();
+
+            if (requestItems.length === 0) {
+                $('#emptyRow').removeClass('d-none');
+                return;
+            }
+
+            requestItems.forEach((item, idx) => {
+                let row = `
+                    <tr class="draft-row">
+                        <td class="ps-3">${idx + 1}</td>
+                        <td class="fw-bold">${item.materialName}</td>
+                        <td>${item.category}</td>
+                        <td class="fw-semibold">${item.quantity.toString()} ${item.storageUnit}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeRequestLine(${item.materialId})">
+                                <i class="bi bi-x-circle fs-5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                $('#requestTableBody').append(row);
+            });
+        }
+
+        function cancelRequestDraft() {
+            showConfirmModal(
+                'Hủy đơn yêu cầu',
+                'Tất cả các dòng yêu cầu đang lập sẽ bị xóa bỏ. Bạn có chắc chắn muốn hủy?',
+                function() {
+                    window.location.href = '/BranchWarehouse/Index';
+                }
+            );
+        }
+
+        function submitSupplyRequest() {
+            if (requestItems.length === 0) {
+                showToast('Đơn hàng phải có ít nhất một nguyên liệu.', 'warning');
+                return;
+            }
+
+            let receiverName = $('#inputReceiverName').val().trim();
+            let receiverPhone = $('#inputReceiverPhone').val().trim();
+            let expectedDeliveryDate = $('#inputExpectedDeliveryDate').val();
+            let requestNote = $('#inputRequestNote').val().trim();
+
+            if (!receiverName) {
+                $('#inputReceiverName').addClass('is-invalid');
+                showToast('Vui lòng nhập họ tên người nhận hàng.', 'warning');
+                return;
+            } else {
+                $('#inputReceiverName').removeClass('is-invalid');
+            }
+
+            const phoneRegex = /^0\d{9}$/;
+            if (!receiverPhone || !phoneRegex.test(receiverPhone)) {
+                $('#inputReceiverPhone').addClass('is-invalid');
+                showToast('Số điện thoại người nhận không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).', 'warning');
+                return;
+            } else {
+                $('#inputReceiverPhone').removeClass('is-invalid');
+            }
+
+            let payload = {
+                receiverName: receiverName,
+                receiverPhone: receiverPhone,
+                expectedDeliveryDate: expectedDeliveryDate ? expectedDeliveryDate : null,
+                requestNote: requestNote,
+                items: requestItems.map(i => ({
+                    materialId: i.materialId,
+                    quantity: i.quantity
+                }))
+            };
+
+            showConfirmModal(
+                'Xác nhận tạo đơn yêu cầu nhập',
+                'Bạn có chắc chắn muốn gửi đơn yêu cầu nhập nguyên liệu này lên Tổng kho không?',
+                function() {
+                    $.ajax({
+                        url: '/BranchWarehouse/SubmitSupplyRequest',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(payload),
+                        success: function(res) {
+                            if (res.success) {
+                                showToast(`Tạo đơn yêu cầu thành công! Mã đơn: ${res.requestCode}`, 'success');
+                                setTimeout(function() {
+                                    window.location.href = '/BranchWarehouse/RequestHistory';
+                                }, 1500);
+                            } else {
+                                showToast(res.message, 'danger');
+                            }
+                        },
+                        error: function() {
+                            showToast('Lỗi kết nối máy chủ khi tạo đơn đặt hàng.', 'danger');
+                        }
+                    });
+                }
+            );
+        }
+
+        function toggleRowCheckbox(event, row) {
+            if (event.target.tagName.toLowerCase() === 'input') {
+                return;
+            }
+            const checkbox = row.querySelector('.bulk-checkbox');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        }
+    </script>
+}

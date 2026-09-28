@@ -1,0 +1,234 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.Sales.Category.CategoryListViewModel>
+
+@{
+    ViewData["Title"] = "Quản lí danh mục";
+}
+
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                    <i class="bi bi-tag-fill me-1"></i>Sản Phẩm & Thực Đơn
+                </span>
+            </div>
+            <h3 class="fw-bold text-dark mb-0">QUẢN LÝ DANH MỤC</h3>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary px-3.5 py-2 fw-semibold rounded-3 shadow-sm d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                <i class="bi bi-plus-lg"></i> Thêm danh mục
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
+            <div>@TempData["Success"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
+            <div>@TempData["Error"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Search & Filter Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3 p-md-4">
+            <form asp-action="Index" method="get">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-8 col-lg-9">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control bg-light border-start-0" placeholder="Tìm kiếm tên danh mục..." />
+                            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                            {
+                                <a asp-action="Index" class="btn btn-light border border-start-0 text-muted" title="Xóa tìm kiếm">
+                                    <i class="bi bi-x-lg"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-lg-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-dark fw-semibold flex-fill py-2 rounded-3">
+                            <i class="bi bi-search me-1"></i>Tìm kiếm
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold py-2 rounded-3 px-3" title="Làm mới bộ lọc">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary small text-uppercase fw-semibold border-bottom">
+                    <tr>
+                        <th class="ps-4 py-3" style="width: 25%;">Tên Danh Mục</th>
+                        <th class="py-3" style="width: 25%;">Biến Thể</th>
+                        <th class="py-3" style="width: 35%;">Mô Tả</th>
+                        <th class="text-center py-3 pe-4" style="width: 15%;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">@item.CategoryName</div>
+                                </td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(item.Variants))
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary font-monospace fw-medium px-2 py-1">
+                                            @item.Variants
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(item.Description))
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-secondary small">@item.Description</span>
+                                    }
+                                </td>
+                                <td class="text-center pe-4">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary rounded-2 px-2.5 py-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editCategoryModal"
+                                            data-category-id="@item.CategoryId"
+                                            data-category-name="@item.CategoryName"
+                                            data-category-description="@item.Description"
+                                            title="Sửa danh mục">
+                                        <i class="bi bi-pencil-square me-1"></i>Sửa
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                Không tìm thấy danh mục phù hợp.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create Category Modal -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-labelledby="createCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-light py-3 border-bottom">
+                    <h5 class="modal-title fw-bold text-dark" id="createCategoryModalLabel">
+                        <i class="bi bi-plus-circle me-2 text-primary"></i>Thêm danh mục mới
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">
+                            Tên danh mục <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" name="CategoryName" class="form-control py-2 shadow-sm" required maxlength="150" placeholder="VD: Cà phê, Trà sữa..." />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Mô tả</label>
+                        <textarea name="Description" class="form-control py-2 shadow-sm" rows="4" maxlength="500" placeholder="Nhập mô tả ngắn cho danh mục..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-3 border-top d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary px-3 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold rounded-3 shadow-sm">Lưu danh mục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editCategoryId" name="CategoryId" />
+                <div class="modal-header bg-light py-3 border-bottom">
+                    <h5 class="modal-title fw-bold text-dark" id="editCategoryModalLabel">
+                        <i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa danh mục
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">
+                            Tên danh mục <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="editCategoryName" name="CategoryName" class="form-control py-2 shadow-sm" required maxlength="150" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Mô tả</label>
+                        <textarea id="editCategoryDescription" name="Description" class="form-control py-2 shadow-sm" rows="4" maxlength="500"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-3 border-top d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary px-3 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold rounded-3 shadow-sm">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const editCategoryModal = document.getElementById('editCategoryModal');
+
+        if (editCategoryModal) {
+            editCategoryModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+
+                const categoryId = button.getAttribute('data-category-id');
+                const categoryName = button.getAttribute('data-category-name');
+                const categoryDescription = button.getAttribute('data-category-description');
+
+                document.getElementById('editCategoryId').value = categoryId;
+                document.getElementById('editCategoryName').value = categoryName;
+                document.getElementById('editCategoryDescription').value =
+                    categoryDescription ?? '';
+            });
+        }
+    </script>
+}

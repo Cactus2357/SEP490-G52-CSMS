@@ -1,0 +1,390 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Monitor - CSMS</title>
+    
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #110d0a 0%, #20150f 100%);
+            color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Decorative background light sources */
+        .ambient-light-1 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(230, 126, 34, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -100px;
+            left: -100px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .ambient-light-2 {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(142, 68, 173, 0.1) 0%, rgba(0,0,0,0) 70%);
+            bottom: -150px;
+            right: -150px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .monitor-container {
+            width: 100%;
+            max-width: 1500px;
+            padding: 30px;
+            z-index: 2;
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* Glassmorphism Panel styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        /* Idle State / Welcome */
+        .idle-screen {
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .coffee-cup-icon {
+            font-size: 8rem;
+            color: #d35400;
+            display: inline-block;
+            margin-bottom: 20px;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .welcome-title {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #f39c12, #d35400);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.6rem;
+            font-weight: 300;
+            color: #a8a9ab;
+        }
+
+        /* Large Font Items Table */
+        .large-cart-table {
+            width: 100%;
+            color: #ffffff;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        .large-cart-table th {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f39c12;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 14px;
+            border-bottom: 2px solid rgba(243, 156, 18, 0.3);
+        }
+
+        .large-cart-table td {
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding: 14px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .large-cart-table tr td:first-child {
+            border-top-left-radius: 16px;
+            border-bottom-left-radius: 16px;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .large-cart-table tr td:last-child {
+            border-top-right-radius: 16px;
+            border-bottom-right-radius: 16px;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .qr-card-large {
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 24px;
+            display: inline-block;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .qr-img-large {
+            width: 280px;
+            height: 280px;
+            object-fit: contain;
+        }
+
+        /* Success Screen */
+        .success-screen {
+            display: none;
+            text-align: center;
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .checkmark-icon {
+            font-size: 9rem;
+            color: #2ecc71;
+            margin-bottom: 30px;
+            animation: pulseSuccess 2s infinite;
+        }
+
+        .success-title {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #2ecc71;
+            margin-bottom: 15px;
+        }
+
+        .success-subtitle {
+            font-size: 2.2rem;
+            color: #bdc3c7;
+            font-weight: 300;
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @@keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @@keyframes pulseSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-light-1"></div>
+    <div class="ambient-light-2"></div>
+
+    <div class="monitor-container">
+        <!-- Idle Welcome Screen -->
+        <div id="idleScreen" class="idle-screen glass-panel">
+            <i class="bi bi-cup-hot-fill coffee-cup-icon"></i>
+            <h1 class="welcome-title">CSMS CAFE</h1>
+            <p class="welcome-subtitle">Xin chào! Rất hân hạnh được phục vụ quý khách.</p>
+            <p class="text-secondary fs-4 mt-4 opacity-75">Vui lòng gọi món tại quầy.</p>
+        </div>
+
+        <!-- Active Order / Cart Screen (Large Font) -->
+        <div id="activeCartScreen" class="glass-panel" style="display: none;">
+            <div class="d-flex align-items-center justify-content-between mb-4 border-bottom border-secondary pb-3">
+                <h2 class="display-5 fw-extrabold text-warning mb-0">
+                    <i class="bi bi-cart-check-fill me-3"></i>ĐƠN HÀNG BẠN ĐÃ CHỌN
+                </h2>
+                <div class="badge bg-warning text-dark fs-3 px-4 py-2 rounded-pill fw-bold" id="cartItemCountBadge">0 món</div>
+            </div>
+
+            <div class="row g-4" id="cartContentLayout">
+                <!-- Left / Full Column: Items List -->
+                <div id="cartItemsColumn" class="col-12">
+                    <div style="max-height: 520px; overflow-y: auto; padding-right: 10px;">
+                        <table class="large-cart-table">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Size</th>
+                                    <th class="text-center">Số lượng</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartTableBody">
+                                <!-- Filled by JS in large font -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between mt-4 pt-3 border-top border-secondary">
+                        <div class="display-6 text-uppercase fw-bold text-light">TỔNG THÀNH TIỀN:</div>
+                        <div class="display-3 fw-bold text-success" id="cartTotalAmount">0 đ</div>
+                    </div>
+                </div>
+
+                <!-- Right Column: QR Payment Code (Hidden when just reviewing cart) -->
+                <div id="qrPaymentColumn" class="col-lg-5 col-12 d-none">
+                    <div class="glass-panel text-center h-100 d-flex flex-column justify-content-center align-items-center p-4 border border-warning">
+                        <h3 class="fw-bold text-warning mb-3">QUÉT MÃ THANH TOÁN</h3>
+                        <div class="qr-card-large mb-3">
+                            <img id="qrImage" src="" alt="Mã QR Chuyển khoản" class="qr-img-large">
+                        </div>
+                        <p class="fs-4 text-light fw-semibold mb-0">
+                            Ngân hàng / Chuyển khoản QR<br>
+                            <span class="fs-5 text-warning opacity-75">Vui lòng quét mã QR để hoàn tất thanh toán</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div id="successScreen" class="success-screen glass-panel">
+            <i class="bi bi-check-circle-fill checkmark-icon"></i>
+            <h1 class="success-title">THANH TOÁN THÀNH CÔNG!</h1>
+            <div class="my-3">
+                <span class="badge bg-success fs-1 px-4 py-3 rounded-4 shadow fw-bold">
+                    SỐ TIỀN NHẬN ĐƯỢC: <span id="monitorReceivedAmount">0 đ</span>
+                </span>
+            </div>
+            <p class="success-subtitle">Cảm ơn quý khách! Đơn hàng của bạn đã được gửi tới quầy pha chế.</p>
+            <p class="text-secondary fs-4 mt-4 opacity-75">Hẹn gặp lại quý khách!</p>
+        </div>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var idleScreen = document.getElementById('idleScreen');
+        var activeCartScreen = document.getElementById('activeCartScreen');
+        var successScreen = document.getElementById('successScreen');
+        var cartTableBody = document.getElementById('cartTableBody');
+        var cartTotalAmount = document.getElementById('cartTotalAmount');
+        var cartItemCountBadge = document.getElementById('cartItemCountBadge');
+        var cartItemsColumn = document.getElementById('cartItemsColumn');
+        var qrPaymentColumn = document.getElementById('qrPaymentColumn');
+        var qrImage = document.getElementById('qrImage');
+        var monitorReceivedAmount = document.getElementById('monitorReceivedAmount');
+
+        function renderCartMonitor(cartItems, total) {
+            if (!cartItems || cartItems.length === 0) {
+                cartTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted fs-2">Chưa có sản phẩm nào được chọn</td></tr>';
+                cartTotalAmount.innerText = '0 đ';
+                cartItemCountBadge.innerText = '0 món';
+                return;
+            }
+
+            var html = '';
+            var totalQty = 0;
+            cartItems.forEach(function(item) {
+                var unitPrice = item.unitPrice || (item.quantity ? Math.round(item.amount / item.quantity) : 0);
+                var itemTotal = item.amount || (item.quantity * unitPrice);
+                totalQty += item.quantity;
+                var sizeText = item.size || 'Tiêu chuẩn';
+                if (item.variants && item.selectedVariantId) {
+                    var v = item.variants.find(function(x) { return x.variantId === item.selectedVariantId; });
+                    if (v) sizeText = v.sizeVariant;
+                }
+
+                html += '<tr>' +
+                    '<td class="fs-3 fw-bold text-white">' + item.name + '</td>' +
+                    '<td><span class="badge bg-warning text-dark fs-5 px-3 py-2 fw-bold">' + sizeText + '</span></td>' +
+                    '<td class="text-center fs-3 fw-bold text-warning">' + item.quantity + '</td>' +
+                    '<td class="text-end fs-4 text-light">' + unitPrice.toLocaleString('vi-VN') + ' đ</td>' +
+                    '<td class="text-end fs-3 fw-bold text-success">' + itemTotal.toLocaleString('vi-VN') + ' đ</td>' +
+                    '</tr>';
+            });
+
+            cartTableBody.innerHTML = html;
+            cartTotalAmount.innerText = total.toLocaleString('vi-VN') + ' đ';
+            cartItemCountBadge.innerText = totalQty + ' món';
+        }
+
+        function updateState(state) {
+            var itemsList = (state && (state.cart || state.items)) ? (state.cart || state.items) : [];
+
+            if (!state || state.mode === 'Idle' || (itemsList.length === 0 && state.mode !== 'PaidSuccess')) {
+                idleScreen.style.display = 'block';
+                activeCartScreen.style.display = 'none';
+                successScreen.style.display = 'none';
+                return;
+            }
+
+            if (state.mode === 'PaidSuccess') {
+                if (state.receivedAmount) {
+                    monitorReceivedAmount.innerText = state.receivedAmount;
+                } else if (state.total) {
+                    monitorReceivedAmount.innerText = (state.total).toLocaleString('vi-VN') + ' đ';
+                }
+                idleScreen.style.display = 'none';
+                activeCartScreen.style.display = 'none';
+                successScreen.style.display = 'block';
+                setTimeout(function() {
+                    var curr = localStorage.getItem('customer_display_state');
+                    if (!curr || JSON.parse(curr).mode === 'PaidSuccess') {
+                        idleScreen.style.display = 'block';
+                        activeCartScreen.style.display = 'none';
+                        successScreen.style.display = 'none';
+                    }
+                }, 6000);
+                return;
+            }
+
+            // Show active cart in large font
+            idleScreen.style.display = 'none';
+            successScreen.style.display = 'none';
+            activeCartScreen.style.display = 'block';
+
+            renderCartMonitor(itemsList, state.total || 0);
+
+            if (state.mode === 'BankTransfer' && state.qrCodeUrl) {
+                qrImage.src = state.qrCodeUrl;
+                cartItemsColumn.className = 'col-lg-7 col-12';
+                qrPaymentColumn.classList.remove('d-none');
+            } else {
+                cartItemsColumn.className = 'col-12';
+                qrPaymentColumn.classList.add('d-none');
+            }
+        }
+
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'customer_display_state') {
+                if (e.newValue) {
+                    try { updateState(JSON.parse(e.newValue)); } catch (err) {}
+                } else {
+                    updateState({ mode: 'Idle' });
+                }
+            }
+        });
+
+        var init = localStorage.getItem('customer_display_state');
+        if (init) {
+            try { updateState(JSON.parse(init)); } catch (err) { updateState({ mode: 'Idle' }); }
+        } else {
+            updateState({ mode: 'Idle' });
+        }
+    </script>
+</body>
+</html>

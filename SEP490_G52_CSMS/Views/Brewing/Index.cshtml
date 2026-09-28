@@ -1,0 +1,1414 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.ViewModels.OrderSummaryViewModel>
+
+@{
+    ViewData["Title"] = "Pha chế đơn hàng";
+}
+
+<style>
+    .order-card {
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        border-radius: 8px;
+    }
+    .order-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .kds-row-clickable {
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s ease;
+    }
+    .kds-row-clickable:hover {
+        background-color: #f8f9fa !important;
+    }
+    .kds-row-done {
+        background-color: #f0faf4 !important;
+    }
+    .kds-row-done .item-text {
+        text-decoration: line-through;
+        color: #6c757d !important;
+    }
+    .kds-checkbox {
+        width: 19px;
+        height: 19px;
+        cursor: pointer;
+        margin: 0;
+        vertical-align: middle;
+    }
+    .kds-chk-col {
+        width: 1%;
+        white-space: nowrap;
+        text-align: center;
+        padding-left: 14px !important;
+        padding-right: 8px !important;
+    }
+    .batch-recipe-card {
+        border-radius: 8px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .batch-recipe-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .batch-recipe-card .card-header {
+        min-height: 48px;
+    }
+    /* Distinct badge colors for order badges */
+    .bg-indigo { background-color: #6610f2 !important; color: #fff !important; }
+    .bg-purple { background-color: #6f42c1 !important; color: #fff !important; }
+    .bg-pink { background-color: #d63384 !important; color: #fff !important; }
+    .bg-teal { background-color: #20c997 !important; color: #fff !important; }
+    .bg-orange { background-color: #fd7e14 !important; color: #fff !important; }
+
+    @@media print {
+        body * {
+            visibility: hidden !important;
+        }
+        #k80DeliverySlipContainer, #k80DeliverySlipContainer * {
+            visibility: visible !important;
+        }
+        #k80DeliverySlipContainer {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 76mm !important;
+            margin: 0 !important;
+            padding: 2mm 3mm !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: #fff !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+            color: #000 !important;
+            z-index: 999999 !important;
+        }
+        @@page {
+            size: 80mm auto;
+            margin: 0;
+        }
+    }
+</style>
+
+@if (ViewBag.NotInShift == true)
+{
+    <div class="container py-4 my-auto" style="min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center;">
+        <div class="row justify-content-center w-100">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden my-3">
+                    <div class="card-header bg-danger text-white py-3 px-4 border-0">
+                        <h5 class="card-title fw-bold mb-0">
+                            <i class="bi bi-exclamation-octagon-fill me-2"></i>CHƯA ĐỦ ĐIỀU KIỆN VÀO MÀN HÌNH PHA CHẾ
+                        </h5>
+                    </div>
+                    <div class="card-body p-4 p-md-5 text-center">
+                        <div class="mb-4">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 90px; height: 90px;">
+                                <i class="bi bi-cup-straw fs-1"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-2">
+                                @(ViewBag.ReasonCode == "NotScheduled" ? "Chưa Có Lịch Phân Công Ca Làm Việc" : (ViewBag.ReasonCode == "NotCheckedIn" ? "Chưa Chấm Công Vào Ca" : "Ca Làm Việc Đã Kết Thúc"))
+                            </h4>
+                            <p class="text-muted fs-6 mb-0">
+                                @ViewBag.NotInShiftMessage
+                            </p>
+                        </div>
+
+                        <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-dark py-3 px-4 rounded-3 text-start small mb-4">
+                            <i class="bi bi-info-circle-fill me-2 text-warning"></i>
+                            <strong>Quy định làm việc cho Bartender / Pha chế:</strong>
+                            <ul class="mb-0 mt-1">
+                                <li>Bạn phải có lịch làm việc được xếp tại chi nhánh trong ngày hôm nay.</li>
+                                <li>Bắt buộc <strong>chấm công vào ca (Check-in)</strong> trước khi xem và thao tác pha chế đơn hàng.</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            @if (ViewBag.ReasonCode == "NotCheckedIn")
+                            {
+                                <a href="@Url.Action("Logout", "Auth")" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất để Chấm công Face Login
+                                </a>
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-outline-primary btn-lg px-4 py-2.5 rounded-pill fw-semibold shadow-sm">
+                                    <i class="bi bi-calendar-check me-2"></i>Xem lịch làm việc
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-calendar-check me-2"></i>Xem Lịch Làm Việc
+                                </a>
+                            }
+                            <a href="/Home/Index" class="btn btn-outline-secondary btn-lg px-4 py-2.5 rounded-pill fw-semibold">
+                                <i class="bi bi-house me-2"></i>Về Trang Chủ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container-fluid px-4 pt-3 pb-5">
+        <!-- Tiêu đề trang & Tiến độ tổng -->
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
+        <h3 class="fw-bold mb-0 text-uppercase text-dark">
+            <i class="bi bi-cup-hot-fill text-primary me-2"></i>Tiếp nhận &amp; Pha chế đơn hàng
+        </h3>
+        
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-secondary small fw-semibold">Tiến độ tổng:</span>
+            <span class="badge bg-primary fs-6 px-3 py-1.5 rounded-pill" id="statTotalDrinksFraction">0 / 0</span>
+        </div>
+    </div>
+
+    <!-- Search bar dài chiếm toàn bộ chiều rộng -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-2.5">
+            <div class="input-group">
+                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="brewingSearch" class="form-control border-start-0 ps-0" placeholder="Tìm theo mã đơn hàng, tên khách hàng, tên món..." onkeyup="handleGlobalSearch()">
+                <button class="btn btn-outline-secondary border-start-0" type="button" onclick="clearSearch()" title="Xóa tìm kiếm">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Điều Hướng (Chuẩn Bootstrap 5 tối giản) -->
+    <ul class="nav nav-tabs mb-3" id="kdsViewTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-dark" id="tab-orders-view-btn" data-bs-toggle="tab" data-bs-target="#pills-orders-view" type="button" role="tab">
+                <i class="bi bi-card-checklist me-1 text-primary"></i>Theo Đơn Hàng
+                <span class="badge bg-secondary ms-1" id="badgeOrdersViewCount">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-dark" id="tab-batch-view-btn" data-bs-toggle="tab" data-bs-target="#pills-batch-view" type="button" role="tab">
+                <i class="bi bi-stack me-1 text-primary"></i>Tổng Hợp Theo Món
+                <span class="badge bg-secondary ms-1" id="badgeBatchViewCount">0</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Nội dung các Tab -->
+    <div class="tab-content" id="kdsViewTabsContent">
+        <!-- ========================================================= -->
+        <!-- TAB 1: THEO ĐƠN HÀNG                                       -->
+        <!-- ========================================================= -->
+        <div class="tab-pane fade show active" id="pills-orders-view" role="tabpanel">
+            <!-- Điều khiển riêng cho Tab Theo Đơn Hàng -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <!-- Bộ lọc trạng thái đơn -->
+                <div class="d-flex align-items-center gap-2 flex-wrap" id="orderStatusFilters">
+                    <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 fw-bold active filter-btn" data-filter="all" onclick="setOrderFilter('all', this)">
+                        Tất cả (<span id="filterCountAll">0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 py-1 fw-bold filter-btn" data-filter="waiting" onclick="setOrderFilter('waiting', this)">
+                        <i class="bi bi-hourglass-split me-1"></i>Chờ pha chế (<span id="filterCountWaiting">0</span>)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold filter-btn" data-filter="brewing" onclick="setOrderFilter('brewing', this)">
+                        <i class="bi bi-play-circle-fill me-1"></i>Đang pha chế (<span id="filterCountBrewing">0</span>)
+                    </button>
+                </div>
+
+                <!-- Nút thao tác riêng cho Tab Theo Đơn Hàng -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" id="btnStartAllWaiting" onclick="startAllWaitingOrders()">
+                        <i class="bi bi-play-fill me-1"></i>Pha tất cả đơn chờ
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm fw-semibold" onclick="toggleExpandAllOrders()">
+                        <i class="bi bi-arrows-expand me-1" id="iconExpandAll"></i><span id="textExpandAll">Mở rộng tất cả</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danh sách các thẻ đơn hàng -->
+            <div id="ordersCardsContainer" class="d-flex flex-column gap-3">
+                <div class="text-center py-5 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Đang tải danh sách đơn hàng...
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB 2: TỔNG HỢP THEO MÓN                                   -->
+        <!-- ========================================================= -->
+        <div class="tab-pane fade" id="pills-batch-view" role="tabpanel">
+            <!-- Danh sách gom món theo công thức -->
+            <div id="batchDrinksContainer" class="row g-3">
+                <div class="col-12 text-center py-5 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Đang tổng hợp các món pha chế...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- ========================================================= -->
+<!-- MODAL: XÁC NHẬN HOÀN THÀNH ĐƠN (KHI CÒN MÓN CHƯA TICK)     -->
+<!-- ========================================================= -->
+<div class="modal fade" id="confirmCompleteOrderModal" tabindex="-1" aria-labelledby="confirmCompleteOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-warning bg-opacity-10 py-3 px-4 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
+                    <h4 class="modal-title fw-bold text-dark mb-0" id="confirmCompleteOrderModalLabel">Xác nhận hoàn thành đơn</h4>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded border mb-3">
+                    <div>
+                        <span class="text-muted">Mã đơn:</span>
+                        <strong class="text-primary fs-5 ms-1" id="modalCompleteOrderId">MH------</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">Khách:</span>
+                        <strong class="text-dark fs-5 ms-1" id="modalCompleteCustomer">Khách lẻ</strong>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 mb-3 py-2.5 px-3">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Đơn hàng này hiện còn <strong id="modalCompleteUncheckedCount" class="text-danger fs-6">0</strong> món chưa được tích chọn.
+                </div>
+
+                <label class="form-label fw-bold text-secondary mb-1">Danh sách món chưa tích chọn hoàn thành:</label>
+                <div id="modalCompleteUncheckedList" class="border rounded p-3 bg-light mb-3" style="max-height: 280px; overflow-y: auto;">
+                    <!-- Rendered via JS -->
+                </div>
+
+                <p class="text-dark mb-0 text-center fw-semibold fs-6">
+                    Bạn có chắc chắn muốn xác nhận hoàn thành tất cả các món và kết thúc đơn hàng này không?
+                </p>
+            </div>
+
+            <div class="modal-footer bg-light py-3 px-4 border-top d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded px-4 fw-semibold" data-bs-dismiss="modal">
+                    Tiếp tục pha chế
+                </button>
+                <button type="button" class="btn btn-success rounded px-4 fw-bold shadow-sm" id="btnConfirmCompleteSubmit" onclick="executeCompleteOrderConfirmed()">
+                    <i class="bi bi-check-lg me-1"></i>Hoàn thành tất cả
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ========================================================= -->
+<!-- MODAL: IN PHIẾU GIAO ĐỒ (K80 DELIVERY SLIP)              -->
+<!-- ========================================================= -->
+<div class="modal fade" id="deliverySlipModal" tabindex="-1" aria-labelledby="deliverySlipModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header py-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="modal-title fw-bold text-dark mb-0" id="deliverySlipModalLabel">
+                    <i class="bi bi-printer me-1 text-primary"></i>Phiếu Đặt Đồ (K80)
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-light d-flex justify-content-center">
+                <!-- Printable K80 Order Slip Container -->
+                <div id="k80DeliverySlipContainer" class="bg-white p-3 shadow-sm border border-secondary border-opacity-25" style="width: 320px; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.35; color: #000;">
+                    <!-- Title & Order Subheader -->
+                    <div class="text-center pb-2 mb-2">
+                        <div class="fw-bold text-uppercase fs-5" style="letter-spacing: 0.5px;">PHIẾU ĐẶT ĐỒ</div>
+                        <div class="fw-bold text-uppercase mt-1" style="font-size: 13px;" id="slipSubHeader">08 - MANG VỀ - HĐ.MH260903-001</div>
+                    </div>
+
+                    <!-- Meta Information -->
+                    <div class="pb-2 mb-2" style="font-size: 12px; line-height: 1.45;">
+                        <div class="d-flex justify-content-between">
+                            <span>Giờ : <strong id="slipOrderTimeOnly">--:--:--</strong></span>
+                            <span>Ngày: <strong id="slipOrderDateOnly">--/--/----</strong></span>
+                        </div>
+                        <div>
+                            <span>Nhân viên: <strong id="slipCashierName">--</strong></span>
+                        </div>
+                        <div>
+                            <span>Số thứ tự: <strong id="slipOrderSeq">1</strong> (SL : <strong id="slipTotalItemsCount">0</strong>)</span>
+                        </div>
+                        <div id="slipNotesRow" class="d-none mt-1 p-1 border border-secondary border-opacity-50 rounded" style="background: #fff8e1;">
+                            <strong>Ghi chú:</strong> <em id="slipOrderNotes">--</em>
+                        </div>
+                    </div>
+
+                    <!-- Items Table with Solid Border -->
+                    <table class="w-100 mb-2" style="font-size: 12px; border: 1px solid #000; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #000; background-color: #f8f9fa;">
+                                <th class="py-1 px-2 text-start" style="border-right: 1px solid #000;">Tên món</th>
+                                <th class="py-1 px-1 text-center" style="width: 45px; border-right: 1px solid #000;">SL</th>
+                                <th class="py-1 px-1 text-center" style="width: 45px;">ĐVT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="slipItemsBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+
+                    <!-- Footer -->
+                    <div class="text-center pt-2 mt-1 border-top border-dark" style="font-size: 12px;">
+                        <div class="fw-semibold">Powered by CSMS.vn</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2 bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary btn-sm px-3 fw-bold shadow-sm" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>In phiếu đặt đồ (Print)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@section Scripts {
+    <script>
+        // =========================================================
+        // CLIENT STATE & COLOR PALETTE
+        // =========================================================
+        let rawOrdersList = [];
+        let currentFilter = 'all'; // 'all' | 'waiting' | 'brewing'
+        let expandedOrderIds = new Set();
+        let checkedItemKeys = new Set(); // `${orderId}_${variantId}`
+        let isAllExpanded = true;
+        let pendingCompleteOrderId = null;
+        let completeConfirmModalInstance = null;
+
+        // Distinct colors to differentiate orders
+        const orderPalette = [
+            { border: '#0d6efd', bg: '#f0f6ff', text: '#0d6efd', badgeClass: 'bg-primary text-white' },
+            { border: '#6f42c1', bg: '#f7f2ff', text: '#6f42c1', badgeClass: 'bg-purple text-white' },
+            { border: '#d63384', bg: '#fff0f6', text: '#d63384', badgeClass: 'bg-pink text-white' },
+            { border: '#fd7e14', bg: '#fff8f0', text: '#d96200', badgeClass: 'bg-warning text-dark' },
+            { border: '#0dcaf0', bg: '#f0fcff', text: '#055160', badgeClass: 'bg-info text-dark' },
+            { border: '#198754', bg: '#f0faf4', text: '#198754', badgeClass: 'bg-success text-white' },
+            { border: '#20c997', bg: '#f0faf6', text: '#0f5132', badgeClass: 'bg-teal text-white' }
+        ];
+
+        function showAppAlert(message, title) {
+            showConfirmModal(
+                title || 'Thông báo',
+                message,
+                function () {},
+                'Đồng ý',
+                ''
+            );
+        }
+
+        function getOrderStyle(orderId) {
+            if (!orderId) return orderPalette[0];
+            let hash = 0;
+            for (let i = 0; i < orderId.length; i++) {
+                hash = orderId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const idx = Math.abs(hash) % orderPalette.length;
+            return orderPalette[idx];
+        }
+
+        function getTimeAgo(dateStrOrRaw) {
+            if (!dateStrOrRaw) return '';
+            let date = new Date(dateStrOrRaw);
+            if (isNaN(date.getTime())) {
+                const parts = String(dateStrOrRaw).split(' ');
+                if (parts.length >= 2) {
+                    const dParts = parts[0].split('/');
+                    const tParts = parts[1].split(':');
+                    if (dParts.length === 3 && tParts.length >= 2) {
+                        const day = parseInt(dParts[0], 10);
+                        const month = parseInt(dParts[1], 10) - 1;
+                        const year = parseInt(dParts[2], 10);
+                        const hours = parseInt(tParts[0], 10);
+                        const mins = parseInt(tParts[1], 10);
+                        const secs = tParts.length > 2 ? parseInt(tParts[2], 10) : 0;
+                        date = new Date(year, month, day, hours, mins, secs);
+                    }
+                }
+            }
+            if (isNaN(date.getTime())) return '';
+            const now = new Date();
+            const diffSecs = Math.max(0, Math.floor((now - date) / 1000));
+            if (diffSecs < 60) return 'Vừa xong';
+            const diffMins = Math.floor(diffSecs / 60);
+            if (diffMins < 60) return `${diffMins} phút trước`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours} giờ trước`;
+            const diffDays = Math.floor(diffHours / 24);
+            return `${diffDays} ngày trước`;
+        }
+
+        // Restore checked items from sessionStorage
+        try {
+            const savedChecked = sessionStorage.getItem('csms_kds_checked_items');
+            if (savedChecked) {
+                JSON.parse(savedChecked).forEach(k => checkedItemKeys.add(k));
+            }
+        } catch (e) {
+            console.error('Failed to load saved checked items:', e);
+        }
+
+        function saveCheckedState() {
+            try {
+                sessionStorage.setItem('csms_kds_checked_items', JSON.stringify(Array.from(checkedItemKeys)));
+            } catch (e) {
+                console.error('Failed to save checked items:', e);
+            }
+        }
+
+        // =========================================================
+        // ITEM CHECKBOX & ROW CLICK TOGGLE
+        // =========================================================
+        function toggleItemCheck(orderId, variantId, isChecked) {
+            const key = `${orderId}_${variantId}`;
+            if (isChecked) {
+                checkedItemKeys.add(key);
+            } else {
+                checkedItemKeys.delete(key);
+            }
+            saveCheckedState();
+
+            updateOrderCardProgress(orderId);
+            syncBatchItemCheckboxes(orderId, variantId, isChecked);
+            updateTotalFraction();
+
+            // Gọi API backend lưu trạng thái hoàn thành của món
+            $.ajax({
+                url: '/Brewing/ToggleOrderItem',
+                type: 'POST',
+                data: { orderId: orderId, variantId: variantId, isCompleted: isChecked },
+                success: function (res) {
+                    // Không tự động hoàn thành đơn khi check hết món.
+                    // Đơn hàng chỉ hoàn thành khi bartender chủ động bấm nút "Hoàn thành đơn".
+                },
+                error: function (xhr) {
+                    // Nếu lỗi thì revert lại trạng thái giao diện
+                    if (isChecked) {
+                        checkedItemKeys.delete(key);
+                    } else {
+                        checkedItemKeys.add(key);
+                    }
+                    saveCheckedState();
+                    updateOrderCardProgress(orderId);
+                    syncBatchItemCheckboxes(orderId, variantId, !isChecked);
+                    updateTotalFraction();
+                    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể cập nhật trạng thái món.';
+                    showAppAlert(msg, 'Thông báo lỗi');
+                }
+            });
+        }
+
+        function toggleSelectAllOrder(orderId, isChecked) {
+            const order = rawOrdersList.find(o => o.orderId === orderId);
+            if (!order || !order.items) return;
+
+            const isBrewing = (order.brewingStatus === 'Brewing in Progress');
+            if (!isBrewing) {
+                startBrewingSingle(orderId);
+                return;
+            }
+
+            if (isChecked) {
+                // Tích chọn toàn bộ món trong đơn (không tự động hoàn thành đơn)
+                order.items.forEach(it => {
+                    const key = `${orderId}_${it.variantId}`;
+                    if (!checkedItemKeys.has(key)) {
+                        toggleItemCheck(orderId, it.variantId, true);
+                    }
+                });
+            } else {
+                // Hủy tích chọn toàn bộ món trong đơn
+                order.items.forEach(it => {
+                    const key = `${orderId}_${it.variantId}`;
+                    if (checkedItemKeys.has(key)) {
+                        toggleItemCheck(orderId, it.variantId, false);
+                    }
+                });
+            }
+        }
+
+        function toggleSelectAllBatch(variantId, isChecked) {
+            const relevantOrders = rawOrdersList.filter(o => o.items && o.items.some(it => it.variantId === variantId));
+            if (relevantOrders.length === 0) return;
+
+            relevantOrders.forEach(o => {
+                const isBrewing = (o.brewingStatus === 'Brewing in Progress');
+                if (isBrewing) {
+                    const isCurrentChecked = checkedItemKeys.has(`${o.orderId}_${variantId}`);
+                    if (isCurrentChecked !== isChecked) {
+                        toggleItemCheck(o.orderId, variantId, isChecked);
+                    }
+                }
+            });
+        }
+
+        function handleRowClick(event, orderId, variantId, isBrewing) {
+            if (!isBrewing) return;
+            // Prevent double-toggling if directly clicking on the checkbox or a button
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.closest('button')) {
+                return;
+            }
+            const key = `${orderId}_${variantId}`;
+            const willBeChecked = !checkedItemKeys.has(key);
+            toggleItemCheck(orderId, variantId, willBeChecked);
+        }
+
+        function syncBatchItemCheckboxes(orderId, variantId, isChecked) {
+            $(`.batch-item-chk[data-order-id="${orderId}"][data-variant-id="${variantId}"]`).prop('checked', isChecked);
+            renderBatchView(rawOrdersList);
+        }
+
+        // =========================================================
+        // ORDER ACTIONS: START, COMPLETE, BATCH START
+        // =========================================================
+        function startBrewingSingle(orderId) {
+            $.ajax({
+                url: '/Brewing/StartBrewing',
+                type: 'POST',
+                data: { orderId: orderId },
+                success: function (res) {
+                    expandedOrderIds.add(orderId);
+                    fetchLiveOrders();
+                },
+                error: function (xhr) {
+                    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể bắt đầu pha chế.';
+                    showAppAlert(msg, 'Thông báo lỗi');
+                }
+            });
+        }
+
+        function startAllWaitingOrders() {
+            const waitingOrders = rawOrdersList.filter(o => o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing');
+            if (waitingOrders.length === 0) {
+                showAppAlert('Hiện không có đơn hàng nào đang chờ pha chế.', 'Thông báo');
+                return;
+            }
+
+            const orderIds = waitingOrders.map(o => o.orderId);
+            showConfirmModal(
+                'Xác nhận pha tất cả đơn chờ',
+                `Bạn có chắc chắn muốn bắt đầu pha chế cho tất cả <strong>${orderIds.length} đơn hàng đang chờ</strong> không?`,
+                function () {
+                    $.ajax({
+                        url: '/Brewing/StartBrewingMultiple',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(orderIds),
+                        success: function () {
+                            orderIds.forEach(id => expandedOrderIds.add(id));
+                            fetchLiveOrders();
+                        },
+                        error: function (xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi bắt đầu pha chế.';
+                            showAppAlert(msg, 'Thông báo lỗi');
+                        }
+                    });
+                },
+                'Bắt đầu pha chế',
+                'Hủy'
+            );
+        }
+
+        function startBrewingForDrink(variantId) {
+            const waitingOrdersWithDrink = rawOrdersList.filter(o => 
+                (o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing') &&
+                o.items && o.items.some(it => it.variantId === variantId)
+            );
+
+            if (waitingOrdersWithDrink.length === 0) {
+                showAppAlert('Không có đơn hàng nào đang chờ cho món này.', 'Thông báo');
+                return;
+            }
+
+            const orderIds = waitingOrdersWithDrink.map(o => o.orderId);
+            showConfirmModal(
+                'Xác nhận pha chế món gom',
+                `Bắt đầu pha chế <strong>${orderIds.length} đơn hàng chờ</strong> có chứa món này?`,
+                function () {
+                    $.ajax({
+                        url: '/Brewing/StartBrewingMultiple',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(orderIds),
+                        success: function () {
+                            orderIds.forEach(id => expandedOrderIds.add(id));
+                            fetchLiveOrders();
+                        },
+                        error: function (xhr) {
+                            let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi bắt đầu pha chế.';
+                            showAppAlert(msg, 'Thông báo lỗi');
+                        }
+                    });
+                },
+                'Bắt đầu pha',
+                'Hủy'
+            );
+        }
+
+        function requestCompleteOrder(orderId) {
+            const order = rawOrdersList.find(o => o.orderId === orderId);
+            if (!order) return;
+
+            const uncheckedItems = (order.items || []).filter(it => !checkedItemKeys.has(`${orderId}_${it.variantId}`));
+
+            if (uncheckedItems.length > 0) {
+                pendingCompleteOrderId = orderId;
+                $('#modalCompleteOrderId').text(order.orderId);
+                $('#modalCompleteCustomer').text(order.recipientName || 'Khách lẻ');
+                $('#modalCompleteUncheckedCount').text(uncheckedItems.length);
+
+                let listHtml = '';
+                uncheckedItems.forEach(it => {
+                    listHtml += `
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <span class="fw-bold text-dark fs-6">${it.productName}</span>
+                                <span class="badge bg-secondary-subtle text-dark border ms-1">Size ${it.size}</span>
+                            </div>
+                            <span class="badge bg-secondary fs-6">x${it.quantity}</span>
+                        </div>
+                    `;
+                });
+                $('#modalCompleteUncheckedList').html(listHtml);
+
+                if (!completeConfirmModalInstance) {
+                    completeConfirmModalInstance = new bootstrap.Modal(document.getElementById('confirmCompleteOrderModal'));
+                }
+                completeConfirmModalInstance.show();
+            } else {
+                showConfirmModal(
+                    'Xác nhận hoàn thành',
+                    `Xác nhận đơn hàng <strong>${orderId}</strong> đã pha chế hoàn thành?`,
+                    function () {
+                        executeCompleteOrder(orderId);
+                    },
+                    'Hoàn thành',
+                    'Hủy'
+                );
+            }
+        }
+
+        function executeCompleteOrderConfirmed() {
+            if (!pendingCompleteOrderId) return;
+            const orderId = pendingCompleteOrderId;
+            if (completeConfirmModalInstance) {
+                completeConfirmModalInstance.hide();
+            }
+            executeCompleteOrder(orderId);
+        }
+
+        function executeCompleteOrder(orderId) {
+            $.ajax({
+                url: '/Brewing/CompleteBrewing',
+                type: 'POST',
+                data: { orderId: orderId },
+                success: function () {
+                    const keysToRemove = Array.from(checkedItemKeys).filter(k => k.startsWith(`${orderId}_`));
+                    keysToRemove.forEach(k => checkedItemKeys.delete(k));
+                    saveCheckedState();
+                    expandedOrderIds.delete(orderId);
+
+                    fetchLiveOrders();
+                },
+                error: function (xhr) {
+                    let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể hoàn thành đơn hàng.';
+                    showAppAlert(msg, 'Thông báo lỗi');
+                }
+            });
+        }
+
+        // =========================================================
+        // RENDER: ORDER VIEW (TAB 1)
+        // =========================================================
+        function renderOrderView(orders) {
+            const container = $('#ordersCardsContainer');
+            const search = ($('#brewingSearch').val() || '').trim();
+
+            let filtered = orders;
+
+            if (currentFilter === 'waiting') {
+                filtered = filtered.filter(o => o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing');
+            } else if (currentFilter === 'brewing') {
+                filtered = filtered.filter(o => o.brewingStatus === 'Brewing in Progress');
+            }
+
+            if (search) {
+                filtered = filtered.filter(o => {
+                    if (!window.CSMSSearch) {
+                        const s = search.toLowerCase();
+                        return o.orderId.toLowerCase().includes(s) || 
+                               o.recipientName.toLowerCase().includes(s) ||
+                               (o.items && o.items.some(it => it.productName.toLowerCase().includes(s)));
+                    }
+                    const searchPool = [o.orderId, o.recipientName, o.customerName, o.tableNumber];
+                    if (o.items) {
+                        o.items.forEach(it => searchPool.push(it.productName));
+                    }
+                    return window.CSMSSearch.fuzzyMatchAny(search, searchPool);
+                });
+            }
+
+            if (filtered.length === 0) {
+                container.html(`
+                    <div class="card border shadow-sm p-5 text-center text-muted">
+                        <i class="bi bi-cup-hot fs-1 text-secondary mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-1">Không có đơn hàng nào</h6>
+                        <small class="text-muted">Đơn hàng mới sẽ tự động hiển thị khi Thu ngân tạo đơn.</small>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '';
+            filtered.forEach((o, index) => {
+                const isBrewing = (o.brewingStatus === 'Brewing in Progress');
+                const isExpanded = expandedOrderIds.has(o.orderId);
+                const itemsCount = o.items ? o.items.length : 0;
+                const totalDrinks = o.items ? o.items.reduce((sum, it) => sum + (it.quantity || 0), 0) : 0;
+                const orderStyle = getOrderStyle(o.orderId);
+                const timeAgoText = getTimeAgo(o.orderTimeRaw || o.orderTime);
+
+                let checkedCount = 0;
+                if (o.items) {
+                    o.items.forEach(it => {
+                        if (checkedItemKeys.has(`${o.orderId}_${it.variantId}`)) checkedCount++;
+                    });
+                }
+                const progressPct = itemsCount > 0 ? Math.round((checkedCount / itemsCount) * 100) : 0;
+
+                html += `
+                    <div class="card border shadow-sm order-card" id="order-card-col-${o.orderId}" style="border-left: 5px solid ${orderStyle.border} !important;">
+                        <!-- Header -->
+                        <div class="card-header bg-white py-2.5 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-link text-dark p-0" onclick="toggleOrderExpand('${o.orderId}')">
+                                    <i class="bi ${isExpanded ? 'bi-chevron-up' : 'bi-chevron-down'} fs-6" id="chevron-${o.orderId}"></i>
+                                </button>
+                                <span class="badge ${orderStyle.badgeClass} rounded px-2 py-1">#${index + 1}</span>
+                                <h6 class="fw-bold mb-0 text-primary">${o.orderId}</h6>
+                                <span class="text-muted">|</span>
+                                ${o.tableNumber && o.tableNumber.trim() !== '' && o.tableNumber !== 'Mang về' ? `
+                                    <span class="badge bg-success text-white px-2.5 py-1.5 fs-6 shadow-sm">
+                                        <i class="bi bi-geo-alt-fill me-1"></i>Bàn ${o.tableNumber}
+                                    </span>
+                                ` : `
+                                    <span class="badge bg-secondary text-white px-2.5 py-1.5 fs-6 shadow-sm">
+                                        <i class="bi bi-bag-check-fill me-1"></i>Mang về
+                                    </span>
+                                `}
+                                <span class="fw-bold text-dark fs-6">${o.recipientName}</span>
+                                ${o.customerName && o.customerName !== o.recipientName ? `
+                                    <span class="text-secondary small">(${o.customerName})</span>
+                                ` : ''}
+                                <span class="text-secondary small">
+                                    <i class="bi bi-clock me-1"></i>${o.orderTime} 
+                                    ${timeAgoText ? `<span class="badge bg-light text-secondary border ms-1">${timeAgoText}</span>` : ''}
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm" onclick="openDeliverySlipModal('${o.orderId}')" title="In phiếu đặt đồ">
+                                    <i class="bi bi-printer me-1"></i>In Phiếu Đặt Đồ
+                                </button>
+                                ${isBrewing ? `
+                                    <span class="badge bg-primary px-2.5 py-1.5">Đang pha chế</span>
+                                    <button type="button" class="btn btn-success btn-sm fw-bold shadow-sm" onclick="requestCompleteOrder('${o.orderId}')">
+                                        <i class="bi bi-check-lg me-1"></i>Hoàn thành đơn
+                                    </button>
+                                ` : `
+                                    <span class="badge bg-warning text-dark px-2.5 py-1.5">Chờ pha chế</span>
+                                    <button type="button" class="btn btn-outline-warning text-dark btn-sm fw-bold shadow-sm" onclick="startBrewingSingle('${o.orderId}')">
+                                        <i class="bi bi-play-fill me-1"></i>Pha chế
+                                    </button>
+                                `}
+                            </div>
+
+                            ${o.orderNotes ? `
+                                <div class="w-100 mt-1 alert alert-warning py-1.5 px-3 mb-0 small text-danger fw-bold border-0 rounded d-flex align-items-center gap-2">
+                                    <i class="bi bi-chat-left-dots-fill fs-6"></i>
+                                    <span>Ghi chú đơn hàng: ${o.orderNotes}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Mini Progress summary if brewing -->
+                        ${isBrewing ? `
+                            <div class="px-3 pt-2 pb-1 bg-light border-bottom d-flex align-items-center justify-content-between gap-3">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar bg-success" id="order-progress-${o.orderId}" role="progressbar" style="width: ${progressPct}%;"></div>
+                                </div>
+                                <span class="small fw-bold text-success text-nowrap" id="order-progress-text-${o.orderId}">${checkedCount} / ${itemsCount} món (${progressPct}%)</span>
+                            </div>
+                        ` : ''}
+
+                        <!-- Body (List of items - Layout đồng nhất cho cả Đang pha chế và Chờ pha chế) -->
+                        <div class="card-body p-0" id="order-body-${o.orderId}" style="${isExpanded ? '' : 'display: none;'}">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-sm align-middle m-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="kds-chk-col">
+                                                <input type="checkbox" class="form-check-input kds-checkbox order-select-all-chk" 
+                                                       id="chk-all-${o.orderId}" 
+                                                       data-order-id="${o.orderId}"
+                                                       ${!isBrewing ? 'disabled' : ''}
+                                                       onchange="toggleSelectAllOrder('${o.orderId}', this.checked)"
+                                                       title="${isBrewing ? 'Chọn/Bỏ chọn tất cả món trong đơn này' : 'Bắt đầu pha chế trước khi chọn'}">
+                                            </th>
+                                            <th style="width: 1%; white-space: nowrap;" class="text-center px-2">STT</th>
+                                            <th>Tên đồ uống</th>
+                                            <th style="width: 12%;" class="text-center">Size</th>
+                                            <th style="width: 14%;" class="text-center">Số lượng</th>
+                                            <th style="width: 18%;" class="text-end pe-3">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${o.items && o.items.length ? o.items.map((it, i) => {
+                                            const itemDone = checkedItemKeys.has(`${o.orderId}_${it.variantId}`);
+                                            return `
+                                                <tr class="kds-row-clickable ${itemDone ? 'kds-row-done' : ''}" 
+                                                    id="item-row-${o.orderId}-${it.variantId}"
+                                                    onclick="handleRowClick(event, '${o.orderId}', ${it.variantId}, ${isBrewing})"
+                                                    title="${isBrewing ? 'Click vào dòng này để tích/hủy tích làm xong' : ''}">
+                                                    <td class="kds-chk-col">
+                                                        <input type="checkbox" class="form-check-input kds-checkbox item-complete-chk" 
+                                                               id="chk-${o.orderId}-${it.variantId}"
+                                                               data-order-id="${o.orderId}"
+                                                               data-variant-id="${it.variantId}"
+                                                               ${itemDone ? 'checked' : ''}
+                                                               ${!isBrewing ? 'disabled' : ''}
+                                                               onchange="toggleItemCheck('${o.orderId}', ${it.variantId}, this.checked)">
+                                                    </td>
+                                                    <td class="text-center fw-bold text-dark px-2">${i + 1}</td>
+                                                    <td>
+                                                        <span class="fw-bold text-dark item-text">${it.productName}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-secondary-subtle text-dark border">Size ${it.size}</span>
+                                                    </td>
+                                                    <td class="text-center fw-bold text-dark fs-6">
+                                                        x${it.quantity}
+                                                    </td>
+                                                    <td class="text-end pe-3">
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle ${itemDone ? '' : 'd-none'}" id="badge-done-${o.orderId}-${it.variantId}">
+                                                            <i class="bi bi-check me-1"></i>Đã xong
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('') : `
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted py-2">Không có chi tiết món.</td>
+                                            </tr>
+                                        `}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.html(html);
+
+            // Cập nhật trạng thái indeterminate cho checkbox header của từng đơn
+            filtered.forEach(o => {
+                updateOrderCardProgress(o.orderId);
+            });
+        }
+
+        function updateOrderCardProgress(orderId) {
+            const order = rawOrdersList.find(o => o.orderId === orderId);
+            if (!order || !order.items) return;
+
+            const itemsCount = order.items.length;
+            let checkedCount = 0;
+            order.items.forEach(it => {
+                const isChecked = checkedItemKeys.has(`${orderId}_${it.variantId}`);
+                if (isChecked) checkedCount++;
+
+                const rowEl = $(`#item-row-${orderId}-${it.variantId}`);
+                const badgeEl = $(`#badge-done-${orderId}-${it.variantId}`);
+                const chkEl = $(`#chk-${orderId}-${it.variantId}`);
+
+                if (isChecked) {
+                    rowEl.addClass('kds-row-done');
+                    badgeEl.removeClass('d-none');
+                    chkEl.prop('checked', true);
+                } else {
+                    rowEl.removeClass('kds-row-done');
+                    badgeEl.addClass('d-none');
+                    chkEl.prop('checked', false);
+                }
+            });
+
+            const progressPct = itemsCount > 0 ? Math.round((checkedCount / itemsCount) * 100) : 0;
+            $(`#order-progress-${orderId}`).css('width', `${progressPct}%`);
+            $(`#order-progress-text-${orderId}`).text(`${checkedCount} / ${itemsCount} món (${progressPct}%)`);
+
+            // Cập nhật Indeterminate Checkbox của Order
+            const chkAll = document.getElementById(`chk-all-${orderId}`);
+            if (chkAll) {
+                if (checkedCount === 0) {
+                    chkAll.checked = false;
+                    chkAll.indeterminate = false;
+                } else if (checkedCount === itemsCount && itemsCount > 0) {
+                    chkAll.checked = true;
+                    chkAll.indeterminate = false;
+                } else {
+                    chkAll.checked = false;
+                    chkAll.indeterminate = true;
+                }
+            }
+        }
+
+        function toggleOrderExpand(orderId) {
+            const bodyEl = $(`#order-body-${orderId}`);
+            const chevronEl = $(`#chevron-${orderId}`);
+
+            if (bodyEl.is(':visible')) {
+                bodyEl.hide();
+                chevronEl.removeClass('bi-chevron-up').addClass('bi-chevron-down');
+                expandedOrderIds.delete(orderId);
+            } else {
+                bodyEl.show();
+                chevronEl.removeClass('bi-chevron-down').addClass('bi-chevron-up');
+                expandedOrderIds.add(orderId);
+            }
+        }
+
+        function toggleExpandAllOrders() {
+            isAllExpanded = !isAllExpanded;
+            if (isAllExpanded) {
+                rawOrdersList.forEach(o => expandedOrderIds.add(o.orderId));
+                $('#textExpandAll').text('Thu gọn');
+                $('#iconExpandAll').removeClass('bi-arrows-expand').addClass('bi-arrows-collapse');
+            } else {
+                expandedOrderIds.clear();
+                $('#textExpandAll').text('Mở rộng');
+                $('#iconExpandAll').removeClass('bi-arrows-collapse').addClass('bi-arrows-expand');
+            }
+            renderOrderView(rawOrdersList);
+        }
+
+        function setOrderFilter(filter, btnEl) {
+            currentFilter = filter;
+            $('#orderStatusFilters .filter-btn').removeClass('active btn-dark btn-warning btn-primary').addClass('btn-outline-secondary');
+            
+            if (filter === 'all') {
+                $(btnEl).removeClass('btn-outline-secondary').addClass('btn-dark active');
+            } else if (filter === 'waiting') {
+                $(btnEl).removeClass('btn-outline-secondary').addClass('btn-warning text-dark active');
+            } else if (filter === 'brewing') {
+                $(btnEl).removeClass('btn-outline-secondary').addClass('btn-primary active');
+            }
+
+            renderOrderView(rawOrdersList);
+        }
+
+        // =========================================================
+        // RENDER: BATCH RECIPE VIEW (TAB 2)
+        // =========================================================
+        function renderBatchView(orders) {
+            const container = $('#batchDrinksContainer');
+            const search = ($('#brewingSearch').val() || '').trim();
+
+            const batchMap = new Map();
+
+            orders.forEach((o, orderIndex) => {
+                if (!o.items) return;
+
+                o.items.forEach(it => {
+                    const key = `${it.productName}___${it.size}___${it.variantId}`;
+                    if (!batchMap.has(key)) {
+                        batchMap.set(key, {
+                            productName: it.productName,
+                            size: it.size,
+                            variantId: it.variantId,
+                            totalQuantity: 0,
+                            ordersList: []
+                        });
+                    }
+
+                    const recipeGroup = batchMap.get(key);
+                    recipeGroup.totalQuantity += it.quantity;
+                    recipeGroup.ordersList.push({
+                        orderId: o.orderId,
+                        recipientName: o.recipientName,
+                        customerName: o.customerName,
+                        tableNumber: o.tableNumber,
+                        orderNotes: o.orderNotes,
+                        orderTime: o.orderTime,
+                        orderTimeRaw: o.orderTimeRaw,
+                        brewingStatus: o.brewingStatus,
+                        quantity: it.quantity,
+                        variantId: it.variantId,
+                        orderRank: orderIndex + 1
+                    });
+                });
+            });
+
+            let recipes = Array.from(batchMap.values());
+
+            if (search) {
+                recipes = recipes.filter(r => {
+                    if (!window.CSMSSearch) {
+                        const s = search.toLowerCase();
+                        return r.productName.toLowerCase().includes(s) || 
+                               r.ordersList.some(ord => ord.orderId.toLowerCase().includes(s) || ord.recipientName.toLowerCase().includes(s));
+                    }
+                    const searchPool = [r.productName];
+                    r.ordersList.forEach(ord => {
+                        searchPool.push(ord.orderId);
+                        searchPool.push(ord.recipientName);
+                        searchPool.push(ord.customerName);
+                    });
+                    return window.CSMSSearch.fuzzyMatchAny(search, searchPool);
+                });
+            }
+
+            if (recipes.length === 0) {
+                container.html(`
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="bi bi-stack fs-1 text-secondary mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-1">Không có món nào cần pha chế</h6>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '';
+            recipes.forEach(r => {
+                let doneCups = 0;
+                let waitingOrdersCount = 0;
+
+                r.ordersList.forEach(ord => {
+                    const isChecked = checkedItemKeys.has(`${ord.orderId}_${ord.variantId}`);
+                    if (isChecked) doneCups += ord.quantity;
+                    if (ord.brewingStatus === 'Waiting' || ord.brewingStatus === 'Waiting for Brewing') waitingOrdersCount++;
+                });
+
+                const allDone = doneCups >= r.totalQuantity && r.totalQuantity > 0;
+
+                html += `
+                    <div class="col-12 col-md-6 col-xl-4" id="batch-card-${r.variantId}">
+                        <div class="card border shadow-sm batch-recipe-card h-100 ${allDone ? 'bg-success-subtle border-success' : 'bg-white'}">
+                            <!-- Header: Tên sản phẩm - Size | Nút pha đơn chờ | Tiến độ 0/2 | Indeterminate Checkbox -->
+                            <div class="card-header bg-secondary-subtle py-2 px-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h6 class="fw-bold text-dark mb-0">${r.productName} - Size ${r.size}</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    ${waitingOrdersCount > 0 ? `
+                                        <button type="button" class="btn btn-warning btn-sm py-0.5 px-2 fw-bold shadow-sm" onclick="startBrewingForDrink(${r.variantId})" title="Bắt đầu pha chế ${waitingOrdersCount} đơn chờ">
+                                            <i class="bi bi-play-fill me-1"></i>Pha ${waitingOrdersCount} đơn chờ
+                                        </button>
+                                    ` : ''}
+                                    <span class="badge ${allDone ? 'bg-success' : 'bg-primary'} fs-6 px-2.5 py-1" id="badge-batch-total-${r.variantId}">
+                                        ${doneCups} / ${r.totalQuantity}
+                                    </span>
+                                    <input type="checkbox" class="form-check-input kds-checkbox batch-select-all-chk" 
+                                           id="chk-batch-all-${r.variantId}" 
+                                           data-variant-id="${r.variantId}"
+                                           onchange="toggleSelectAllBatch(${r.variantId}, this.checked)"
+                                           title="Chọn/Bỏ chọn tất cả đơn cho món này">
+                                </div>
+                            </div>
+
+                            <!-- Body: Danh sách đơn hàng -->
+                            <div class="card-body p-2.5">
+                                <div class="d-flex flex-column gap-2" style="max-height: 260px; overflow-y: auto;">
+                                    ${r.ordersList.map(ord => {
+                                        const isBrewing = (ord.brewingStatus === 'Brewing in Progress');
+                                        const isChecked = checkedItemKeys.has(`${ord.orderId}_${ord.variantId}`);
+                                        const ordStyle = getOrderStyle(ord.orderId);
+                                        const timeAgo = getTimeAgo(ord.orderTimeRaw || ord.orderTime);
+
+                                        return `
+                                            <div class="p-2 rounded border kds-row-clickable ${isChecked ? 'kds-row-done border-success' : 'bg-light'}" 
+                                                 style="border-left: 4px solid ${ordStyle.border} !important;"
+                                                 onclick="handleRowClick(event, '${ord.orderId}', ${ord.variantId}, ${isBrewing})"
+                                                 title="${isBrewing ? 'Click vào dòng này để tích/hủy tích làm xong' : ''}">
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <div class="overflow-hidden">
+                                                        <div class="d-flex align-items-center flex-wrap gap-1.5 mb-1">
+                                                            <span class="badge ${ordStyle.badgeClass} rounded px-2 py-0.5 small fw-bold">#${ord.orderRank}</span>
+                                                            <strong class="text-primary small">${ord.orderId}</strong>
+                                                            ${ord.tableNumber && ord.tableNumber.trim() !== '' && ord.tableNumber !== 'Mang về' ? `
+                                                                <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-1.5 small fw-bold">
+                                                                    <i class="bi bi-geo-alt-fill me-0.5"></i>Bàn ${ord.tableNumber}
+                                                                </span>
+                                                            ` : `
+                                                                <span class="badge bg-secondary-subtle text-secondary border py-0.5 px-1.5 small fw-bold">
+                                                                    <i class="bi bi-bag-check-fill me-0.5"></i>Mang về
+                                                                </span>
+                                                            `}
+                                                            <span class="text-dark small fw-semibold">${ord.recipientName}</span>
+                                                            ${ord.customerName && ord.customerName !== ord.recipientName ? `<span class="text-secondary small">(${ord.customerName})</span>` : ''}
+                                                        </div>
+                                                        ${ord.orderNotes ? `
+                                                            <div class="text-danger small fw-bold mb-1" style="font-size: 0.75rem;">
+                                                                <i class="bi bi-chat-left-dots-fill me-1"></i>${ord.orderNotes}
+                                                            </div>
+                                                        ` : ''}
+                                                        <div class="text-secondary small" style="font-size: 0.75rem;">
+                                                            ${ord.orderTime} ${timeAgo ? `(${timeAgo})` : ''}
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                                        <!-- Số lượng chỉ hiển thị x?, bỏ chữ ly -->
+                                                        <span class="fw-bold text-dark fs-6">x${ord.quantity}</span>
+
+                                                        ${isBrewing ? `
+                                                            <input type="checkbox" class="form-check-input kds-checkbox batch-item-chk"
+                                                                   data-order-id="${ord.orderId}"
+                                                                   data-variant-id="${ord.variantId}"
+                                                                   ${isChecked ? 'checked' : ''}
+                                                                   onchange="toggleItemCheck('${ord.orderId}', ${ord.variantId}, this.checked)"
+                                                                   title="Tích chọn làm xong">
+                                                        ` : `
+                                                            <button type="button" class="btn btn-outline-warning text-dark btn-sm p-1 px-2" onclick="startBrewingSingle('${ord.orderId}')" title="Bắt đầu pha chế đơn này">
+                                                                <i class="bi bi-play-fill"></i>
+                                                            </button>
+                                                        `}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.html(html);
+
+            // Cập nhật trạng thái indeterminate cho checkbox header của từng món gom
+            recipes.forEach(r => {
+                let doneCups = 0;
+                r.ordersList.forEach(ord => {
+                    if (checkedItemKeys.has(`${ord.orderId}_${ord.variantId}`)) doneCups += ord.quantity;
+                });
+                const chkBatchAll = document.getElementById(`chk-batch-all-${r.variantId}`);
+                if (chkBatchAll) {
+                    if (doneCups === 0) {
+                        chkBatchAll.checked = false;
+                        chkBatchAll.indeterminate = false;
+                    } else if (doneCups >= r.totalQuantity && r.totalQuantity > 0) {
+                        chkBatchAll.checked = true;
+                        chkBatchAll.indeterminate = false;
+                    } else {
+                        chkBatchAll.checked = false;
+                        chkBatchAll.indeterminate = true;
+                    }
+                }
+            });
+        }
+
+        // =========================================================
+        // GLOBAL SEARCH & FRACTION SUMMARY
+        // =========================================================
+        function handleGlobalSearch() {
+            renderOrderView(rawOrdersList);
+            renderBatchView(rawOrdersList);
+        }
+
+        function clearSearch() {
+            $('#brewingSearch').val('');
+            handleGlobalSearch();
+        }
+
+        function updateTotalFraction() {
+            let totalDrinks = 0;
+            let doneDrinks = 0;
+
+            rawOrdersList.forEach(o => {
+                if (o.items) {
+                    o.items.forEach(it => {
+                        totalDrinks += (it.quantity || 0);
+                        if (checkedItemKeys.has(`${o.orderId}_${it.variantId}`)) {
+                            doneDrinks += (it.quantity || 0);
+                        }
+                    });
+                }
+            });
+
+            $('#statTotalDrinksFraction').text(`${doneDrinks} / ${totalDrinks}`);
+        }
+
+        function updateDashboardStatistics(orders) {
+            const totalOrders = orders.length;
+            const waitingCount = orders.filter(o => o.brewingStatus === 'Waiting' || o.brewingStatus === 'Waiting for Brewing').length;
+            const brewingCount = orders.filter(o => o.brewingStatus === 'Brewing in Progress').length;
+
+            const recipeSet = new Set();
+            orders.forEach(o => {
+                if (o.items) {
+                    o.items.forEach(it => recipeSet.add(`${it.productName}___${it.size}`));
+                }
+            });
+
+            $('#badgeOrdersViewCount').text(totalOrders);
+            $('#badgeBatchViewCount').text(recipeSet.size);
+
+            $('#filterCountAll').text(totalOrders);
+            $('#filterCountWaiting').text(waitingCount);
+            $('#filterCountBrewing').text(brewingCount);
+
+            updateTotalFraction();
+        }
+
+
+        // =========================================================
+        // LIVE AUTO-POLLING (EVERY 5 SECONDS)
+        // =========================================================
+        function fetchLiveOrders() {
+            $.ajax({
+                url: '/Brewing/GetLiveOrders',
+                type: 'GET',
+                success: function (orders) {
+                    rawOrdersList = orders || [];
+
+                    // Đồng bộ checkedItemKeys với trạng thái IsCompleted lưu từ Database
+                    checkedItemKeys.clear();
+                    rawOrdersList.forEach(o => {
+                        if (o.items) {
+                            o.items.forEach(it => {
+                                if (it.isCompleted) {
+                                    checkedItemKeys.add(`${o.orderId}_${it.variantId}`);
+                                }
+                            });
+                        }
+                    });
+                    saveCheckedState();
+
+                    if (rawOrdersList.length > 0 && expandedOrderIds.size === 0) {
+                        expandedOrderIds.add(rawOrdersList[0].orderId);
+                    }
+
+                    updateDashboardStatistics(rawOrdersList);
+                    renderOrderView(rawOrdersList);
+                    renderBatchView(rawOrdersList);
+                },
+                error: function (xhr) {
+                    console.error('Error polling live orders:', xhr);
+                }
+            });
+        }
+
+        // =========================================================
+        // INITIALIZATION
+        // =========================================================
+        $(document).ready(function () {
+            @if (ViewBag.NotInShift != true)
+            {
+                <text>
+                fetchLiveOrders();
+                setInterval(fetchLiveOrders, 5000);
+                </text>
+            }
+        });
+
+        let deliverySlipModalInstance = null;
+        function openDeliverySlipModal(orderId) {
+            if (!orderId) return;
+
+            fetch('@Url.Action("GetReceiptData", "SaleManagement")?orderId=' + encodeURIComponent(orderId))
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        showAppAlert("Không thể tải thông tin phiếu đặt đồ: " + (data.message || 'Lỗi không xác định'), "Lỗi");
+                        return;
+                    }
+
+                    // Parse time and date: data.orderTime is typically "dd/MM/yyyy HH:mm"
+                    let timeStr = '--:--:--';
+                    let dateStr = '--/--/----';
+                    if (data.orderTime) {
+                        const parts = data.orderTime.split(' ');
+                        if (parts.length >= 2) {
+                            dateStr = parts[0];
+                            timeStr = parts[1];
+                            if (timeStr.length === 5) timeStr += ':00';
+                        } else {
+                            dateStr = data.orderTime;
+                        }
+                    }
+
+                    // Subheader: [Số bàn] - [MANG VỀ / TẠI BÀN] - HĐ.[Mã đơn]
+                    const rawTable = (data.tableNumber || '').trim();
+                    const isMangVe = !rawTable || rawTable.toLowerCase().includes('mang về');
+                    const typeStr = isMangVe ? 'MANG VỀ' : 'TẠI BÀN';
+                    const tableDisplay = isMangVe ? (rawTable || 'Mang về') : rawTable;
+                    document.getElementById('slipSubHeader').innerText = `${tableDisplay} - ${typeStr} - HĐ.${data.orderId}`;
+
+                    document.getElementById('slipOrderTimeOnly').innerText = timeStr;
+                    document.getElementById('slipOrderDateOnly').innerText = dateStr;
+                    document.getElementById('slipCashierName').innerText = data.cashierName || 'Thu ngân';
+
+                    // Extract sequence number from orderId (e.g. MH260903-001 -> 1)
+                    let seq = '1';
+                    if (data.orderId && data.orderId.includes('-')) {
+                        const numPart = data.orderId.split('-')[1];
+                        const parsed = parseInt(numPart, 10);
+                        if (!isNaN(parsed)) seq = parsed.toString();
+                    }
+                    document.getElementById('slipOrderSeq').innerText = seq;
+
+                    const notesRow = document.getElementById('slipNotesRow');
+                    if (data.orderNotes && data.orderNotes.trim() !== '') {
+                        notesRow.classList.remove('d-none');
+                        document.getElementById('slipOrderNotes').innerText = data.orderNotes;
+                    } else {
+                        notesRow.classList.add('d-none');
+                    }
+
+                    let itemsHtml = '';
+                    let totalCount = 0;
+                    (data.items || []).forEach(item => {
+                        const qty = (item.quantity || 1);
+                        totalCount += qty;
+                        const sizeInfo = item.size ? ` (Size ${item.size})` : '';
+                        itemsHtml += `
+                            <tr style="border-bottom: 1px solid #000;">
+                                <td class="py-1 px-2 text-start fw-semibold" style="border-right: 1px solid #000;">${item.productName}${sizeInfo}</td>
+                                <td class="py-1 px-1 text-center font-monospace fw-bold" style="border-right: 1px solid #000;">${qty}</td>
+                                <td class="py-1 px-1 text-center text-muted">Món</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById('slipItemsBody').innerHTML = itemsHtml;
+                    document.getElementById('slipTotalItemsCount').innerText = totalCount;
+
+                    const modalEl = document.getElementById('deliverySlipModal');
+                    if (modalEl) {
+                        deliverySlipModalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                        deliverySlipModalInstance.show();
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching delivery slip:", err);
+                    showAppAlert("Lỗi khi tải thông tin phiếu đặt đồ.", "Lỗi");
+                });
+        }
+
+        function confirmLogoutForFaceCheckin() {
+            showConfirmModal(
+                'Xác nhận đăng xuất',
+                'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản để thực hiện điểm danh <strong>chấm công bằng khuôn mặt (Face Login)</strong> không?',
+                function () {
+                    window.location.href = '@Url.Action("Logout", "Auth")';
+                },
+                'Đăng xuất ngay',
+                'Hủy'
+            );
+        }
+    </script>
+}

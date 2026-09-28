@@ -1,0 +1,305 @@
+@model SEP490_G52_CSMS.Models.ViewModels.HandoverViewModel
+@{
+    ViewData["Title"] = "Bàn Giao Đột Xuất - Quản Lý Kết Tiền";
+}
+
+<div class="container-fluid px-4">
+    @* Tiêu đề module *@
+    <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
+        <div>
+            <h1 class="h3 fw-bold text-danger mb-0">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>BÀN GIAO CA ĐỘT XUẤT (ỐM / VIỆC KHẨN CẤP)
+            </h1>
+            <p class="text-muted small mb-0">Ủy quyền tiếp quản ca giữa chừng &bull; Ca hiện tại: <strong>@Model.ShiftName</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index"
+               class="btn btn-outline-secondary btn-sm">Quay lại ca làm việc</a>
+            <a asp-action="History"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-clock-history me-1"></i>Lịch sử giao ca
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-warning border-warning d-flex align-items-center mb-3">
+        <i class="bi bi-info-circle-fill fs-3 me-3 text-warning"></i>
+        <div>
+            <strong>Quy trình Bàn Giao Đột Xuất:</strong>
+            <ul class="mb-0 ps-3 small">
+                <li>Bàn giao ca đột xuất <strong>không yêu cầu kiểm kê hay khai báo tiền mặt</strong>. Người tiếp nhận sẽ tiếp tục sử dụng két tiền và phiên làm việc hiện tại.</li>
+                <li>Hệ thống sẽ <strong>tự động tạo và gửi đơn yêu cầu đổi ca</strong> cho Quản lý chi nhánh để ghi nhận sự thay đổi ca làm việc (thu ngân bàn giao, thu ngân nhận ca, thời gian bàn giao).</li>
+                <li>Sau khi xác nhận mật khẩu người tiếp nhận, <strong>thu ngân tiếp nhận sẽ dùng tiếp tài khoản của thu ngân trước</strong> để tiếp tục bán hàng trong ca trực này.</li>
+            </ul>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3 border-danger-subtle rounded-3 shadow-sm" role="alert" style="background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b;">
+            <i class="bi bi-exclamation-circle-fill fs-5 text-danger flex-shrink-0"></i>
+            <div class="small fw-semibold flex-grow-1">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
+        </div>
+    }
+
+    <form asp-action="EmergencyHandover" method="post" id="emergencyHandoverForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="HandoverId" />
+        <input type="hidden" asp-for="OutgoingCashierId" />
+        <input type="hidden" asp-for="BranchId" />
+        <input type="hidden" asp-for="InitialCash" id="initialCashHidden" />
+        <input type="hidden" asp-for="MachineCashRevenue" id="machineRevenueHidden" />
+        <input type="hidden" asp-for="CashRefundAmount" id="cashRefundHidden" />
+        <input type="hidden" asp-for="ActualCash" value="@Model.TheoreticalCash" />
+
+        <div class="row g-3">
+            <!-- CỘT TRÁI: DOANH THU ĐẾN THỜI ĐIỂM BÀN GIAO -->
+            <div class="col-md-6">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3 text-primary">
+                            <i class="bi bi-calculator me-1"></i>DOANH THU ĐẾN THỜI ĐIỂM HIỆN TẠI
+                        </h6>
+
+                        <!-- Bảng chi tiết doanh thu đối soát -->
+                        <div class="table-responsive border rounded bg-white mb-3">
+                            <table class="table table-sm table-borderless align-middle mb-0">
+                                <tbody>
+                                    <tr class="border-bottom">
+                                        <td class="ps-3 py-2 text-muted fw-semibold" style="width: 58%;">Tiền mặt đầu ca:</td>
+                                        <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" style="width: 42%;">@Model.InitialCash.ToString("N0") đ</td>
+                                    </tr>
+                                    <tr class="border-bottom">
+                                        <td class="ps-3 py-2 text-muted fw-semibold">Tiền mặt thu từ POS:</td>
+                                        <td class="pe-3 py-2 text-end fw-bold text-success fs-6">+@Model.MachineCashRevenue.ToString("N0") đ</td>
+                                    </tr>
+                                    <tr class="border-bottom">
+                                        <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu CK (Không vào két):</td>
+                                        <td class="pe-3 py-2 text-end fw-bold text-secondary fs-6">@Model.BankTransferRevenue.ToString("N0") đ</td>
+                                    </tr>
+                                    <tr class="table-primary border-top">
+                                        <td class="ps-3 py-2.5 text-primary">
+                                            <span class="fw-bold d-block">☑ Tổng tiền mặt lý thuyết trong két:</span>
+                                            <small class="text-muted d-block" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
+                                        </td>
+                                        <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="displayTheoretical">
+                                            @Model.TheoreticalCash.ToString("N0") đ
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-info py-2 px-3 mb-0 small">
+                            <i class="bi bi-info-circle-fill me-1"></i> <strong>Lưu ý:</strong> Do bàn giao ca đột xuất, hệ thống <strong>không yêu cầu kiểm kê hay khai báo tiền mặt</strong>. Két tiền và phiên làm việc sẽ được nhân viên tiếp nhận tiếp tục sử dụng để bán hàng.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: LÝ DO & TIẾP NHẬN ỦY QUYỀN -->
+            <div class="col-md-6">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3 text-danger">
+                            <i class="bi bi-person-x me-1"></i>THÔNG TIN ỦY QUYỀN TIẾP QUẢN
+                        </h6>
+
+                        <div class="mb-3 p-3 bg-light rounded border">
+                            <div class="row mb-2">
+                                <div class="col-5 text-muted small">Người nghỉ đột xuất:</div>
+                                <div class="col-7 fw-bold text-dark">@Model.OutgoingCashierName</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-5 text-muted small">Ca trực:</div>
+                                <div class="col-7"><span class="badge bg-primary">@Model.ShiftName</span></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-5 text-muted small">Thời điểm bắt đầu ca:</div>
+                                <div class="col-7 small text-secondary">@Model.OpenedAt.ToVietnamTimeString("HH:mm - dd/MM/yyyy")</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="EmergencyReason" class="form-label small fw-semibold text-danger mb-1">
+                                Lý do nghỉ/bàn giao đột xuất: <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="EmergencyReason" class="form-select mb-2" id="reasonSelect">
+                                <option value="Nhân viên ốm/sốt đột xuất">Nhân viên ốm / sốt / vấn đề sức khỏe</option>
+                                <option value="Gia đình có việc khẩn cấp">Gia đình có việc khẩn cấp</option>
+                                <option value="Sự cố kỹ thuật / Thiết bị">Sự cố kỹ thuật / Thiết bị</option>
+                                <option value="Khác" id="otherReasonOption" data-is-other="true">Lý do khác (nhập bên dưới)</option>
+                            </select>
+                            <input type="text" id="customReasonInput" class="form-control form-control-sm d-none"
+                                   placeholder="Nhập chi tiết lý do đột xuất..." />
+                            <span asp-validation-for="EmergencyReason" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="IncomingCashierId" class="form-label small fw-semibold text-dark mb-1">
+                                Nhân viên tiếp nhận ủy quyền (tiếp tục ca): <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="IncomingCashierId" class="form-select" id="incomingCashierSelect" required>
+                                <option value="">-- Chọn nhân viên tiếp quản --</option>
+                                @foreach (var cashier in Model.IncomingCashiers.Where(c => c.CashierId != Model.OutgoingCashierId))
+                                {
+                                    <option value="@cashier.CashierId">@cashier.CashierName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="IncomingCashierId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="IncomingPassword" class="form-label small fw-semibold text-dark mb-1">
+                                Mật khẩu của người tiếp quản: <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="IncomingPassword" type="password"
+                                       class="form-control" id="passwordInput"
+                                       placeholder="Người tiếp quản nhập mật khẩu xác nhận" required />
+                                <button class="btn btn-outline-secondary" type="button"
+                                        onclick="togglePassword()" title="Hiện/Ẩn mật khẩu">
+                                    <i class="bi bi-eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="IncomingPassword" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Notes" class="form-label small text-muted mb-1">Ghi chú bổ sung:</label>
+                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="2"
+                                      placeholder="Ghi chú thêm nếu cần..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg flex-fill">
+                                <i class="bi bi-x-circle me-2"></i>Hủy / Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg flex-fill" id="submitEmergencyBtn">
+                                <i class="bi bi-shield-exclamation me-2"></i>Xác Nhận Bàn Giao Đột Xuất
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        const reasonSelect = document.getElementById('reasonSelect');
+        const customReason = document.getElementById('customReasonInput');
+        const otherReasonOption = document.getElementById('otherReasonOption');
+
+        function isOtherSelected() {
+            return reasonSelect.selectedOptions[0]?.dataset?.isOther === 'true';
+        }
+
+        function syncCustomReason() {
+            if (isOtherSelected() && otherReasonOption) {
+                const text = customReason.value.trim();
+                otherReasonOption.value = text ? text : 'Khác';
+            }
+        }
+
+        reasonSelect.addEventListener('change', function() {
+            if (isOtherSelected()) {
+                customReason.classList.remove('d-none');
+                customReason.required = true;
+                syncCustomReason();
+                customReason.focus();
+            } else {
+                customReason.classList.add('d-none');
+                customReason.required = false;
+            }
+        });
+
+        customReason.addEventListener('input', syncCustomReason);
+
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon  = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+
+        const emergencyHandoverForm = document.getElementById('emergencyHandoverForm');
+        const submitEmergencyBtn = document.getElementById('submitEmergencyBtn');
+        const originalEmergencyBtnHtml = submitEmergencyBtn ? submitEmergencyBtn.innerHTML : '<i class="bi bi-shield-exclamation me-2"></i>Xác Nhận Bàn Giao Đột Xuất';
+
+        function resetEmergencyButton() {
+            if (submitEmergencyBtn) {
+                submitEmergencyBtn.disabled = false;
+                submitEmergencyBtn.innerHTML = originalEmergencyBtnHtml;
+            }
+            if (emergencyHandoverForm) {
+                emergencyHandoverForm.dataset.submitting = 'false';
+                emergencyHandoverForm.dataset.confirmed = 'false';
+            }
+        }
+
+        if (window.jQuery && emergencyHandoverForm) {
+            $(emergencyHandoverForm).on('invalid-form.validate', function () {
+                resetEmergencyButton();
+            });
+        }
+
+        emergencyHandoverForm.addEventListener('submit', function (e) {
+            syncCustomReason();
+            // First check jQuery validation or HTML5 validation before proceeding
+            if (window.jQuery && $(this).valid && !$(this).valid()) {
+                e.preventDefault();
+                resetEmergencyButton();
+                return false;
+            }
+
+            if (this.dataset.confirmed === 'true') {
+                syncCustomReason();
+                if (window.jQuery && $(this).valid && !$(this).valid()) {
+                    e.preventDefault();
+                    resetEmergencyButton();
+                    return false;
+                }
+                if (this.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    return false;
+                }
+                this.dataset.submitting = 'true';
+                if (submitEmergencyBtn) {
+                    submitEmergencyBtn.disabled = true;
+                    submitEmergencyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                }
+                return true;
+            }
+
+            e.preventDefault();
+            syncCustomReason();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận bàn giao đột xuất',
+                'Bạn có chắc chắn muốn bàn giao ca đột xuất giữa chừng? Hệ thống sẽ tự động gửi đơn đổi ca tới Quản lý và thu ngân tiếp nhận sẽ dùng tiếp phiên làm việc này để bán hàng.',
+                function () {
+                    syncCustomReason();
+                    form.dataset.confirmed = 'true';
+                    $(form).submit();
+                },
+                'Xác nhận bàn giao',
+                'Hủy'
+            );
+        });
+    </script>
+}

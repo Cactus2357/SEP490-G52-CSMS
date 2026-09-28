@@ -1,0 +1,470 @@
+@model SEP490_G52_CSMS.Models.ViewModels.WarehouseStatisticsViewModel
+
+@{
+    ViewData["Title"] = "Thống Kê Chi Tiết Xuất Nhập Nguyên Liệu";
+}
+
+<div class="warehouse-stats-page p-4">
+    <!-- Top Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">Quản lý kho</a></li>
+                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Thống kê xuất nhập</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                <i class="bi bi-graph-up-arrow text-primary"></i> THỐNG KÊ CHI TIẾT XUẤT NHẬP NGUYÊN LIỆU
+            </h2>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="@Url.Action("ExportStatisticsCsv", new { materialId = Model.SelectedMaterialId, category = Model.SelectedCategory, search = Model.SearchTerm, range = Model.SelectedRange, fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), branchId = Model.SelectedBranchId })"
+               class="btn btn-outline-success shadow-sm fw-semibold d-flex align-items-center gap-2"
+               title="Tải xuống toàn bộ số liệu thống kê dưới dạng file CSV">
+                <i class="bi bi-file-earmark-excel-fill fs-5"></i>
+                <span>Xuất dữ liệu CSV</span>
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary" title="Về danh sách nguyên liệu">
+                <i class="bi bi-box-seam me-1"></i> Kho nguyên liệu
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Time Presets -->
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+        <span class="small fw-bold text-muted text-uppercase me-1"><i class="bi bi-calendar-event me-1"></i>Thời gian:</span>
+        <a href="@Url.Action("Statistics", new { range = "7days", category = Model.SelectedCategory, materialId = Model.SelectedMaterialId, search = Model.SearchTerm, branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.SelectedRange == "7days" ? "btn-dark" : "btn-outline-secondary") rounded-pill px-3">
+            7 ngày qua
+        </a>
+        <a href="@Url.Action("Statistics", new { range = "month", category = Model.SelectedCategory, materialId = Model.SelectedMaterialId, search = Model.SearchTerm, branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.SelectedRange == "month" ? "btn-dark" : "btn-outline-secondary") rounded-pill px-3">
+            Tháng này
+        </a>
+        <a href="@Url.Action("Statistics", new { range = "quarter", category = Model.SelectedCategory, materialId = Model.SelectedMaterialId, search = Model.SearchTerm, branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.SelectedRange == "quarter" ? "btn-dark" : "btn-outline-secondary") rounded-pill px-3">
+            Quý này
+        </a>
+        <a href="@Url.Action("Statistics", new { range = "year", category = Model.SelectedCategory, materialId = Model.SelectedMaterialId, search = Model.SearchTerm, branchId = Model.SelectedBranchId })"
+           class="btn btn-sm @(Model.SelectedRange == "year" ? "btn-dark" : "btn-outline-secondary") rounded-pill px-3">
+            Năm nay
+        </a>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-light">
+        <div class="card-body p-3">
+            <form method="get" asp-action="Statistics" class="row g-3 align-items-end">
+                <input type="hidden" name="range" value="custom" />
+
+                <!-- Search box -->
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tìm kiếm</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="search" value="@Model.SearchTerm" class="form-control border-start-0" placeholder="Tên hoặc mã nguyên liệu..." />
+                    </div>
+                </div>
+
+                <!-- Branch selector -->
+                <div class="col-xl-2 col-lg-4 col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1"><i class="bi bi-shop me-1"></i>Chi nhánh</label>
+                    <select name="branchId" class="form-select">
+                        <option value="">-- Tất cả chi nhánh --</option>
+                        @foreach (var b in Model.Branches)
+                        {
+                            <option value="@b.BranchId" selected="@(Model.SelectedBranchId == b.BranchId)">@b.BranchName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Category selector -->
+                <div class="col-xl-2 col-lg-4 col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Loại nguyên liệu</label>
+                    <select name="category" class="form-select">
+                        <option value="">-- Tất cả loại --</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <option value="@cat" selected="@(Model.SelectedCategory == cat)">@cat</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Specific Material Selector -->
+                <div class="col-xl-2 col-lg-4 col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Nguyên liệu cụ thể</label>
+                    <select name="materialId" class="form-select">
+                        <option value="">-- Toàn bộ nguyên liệu --</option>
+                        @foreach (var opt in Model.MaterialOptions)
+                        {
+                            <option value="@opt.MaterialId" selected="@(Model.SelectedMaterialId == opt.MaterialId)">@opt.MaterialCode - @opt.MaterialName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Date pickers -->
+                <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Từ ngày</label>
+                    <input type="date" name="fromDate" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="form-control px-2" />
+                </div>
+                
+                <div class="col-xl-1 col-lg-2 col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đến ngày</label>
+                    <input type="date" name="toDate" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="form-control px-2" />
+                </div>
+
+                <!-- Submit / Reset -->
+                <div class="col-xl-1 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100 py-2 fw-bold shadow-sm" title="Áp dụng bộ lọc">
+                        <i class="bi bi-filter"></i> Lọc
+                    </button>
+                    <a asp-action="Statistics" class="btn btn-outline-secondary py-2" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Metric KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Nhập kho -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Tổng Lượng Nhập Kho</div>
+                        <h4 class="fw-bold text-primary m-0">@Model.TotalImportQuantity.ToString("N1")</h4>
+                        <small class="text-muted">Chi phí: <span class="fw-semibold text-dark">@Model.TotalImportCost.ToString("N0") đ</span> (@Model.TotalImportReceiptsCount phiếu)</small>
+                    </div>
+                    <div class="bg-primary-subtle text-primary rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-box-arrow-in-down fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Xuất kho -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Tổng Lượng Xuất Kho</div>
+                        <h4 class="fw-bold text-warning-emphasis m-0">@Model.TotalExportQuantity.ToString("N1")</h4>
+                        <small class="text-muted">Giá trị: <span class="fw-semibold text-dark">@Model.TotalExportEstimatedValue.ToString("N0") đ</span> (@Model.TotalExportRequestsCount đơn xuất)</small>
+                    </div>
+                    <div class="bg-warning-subtle text-warning-emphasis rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-box-arrow-up fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Biến động ròng -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Biến Động Ròng (Nhập - Xuất)</div>
+                        @{
+                            var netMovement = Model.TotalImportQuantity - Model.TotalExportQuantity;
+                            var netColor = netMovement >= 0 ? "text-success" : "text-danger";
+                            var netSign = netMovement > 0 ? "+" : "";
+                        }
+                        <h4 class="fw-bold @netColor m-0">@netSign@netMovement.ToString("N1")</h4>
+                        <small class="text-muted">Chu kỳ: @Model.FromDate.ToString("dd/MM") - @Model.ToDate.ToString("dd/MM/yyyy")</small>
+                    </div>
+                    <div class="bg-success-subtle text-success rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-arrow-left-right fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Tổng loại nguyên liệu & Cảnh báo tồn -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Danh Mục Nguyên Liệu</div>
+                        <h4 class="fw-bold text-dark m-0">@Model.TotalMaterialsCount <span class="fs-6 fw-normal text-muted">mặt hàng</span></h4>
+                        <small class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1"></i>@Model.LowStockCount mặt hàng tồn kho thấp (&le;10)</small>
+                    </div>
+                    <div class="bg-info-subtle text-info-emphasis rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-layers-half fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section: Bar Chart & Horizontal Bar Chart -->
+    <div class="row g-4 mb-4">
+        <!-- Biểu đồ cột: So sánh Nhập vs Xuất -->
+        <div class="col-xl-7 col-lg-12">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-bar-chart-fill text-primary"></i> Biểu đồ cột: So sánh Nhập vs Xuất theo nguyên liệu
+                    </h6>
+                    <small class="text-muted">Đơn vị: kg / lít</small>
+                </div>
+                <div class="card-body p-3" style="min-height: 350px;">
+                    <canvas id="barComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Biểu đồ cột ngang: Top nguyên liệu xuất nhiều nhất -->
+        <div class="col-xl-5 col-lg-12">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-text-indent-left text-warning"></i> Biểu đồ cột ngang: Top nguyên liệu xuất nhiều nhất
+                    </h6>
+                    <small class="text-muted">Top xuất kho</small>
+                </div>
+                <div class="card-body p-3" style="min-height: 350px;">
+                    <canvas id="horizontalBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart: Biểu đồ đường Timeline Trend -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-graph-up text-success"></i> Biểu đồ đường: Xu hướng biến động Nhập - Xuất theo dòng thời gian
+            </h6>
+            <small class="text-muted">Theo ngày / chu kỳ</small>
+        </div>
+        <div class="card-body p-3" style="min-height: 320px;">
+            <canvas id="lineTimelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics Data Table -->
+    <div class="card shadow-sm border-0 rounded-3 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="m-0 fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-table text-secondary"></i> Bảng số liệu chi tiết từng nguyên liệu
+            </h6>
+            <div class="text-muted small">
+                Hiển thị <strong>@Model.MaterialStats.Count</strong> nguyên liệu phù hợp
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle m-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3 py-3" style="width: 8%;">Mã NL</th>
+                            <th style="width: 18%;">Tên nguyên liệu</th>
+                            <th style="width: 10%;">Loại</th>
+                            <th style="width: 6%;">Đơn vị</th>
+                            <th class="text-end" style="width: 10%;">Đơn giá mua</th>
+                            <th class="text-end text-primary" style="width: 10%;">Lượng nhập</th>
+                            <th class="text-end" style="width: 10%;">Chi phí nhập</th>
+                            <th class="text-end text-warning-emphasis" style="width: 10%;">Lượng xuất</th>
+                            <th class="text-end" style="width: 10%;">Tồn kho</th>
+                            <th class="text-center pe-3" style="width: 8%;">Xem biểu đồ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.MaterialStats != null && Model.MaterialStats.Any())
+                        {
+                            foreach (var row in Model.MaterialStats)
+                            {
+                                var stockBadgeClass = row.CurrentStock <= 10 ? "bg-danger-subtle text-danger border border-danger-subtle" : "bg-light text-dark";
+                                <tr>
+                                    <td class="ps-3 fw-bold text-muted">@row.MaterialCode</td>
+                                    <td class="fw-semibold text-dark">
+                                        @row.MaterialName
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-2">@row.Category</span></td>
+                                    <td><span class="text-capitalize">@row.StorageUnit</span></td>
+                                    <td class="text-end">@row.UnitPrice.ToString("N0") đ</td>
+                                    <td class="text-end fw-bold text-primary">@row.ImportQuantity.ToString("N1")</td>
+                                    <td class="text-end text-muted small">@row.ImportCost.ToString("N0") đ</td>
+                                    <td class="text-end fw-bold text-warning-emphasis">@row.ExportQuantity.ToString("N1")</td>
+                                    <td class="text-end">
+                                        <span class="badge @stockBadgeClass px-2 py-1 rounded-pill fw-bold">
+                                            @row.CurrentStock.ToString("N1")
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        <a href="@Url.Action("Statistics", new { materialId = row.MaterialId, range = Model.SelectedRange, fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd") })"
+                                           class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" title="Lọc riêng nguyên liệu này trên biểu đồ">
+                                            <i class="bi bi-funnel"></i> Xem
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary-subtle"></i>
+                                    Không tìm thấy dữ liệu nguyên liệu nào phù hợp với bộ lọc.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Chart 1: Bar Chart (So sánh Lượng Nhập vs Lượng Xuất)
+            const barData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BarChartData));
+            const ctxBar = document.getElementById('barComparisonChart');
+            if (ctxBar && barData && barData.Labels && barData.Labels.length > 0) {
+                new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: barData.Labels,
+                        datasets: [
+                            {
+                                label: 'Lượng Nhập',
+                                data: barData.ImportQuantities,
+                                backgroundColor: 'rgba(13, 110, 253, 0.75)',
+                                borderColor: 'rgb(13, 110, 253)',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Lượng Xuất',
+                                data: barData.ExportQuantities,
+                                backgroundColor: 'rgba(253, 126, 20, 0.75)',
+                                borderColor: 'rgb(253, 126, 20)',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + Number(context.parsed.y).toLocaleString() + ' đv';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Số lượng' }
+                            },
+                            x: {
+                                ticks: { maxRotation: 30, minRotation: 0 }
+                            }
+                        }
+                    }
+                });
+            } else if (ctxBar) {
+                ctxBar.parentElement.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-pie-chart fs-1 d-block mb-2 text-secondary-subtle"></i>Chưa có dữ liệu biến động cho biểu đồ cột</div>';
+            }
+
+            // Chart 2: Line Chart (Dòng thời gian)
+            const lineData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LineChartData));
+            const ctxLine = document.getElementById('lineTimelineChart');
+            if (ctxLine && lineData && lineData.Dates && lineData.Dates.length > 0) {
+                new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels: lineData.Dates,
+                        datasets: [
+                            {
+                                label: 'Nhập kho',
+                                data: lineData.ImportQuantities,
+                                borderColor: '#0d6efd',
+                                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            },
+                            {
+                                label: 'Xuất kho',
+                                data: lineData.ExportQuantities,
+                                borderColor: '#fd7e14',
+                                backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Số lượng biến động' }
+                            }
+                        }
+                    }
+                });
+            } else if (ctxLine) {
+                ctxLine.parentElement.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-graph-up fs-1 d-block mb-2 text-secondary-subtle"></i>Chưa có dữ liệu theo dòng thời gian</div>';
+            }
+
+            // Chart 3: Horizontal Bar Chart (Top xuất kho)
+            const horizontalData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HorizontalBarChartData));
+            const ctxHoriz = document.getElementById('horizontalBarChart');
+            if (ctxHoriz && horizontalData && horizontalData.Labels && horizontalData.Labels.length > 0) {
+                new Chart(ctxHoriz, {
+                    type: 'bar',
+                    data: {
+                        labels: horizontalData.Labels,
+                        datasets: [
+                            {
+                                label: 'Sản lượng xuất',
+                                data: horizontalData.Quantities,
+                                backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                                borderColor: 'rgb(255, 193, 7)',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Số lượng' }
+                            }
+                        }
+                    }
+                });
+            } else if (ctxHoriz) {
+                ctxHoriz.parentElement.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-bar-chart-steps fs-1 d-block mb-2 text-secondary-subtle"></i>Chưa có dữ liệu xếp hạng nguyên liệu</div>';
+            }
+        });
+    </script>
+}

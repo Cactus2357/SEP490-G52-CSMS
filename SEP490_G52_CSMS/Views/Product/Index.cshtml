@@ -1,0 +1,119 @@
+@model SEP490_G52_CSMS.Models.ViewModels.Sales.Product.ProductIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản lí sản phẩm";
+}
+
+<div class="product-page">
+    <div class="product-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="text-muted">
+                CSMS / Sản phẩm
+            </div>
+
+            <h2 class="mb-0">
+                Quản lí sản phẩm
+            </h2>
+        </div>
+
+        <button type="button"
+                id="openCreateProductModal"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#createProductModal">
+            + Thêm sản phẩm
+        </button>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show"
+             role="alert">
+
+            @TempData["Success"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close">
+            </button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show"
+             role="alert">
+
+            @TempData["Error"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close">
+            </button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-controller="Product"
+                  asp-action="Index"
+                  method="get"
+                  class="row g-2 mb-3">
+
+                <div class="col-md-4">
+                    <input type="text"
+                           name="searchString"
+                           value="@Model.SearchString"
+                           class="form-control"
+                           placeholder="Tìm sản phẩm..." />
+                </div>
+
+                <div class="col-md-4">
+                    <select name="categoryId"
+                            class="form-select">
+
+                        <option value="">
+                            Tất cả danh mục
+                        </option>
+
+                        @foreach (var item in Model.Categories)
+                        {
+                            <option value="@item.Value">
+                                @item.Text
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit"
+                            class="btn btn-dark w-100">
+                        Tìm kiếm
+                    </button>
+                </div>
+
+                <div class="col-md-2">
+                    <a asp-controller="Product"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary w-100">
+                        Làm mới
+                    </a>
+                </div>
+            </form>
+
+            <partial name="ProductTable"
+                     model="Model" />
+        </div>
+    </div>
+</div>
+
+<!-- Create Product Modal -->
+<partial name="CreateModel"
+         model="Model" />
+
+
+@section Scripts {
+    <partial name="Scripts" />
+}

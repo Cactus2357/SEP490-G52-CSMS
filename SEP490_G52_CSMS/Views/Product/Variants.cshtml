@@ -1,0 +1,626 @@
+@model SEP490_G52_CSMS.Models.ViewModels.Sales.Product.VariantIndexViewModel
+
+@{
+    ViewData["Title"] = $"Quản lí biến thể: {Model.ProductName}";
+}
+
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a asp-controller="Product" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1">
+                    <i class="bi bi-arrow-left me-1"></i>Danh sách sản phẩm
+                </a>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                    Biến Thể & Định Lượng
+                </span>
+            </div>
+            <h3 class="fw-bold text-dark mb-0">Quản lý biến thể: <span class="text-primary">@Model.ProductName</span></h3>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary px-3.5 py-2 fw-semibold rounded-3 shadow-sm d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createVariantModal">
+                <i class="bi bi-plus-lg"></i> Thêm biến thể
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
+            <div>@TempData["Success"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-danger"></i>
+            <div>@TempData["Error"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Search Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3 p-md-4">
+            <form method="get" class="row g-2 align-items-center">
+                <input type="hidden" name="id" value="@Model.ProductId" />
+                <div class="col-md-9 col-lg-10">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="searchString" value="@Model.SearchString" class="form-control bg-light border-start-0" placeholder="Tìm kiếm biến thể..." />
+                        @if (!string.IsNullOrEmpty(Model.SearchString))
+                        {
+                            <a href="@Url.Action("Variants", "Product", new { id = Model.ProductId })" class="btn btn-light border border-start-0 text-muted" title="Xóa tìm kiếm">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-3 col-lg-2">
+                    <button type="submit" class="btn btn-dark fw-semibold w-100 py-2 rounded-3">
+                        <i class="bi bi-search me-1"></i>Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Variants Data Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary small text-uppercase fw-semibold border-bottom">
+                    <tr>
+                        <th class="ps-4 py-3" style="width: 35%;">Tên Biến Thể</th>
+                        <th class="py-3" style="width: 35%;">Giá Bán</th>
+                        <th class="text-center py-3 pe-4" style="width: 30%;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Variants != null && Model.Variants.Any())
+                    {
+                        foreach (var item in Model.Variants)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="badge bg-secondary-subtle text-dark font-monospace fs-6 fw-bold px-3 py-1.5 rounded-2">
+                                        @item.SizeVariant
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-success fs-6">
+                                        @item.SellingPrice.ToString("N0") <small class="text-secondary fw-normal">VNĐ</small>
+                                    </span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-2 px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" title="Định lượng nguyên liệu" 
+                                                onclick="openRecipeModal(@item.VariantId, '@item.SizeVariant')">
+                                            <i class="bi bi-cup-hot"></i>
+                                            <span>Công thức</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-2 px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" title="Sửa" 
+                                                onclick="openEditModal(@item.VariantId, '@item.SizeVariant', @item.SellingPrice)">
+                                            <i class="bi bi-pencil-square"></i>
+                                            <span>Sửa</span>
+                                        </button>
+                                        <form asp-action="DeleteVariant" method="post" class="d-inline" onsubmit="return confirmDeleteVariantForm(this);">
+                                            <input type="hidden" name="variantId" value="@item.VariantId" />
+                                            <input type="hidden" name="productId" value="@Model.ProductId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-2 px-2.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" title="Xóa">
+                                                <i class="bi bi-trash3"></i>
+                                                <span>Xóa</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                Chưa có dữ liệu biến thể nào cho sản phẩm này.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create Variant Modal -->
+<div class="modal fade" id="createVariantModal" tabindex="-1" aria-labelledby="createVariantLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <form asp-action="CreateVariant" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-light py-3 border-bottom">
+                    <h5 class="modal-title fw-bold text-dark" id="createVariantLabel">
+                        <i class="bi bi-plus-circle me-2 text-primary"></i>Thêm biến thể mới
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" name="ProductId" value="@Model.ProductId" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">
+                            Tên biến thể <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" name="SizeVariant" class="form-control py-2 shadow-sm" required maxlength="20" placeholder="VD: Size L, Size M, Nóng..." />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">
+                            Giá bán (VNĐ) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" name="SellingPrice" class="form-control py-2 shadow-sm" required min="0" step="1000" placeholder="VD: 35000" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-3 border-top d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary px-3 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold rounded-3 shadow-sm">Lưu biến thể</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Variant Modal -->
+<div class="modal fade" id="editVariantModal" tabindex="-1" aria-labelledby="editVariantLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <form asp-action="EditVariant" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-light py-3 border-bottom">
+                    <h5 class="modal-title fw-bold text-dark" id="editVariantLabel">
+                        <i class="bi bi-pencil-square me-2 text-primary"></i>Cập nhật biến thể
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" name="ProductId" value="@Model.ProductId" />
+                    <input type="hidden" id="editVariantId" name="VariantId" value="" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">
+                            Tên biến thể <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="editSizeVariant" name="SizeVariant" class="form-control py-2 shadow-sm" required maxlength="20" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">
+                            Giá bán (VNĐ) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" id="editSellingPrice" name="SellingPrice" class="form-control py-2 shadow-sm" required min="0" step="1000" />
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-3 border-top d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary px-3 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold rounded-3 shadow-sm">Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Recipe Modal (Screen B) -->
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white py-3 px-4 border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-cup-hot-fill text-warning fs-5"></i>
+                    <h5 class="modal-title fw-bold mb-0" id="recipeModalLabel">
+                        QUẢN LÝ ĐỊNH LƯỢNG: @Model.ProductName - <span id="recipeModalVariantName" class="text-warning"></span>
+                    </h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <!-- Left Panel: Input Form -->
+                    <div class="col-lg-5 col-md-12 border-end pe-lg-4">
+                        <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                            <i class="bi bi-plus-circle text-primary"></i>
+                            <h6 class="m-0 fw-bold text-dark">Thêm nguyên liệu vào công thức</h6>
+                        </div>
+                        
+                        <div class="mb-3 position-relative">
+                            <label class="form-label fw-semibold text-secondary small">Tên nguyên liệu <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" id="materialSearchInput" class="form-control bg-light border-start-0 py-2" placeholder="Gõ tên để tìm nguyên liệu..." autocomplete="off" />
+                            </div>
+                            <div id="materialAutocompleteDropdown" class="autocomplete-dropdown shadow-lg rounded-3 border d-none"></div>
+                            <input type="hidden" id="selectedMaterialId" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Loại nguyên liệu</label>
+                            <input type="text" id="materialCategoryInput" class="form-control bg-light py-2" placeholder="Thô / Tinh chế / Pha sẵn..." readonly />
+                        </div>
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-8">
+                                <label class="form-label fw-semibold text-secondary small">Số lượng cần <span class="text-danger">*</span></label>
+                                <input type="number" id="materialQtyInput" class="form-control py-2 shadow-sm" placeholder="VD: 30" min="0.01" step="any" />
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label fw-semibold text-secondary small">Đơn vị</label>
+                                <input type="text" id="materialUnitInput" class="form-control bg-light py-2 text-center" placeholder="Gam/ml" readonly />
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-primary-subtle text-primary small mb-3 py-2 px-3 border border-primary-subtle rounded-3 d-flex align-items-start gap-2">
+                            <i class="bi bi-info-circle-fill mt-0.5"></i>
+                            <div>
+                                Định lượng này là số lượng nguyên liệu tiêu hao thực tế cho 01 ly đồ uống. Hệ thống sẽ trừ tự động khi hoàn tất pha chế.
+                            </div>
+                        </div>
+                        
+                        <button type="button" id="btnAddRecipeLine" class="btn btn-dark w-100 py-2.5 fw-semibold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-plus-lg"></i> Thêm vào danh sách công thức
+                        </button>
+                    </div>
+                    
+                    <!-- Right Panel: Recipe Line Table -->
+                    <div class="col-lg-7 col-md-12 ps-lg-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="m-0 fw-bold text-dark"><i class="bi bi-list-check me-1 text-primary"></i>Danh sách thành phần công thức</h6>
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 fw-semibold" id="recipeItemCount">0 dòng</span>
+                        </div>
+                        
+                        <div class="table-responsive border rounded-3 bg-white shadow-sm overflow-hidden" style="max-height: 400px;">
+                            <table class="table table-hover align-middle m-0" id="recipeTable">
+                                <thead class="table-light sticky-top text-secondary small text-uppercase fw-semibold border-bottom">
+                                    <tr>
+                                        <th style="width: 10%;" class="ps-3">STT</th>
+                                        <th style="width: 40%;">Tên nguyên liệu</th>
+                                        <th style="width: 20%;">Phân loại</th>
+                                        <th style="width: 20%;">Định lượng</th>
+                                        <th style="width: 10%;" class="text-center pe-3">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recipeTableBody">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top py-3 px-4 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary px-3.5 py-2 rounded-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" id="btnSaveRecipe" class="btn btn-primary px-4 py-2 fw-semibold rounded-3 shadow-sm d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-check2-circle"></i> Lưu công thức
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Autocomplete dropdown styles */
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        z-index: 1060;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    .autocomplete-item {
+        padding: 9px 14px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.9rem;
+        transition: background-color 0.15s ease;
+    }
+    .autocomplete-item:hover, .autocomplete-item.active {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        font-weight: 500;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let recipeLines = [];
+        let currentVariantId = 0;
+        let selectedMaterial = null;
+        let activeIndex = -1;
+        let debounceTimer;
+
+        function openEditModal(id, size, price) {
+            document.getElementById('editVariantId').value = id;
+            document.getElementById('editSizeVariant').value = size;
+            document.getElementById('editSellingPrice').value = price;
+            
+            var modal = new bootstrap.Modal(document.getElementById('editVariantModal'));
+            modal.show();
+        }
+
+        // Open recipe management modal (Screen B)
+        function openRecipeModal(variantId, sizeVariant) {
+            currentVariantId = variantId;
+            document.getElementById('recipeModalVariantName').textContent = sizeVariant;
+            clearRecipeInputs();
+            recipeLines = [];
+            renderRecipeTable();
+
+            // Fetch existing recipe
+            $.ajax({
+                url: '/Product/GetRecipe',
+                type: 'GET',
+                data: { variantId: variantId },
+                success: function(data) {
+                    recipeLines = data;
+                    renderRecipeTable();
+                    var modal = new bootstrap.Modal(document.getElementById('recipeModal'));
+                    modal.show();
+                },
+                error: function() {
+                    showToast('Lỗi tải công thức pha chế.', 'danger');
+                }
+            });
+        }
+
+        // Autocomplete material lookup
+        $('#materialSearchInput').on('input', function() {
+            clearTimeout(debounceTimer);
+            const query = $(this).val().trim();
+            
+            selectedMaterial = null;
+            $('#selectedMaterialId').val('');
+            $('#materialCategoryInput').val('');
+            $('#materialUnitInput').val('');
+            activeIndex = -1;
+
+            if (query.length < 1) {
+                $('#materialAutocompleteDropdown').addClass('d-none').empty();
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                $.ajax({
+                    url: '/Product/SearchMaterials',
+                    type: 'GET',
+                    data: { term: query },
+                    success: function(data) {
+                        const dropdown = $('#materialAutocompleteDropdown');
+                        dropdown.empty();
+                        if (data.length === 0) {
+                            dropdown.addClass('d-none');
+                            return;
+                        }
+                        data.forEach(m => {
+                            const item = $('<div class="autocomplete-item"></div>')
+                                .text(`${m.materialName} (${m.materialCode} - NCC: ${m.supplier})`)
+                                .on('click', () => {
+                                    selectMaterialItem(m);
+                                });
+                            dropdown.append(item);
+                        });
+                        dropdown.removeClass('d-none');
+                    }
+                });
+            }, 200);
+        });
+
+        // Keyboard navigation for autocomplete list
+        $('#materialSearchInput').on('keydown', function(e) {
+            const dropdown = $('#materialAutocompleteDropdown');
+            if (dropdown.hasClass('d-none')) return;
+
+            const items = dropdown.find('.autocomplete-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = (activeIndex + 1) % items.length;
+                highlightActiveItem(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = (activeIndex - 1 + items.length) % items.length;
+                highlightActiveItem(items);
+            } else if (e.key === 'Enter') {
+                if (activeIndex !== -1) {
+                    e.preventDefault();
+                    items.eq(activeIndex).click();
+                }
+            }
+        });
+
+        function highlightActiveItem(items) {
+            items.removeClass('active');
+            if (activeIndex >= 0 && activeIndex < items.length) {
+                items.eq(activeIndex).addClass('active');
+            }
+        }
+
+        function selectMaterialItem(m) {
+            selectedMaterial = m;
+            $('#selectedMaterialId').val(m.materialId);
+            $('#materialSearchInput').val(m.materialName);
+            $('#materialCategoryInput').val(m.category);
+            $('#materialUnitInput').val(m.physicalState === "Dạng lỏng" ? "ml" : "Gam");
+            $('#materialAutocompleteDropdown').addClass('d-none').empty();
+            $('#materialQtyInput').focus();
+        }
+
+        // Close dropdown when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#materialSearchInput, #materialAutocompleteDropdown').length) {
+                $('#materialAutocompleteDropdown').addClass('d-none');
+            }
+        });
+
+        // Add line to recipe table
+        $('#btnAddRecipeLine').on('click', function() {
+            const materialId = parseInt($('#selectedMaterialId').val());
+            const materialName = $('#materialSearchInput').val().trim();
+            const category = $('#materialCategoryInput').val();
+            const qtyStr = $('#materialQtyInput').val();
+            const unit = $('#materialUnitInput').val() === "ml" ? "ml" : "g";
+
+            // AT2: Validate material matching suggestion
+            if (isNaN(materialId) || !selectedMaterial || selectedMaterial.materialName !== materialName) {
+                showToast('Không tìm thấy nguyên liệu này trong hệ thống. Vui lòng chọn từ gợi ý.', 'warning');
+                return;
+            }
+
+            // AT1: Validate positive quantity
+            const quantity = parseFloat(qtyStr);
+            if (isNaN(quantity) || quantity <= 0) {
+                showToast('Số lượng phải là số dương.', 'warning');
+                return;
+            }
+
+            // AT3: Check duplicates
+            const existingIndex = recipeLines.findIndex(line => line.materialId === materialId);
+            if (existingIndex !== -1) {
+                showConfirmModal(
+                    'Cập nhật số lượng',
+                    'Nguyên liệu này đã có trong công thức. Cập nhật số lượng thay vì thêm dòng mới?',
+                    function() {
+                        recipeLines[existingIndex].quantity = quantity;
+                        recipeLines[existingIndex].unit = unit;
+                        renderRecipeTable();
+                        clearRecipeInputs();
+                    }
+                );
+            } else {
+                recipeLines.push({
+                    materialId: materialId,
+                    materialName: materialName,
+                    category: category,
+                    quantity: quantity,
+                    unit: unit
+                });
+                renderRecipeTable();
+                clearRecipeInputs();
+            }
+        });
+
+        function clearRecipeInputs() {
+            selectedMaterial = null;
+            $('#selectedMaterialId').val('');
+            $('#materialSearchInput').val('');
+            $('#materialCategoryInput').val('');
+            $('#materialQtyInput').val('');
+            $('#materialUnitInput').val('');
+            activeIndex = -1;
+        }
+
+        function removeRecipeLine(materialId) {
+            recipeLines = recipeLines.filter(line => line.materialId !== materialId);
+            renderRecipeTable();
+        }
+
+        function renderRecipeTable() {
+            const tbody = $('#recipeTableBody');
+            tbody.empty();
+            if (recipeLines.length === 0) {
+                tbody.append('<tr><td colspan="5" class="text-center text-muted py-4">Chưa có nguyên liệu nào trong công thức.</td></tr>');
+                $('#recipeItemCount').text('0 dòng');
+                return;
+            }
+            recipeLines.forEach((item, index) => {
+                tbody.append(`
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${escapeHtml(item.materialName)}</td>
+                        <td>${escapeHtml(item.category)}</td>
+                        <td>${item.quantity} ${item.unit}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="removeRecipeLine(${item.materialId})">
+                                <i class="bi bi-x-circle fs-5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+            $('#recipeItemCount').text(recipeLines.length + ' dòng');
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function executeSaveRecipe() {
+            const payload = {
+                variantId: currentVariantId,
+                items: recipeLines.map(line => ({
+                    materialId: line.materialId,
+                    quantity: line.quantity
+                }))
+            };
+
+            $.ajax({
+                url: '/Product/SaveRecipe',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    if (response.success) {
+                        showToast(response.message, 'success');
+                        $('#recipeModal').modal('hide');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        showToast(response.message, 'danger');
+                    }
+                },
+                error: function() {
+                    showToast('Đã xảy ra lỗi khi lưu công thức.', 'danger');
+                }
+            });
+        }
+
+        // Save entire recipe (bottom click)
+        $('#btnSaveRecipe').on('click', function() {
+            // AT4: Empty warning soft check
+            if (recipeLines.length === 0) {
+                showConfirmModal(
+                    'Chưa có công thức',
+                    'Biến thể chưa có công thức pha chế, hệ thống sẽ không thể tự động trừ kho khi bán. Bạn vẫn muốn lưu?',
+                    function() { executeSaveRecipe(); }
+                );
+            } else {
+                showConfirmModal(
+                    'Xác nhận lưu công thức',
+                    'Bạn có chắc chắn muốn lưu công thức pha chế cho biến thể sản phẩm này không?',
+                    function() { executeSaveRecipe(); }
+                );
+            }
+        });
+
+        // Confirm delete variant form
+        function confirmDeleteVariantForm(form) {
+            showConfirmModal(
+                'Xóa biến thể sản phẩm',
+                'Bạn có chắc chắn muốn xóa biến thể sản phẩm này không? Thao tác này không thể hoàn tác.',
+                function() { form.submit(); }
+            );
+            return false;
+        }
+    </script>
+}

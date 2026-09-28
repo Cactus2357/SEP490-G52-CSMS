@@ -1,0 +1,278 @@
+@model SEP490_G52_CSMS.Models.ViewModels.MenuEditViewModel
+
+@{
+    ViewData["Title"] = "Chỉnh sửa thực đơn";
+}
+
+<style>
+    .custom-scroll {
+        max-height: 460px;
+        overflow-y: auto;
+    }
+    .staged-item {
+        transition: all 0.15s ease;
+        border: 1px solid rgba(0,0,0,0.06);
+    }
+    .staged-item:hover {
+        background-color: #fcfcfd;
+        border-color: rgba(0,0,0,0.12);
+    }
+</style>
+
+<div class="container-fluid px-4 pt-3 pb-5">
+    <!-- Header Section -->
+    <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0 shadow-sm" style="width: 38px; height: 38px;" title="Quay lại">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </a>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <h3 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa thực đơn
+                    </h3>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small">
+                        @Model.MenuName
+                    </span>
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small">
+                            <i class="bi bi-check-circle-fill me-1"></i>Đang áp dụng POS
+                        </span>
+                    }
+                </div>
+                <p class="text-muted small mb-0 mt-1">Cập nhật danh sách các sản phẩm và món mở bán cho thực đơn này</p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3 py-1.5 small fw-semibold">
+                Hủy bỏ
+            </a>
+            <button type="button" class="btn btn-primary rounded-pill px-4 py-1.5 small fw-bold shadow-sm" onclick="submitEditForm()">
+                <i class="bi bi-save me-1"></i>Lưu thay đổi
+            </button>
+        </div>
+    </div>
+
+    <form asp-action="Edit" method="post" id="editForm">
+        <input type="hidden" asp-for="MenuId" />
+
+        <!-- Card: Tên thực đơn -->
+        <div class="card shadow-sm border rounded-3 mb-4 bg-white">
+            <div class="card-body p-3">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-6 col-lg-5">
+                        <label for="menuNameInput" class="form-label fw-bold small text-muted text-uppercase mb-1">
+                            Tên thực đơn <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-card-heading"></i></span>
+                            <input type="text" name="MenuName" id="menuNameInput" class="form-control fw-bold fs-6" value="@Model.MenuName" placeholder="Nhập tên thực đơn..." required maxlength="100" />
+                        </div>
+                        <div class="text-danger small mt-1" id="menuNameError">
+                            <span asp-validation-for="MenuName"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-7">
+                        <div class="small text-muted d-flex align-items-center mt-md-3">
+                            <i class="bi bi-info-circle me-1 text-primary fs-5 flex-shrink-0"></i>
+                            <span>Tên thực đơn giúp nhận diện và phân biệt giữa các gói menu bán hàng tại chi nhánh.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2 Columns Product Selection Grid -->
+        <div class="row g-4 mb-4">
+            <!-- Left Column: Available Products -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border rounded-3 h-100">
+                    <div class="card-header bg-light py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold m-0 text-dark">
+                            <i class="bi bi-grid-fill me-2 text-primary"></i>Kho sản phẩm hệ thống
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted text-uppercase mb-1">Lọc theo danh mục</label>
+                            <select id="categoryFilter" class="form-select form-select-sm rounded-3" onchange="loadProducts()">
+                                <option value="">Tất cả danh mục sản phẩm</option>
+                                @if (ViewBag.Categories != null)
+                                {
+                                    foreach (var cat in ViewBag.Categories)
+                                    {
+                                        <option value="@cat.CategoryId">@cat.CategoryName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Products Table Container -->
+                        <div id="productsContainer" class="custom-scroll">
+                            <div class="text-center py-4 text-muted">
+                                <div class="spinner-border spinner-border-sm me-2"></div> Đang tải danh sách sản phẩm...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Staging Selected Products -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border rounded-3 h-100 bg-body-tertiary">
+                    <div class="card-header bg-success-subtle py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold m-0 text-dark">
+                            <i class="bi bi-check-circle-fill me-2 text-success"></i>Món đã chọn vào thực đơn
+                        </h6>
+                        <span class="badge bg-success rounded-pill px-2.5 py-1" id="stagedCountBadge">
+                            @(Model.Products?.Count ?? 0) món
+                        </span>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="stagingContainer" class="custom-scroll">
+                            @if (Model.Products != null && Model.Products.Any())
+                            {
+                                @foreach (var item in Model.Products)
+                                {
+                                    <div class="card border rounded-3 mb-2 p-3 d-flex flex-row justify-content-between align-items-center bg-white shadow-sm staged-item" id="staged_@item.ProductId">
+                                        <div>
+                                            <div class="fw-bold text-dark">@item.ProductName</div>
+                                            <span class="badge bg-light text-secondary border mt-1 small">@item.CategoryName</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" onclick="removeStaging(@item.ProductId)">
+                                            <i class="bi bi-trash me-1"></i>Xóa
+                                        </button>
+                                        <input type="hidden" name="SelectedProductIds" value="@item.ProductId" />
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center py-5 text-muted" id="emptyStagingMsg">
+                                    <i class="bi bi-bag-plus fs-1 d-block mb-2 text-secondary-subtle"></i>
+                                    Chưa có sản phẩm nào được chọn trong thực đơn này.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Bottom Bar -->
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold small">Hủy</a>
+            <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm small" onclick="submitEditForm()">
+                <i class="bi bi-save me-1"></i>Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        var selectedProductIds = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input[name="SelectedProductIds"]').forEach(function(input) {
+                selectedProductIds.push(input.value.toString());
+            });
+            loadProducts();
+            updateCountBadge();
+        });
+
+        function loadProducts() {
+            var catId = document.getElementById("categoryFilter").value;
+            var url = '@Url.Action("GetProductsPartial", "MenuManagement")';
+            if (catId) url += "?categoryId=" + catId;
+
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('productsContainer').innerHTML = html;
+                });
+        }
+
+        function updateCountBadge() {
+            const badge = document.getElementById('stagedCountBadge');
+            if (badge) {
+                badge.innerText = selectedProductIds.length + ' món';
+            }
+        }
+
+        function addProductToStaging(btn) {
+            var tr = btn.closest('tr');
+            var pId = tr.getAttribute('data-product-id');
+            var pName = tr.getAttribute('data-product-name');
+            var cName = tr.getAttribute('data-category-name');
+
+            if (selectedProductIds.includes(pId.toString())) {
+                showToast('Sản phẩm này đã có trong thực đơn!', 'warning');
+                return;
+            }
+
+            selectedProductIds.push(pId.toString());
+
+            var emptyMsg = document.getElementById('emptyStagingMsg');
+            if (emptyMsg) emptyMsg.style.display = 'none';
+
+            var div = document.createElement('div');
+            div.className = 'card border rounded-3 mb-2 p-3 d-flex flex-row justify-content-between align-items-center bg-white shadow-sm staged-item';
+            div.id = 'staged_' + pId;
+            div.innerHTML = `
+                <div>
+                    <div class="fw-bold text-dark">${pName}</div>
+                    <span class="badge bg-light text-secondary border mt-1 small">${cName}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" onclick="removeStaging('${pId}')">
+                    <i class="bi bi-trash me-1"></i>Xóa
+                </button>
+                <input type="hidden" name="SelectedProductIds" value="${pId}" />
+            `;
+
+            document.getElementById('stagingContainer').appendChild(div);
+            updateCountBadge();
+            showToast(`Đã thêm "${pName}" vào thực đơn.`, 'success');
+        }
+
+        function removeStaging(pId) {
+            var el = document.getElementById('staged_' + pId);
+            if (el) {
+                el.remove();
+                selectedProductIds = selectedProductIds.filter(id => id !== pId.toString());
+            }
+
+            var stagingContainer = document.getElementById('stagingContainer');
+            if (stagingContainer.querySelectorAll('div[id^="staged_"]').length === 0) {
+                var emptyMsg = document.getElementById('emptyStagingMsg');
+                if (emptyMsg) emptyMsg.style.display = 'block';
+            }
+            updateCountBadge();
+        }
+
+        function submitEditForm() {
+            var menuNameInput = document.getElementById('menuNameInput');
+            var menuName = menuNameInput ? menuNameInput.value.trim() : '';
+            var errEl = document.getElementById('menuNameError');
+
+            if (!menuName) {
+                if (menuNameInput) menuNameInput.classList.add('is-invalid');
+                if (errEl) errEl.innerText = 'Vui lòng nhập tên thực đơn.';
+                if (menuNameInput) menuNameInput.focus();
+                return;
+            }
+            if (menuNameInput) menuNameInput.classList.remove('is-invalid');
+            if (errEl) errEl.innerText = '';
+
+            showConfirmModal(
+                'Xác nhận lưu thay đổi',
+                `Bạn có chắc chắn muốn lưu cập nhật cho thực đơn "${menuName}" không?`,
+                function() {
+                    document.getElementById('editForm').submit();
+                }
+            );
+        }
+    </script>
+}

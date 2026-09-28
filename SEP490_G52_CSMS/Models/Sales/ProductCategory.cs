@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace SEP490_G52_CSMS.Models.Sales
 {
@@ -18,6 +17,9 @@ namespace SEP490_G52_CSMS.Models.Sales
         [Column("category_name")]
         [StringLength(150)]
         public string? CategoryName { get; set; }
+        [Column("description")]
+        [StringLength(500)]
+        public string? Description { get; set; }
 
         [Column("status")]
         [StringLength(50)]

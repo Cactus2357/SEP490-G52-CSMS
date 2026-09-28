@@ -1,0 +1,324 @@
+@model SEP490_G52_CSMS.Models.ViewModels.ShiftChangeListViewModel
+@{
+    ViewData["Title"] = "Đơn xin đổi ca";
+}
+
+<div class="container-fluid px-4 pt-3">
+    <!-- Tiêu đề -->
+    <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
+        <h3 class="fw-bold mb-0 text-uppercase text-dark">
+            <i class="bi bi-arrow-left-right text-primary me-2"></i>Đơn Xin Đổi Ca
+        </h3>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="fs-5 text-dark">
+                Nhân viên: <span class="fw-bold text-primary">@Model.EmployeeName</span>
+            </div>
+
+            <form id="filterForm" method="get" asp-action="EmployeeIndex" class="d-flex flex-wrap align-items-center gap-3 m-0">
+                <div>
+                    <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit()">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="Đã gửi" selected="@(Model.Status == "Đã gửi")">Đã gửi</option>
+                        <option value="Đã duyệt" selected="@(Model.Status == "Đã duyệt")">Đã duyệt</option>
+                        <option value="Từ chối" selected="@(Model.Status == "Từ chối")">Từ chối</option>
+                        <option value="Đã hủy" selected="@(Model.Status == "Đã hủy")">Đã hủy</option>
+                    </select>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <input type="date" id="filterFromDate" name="fromDate" class="form-control"
+                           value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" style="width: 145px;" onchange="validateFilterDates()" />
+                    <span class="text-muted">đến</span>
+                    <input type="date" id="filterToDate" name="toDate" class="form-control"
+                           value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" style="width: 145px;" onchange="validateFilterDates()" />
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 25%;">Ngày Gửi Đơn</th>
+                        <th style="width: 35%;">Nguyện Vọng Đổi Ca</th>
+                        <th style="width: 20%;">Trạng Thái</th>
+                        <th class="pe-4 text-end" style="width: 20%;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items.Any())
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr class="shift-row"
+                                data-id="@item.RequestId"
+                                data-employee="@Model.EmployeeName"
+                                data-submitted="@item.SubmittedAt"
+                                data-status="@item.Status"
+                                data-aspiration="@item.Aspiration"
+                                data-reason="@item.Reason">
+                                <td class="ps-4 fw-semibold text-secondary">@item.SubmittedAt</td>
+                                <td>
+                                    <div class="text-truncate text-dark fw-medium" style="max-width: 320px;" title="@item.Aspiration">
+                                        @item.Aspiration
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (item.Status == "Đã duyệt")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Đã duyệt
+                                        </span>
+                                    }
+                                    else if (item.Status == "Từ chối")
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Từ chối
+                                        </span>
+                                    }
+                                    else if (item.Status == "Đã hủy")
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-dash-circle-fill me-1"></i>Đã hủy
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1.5">
+                                            <i class="bi bi-send-fill me-1"></i>Đã gửi
+                                        </span>
+                                    }
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="showShiftDetailModal(this)">
+                                        <i class="bi bi-eye me-1"></i>Chi tiết
+                                    </button>
+                                    @if (item.CanCancel)
+                                    {
+                                         <form asp-action="Cancel" method="post" class="d-inline" id="cancelShiftForm_@item.RequestId">
+                                             @Html.AntiForgeryToken()
+                                             <input type="hidden" name="requestId" value="@item.RequestId" />
+                                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmCancelShift(@item.RequestId)">
+                                                 <i class="bi bi-x-circle me-1"></i>Hủy đơn
+                                             </button>
+                                         </form>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-light text-muted" disabled>
+                                            <i class="bi bi-slash-circle me-1"></i>Hủy đơn
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">Không có đơn xin đổi ca nào.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Chú thích & Nút đổi ca -->
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div class="card border-0 shadow-sm" style="max-width: 500px;">
+            <div class="card-body py-2 px-3 bg-light rounded border">
+                <span class="fw-semibold text-danger"><i class="bi bi-info-circle-fill me-1"></i>Lưu ý:</span>
+                <span class="text-secondary small">Chỉ hủy đơn khi trạng thái là "Đã gửi" (trước khi quản lý duyệt đơn).</span>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#createShiftChangeModal">
+            <i class="bi bi-plus-lg me-1"></i>Đơn đổi ca
+        </button>
+    </div>
+</div>
+
+<!-- Modal Chi Tiết Đơn Đổi Ca (Dành Cho Nhân Viên) -->
+<div class="modal fade" id="staffShiftDetailModal" tabindex="-1" aria-labelledby="staffShiftDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-light border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-text text-primary fs-4"></i>
+                    <h5 class="modal-title fw-bold text-dark m-0" id="staffShiftDetailModalLabel">CHI TIẾT ĐƠN ĐỔI CA</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="card border border-secondary-subtle rounded-3 p-3 mb-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary-subtle">
+                        <span class="text-muted fw-semibold small">Nhân viên:</span>
+                        <span class="fw-bold text-dark" id="modalShiftDetailEmployee">@Model.EmployeeName</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary-subtle">
+                        <span class="text-muted fw-semibold small">Trạng thái:</span>
+                        <span id="modalShiftDetailStatusBadge">–</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span class="text-muted fw-semibold small">Ngày gửi đơn:</span>
+                        <span class="fw-semibold text-secondary" id="modalShiftDetailSubmitted">–</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Nguyện vọng đổi ca:</label>
+                    <div class="p-3 border rounded bg-light small text-dark fw-medium" id="modalShiftDetailAspiration" style="min-height: 60px; white-space: pre-wrap;">
+                        –
+                    </div>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Lý do đổi ca:</label>
+                    <div class="p-3 border rounded bg-white small text-dark" id="modalShiftDetailReason" style="min-height: 80px; white-space: pre-wrap;">
+                        –
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2.5">
+                <button type="button" class="btn btn-secondary btn-sm px-4 fw-semibold" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Đơn Xin Đổi Ca -->
+<div class="modal fade" id="createShiftChangeModal" tabindex="-1" aria-labelledby="createShiftChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold text-uppercase" id="createShiftChangeModalLabel">
+                    <i class="bi bi-file-earmark-plus me-2"></i>ĐƠN XIN ĐỔI CA
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-action="Create" method="post" id="createShiftChangeForm">
+                <div class="modal-body p-4 row g-0">
+                    <div class="col-md-8 pe-md-4 border-end">
+                        <!-- Họ tên -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Họ &amp; Tên nhân viên</label>
+                            <input type="text" class="form-control" value="@Model.EmployeeName" readonly />
+                            <input type="hidden" name="EmployeeName" value="@Model.EmployeeName" />
+                        </div>
+
+                        <!-- Nguyện vọng -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Nguyện vọng đổi ca</label>
+                            <textarea name="Aspiration" class="form-control" rows="3"
+                                      placeholder="VD: Mong muốn đổi từ ca 1 sang ca 3 ở thứ 3 từ tuần sau..." required></textarea>
+                        </div>
+
+                        <!-- Lý do -->
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold text-secondary">Lý do đổi ca</label>
+                            <textarea name="Reason" class="form-control" rows="3" placeholder="Nhập lý do đổi ca chi tiết..." required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 ps-md-4 d-flex flex-column justify-content-between mt-3 mt-md-0">
+                        <div class="bg-light p-3 rounded border">
+                            <div class="fw-bold text-danger mb-2 small"><i class="bi bi-exclamation-circle-fill me-1"></i>HƯỚNG DẪN:</div>
+                            <ul class="small text-secondary ps-3 mb-0">
+                                <li class="mb-1">Ghi rõ ca hiện xếp của bạn.</li>
+                                <li class="mb-1">Ghi rõ ca mong muốn đổi, ở thứ mấy trong tuần và khoảng thời gian bắt đầu.</li>
+                                <li class="mb-1">Có thể ghi chú thêm các khung thời gian rảnh khác để quản lý dễ sắp xếp ca phù hợp.</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary px-4">Xác nhận</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var staffShiftModalInstance = null;
+
+        function showShiftDetailModal(btn) {
+            const row = btn.closest('tr');
+            if (!row) return;
+
+            const employee   = row.dataset.employee || '@Model.EmployeeName';
+            const submitted  = row.dataset.submitted || '–';
+            const status     = row.dataset.status || 'Đã gửi';
+            const aspiration = row.dataset.aspiration || '(Không có nguyện vọng)';
+            const reason     = row.dataset.reason || '(Không có lý do)';
+
+            document.getElementById('modalShiftDetailEmployee').textContent = employee;
+            document.getElementById('modalShiftDetailSubmitted').textContent = submitted;
+            document.getElementById('modalShiftDetailAspiration').textContent = aspiration;
+            document.getElementById('modalShiftDetailReason').textContent = reason;
+
+            let badgeHtml = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1"><i class="bi bi-send-fill me-1"></i>Đã gửi</span>';
+            if (status === 'Đã duyệt') {
+                badgeHtml = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1"><i class="bi bi-check-circle-fill me-1"></i>Đã duyệt</span>';
+            } else if (status === 'Từ chối') {
+                badgeHtml = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1"><i class="bi bi-x-circle-fill me-1"></i>Từ chối</span>';
+            } else if (status === 'Đã hủy') {
+                badgeHtml = '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2.5 py-1"><i class="bi bi-dash-circle-fill me-1"></i>Đã hủy</span>';
+            }
+            document.getElementById('modalShiftDetailStatusBadge').innerHTML = badgeHtml;
+
+            if (!staffShiftModalInstance) {
+                staffShiftModalInstance = new bootstrap.Modal(document.getElementById('staffShiftDetailModal'));
+            }
+            staffShiftModalInstance.show();
+        }
+
+        function confirmCancelShift(reqId) {
+            showConfirmModal(
+                'Hủy đơn đổi ca',
+                'Bạn có chắc chắn muốn hủy đơn đổi ca này?',
+                function() {
+                    const form = document.getElementById('cancelShiftForm_' + reqId);
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            );
+        }
+
+        $('#createShiftChangeForm').on('submit', function(e) {
+            if ($(this).data('confirmed')) return true;
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận gửi đơn đổi ca',
+                'Bạn có chắc chắn muốn gửi đơn xin đổi ca làm việc này không?',
+                function() {
+                    $(form).data('confirmed', true);
+                    form.submit();
+                }
+            );
+        });
+
+        function validateFilterDates() {
+            const fromDate = document.getElementById('filterFromDate').value;
+            const toDate = document.getElementById('filterToDate').value;
+            if (fromDate && toDate && fromDate > toDate) {
+                showToast('Từ ngày không được lớn hơn Đến ngày!', 'warning');
+                return;
+            }
+            document.getElementById('filterForm').submit();
+        }
+    </script>
+}

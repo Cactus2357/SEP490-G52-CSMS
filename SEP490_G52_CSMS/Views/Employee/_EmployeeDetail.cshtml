@@ -1,0 +1,197 @@
+@model SEP490_G52_CSMS.Models.Employees.Employee
+@{
+    string initials = "NV";
+    if (!string.IsNullOrWhiteSpace(Model.FullName))
+    {
+        var parts = Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+        else if (parts.Length == 1)
+            initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+    }
+
+    string roleText = Model.Role switch
+    {
+        "Cashier"       => "Cashier",
+        "Bartender"     => "Bartender",
+        "Busser"        => "Busser",
+        "BranchManager" => "Branch Manager",
+        _               => Model.Role ?? ""
+    };
+
+    string statusText = Model.Status == "Active" ? "Đang hoạt động" : "Vô hiệu hóa";
+    string citizenId = Model.CitizenId ?? "";
+    string maskedCitizenId = citizenId;
+    if (citizenId.Length >= 10)
+        maskedCitizenId = citizenId.Substring(0, 3) + "xxx" + citizenId.Substring(citizenId.Length - 6);
+
+    bool hasCccd = !string.IsNullOrEmpty(Model.CccdFilePath);
+    bool hasContract = !string.IsNullOrEmpty(Model.ContractFilePath);
+}
+
+<div class="p-4 bg-white">
+    <!-- Header -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0" style="width: 36px; height: 36px;" onclick="closeEmployeeDetail()" title="Quay lại">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </button>
+        <h5 class="fw-bold m-0 text-dark">Chi tiết nhân viên</h5>
+    </div>
+
+    <!-- Capsule Profile Summary Card -->
+    <div class="card border shadow-sm rounded-pill p-2 px-4 mb-4 bg-body-tertiary">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle border border-2 border-primary bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.1rem;">
+                @initials
+            </div>
+            <div>
+                <h6 class="fw-bold m-0 text-dark">@Model.FullName</h6>
+                <p class="text-muted m-0 small">@@@Model.Username &bull; #NV-@(Model.EmployeeId.ToString("D4"))</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Native Bootstrap Nav Pills Tabs -->
+    <ul class="nav nav-pills nav-justified mb-4 bg-light p-1 rounded-3 border" id="employeeDetailTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-uppercase small py-2 rounded-3" id="tab-btn-info" data-bs-toggle="tab" data-bs-target="#tab-panel-info" type="button" role="tab" aria-controls="tab-panel-info" aria-selected="true">
+                <i class="bi bi-person-badge me-1"></i>Thông tin cá nhân
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-uppercase small py-2 rounded-3" id="tab-btn-docs" data-bs-toggle="tab" data-bs-target="#tab-panel-docs" type="button" role="tab" aria-controls="tab-panel-docs" aria-selected="false">
+                <i class="bi bi-file-earmark-text me-1"></i>Hồ sơ pháp lý
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="employeeDetailTabContent">
+        <!-- TAB 1: Thông tin cá nhân -->
+        <div class="tab-pane fade show active" id="tab-panel-info" role="tabpanel" aria-labelledby="tab-btn-info">
+            <!-- Section: Thông tin cơ bản -->
+            <div class="card border-0 shadow-sm rounded-3 mb-3 bg-body-tertiary">
+                <div class="card-body p-3">
+                    <h6 class="fw-bold text-uppercase small text-muted mb-3 border-bottom pb-2">
+                        <i class="bi bi-info-circle me-1 text-primary"></i>Thông tin tài khoản &amp; Vai trò
+                    </h6>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                        <span class="text-secondary small">Họ và tên:</span>
+                        <span class="fw-bold text-dark small">@Model.FullName</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                        <span class="text-secondary small">Vị trí công việc:</span>
+                        <span class="fw-bold text-primary small">@roleText</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                        <span class="text-secondary small">Loại hình làm việc:</span>
+                        <span class="badge bg-secondary-subtle text-dark border">@Model.EmploymentType</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                        <span class="text-secondary small">Chi nhánh làm việc:</span>
+                        <span class="fw-bold text-dark small">@(Model.Branch?.BranchName ?? "Chi nhánh 1")</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-secondary small">Trạng thái:</span>
+                        @if (Model.Status == "Active")
+                        {
+                            <span class="badge bg-success-subtle text-success border">Đang hoạt động</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger-subtle text-danger border">Vô hiệu hóa</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Thông tin liên hệ -->
+            <div class="card border-0 shadow-sm rounded-3 bg-body-tertiary">
+                <div class="card-body p-3">
+                    <h6 class="fw-bold text-uppercase small text-muted mb-3 border-bottom pb-2">
+                        <i class="bi bi-telephone me-1 text-primary"></i>Liên hệ &amp; Định danh
+                    </h6>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                        <span class="text-secondary small">Số điện thoại:</span>
+                        <span class="fw-bold text-dark small">@(Model.PhoneNumber ?? "Chưa cập nhật")</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                        <span class="text-secondary small">Email:</span>
+                        <span class="fw-bold text-dark small">@(Model.Email ?? "Chưa cập nhật")</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle">
+                        <span class="text-secondary small">Số CCCD:</span>
+                        <span class="fw-bold text-dark small font-monospace">@(string.IsNullOrEmpty(maskedCitizenId) ? "Chưa cập nhật" : maskedCitizenId)</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 align-items-center">
+                        <span class="text-secondary small">Dữ liệu khuôn mặt (FaceID):</span>
+                        @if (!string.IsNullOrEmpty(Model.FaceData))
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success border"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng ký</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 small rounded-pill fw-bold" onclick="deleteEmployeeFaceData(@Model.EmployeeId, '@Model.FullName')">
+                                    <i class="bi bi-trash me-1"></i>Xóa
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-muted border">Chưa đăng ký</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Hồ sơ pháp lý -->
+        <div class="tab-pane fade" id="tab-panel-docs" role="tabpanel" aria-labelledby="tab-btn-docs">
+            <div class="card border-0 shadow-sm rounded-3 bg-body-tertiary">
+                <div class="card-body p-3">
+                    <h6 class="fw-bold text-uppercase small text-muted mb-3 border-bottom pb-2">
+                        <i class="bi bi-folder-check me-1 text-primary"></i>Tài liệu đã tải lên
+                    </h6>
+
+                    <!-- CCCD -->
+                    <div class="d-flex align-items-center justify-content-between py-3 border-bottom">
+                        <div>
+                            <div class="fw-bold text-dark small"><i class="bi bi-card-heading me-1 text-secondary"></i>Hình ảnh / Mã số CCCD</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Giấy CMND / Căn cước công dân</div>
+                        </div>
+                        <div>
+                            @if (hasCccd)
+                            {
+                                <a href="@Model.CccdFilePath" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                    <i class="bi bi-eye me-1"></i>Xem tài liệu
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-muted border">Chưa đính kèm</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Hợp đồng -->
+                    <div class="d-flex align-items-center justify-content-between py-3">
+                        <div>
+                            <div class="fw-bold text-dark small"><i class="bi bi-file-earmark-text me-1 text-secondary"></i>Hợp đồng lao động</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Hợp đồng ký kết lao động</div>
+                        </div>
+                        <div>
+                            @if (hasContract)
+                            {
+                                <a href="@Model.ContractFilePath" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                    <i class="bi bi-eye me-1"></i>Xem tài liệu
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-muted border">Chưa đính kèm</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,320 @@
+@model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
+@{
+    ViewData["Title"] = "Phân quyền Nhân viên";
+}
+
+<div class="container-fluid mt-3 px-4 pb-5">
+    <!-- Header Section -->
+    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
+        <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/Employee" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0" style="width: 38px; height: 38px;">
+                    <i class="bi bi-arrow-left fs-5"></i>
+                </a>
+                <div>
+                    <span class="text-muted small">Hệ thống / Quản lý nhân sự</span>
+                    <h4 class="fw-bold m-0 text-dark">PHÂN QUYỀN VÀ VAI TRÒ NHÂN VIÊN</h4>
+                </div>
+            </div>
+            <div>
+                <a href="/Employee" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                    <i class="bi bi-people me-1"></i>Danh sách NV
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action & Filter Bar -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-7 col-lg-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" id="permSearchInput" class="form-control" placeholder="Tìm tên nhân viên, email..." onkeyup="filterPermList()">
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-4 ms-auto">
+                    <select id="roleFilterSelect" class="form-select rounded-3" onchange="filterPermList()">
+                        <option value="">Tất cả vai trò</option>
+                        <option value="Cashier">Thu ngân (Cashier)</option>
+                        <option value="Bartender">Pha chế (Bartender)</option>
+                        <option value="Busser">Phục vụ (Busser)</option>
+                        <option value="Unassigned">Chưa phân quyền</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table Grid Card -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-body-tertiary border-0 py-3 d-flex align-items-center justify-content-between">
+            <h6 class="fw-bold m-0 text-dark">
+                <i class="bi bi-shield-lock-fill me-2 text-primary"></i>Danh sách nhân viên &amp; Vai trò hệ thống
+            </h6>
+            <span class="badge bg-secondary-subtle text-dark border" id="paginationSummary">
+                Đang hiển thị @Model.Count() nhân viên
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="permTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 25%;">Nhân Viên</th>
+                            <th style="width: 20%;">Email</th>
+                            <th style="width: 18%;">Vai Trò Hệ Thống</th>
+                            <th style="width: 15%;">Loại Hình</th>
+                            <th class="pe-4 text-end" style="width: 22%;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary-subtle"></i>
+                                    Không tìm thấy dữ liệu nhân viên.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var emp in Model)
+                            {
+                                string initials = "NV";
+                                if (!string.IsNullOrWhiteSpace(emp.FullName))
+                                {
+                                    var parts = emp.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                    if (parts.Length >= 2)
+                                        initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+                                    else if (parts.Length == 1)
+                                        initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+                                }
+
+                                string roleBadgeClass = emp.Role switch
+                                {
+                                    "Cashier" => "bg-primary-subtle text-primary border border-primary-subtle",
+                                    "Bartender" => "bg-success-subtle text-success border border-success-subtle",
+                                    "Busser" => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+                                    "BranchManager" => "bg-info-subtle text-info border border-info-subtle",
+                                    _ => "bg-secondary-subtle text-secondary border"
+                                };
+
+                                string roleLabel = emp.Role switch
+                                {
+                                    "Cashier" => "Thu ngân",
+                                    "Bartender" => "Pha chế",
+                                    "Busser" => "Phục vụ",
+                                    "BranchManager" => "Quản lý",
+                                    _ => "Chưa phân quyền"
+                                };
+
+                                <tr class="perm-row-item" data-fullname="@emp.FullName" data-email="@emp.Email" data-role="@emp.Role">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="rounded-circle border border-2 border-secondary bg-body-tertiary fw-bold text-dark d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                                @initials
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">@emp.FullName</div>
+                                                <small class="text-muted">@@@emp.Username</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-secondary small">@(emp.Email ?? "Chưa có email")</td>
+                                    <td>
+                                        <span class="badge rounded-pill px-3 py-1.5 @roleBadgeClass">@roleLabel</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">@(string.IsNullOrEmpty(emp.EmploymentType) ? "-" : emp.EmploymentType)</span>
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-1" onclick="openEditPermissionModal(@emp.EmployeeId, '@emp.FullName', '@emp.Role', '@emp.EmploymentType')">
+                                            <i class="bi bi-pencil me-1"></i>Sửa vai trò
+                                        </button>
+                                        @if (!string.IsNullOrEmpty(emp.Role) && emp.Role != "Unassigned")
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" onclick="revokePermission(@emp.EmployeeId, '@emp.FullName')">
+                                                Thu hồi
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sửa phân quyền -->
+<div class="modal fade" id="editPermissionModal" tabindex="-1" aria-labelledby="editPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header bg-body-tertiary">
+                <h5 class="modal-title fw-bold" id="editPermissionModalLabel"><i class="bi bi-shield-lock-fill me-2 text-primary"></i>Thay đổi vai trò nhân viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="modalErrorAlert" class="alert alert-danger d-none rounded-3 mb-3" role="alert"></div>
+                
+                <input type="hidden" id="editEmpId">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tên nhân viên</label>
+                    <input type="text" class="form-control bg-light fw-bold rounded-3" id="editEmpName" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="editRoleSelect" class="form-label fw-bold">Vai trò *</label>
+                    <select class="form-select rounded-3" id="editRoleSelect" required>
+                        <option value="" disabled>Chọn vai trò...</option>
+                        <option value="Cashier">Thu ngân (Cashier)</option>
+                        <option value="Bartender">Pha chế (Bartender)</option>
+                        <option value="Busser">Phục vụ / Vệ sinh (Busser)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editTypeSelect" class="form-label fw-bold">Loại hình nhân viên *</label>
+                    <select class="form-select rounded-3" id="editTypeSelect" required>
+                        <option value="" disabled>Chọn loại hình...</option>
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-body-tertiary">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="savePermissions()" id="btnSavePermissions">
+                    <i class="bi bi-save me-1"></i>Lưu thay đổi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function filterPermList() {
+        const query = document.getElementById('permSearchInput').value.trim();
+        const roleFilter = document.getElementById('roleFilterSelect').value;
+        const rows = document.querySelectorAll('.perm-row-item');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const fullName = row.getAttribute('data-fullname') || '';
+            const email = row.getAttribute('data-email') || '';
+            const role = row.getAttribute('data-role') || '';
+
+            let matchesQuery = !query || (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(query, [fullName, email]) : (fullName.toLowerCase().includes(query.toLowerCase()) || email.toLowerCase().includes(query.toLowerCase())));
+            let matchesRole = true;
+
+            if (roleFilter !== '') {
+                if (roleFilter === 'Unassigned') {
+                    matchesRole = (role === '');
+                } else {
+                    matchesRole = (role === roleFilter);
+                }
+            }
+
+            if (matchesQuery && matchesRole) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('paginationSummary').textContent = `Đang hiển thị ${visibleCount} của ${rows.length} nhân viên`;
+    }
+
+    let editModal = null;
+
+    function openEditPermissionModal(empId, fullName, role, type) {
+        document.getElementById('editEmpId').value = empId;
+        document.getElementById('editEmpName').value = fullName;
+        document.getElementById('editRoleSelect').value = role || 'Cashier';
+        document.getElementById('editTypeSelect').value = type || 'Full-time';
+        
+        document.getElementById('modalErrorAlert').classList.add('d-none');
+        
+        if(!editModal) {
+            editModal = new bootstrap.Modal(document.getElementById('editPermissionModal'));
+        }
+        editModal.show();
+    }
+
+    async function savePermissions() {
+        const empId = document.getElementById('editEmpId').value;
+        const fullName = document.getElementById('editEmpName').value;
+        const role = document.getElementById('editRoleSelect').value;
+        const type = document.getElementById('editTypeSelect').value;
+        
+        const btnSave = document.getElementById('btnSavePermissions');
+        const alertEl = document.getElementById('modalErrorAlert');
+        
+        showConfirmModal(
+            'Xác nhận phân quyền',
+            `Xác nhận thay đổi vai trò và loại hợp đồng cho nhân viên "${fullName}"?`,
+            async function() {
+                alertEl.classList.add('d-none');
+                btnSave.disabled = true;
+                
+                try {
+                    const response = await fetch('/Employee/UpdatePermissions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ employeeId: parseInt(empId), role: role, employmentType: type })
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        editModal.hide();
+                        showToast('Cập nhật phân quyền thành công!', 'success');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        alertEl.textContent = result.errorMessage || 'Lỗi khi cập nhật phân quyền.';
+                        alertEl.classList.remove('d-none');
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alertEl.textContent = 'Không thể kết nối máy chủ.';
+                    alertEl.classList.remove('d-none');
+                } finally {
+                    btnSave.disabled = false;
+                }
+            }
+        );
+    }
+
+    function revokePermission(empId, fullName) {
+        showConfirmModal(
+            'Thu hồi vai trò',
+            `Bạn có chắc chắn muốn thu hồi vai trò của nhân viên "${fullName}" không? Vai trò sẽ được chuyển về "Chưa phân quyền".`,
+            async function() {
+                try {
+                    const response = await fetch('/Employee/UpdatePermissions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ employeeId: parseInt(empId), role: 'Unassigned', employmentType: '' })
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        showToast('Đã thu hồi vai trò của nhân viên!', 'success');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        showToast(result.errorMessage || 'Không thể thu hồi vai trò.', 'danger');
+                    }
+                } catch(err) {
+                    showToast('Không thể kết nối máy chủ.', 'danger');
+                }
+            }
+        );
+    }
+</script>
+}

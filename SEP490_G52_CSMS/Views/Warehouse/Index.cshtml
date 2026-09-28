@@ -1,0 +1,841 @@
+    @model SEP490_G52_CSMS.Controllers.WarehouseIndexViewModel
+
+@{
+    ViewData["Title"] = "Danh Sách Nguyên Vật Liệu";
+}
+
+<div class="warehouse-page p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark m-0">DANH SÁCH NGUYÊN VẬT LIỆU</h2>
+        <div class="header-actions d-flex gap-2">
+            <a href="@Url.Action("CreateReceipt", "Warehouse")" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-plus"></i> Tạo đơn mới
+            </a>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal" onclick="loadCategories()">
+                <i class="bi bi-tags"></i> Loại nguyên liệu
+            </button>
+            <button type="button" class="btn btn-outline-dark fw-bold" data-bs-toggle="modal" data-bs-target="#createMaterialModal" onclick="prepareCreateMaterialModal()">
+                <i class="bi bi-plus-lg"></i> Nguyên liệu mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm border-0 mb-4 rounded-3 bg-light">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-center">
+                <div class="col-md-4 col-sm-12">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="searchString" value="@Model.SearchString" class="form-control border-start-0" placeholder="Tìm kiếm theo tên nguyên liệu..." />
+                    </div>
+                </div>
+                
+                <div class="col-md-3 col-sm-6">
+                    <select name="selectedCategory" class="form-select">
+                        <option value="">-- Loại nguyên liệu --</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            if (cat == Model.SelectedCategory)
+                            {
+                                <option value="@cat" selected>@cat</option>
+                            }
+                            else
+                            {
+                                <option value="@cat">@cat</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-sm-6">
+                    <select name="selectedKind" class="form-select">
+                        <option value="">-- Kiểu nguyên liệu --</option>
+                        @foreach (var kind in Model.Kinds)
+                        {
+                            if (kind == Model.SelectedKind)
+                            {
+                                <option value="@kind" selected>@kind</option>
+                            }
+                            else
+                            {
+                                <option value="@kind">@kind</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100">Tìm kiếm</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main side-by-side content -->
+    <div class="row">
+        <!-- Left Panel: Materials Grid -->
+        <div class="col-lg-8 col-md-12 mb-4 mb-lg-0">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle m-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 8%;" class="ps-3">STT</th>
+                                    <th style="width: 15%;">Mã nguyên liệu</th>
+                                    <th style="width: 21%;">Tên nguyên liệu</th>
+                                    <th style="width: 15%;">Kiểu nguyên liệu</th>
+                                    <th style="width: 15%;">Loại nguyên liệu</th>
+                                    <th style="width: 7%;">Đơn vị</th>
+                                    <th style="width: 10%;">Tồn kho</th>
+                                    <th style="width: 19%;" class="text-center pe-3">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Materials != null && Model.Materials.Any())
+                                {
+                                    int sttOffset = (Model.CurrentPage - 1) * 10;
+                                    for (int i = 0; i < Model.Materials.Count; i++)
+                                    {
+                                        var m = Model.Materials[i];
+                                        <tr>
+                                            <td class="ps-3">@(sttOffset + i + 1)</td>
+                                            <td class="fw-bold">@m.MaterialCode</td>
+                                            <td>@m.MaterialName</td>
+                                            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-2">@m.MaterialKind</span></td>
+                                            <td>@m.Category</td>
+                                            <td>@m.StorageUnit</td>
+                                            <td class="fw-semibold">@m.StockQuantity.ToString("G29") @m.StorageUnit</td>
+                                            <td class="text-center pe-3">
+                                                <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none" onclick="loadMaterialDetails(@m.MaterialId)">
+                                                    Chi tiết
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">Không tìm thấy nguyên liệu phù hợp.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (Model.TotalPages > 1)
+                    {
+                        <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-sm m-0">
+                                    <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { searchString = Model.SearchString, selectedCategory = Model.SelectedCategory, selectedKind = Model.SelectedKind, page = Model.CurrentPage - 1 })">&laquo;</a>
+                                    </li>
+                                    @for (int p = 1; p <= Model.TotalPages; p++)
+                                    {
+                                        <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                            <a class="page-link" href="@Url.Action("Index", new { searchString = Model.SearchString, selectedCategory = Model.SelectedCategory, selectedKind = Model.SelectedKind, page = p })">@p</a>
+                                        </li>
+                                    }
+                                    <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { searchString = Model.SearchString, selectedCategory = Model.SelectedCategory, selectedKind = Model.SelectedKind, page = Model.CurrentPage + 1 })">&raquo;</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Side Detail Panel -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card shadow-sm border-0 rounded-3 sticky-lg-top" style="top: 24px; z-index: 100;">
+                <div class="card-header bg-dark text-white py-3 rounded-top-3">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-info-circle me-2 text-warning"></i>Chi tiết nguyên liệu</h5>
+                </div>
+                <div class="card-body p-4" id="detailPanelBody">
+                    <div class="text-center text-muted py-5" id="detailPlaceholder">
+                        <i class="bi bi-card-text fs-1 mb-3 d-block text-secondary-subtle"></i>
+                        <span>Chọn nguyên liệu muốn xem từ bảng</span>
+                    </div>
+                    
+                    <div class="d-none" id="detailContent">
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Mã nguyên liệu</label>
+                            <span class="fs-5 fw-bold text-dark" id="lblCode"></span>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Tên nguyên liệu</label>
+                            <span class="fs-6 fw-bold text-dark" id="lblName"></span>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col border-end pb-2">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Kiểu NgL</label>
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-2" id="lblKind"></span>
+                            </div>
+                            <div class="col pb-2 ps-3">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Loại NgL</label>
+                                <span class="fw-semibold text-dark" id="lblCategory"></span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col border-end pb-2">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Giá mua hàng</label>
+                                <span class="fw-semibold text-success" id="lblPrice"></span>
+                            </div>
+                            <div class="col pb-2 ps-3">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-1">Đơn vị lưu kho</label>
+                                <span class="fw-semibold text-dark text-capitalize" id="lblUnit"></span>
+                            </div>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Nhà cung cấp (NCC)</label>
+                            <span class="text-dark" id="lblSupplier"></span>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Nơi trồng / Xuất xứ</label>
+                            <span class="text-dark" id="lblOrigin"></span>
+                        </div>
+                        <div class="mb-4 bg-light p-3 rounded border border-light-subtle">
+                            <label class="text-muted small fw-bold text-uppercase d-block mb-1">Tồn kho hiện tại</label>
+                            <span class="fs-4 fw-bold text-primary" id="lblStock"></span>
+                        </div>
+                        
+                        <input type="hidden" id="selectedMaterialId" value="" />
+                        <a id="btnViewMaterialStats" href="#" class="btn btn-outline-primary w-100 py-2 mb-2 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                            <i class="bi bi-graph-up"></i> Xem thống kê biến động & xuất nhập
+                        </a>
+                        <button type="button" class="btn btn-outline-dark w-100 py-2 fw-bold" onclick="openEditMaterialModal()">
+                            <i class="bi bi-pencil-square me-2"></i> Chỉnh sửa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal Screen A: Loại nguyên liệu -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold text-white" id="categoryModalLabel">Loại nguyên liệu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row">
+                    <!-- Left: Category List Table & Chỉnh sửa Panel -->
+                    <div class="col-md-7 border-end">
+                        <h6 class="fw-bold mb-3">Danh sách loại NgL</h6>
+                        <div class="table-responsive" style="max-height: 250px;">
+                            <table class="table table-bordered table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 10%;">STT</th>
+                                        <th style="width: 35%;">Tên</th>
+                                        <th style="width: 40%;">Mô tả</th>
+                                        <th style="width: 15%;" class="text-center">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryTableBody">
+                                    <!-- Dynamic categories load here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Chỉnh sửa Panel -->
+                        <div class="card mt-4 bg-light border-light-subtle">
+                            <div class="card-header py-2 fw-bold">Chỉnh sửa</div>
+                            <div class="card-body py-3">
+                                <form id="editCategoryForm">
+                                    <input type="hidden" id="editCategoryId" />
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold mb-1">Tên loại NgL <span class="text-danger">*</span></label>
+                                        <input type="text" id="editCategoryName" class="form-control form-control-sm" placeholder="Nhập tên mới..." disabled required maxlength="50" />
+                                        <div class="invalid-feedback" id="valEditCategoryName"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold mb-1">Mô tả</label>
+                                        <textarea id="editCategoryDesc" class="form-control form-control-sm" rows="2" placeholder="Nhập mô tả..." disabled maxlength="200"></textarea>
+                                    </div>
+                                    <button type="button" id="btnSaveCategory" class="btn btn-sm btn-dark w-100 fw-bold" disabled onclick="saveCategoryUpdate()">Lưu thay đổi</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Thêm loại NgL Panel -->
+                    <div class="col-md-5 ps-md-4 mt-4 mt-md-0">
+                        <h6 class="fw-bold mb-3">Thêm loại NgL</h6>
+                        <form id="createCategoryForm">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold mb-1">Tên <span class="text-danger">*</span></label>
+                                <input type="text" id="newCategoryName" class="form-control form-control-sm" placeholder="VD: Sữa, Trà..." required maxlength="50" />
+                                <div class="invalid-feedback" id="valNewCategoryName"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold mb-1">Mô tả</label>
+                                <textarea id="newCategoryDesc" class="form-control form-control-sm" rows="4" placeholder="Mô tả công dụng của loại nguyên liệu này..." maxlength="200"></textarea>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success w-100 py-2 fw-bold" onclick="createCategorySubmit()">Thêm</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Screen B: Thêm nguyên liệu mới -->
+<div class="modal fade" id="createMaterialModal" tabindex="-1" aria-labelledby="createMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="createMaterialModalLabel">Thêm nguyên liệu mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="createMaterialForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Tên nguyên liệu <span class="text-danger">*</span></label>
+                            <input type="text" id="createMatName" class="form-control" placeholder="Tên nguyên liệu..." required maxlength="100" />
+                            <div class="invalid-feedback" id="valCreateMatName"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Loại nguyên liệu <span class="text-danger">*</span></label>
+                            <select id="createMatCategory" class="form-select" required>
+                                <option value="">-- Chọn Loại NgL --</option>
+                            </select>
+                            <div class="invalid-feedback" id="valCreateMatCategory"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Kiểu nguyên liệu (Trạng thái vật lý) <span class="text-danger">*</span></label>
+                            <select id="createMatPhysicalState" class="form-select" onchange="updateCreateUnitHint()" required>
+                                <option value="Dạng đặc">Dạng đặc (kg / g)</option>
+                                <option value="Dạng lỏng">Dạng lỏng (lít / ml)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Giá hàng (VNĐ) <span class="text-danger">*</span></label>
+                            <input type="number" id="createMatPrice" class="form-control" placeholder="Giá mua..." required min="1" step="any" />
+                            <div class="invalid-feedback" id="valCreateMatPrice"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Kiểu nguyên liệu (Mô tả phân loại) <span class="text-danger">*</span></label>
+                            <input type="text" id="createMatKind" class="form-control" placeholder="VD: Thô, Thành phẩm..." required maxlength="30" />
+                            <div class="invalid-feedback" id="valCreateMatKind"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Nơi trồng (nếu có)</label>
+                            <input type="text" id="createMatOrigin" class="form-control" placeholder="Nơi trồng / Xuất xứ..." maxlength="100" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Thông tin nhà cung cấp (NCC)</label>
+                            <input type="text" id="createMatSupplier" class="form-control" placeholder="Tên vendor..." maxlength="100" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Đơn vị lưu kho</label>
+                            <input type="text" id="createMatUnitDisplay" class="form-control bg-light" readonly value="kg" />
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <div class="bg-light p-3 rounded-2 border border-light-subtle">
+                                <p class="m-0 small text-muted"><i class="bi bi-info-circle text-primary me-1"></i><strong>Lưu ý:</strong> Giá tiền tính theo từng đơn vị của nguyên liệu nhập vào (VD: Cà phê: kg).</p>
+                                <p class="m-0 mt-1 small text-muted"><i class="bi bi-info-circle text-primary me-1"></i><strong>Kiểu nguyên liệu:</strong> Thô, Thành phẩm, ...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-dark px-4 fw-bold" onclick="createMaterialSubmit()">Thêm mới</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Chỉnh sửa thông tin nguyên liệu -->
+<div class="modal fade" id="editMaterialModal" tabindex="-1" aria-labelledby="editMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="editMaterialModalLabel">Chỉnh sửa thông tin nguyên liệu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Supplier Warning Alert -->
+                <div class="alert alert-warning d-none mb-3" id="supplierWarningAlert" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Đổi nhà cung cấp sẽ cập nhật trực tiếp bản ghi này. Nếu đây là nguồn cung mới cho cùng loại nguyên liệu, vui lòng tạo nguyên liệu mới thay vì chỉnh sửa.
+                </div>
+
+                <form id="editMaterialForm">
+                    <input type="hidden" id="editMatId" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Tên nguyên liệu <span class="text-danger">*</span></label>
+                            <input type="text" id="editMatName" class="form-control" required maxlength="100" />
+                            <div class="invalid-feedback" id="valEditMatName"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Loại nguyên liệu <span class="text-danger">*</span></label>
+                            <select id="editMatCategory" class="form-select" required>
+                                <option value="">-- Chọn Loại NgL --</option>
+                            </select>
+                            <div class="invalid-feedback" id="valEditMatCategory"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Kiểu nguyên liệu (Trạng thái vật lý) <span class="text-danger">*</span></label>
+                            <select id="editMatPhysicalState" class="form-select" onchange="updateEditUnitHint()" required>
+                                <option value="Dạng đặc">Dạng đặc (kg / g)</option>
+                                <option value="Dạng lỏng">Dạng lỏng (lít / ml)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Giá hàng (VNĐ) <span class="text-danger">*</span></label>
+                            <input type="number" id="editMatPrice" class="form-control" required min="1" step="any" />
+                            <div class="invalid-feedback" id="valEditMatPrice"></div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Kiểu nguyên liệu (Mô tả phân loại) <span class="text-danger">*</span></label>
+                            <input type="text" id="editMatKind" class="form-control" required maxlength="30" />
+                            <div class="invalid-feedback" id="valEditMatKind"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Nơi trồng (nếu có)</label>
+                            <input type="text" id="editMatOrigin" class="form-control" maxlength="100" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Thông tin nhà cung cấp (NCC)</label>
+                            <input type="text" id="editMatSupplier" class="form-control" maxlength="100" oninput="checkSupplierChange()" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Đơn vị lưu kho</label>
+                            <input type="text" id="editMatUnitDisplay" class="form-control bg-light" readonly />
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <div class="bg-light p-3 rounded-2 border border-light-subtle">
+                                <p class="m-0 small text-muted"><i class="bi bi-info-circle text-primary me-1"></i><strong>Lưu ý:</strong> Giá tiền tính theo từng đơn vị của nguyên liệu nhập vào (VD: Cà phê: kg).</p>
+                                <p class="m-0 mt-1 small text-muted"><i class="bi bi-info-circle text-primary me-1"></i><strong>Kiểu nguyên liệu:</strong> Thô, Thành phẩm, ...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-dark px-4 fw-bold" onclick="updateMaterialSubmit()">Chỉnh sửa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .warehouse-page {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 70px);
+    }
+    .table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #adb5bd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Global variables for supplier change tracking
+        let originalSupplierName = "";
+
+        function triggerAction(actionName) {
+            showToast(`Tính năng "${actionName}" (UC59/UC67) đang được phát triển.`, 'warning');
+        }
+
+        // --- 1. GENERAL MATERIAL DETAILS ---
+        function loadMaterialDetails(id) {
+            $('#detailPlaceholder').addClass('d-none');
+            $('#detailContent').addClass('d-none');
+            
+            $.ajax({
+                url: '/Warehouse/GetMaterialDetails',
+                type: 'GET',
+                data: { id: id },
+                success: function(m) {
+                    $('#selectedMaterialId').val(m.materialId);
+                    $('#lblCode').text(m.materialCode);
+                    $('#lblName').text(m.materialName);
+                    $('#lblKind').text(m.materialKind);
+                    $('#lblCategory').text(m.category);
+                    $('#lblPrice').text(m.unitPrice);
+                    $('#lblUnit').text(m.storageUnit);
+                    $('#lblSupplier').text(m.supplier ? m.supplier : "Không có");
+                    $('#lblOrigin').text(m.origin ? m.origin : "Không có");
+                    $('#lblStock').text(m.stockQuantity);
+                    $('#btnViewMaterialStats').attr('href', '/Warehouse/Statistics?materialId=' + m.materialId);
+                    
+                    $('#detailContent').removeClass('d-none');
+                },
+                error: function() {
+                    showToast('Lỗi tải chi tiết nguyên vật liệu.', 'danger');
+                    $('#detailPlaceholder').removeClass('d-none');
+                }
+            });
+        }
+
+        // --- 2. CATEGORY POPUP MANAGEMENT (SCREEN A) ---
+        function loadCategories() {
+            // Reset edit form panel
+            $('#editCategoryId').val('');
+            $('#editCategoryName').val('').prop('disabled', true);
+            $('#editCategoryDesc').val('').prop('disabled', true);
+            $('#btnSaveCategory').prop('disabled', true);
+            $('#editCategoryName').removeClass('is-invalid');
+            $('#newCategoryName').removeClass('is-invalid');
+
+            $.ajax({
+                url: '/Warehouse/GetCategories',
+                type: 'GET',
+                success: function(list) {
+                    let rows = "";
+                    list.forEach((c, idx) => {
+                        rows += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td class="fw-bold">${c.categoryName}</td>
+                                <td>${c.description ? c.description : ""}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0" onclick="editCategoryRow(${c.categoryId}, '${c.categoryName.replace(/'/g, "\\'")}', '${(c.description ? c.description : "").replace(/'/g, "\\'")}')">
+                                        [Chỉnh sửa]
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    if (list.length === 0) {
+                        rows = '<tr><td colspan="4" class="text-center text-muted">Không có loại nguyên liệu.</td></tr>';
+                    }
+                    $('#categoryTableBody').html(rows);
+                }
+            });
+        }
+
+        function editCategoryRow(id, name, desc) {
+            $('#editCategoryId').val(id);
+            $('#editCategoryName').val(name).prop('disabled', false).removeClass('is-invalid');
+            $('#editCategoryDesc').val(desc).prop('disabled', false);
+            $('#btnSaveCategory').prop('disabled', false);
+        }
+
+        function saveCategoryUpdate() {
+            let id = $('#editCategoryId').val();
+            let name = $('#editCategoryName').val();
+            let desc = $('#editCategoryDesc').val();
+
+            if (!name.trim()) {
+                $('#editCategoryName').addClass('is-invalid');
+                $('#valEditCategoryName').text('Tên loại nguyên liệu là bắt buộc.');
+                return;
+            }
+
+            $.ajax({
+                url: '/Warehouse/UpdateCategory',
+                type: 'POST',
+                data: { id: id, name: name, description: desc },
+                success: function(res) {
+                    if (res.success) {
+                        loadCategories();
+                        showToast('Cập nhật loại nguyên liệu thành công!', 'success');
+                    } else {
+                        $('#editCategoryName').addClass('is-invalid');
+                        $('#valEditCategoryName').text(res.message);
+                    }
+                }
+            });
+        }
+
+        function createCategorySubmit() {
+            let name = $('#newCategoryName').val();
+            let desc = $('#newCategoryDesc').val();
+
+            if (!name.trim()) {
+                $('#newCategoryName').addClass('is-invalid');
+                $('#valNewCategoryName').text('Tên loại nguyên liệu là bắt buộc.');
+                return;
+            }
+
+            $.ajax({
+                url: '/Warehouse/CreateCategory',
+                type: 'POST',
+                data: { name: name, description: desc },
+                success: function(res) {
+                    if (res.success) {
+                        $('#newCategoryName').val('');
+                        $('#newCategoryDesc').val('');
+                        $('#newCategoryName').removeClass('is-invalid');
+                        loadCategories();
+                        showToast('Thêm loại nguyên liệu mới thành công!', 'success');
+                    } else {
+                        $('#newCategoryName').addClass('is-invalid');
+                        $('#valNewCategoryName').text(res.message);
+                    }
+                }
+            });
+        }
+
+        // --- 3. CREATE MATERIAL DIALOG (SCREEN B) ---
+        function prepareCreateMaterialModal() {
+            // Reset validation states
+            $('#createMaterialForm input, #createMaterialForm select').removeClass('is-invalid');
+            $('#createMatName').val('');
+            $('#createMatPhysicalState').val('Dạng đặc');
+            $('#createMatPrice').val('');
+            $('#createMatKind').val('');
+            $('#createMatOrigin').val('');
+            $('#createMatSupplier').val('');
+            $('#createMatUnitDisplay').val('kg');
+
+            // Populate categories dropdown
+            $.ajax({
+                url: '/Warehouse/GetCategories',
+                type: 'GET',
+                success: function(list) {
+                    let opt = '<option value="">-- Chọn Loại NgL --</option>';
+                    list.forEach(c => {
+                        opt += `<option value="${c.categoryName}">${c.categoryName}</option>`;
+                    });
+                    $('#createMatCategory').html(opt);
+                }
+            });
+        }
+
+        function updateCreateUnitHint() {
+            let state = $('#createMatPhysicalState').val();
+            $('#createMatUnitDisplay').val(state === 'Dạng lỏng' ? 'lít' : 'kg');
+        }
+
+        function createMaterialSubmit() {
+            let name = $('#createMatName').val();
+            let category = $('#createMatCategory').val();
+            let physicalState = $('#createMatPhysicalState').val();
+            let price = $('#createMatPrice').val();
+            let kind = $('#createMatKind').val();
+            let origin = $('#createMatOrigin').val();
+            let supplier = $('#createMatSupplier').val();
+
+            $('#createMaterialForm input, #createMaterialForm select').removeClass('is-invalid');
+
+            let isValid = true;
+            if (!name.trim()) {
+                $('#createMatName').addClass('is-invalid');
+                $('#valCreateMatName').text('Tên nguyên liệu là bắt buộc.');
+                isValid = false;
+            }
+            if (!category) {
+                $('#createMatCategory').addClass('is-invalid');
+                $('#valCreateMatCategory').text('Loại nguyên liệu là bắt buộc.');
+                isValid = false;
+            }
+            if (!price || parseFloat(price) <= 0) {
+                $('#createMatPrice').addClass('is-invalid');
+                $('#valCreateMatPrice').text('Giá mua hàng phải lớn hơn 0.');
+                isValid = false;
+            }
+            if (!kind.trim()) {
+                $('#createMatKind').addClass('is-invalid');
+                $('#valCreateMatKind').text('Kiểu nguyên liệu là bắt buộc.');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            showConfirmModal(
+                'Xác nhận thêm mới nguyên liệu',
+                'Bạn có chắc chắn muốn thêm nguyên liệu mới này vào kho không?',
+                function() {
+                    $.ajax({
+                        url: '/Warehouse/CreateMaterial',
+                        type: 'POST',
+                        data: {
+                            name: name,
+                            physicalState: physicalState,
+                            materialKind: kind,
+                            category: category,
+                            price: price,
+                            supplier: supplier,
+                            origin: origin
+                        },
+                        success: function(res) {
+                            if (res.success) {
+                                $('#createMaterialModal').modal('hide');
+                                showToast('Tạo nguyên liệu mới thành công!', 'success');
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                if (res.message.includes('trùng')) {
+                                    $('#createMatName').addClass('is-invalid');
+                                    $('#valCreateMatName').text(res.message);
+                                } else {
+                                    showToast(res.message, 'danger');
+                                }
+                            }
+                        }
+                    });
+                }
+            );
+        }
+
+        // --- 4. UPDATE MATERIAL DIALOG (UC57) ---
+        function openEditMaterialModal() {
+            let id = $('#selectedMaterialId').val();
+            if (!id) return;
+
+            // Reset validation and warning states
+            $('#editMaterialForm input, #editMaterialForm select').removeClass('is-invalid');
+            $('#supplierWarningAlert').addClass('d-none');
+
+            // Preload categories dropdown, then prefill data
+            $.ajax({
+                url: '/Warehouse/GetCategories',
+                type: 'GET',
+                success: function(list) {
+                    let opt = '<option value="">-- Chọn Loại NgL --</option>';
+                    list.forEach(c => {
+                        opt += `<option value="${c.categoryName}">${c.categoryName}</option>`;
+                    });
+                    $('#editMatCategory').html(opt);
+
+                    // Fetch material details
+                    $.ajax({
+                        url: '/Warehouse/GetMaterialDetails',
+                        type: 'GET',
+                        data: { id: id },
+                        success: function(m) {
+                            $('#editMatId').val(m.materialId);
+                            $('#editMatName').val(m.materialName);
+                            $('#editMatCategory').val(m.category);
+                            $('#editMatPhysicalState').val(m.physicalState);
+                            $('#editMatPrice').val(m.rawUnitPrice);
+                            $('#editMatKind').val(m.materialKind);
+                            $('#editMatOrigin').val(m.origin);
+                            $('#editMatSupplier').val(m.supplier);
+                            $('#editMatUnitDisplay').val(m.storageUnit);
+
+                            originalSupplierName = m.supplier ? m.supplier : "";
+
+                            $('#editMaterialModal').modal('show');
+                        }
+                    });
+                }
+            });
+        }
+
+        function updateEditUnitHint() {
+            let state = $('#editMatPhysicalState').val();
+            $('#editMatUnitDisplay').val(state === 'Dạng lỏng' ? 'lít' : 'kg');
+        }
+
+        function checkSupplierChange() {
+            let currentSupplier = $('#editMatSupplier').val().trim();
+            if (currentSupplier.toLowerCase() !== originalSupplierName.toLowerCase()) {
+                $('#supplierWarningAlert').removeClass('d-none');
+            } else {
+                $('#supplierWarningAlert').addClass('d-none');
+            }
+        }
+
+        function updateMaterialSubmit() {
+            let id = $('#editMatId').val();
+            let name = $('#editMatName').val();
+            let category = $('#editMatCategory').val();
+            let physicalState = $('#editMatPhysicalState').val();
+            let price = $('#editMatPrice').val();
+            let kind = $('#editMatKind').val();
+            let origin = $('#editMatOrigin').val();
+            let supplier = $('#editMatSupplier').val();
+
+            $('#editMaterialForm input, #editMaterialForm select').removeClass('is-invalid');
+
+            let isValid = true;
+            if (!name.trim()) {
+                $('#editMatName').addClass('is-invalid');
+                $('#valEditMatName').text('Tên nguyên liệu là bắt buộc.');
+                isValid = false;
+            }
+            if (!category) {
+                $('#editMatCategory').addClass('is-invalid');
+                $('#valEditMatCategory').text('Loại nguyên liệu là bắt buộc.');
+                isValid = false;
+            }
+            if (!price || parseFloat(price) <= 0) {
+                $('#editMatPrice').addClass('is-invalid');
+                $('#valEditMatPrice').text('Giá mua hàng phải lớn hơn 0.');
+                isValid = false;
+            }
+            if (!kind.trim()) {
+                $('#editMatKind').addClass('is-invalid');
+                $('#valEditMatKind').text('Kiểu nguyên liệu là bắt buộc.');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            $.ajax({
+                url: '/Warehouse/UpdateMaterial',
+                type: 'POST',
+                data: {
+                    id: id,
+                    name: name,
+                    physicalState: physicalState,
+                    materialKind: kind,
+                    category: category,
+                    price: price,
+                    supplier: supplier,
+                    origin: origin
+                },
+                success: function(res) {
+                    if (res.success) {
+                        $('#editMaterialModal').modal('hide');
+                        showToast('Cập nhật thông tin nguyên liệu thành công!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        if (res.message.includes('trùng')) {
+                            $('#editMatName').addClass('is-invalid');
+                            $('#valEditMatName').text(res.message);
+                        } else {
+                            showToast(res.message, 'danger');
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}

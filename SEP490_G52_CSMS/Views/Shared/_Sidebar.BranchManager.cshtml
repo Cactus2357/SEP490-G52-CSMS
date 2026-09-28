@@ -1,0 +1,102 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+}
+
+<li class="menu-item">
+    <a asp-controller="Employee" asp-action="Index" class="menu-link @ActiveIf("Employee", "Index")" title="Quản lý nhân viên">
+        <i class="bi bi-people-fill"></i>
+        <span>Quản lý nhân viên</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="WorkSchedule" asp-action="Index" class="menu-link @ActiveIf("WorkSchedule", "Index")" title="Quản lý lịch làm việc">
+        <i class="bi bi-calendar3"></i>
+        <span>Quản lý lịch làm việc</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="MenuManagement" asp-action="Index" class="menu-link @ActiveIf("MenuManagement", "Index")" title="Quản lý thực đơn">
+        <i class="bi bi-journal-text"></i>
+        <span>Quản lý thực đơn</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Brewing" asp-action="ProductAvailability" class="menu-link @ActiveIf("Brewing", "ProductAvailability")" title="Quản lý sản phẩm">
+        <i class="bi bi-box-seam"></i>
+        <span>Quản lý sản phẩm</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="LeaveRequest" asp-action="ManagerIndex" class="menu-link @ActiveIf("LeaveRequest", "ManagerIndex")" title="Quản lý nghỉ phép">
+        <i class="bi bi-calendar-x"></i>
+        <span>Quản lý nghỉ phép</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ShiftChange" asp-action="Index" class="menu-link @ActiveIf("ShiftChange", "Index")" title="Quản lý đổi ca">
+        <i class="bi bi-arrow-left-right"></i>
+        <span>Quản lý đổi ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ShiftHandover" asp-action="Index" class="menu-link @ActiveIf("ShiftHandover", "Index")" title="Bàn giao ca">
+        <i class="bi bi-clock-history"></i>
+        <span>Bàn giao ca</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="OrderManagement" asp-action="Index" class="menu-link @ActiveIf("OrderManagement", "Index")" title="Quản lý đơn đặt hàng">
+        <i class="bi bi-cart3"></i>
+        <span>Quản lý đơn đặt hàng</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="VoucherManagement" asp-action="Index" class="menu-link @ActiveIf("VoucherManagement", "Index")" title="Quản lý voucher">
+        <i class="bi bi-ticket-perforated"></i>
+        <span>Quản lý voucher</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Settings" asp-action="Index" class="menu-link @ActiveIf("Settings", "Index")" title="Cài đặt chung">
+        <i class="bi bi-gear-fill"></i>
+        <span>Cài đặt chung</span>
+    </a>
+</li>
+
+<li class="menu-header">Kho chi nhánh</li>
+
+<li class="menu-item">
+    <a asp-controller="BranchWarehouse" asp-action="Index" class="menu-link @ActiveIf("BranchWarehouse", "Index")" title="Tồn kho">
+        <i class="bi bi-box-seam"></i>
+        <span>Tồn kho</span>
+    </a>
+</li>
+<li class="menu-item">
+    <a asp-controller="BranchWarehouse" asp-action="CreateRequest" class="menu-link @ActiveIf("BranchWarehouse", "CreateRequest")" title="Đặt hàng kho">
+        <i class="bi bi-cart-plus"></i>
+        <span>Đặt hàng kho</span>
+    </a>
+</li>
+<li class="menu-item">
+    <a asp-controller="BranchWarehouse" asp-action="RequestHistory" class="menu-link @ActiveIf("BranchWarehouse", "RequestHistory")" title="Lịch sử đặt">
+        <i class="bi bi-clock-history"></i>
+        <span>Lịch sử đặt</span>
+    </a>
+</li>

@@ -1,0 +1,53 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+}
+
+<li class="menu-item">
+    <a asp-controller="Home" asp-action="Index" class="menu-link @ActiveIf("Home", "Index")" title="Trang chủ">
+        <i class="bi bi-house-door-fill"></i>
+        <span>Trang chủ</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="WorkSchedule" asp-action="Index" class="menu-link @ActiveIf("WorkSchedule", "EmployeeIndex")" title="Lịch làm việc">
+        <i class="bi bi-calendar3"></i>
+        <span>Lịch làm việc</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Brewing" asp-action="Index" class="menu-link @ActiveIf("Brewing", "Index")" title="Danh sách đơn hàng">
+        <i class="bi bi-list-task"></i>
+        <span>Danh sách đơn hàng</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Brewing" asp-action="ProductAvailability" class="menu-link @ActiveIf("Brewing", "ProductAvailability")" title="Quản lý sản phẩm">
+        <i class="bi bi-box-seam"></i>
+        <span>Quản lý sản phẩm</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="LeaveRequest" asp-action="Index" class="menu-link @ActiveIf("LeaveRequest")" title="Xin nghỉ phép">
+        <i class="bi bi-calendar-x"></i>
+        <span>Xin nghỉ phép</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="ShiftChange" asp-action="EmployeeIndex" class="menu-link @ActiveIf("ShiftChange", "EmployeeIndex")" title="Chuyển ca">
+        <i class="bi bi-arrow-left-right"></i>
+        <span>Chuyển ca</span>
+    </a>
+</li>

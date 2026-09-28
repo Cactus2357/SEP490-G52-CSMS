@@ -1,0 +1,704 @@
+@model SEP490_G52_CSMS.Models.ViewModels.VoucherIndexViewModel
+
+@{
+    ViewData["Title"] = "Quản lý Voucher & Khuyến Mãi";
+    var now = DateTime.Now;
+}
+
+<div class="container-fluid mt-4 pb-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+
+            <!-- Page Header -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-2 border-bottom">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-ticket-perforated me-2 text-primary"></i>QUẢN LÝ VOUCHER &amp; KHUYẾN MÃI
+                    </h3>
+                    <p class="text-muted mb-0">
+                        Tạo mã giảm giá theo % cho đơn hàng trong khoảng thời gian.
+                    </p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createVoucherModal">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Tạo mã Voucher mới</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toast alert -->
+            <div id="alertPlaceholder"></div>
+
+            <!-- Stats Overview Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-sm-4">
+                    <div class="card border shadow-sm h-100">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Tổng số Voucher</span>
+                                <h3 class="fw-bold text-dark mb-0">@Model.TotalCount</h3>
+                            </div>
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
+                                <i class="bi bi-ticket-detailed fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-4">
+                    <div class="card border shadow-sm h-100">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Đang hoạt động</span>
+                                <h3 class="fw-bold text-success mb-0">@Model.ActiveCount</h3>
+                            </div>
+                            <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
+                                <i class="bi bi-check-circle-fill fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-4">
+                    <div class="card border shadow-sm h-100">
+                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1">Đã kết thúc / Hết lượt</span>
+                                <h3 class="fw-bold text-secondary mb-0">@Model.ExpiredOrUsedUpCount</h3>
+                            </div>
+                            <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
+                                <i class="bi bi-clock-history fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter & Search Bar -->
+            <div class="card border shadow-sm mb-4">
+                <div class="card-body p-3">
+                    <form method="get" asp-action="Index" class="row g-2 align-items-center">
+                        <div class="col-12 col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" name="search" class="form-control" placeholder="Tìm theo mã voucher hoặc ghi chú..." value="@Model.SearchTerm" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <select name="status" class="form-select" onchange="this.form.submit()">
+                                <option value="Tất cả" selected="@(Model.StatusFilter == "Tất cả")">Trạng thái: Tất cả</option>
+                                <option value="Active" selected="@(Model.StatusFilter == "Active")">Đang hoạt động</option>
+                                <option value="Upcoming" selected="@(Model.StatusFilter == "Upcoming")">Chưa bắt đầu</option>
+                                <option value="Expired" selected="@(Model.StatusFilter == "Expired")">Đã kết thúc (Hết hạn)</option>
+                                <option value="UsedUp" selected="@(Model.StatusFilter == "UsedUp")">Đã hết lượt dùng</option>
+                                <option value="Paused" selected="@(Model.StatusFilter == "Paused")">Tạm dừng hoạt động</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">
+                                <i class="bi bi-filter me-1"></i>Lọc
+                            </button>
+                            @if (!string.IsNullOrEmpty(Model.SearchTerm) || (Model.StatusFilter != "Tất cả" && !string.IsNullOrEmpty(Model.StatusFilter)))
+                            {
+                                <a asp-action="Index" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </a>
+                            }
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Voucher Listing Table -->
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-list-check me-2 text-primary"></i>Danh Sách &amp; Lịch Sử Mã Voucher
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="table-light text-secondary small text-uppercase">
+                            <tr>
+                                <th class="text-center" style="width: 50px;">STT</th>
+                                <th>Mã Voucher</th>
+                                <th class="text-center" style="width: 100px;">Giảm giá</th>
+                                <th style="min-width: 130px;">Số lượng</th>
+                                <th>Bắt đầu</th>
+                                <th>Kết thúc</th>
+                                <th class="text-center">Thời lượng</th>
+                                <th class="text-center" style="width: 130px;">Trạng thái</th>
+                                <th style="min-width: 180px;">Mô tả</th>
+                                <th class="text-end" style="width: 90px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Vouchers == null || !Model.Vouchers.Any())
+                            {
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-5 text-wrap">
+                                        <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                                        Chưa có mã voucher nào phù hợp. Bấm <strong>"Tạo mã Voucher mới"</strong> để bắt đầu.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                int idx = 1;
+                                foreach (var v in Model.Vouchers)
+                                {
+                                    bool isLive = v.IsActive && now >= v.StartDate && now <= v.EndDate && v.UsedCount < v.Quantity;
+                                    bool isUpcoming = v.IsActive && now < v.StartDate;
+                                    bool isExpired = now > v.EndDate;
+                                    bool isUsedUp = v.UsedCount >= v.Quantity;
+                                    bool isPaused = !v.IsActive;
+
+                                    double percentUsed = v.Quantity > 0 ? ((double)v.UsedCount / v.Quantity * 100) : 0;
+
+                                    <tr>
+                                        <td class="text-center text-muted small font-monospace">@idx</td>
+                                        <td>
+                                            <span class="badge bg-light text-primary border border-primary border-opacity-25 px-2.5 py-1.5 fs-6 font-monospace fw-bold" style="cursor: pointer;" onclick="viewVoucherHistory(@v.VoucherId, '@v.VoucherCode')" title="Xem lịch sử đơn hàng đã dùng voucher">
+                                                <i class="bi bi-tag-fill me-1 small"></i>@v.VoucherCode
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-bold text-danger fs-6">-@v.DiscountPercent.ToString("G29")%</span>
+                                        </td>
+                                        <td>
+                                            <div class="font-monospace small mb-1">
+                                                <span class="fw-bold text-dark">@v.UsedCount</span><span class="text-muted"> / @v.Quantity</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px; min-width: 90px;">
+                                                <div class="progress-bar @(percentUsed >= 100 ? "bg-danger" : (percentUsed >= 70 ? "bg-warning" : "bg-success"))"
+                                                     role="progressbar" style="width: @Math.Min(100, percentUsed)%"></div>
+                                            </div>
+                                        </td>
+                                        <td class="small">
+                                            <i class="bi bi-calendar-event me-1 text-muted"></i>@v.StartDate.ToString("dd/MM/yyyy HH:mm")
+                                        </td>
+                                        <td class="small">
+                                            <i class="bi bi-calendar-check me-1 text-muted"></i>@v.EndDate.ToString("dd/MM/yyyy HH:mm")
+                                        </td>
+                                        <td class="text-center small">
+                                            <span class="badge bg-light text-dark border font-monospace">@v.DurationDisplay</span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (isPaused)
+                                            {
+                                                <span class="badge bg-secondary"><i class="bi bi-pause-fill me-1"></i>Tạm dừng</span>
+                                            }
+                                            else if (isLive)
+                                            {
+                                                <span class="badge bg-success"><i class="bi bi-play-fill me-1"></i>Đang hoạt động</span>
+                                            }
+                                            else if (isUpcoming)
+                                            {
+                                                <span class="badge bg-info text-dark">Chưa bắt đầu</span>
+                                            }
+                                            else if (isUsedUp)
+                                            {
+                                                <span class="badge bg-warning text-dark">Đã hết lượt</span>
+                                            }
+                                            else if (isExpired)
+                                            {
+                                                <span class="badge bg-light text-muted border">Đã kết thúc</span>
+                                            }
+                                        </td>
+                                        <td class="small text-muted text-wrap" style="max-width: 240px;">
+                                            @(string.IsNullOrWhiteSpace(v.Description) ? "—" : v.Description)
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-info" title="Xem lịch sử đơn áp dụng" onclick="viewVoucherHistory(@v.VoucherId, '@v.VoucherCode')">
+                                                    <i class="bi bi-clock-history"></i>
+                                                </button>
+                                                <button type="button" class="btn @(v.IsActive ? "btn-outline-danger" : "btn-outline-success")"
+                                                        title="@(v.IsActive ? "Tạm dừng voucher" : "Kích hoạt voucher")"
+                                                        onclick="toggleVoucherStatus(@v.VoucherId, '@v.VoucherCode', @(v.IsActive ? "false" : "true"))">
+                                                    <i class="bi @(v.IsActive ? "bi-pause-fill" : "bi-play-fill")"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    idx++;
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 1: TẠO MÃ VOUCHER MỚI               -->
+<!-- ========================================== -->
+<div class="modal fade" id="createVoucherModal" tabindex="-1" aria-labelledby="createVoucherModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="createVoucherModalLabel">
+                    <i class="bi bi-ticket-perforated me-2 text-warning"></i>TẠO MÃ VOUCHER MỚI
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Info Header (Matching RequestHistory template) -->
+                <div class="card bg-light border-0 mb-4 rounded-3">
+                    <div class="card-body py-3 small text-dark fs-6">
+                        <div class="row g-2">
+                            <div class="col-md-4"><strong><i class="bi bi-tag-fill text-primary me-1"></i>Loại ưu đãi:</strong> Giảm giá trực tiếp (%)</div>
+                            <div class="col-md-4"><strong><i class="bi bi-shop text-success me-1"></i>Phạm vi:</strong> Toàn bộ thực đơn quầy thu ngân</div>
+                            <div class="col-md-4"><strong><i class="bi bi-shield-check text-info me-1"></i>Áp dụng:</strong> Trừ trực tiếp khi thanh toán hoá đơn</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Left Form Column -->
+                    <div class="col-lg-7">
+                        <form id="createVoucherForm">
+                            <!-- Mã Voucher -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Mã Voucher <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" id="voucherCode" name="VoucherCode" class="form-control text-uppercase font-monospace fw-bold" placeholder="VD: SUMMER20" maxlength="50" required oninput="updateVoucherPreview()" />
+                                    <button type="button" class="btn btn-outline-secondary fw-semibold" onclick="generateRandomCode()" title="Tạo mã ngẫu nhiên">
+                                        <i class="bi bi-shuffle me-1"></i>Ngẫu nhiên
+                                    </button>
+                                </div>
+                                <div class="form-text small">Chỉ bao gồm chữ cái, số, gạch nối (tối đa 50 ký tự).</div>
+                            </div>
+
+                            <!-- Mức giảm giá & Số lượng -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Giảm giá (%) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="number" id="discountPercent" name="DiscountPercent" class="form-control font-monospace fw-bold text-danger" placeholder="10" min="1" max="100" step="0.5" required oninput="updateVoucherPreview()" />
+                                        <span class="input-group-text fw-bold">%</span>
+                                    </div>
+                                    <div class="form-text small">Mức giảm trên tổng hóa đơn.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Số lượng phát hành <span class="text-danger">*</span></label>
+                                    <input type="number" id="quantity" name="Quantity" class="form-control font-monospace fw-bold" placeholder="50" min="1" max="100000" required oninput="updateVoucherPreview()" />
+                                    <div class="form-text small">Số lượt dùng tối đa.</div>
+                                </div>
+                            </div>
+
+                            <!-- Ngày bắt đầu & Ngày kết thúc -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Bắt đầu từ <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" id="startDate" name="StartDate" class="form-control" required oninput="updateVoucherPreview()" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Kết thúc vào <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" id="endDate" name="EndDate" class="form-control" required oninput="updateVoucherPreview()" />
+                                </div>
+                            </div>
+
+                            <!-- Mô tả khuyến mãi -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Mô tả khuyến mãi</label>
+                                <textarea id="description" name="Description" class="form-control" rows="3" placeholder="VD: Khuyến mãi mừng khai trương chi nhánh..." oninput="updateVoucherPreview()"></textarea>
+                            </div>
+
+                            <div id="modalErrorAlert" class="alert alert-danger py-2 small d-none mb-0"></div>
+                        </form>
+                    </div>
+
+                    <!-- Right Preview Column -->
+                    <div class="col-lg-5">
+                        <div class="h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-2">
+                                    <i class="bi bi-eye text-primary me-1"></i>Xem trước thẻ Voucher
+                                </label>
+
+                                <!-- Ticket Mockup -->
+                                <div class="card border-0 shadow rounded-3 overflow-hidden" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white;">
+                                    <div class="card-body p-4 position-relative">
+                                        <!-- Cutout Circles -->
+                                        <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #fff; top: 50%; left: -11px; transform: translateY(-50%);"></div>
+                                        <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #fff; top: 50%; right: -11px; transform: translateY(-50%);"></div>
+
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fw-bold">
+                                                <i class="bi bi-stars me-1"></i>ƯU ĐÃI ĐẶC BIỆT
+                                            </span>
+                                            <span class="text-white-50 small font-monospace">CSMS COFFEE</span>
+                                        </div>
+
+                                        <div class="d-flex align-items-baseline gap-2 mb-2">
+                                            <h2 class="display-6 fw-bold text-warning m-0 font-monospace" id="previewDiscountText">-10%</h2>
+                                            <span class="text-light small fw-semibold text-uppercase">Giảm toàn bill</span>
+                                        </div>
+
+                                        <div class="p-2.5 rounded-2 bg-dark bg-opacity-50 border border-secondary border-opacity-50 text-center mb-3">
+                                            <div class="text-white-50 small" style="font-size: 0.75rem;">MÃ ÁP DỤNG</div>
+                                            <span class="fs-4 fw-bold font-monospace text-warning" id="previewCodeText" style="letter-spacing: 1.5px;">SUMMER20</span>
+                                        </div>
+
+                                        <div class="small text-white-50">
+                                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                                <span>Số lượng:</span>
+                                                <strong class="text-white font-monospace" id="previewQtyText">50 lượt</strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between py-1 border-bottom border-secondary border-opacity-25">
+                                                <span>Bắt đầu:</span>
+                                                <span class="text-white" id="previewStartText">Hôm nay</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between py-1">
+                                                <span>Kết thúc:</span>
+                                                <span class="text-white" id="previewEndText">14 ngày tới</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-2 pt-2 border-top border-secondary border-opacity-25 text-white-50 small fst-italic text-truncate" id="previewDescText" title="Mô tả khuyến mãi">
+                                            Chưa có mô tả
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Policy Info -->
+                            <div class="card border-0 bg-light p-3 rounded-3 mt-3">
+                                <div class="d-flex gap-2">
+                                    <i class="bi bi-info-circle-fill text-primary fs-5 flex-shrink-0"></i>
+                                    <div class="small text-muted">
+                                        <strong>Lưu ý:</strong> Voucher sau khi tạo có thể được kích hoạt hoặc tạm dừng bất kỳ lúc nào từ danh sách quản lý. Khi khách áp mã thanh toán tại POS, lượt dùng sẽ được tự động ghi nhận vào lịch sử.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-3 px-4 d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success px-4 fw-bold shadow-sm" id="btnSubmitCreateVoucher" onclick="submitCreateVoucher()">
+                    <i class="bi bi-check-circle me-2"></i>Lưu &amp; Phát hành Voucher
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 2: LỊCH SỬ ĐƠN HÀNG ĐÃ DÙNG VOUCHER   -->
+<!-- ========================================== -->
+<div class="modal fade" id="voucherHistoryModal" tabindex="-1" aria-labelledby="voucherHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light border-bottom py-3">
+                <h5 class="modal-title fw-bold text-dark" id="voucherHistoryModalLabel">
+                    <i class="bi bi-clock-history me-2 text-info"></i>Lịch Sử Đơn Hàng Áp Dụng Voucher: <span id="historyModalVoucherCode" class="text-primary font-monospace"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div id="historyLoading" class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    <span>Đang tải dữ liệu...</span>
+                </div>
+                <div class="table-responsive d-none" id="historyTableWrapper">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                        <thead class="table-light text-muted small">
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Thời gian</th>
+                                <th>Khách hàng / Bàn</th>
+                                <th class="text-end">Tạm tính</th>
+                                <th class="text-end text-danger">Giảm giá</th>
+                                <th class="text-end text-success">Tổng tiền</th>
+                                <th>Thu ngân</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Populated via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="historyEmpty" class="text-center text-muted py-4 d-none">
+                    <i class="bi bi-info-circle display-6 d-block mb-2 opacity-50"></i>
+                    Chưa có đơn hàng nào sử dụng mã voucher này.
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Init default datetime pickers & live voucher preview
+        document.addEventListener('DOMContentLoaded', function () {
+            var now = new Date();
+            var offset = now.getTimezoneOffset() * 60000;
+            var localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+            var startEl = document.getElementById('startDate');
+            if (startEl && !startEl.value) startEl.value = localISOTime;
+
+            var endDate = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000));
+            var endISOTime = (new Date(endDate - offset)).toISOString().slice(0, 16);
+            var endEl = document.getElementById('endDate');
+            if (endEl && !endEl.value) endEl.value = endISOTime;
+
+            updateVoucherPreview();
+        });
+
+        function updateVoucherPreview() {
+            var codeInput = document.getElementById('voucherCode');
+            var code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+            var pct = document.getElementById('discountPercent')?.value;
+            var qty = document.getElementById('quantity')?.value;
+            var start = document.getElementById('startDate')?.value;
+            var end = document.getElementById('endDate')?.value;
+            var desc = document.getElementById('description')?.value.trim();
+
+            var codeEl = document.getElementById('previewCodeText');
+            if (codeEl) codeEl.innerText = code || 'SUMMER20';
+
+            var discEl = document.getElementById('previewDiscountText');
+            if (discEl) discEl.innerText = pct ? ('-' + pct + '%') : '-10%';
+
+            var qtyEl = document.getElementById('previewQtyText');
+            if (qtyEl) qtyEl.innerText = qty ? (qty + ' lượt') : '50 lượt';
+
+            var startEl = document.getElementById('previewStartText');
+            if (startEl) {
+                if (start) {
+                    var s = new Date(start);
+                    startEl.innerText = isNaN(s.getTime()) ? start : s.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                } else {
+                    startEl.innerText = 'Hôm nay';
+                }
+            }
+
+            var endEl = document.getElementById('previewEndText');
+            if (endEl) {
+                if (end) {
+                    var e = new Date(end);
+                    endEl.innerText = isNaN(e.getTime()) ? end : e.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                } else {
+                    endEl.innerText = '14 ngày tới';
+                }
+            }
+
+            var descEl = document.getElementById('previewDescText');
+            if (descEl) descEl.innerText = desc || 'Chưa có mô tả';
+        }
+
+        function generateRandomCode() {
+            var prefix = "VCH";
+            var randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+            document.getElementById('voucherCode').value = prefix + randomPart;
+            updateVoucherPreview();
+        }
+
+        function showAlert(msg, type = "success") {
+            var placeholder = document.getElementById('alertPlaceholder');
+            if (!placeholder) return;
+            placeholder.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} me-2"></i>${msg}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+        }
+
+        function submitCreateVoucher() {
+            var form = document.getElementById('createVoucherForm');
+            var errorAlert = document.getElementById('modalErrorAlert');
+            errorAlert.classList.add('d-none');
+
+            var code = document.getElementById('voucherCode').value.trim().toUpperCase();
+            var percent = parseFloat(document.getElementById('discountPercent').value);
+            var qty = parseInt(document.getElementById('quantity').value, 10);
+            var start = document.getElementById('startDate').value;
+            var end = document.getElementById('endDate').value;
+            var desc = document.getElementById('description').value.trim();
+
+            if (!code) {
+                showModalError("Vui lòng nhập mã voucher.");
+                return;
+            }
+            if (isNaN(percent) || percent <= 0 || percent > 100) {
+                showModalError("Mức giảm giá phải từ 0.01% đến 100%.");
+                return;
+            }
+            if (isNaN(qty) || qty <= 0) {
+                showModalError("Số lượng phát hành phải lớn hơn 0.");
+                return;
+            }
+            if (!start || !end) {
+                showModalError("Vui lòng chọn thời gian bắt đầu và kết thúc.");
+                return;
+            }
+            if (new Date(start) >= new Date(end)) {
+                showModalError("Thời gian kết thúc phải sau thời gian bắt đầu.");
+                return;
+            }
+
+            var btn = document.getElementById('btnSubmitCreateVoucher');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span>Đang lưu...`;
+
+            var payload = {
+                VoucherCode: code,
+                DiscountPercent: percent,
+                Quantity: qty,
+                StartDate: start,
+                EndDate: end,
+                Description: desc
+            };
+
+            fetch('@Url.Action("Create", "VoucherManagement")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="bi bi-check-circle me-2"></i>Lưu Voucher`;
+
+                if (data.success) {
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('createVoucherModal'));
+                    if (modal) modal.hide();
+                    form.reset();
+                    showAlert(data.message, "success");
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    showModalError(data.message || "Lỗi khi tạo voucher.");
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="bi bi-check-circle me-2"></i>Lưu Voucher`;
+                showModalError("Lỗi kết nối tới máy chủ.");
+            });
+        }
+
+        function showModalError(msg) {
+            var errorAlert = document.getElementById('modalErrorAlert');
+            errorAlert.innerText = msg;
+            errorAlert.classList.remove('d-none');
+        }
+
+        function toggleVoucherStatus(id, code, shouldActivate) {
+            var actionText = shouldActivate ? "kích hoạt" : "tạm dừng";
+            showConfirmModal(
+                `Xác nhận ${actionText} voucher`,
+                `Bạn có chắc chắn muốn <strong>${actionText}</strong> mã voucher <span class="badge bg-light text-primary font-monospace border">${code}</span> không?`,
+                function() {
+                    fetch('@Url.Action("ToggleStatus", "VoucherManagement")?voucherId=' + id, {
+                        method: 'POST'
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert(data.message, "success");
+                            if (window.showToast) window.showToast(data.message, "success");
+                            setTimeout(() => window.location.reload(), 800);
+                        } else {
+                            showAlert(data.message || "Không thể cập nhật trạng thái.", "danger");
+                            if (window.showToast) window.showToast(data.message || "Không thể cập nhật trạng thái.", "danger");
+                        }
+                    })
+                    .catch(err => {
+                        showAlert("Lỗi kết nối máy chủ.", "danger");
+                        if (window.showToast) window.showToast("Lỗi kết nối máy chủ.", "danger");
+                    });
+                },
+                shouldActivate ? "Kích hoạt" : "Tạm dừng",
+                "Hủy"
+            );
+        }
+
+        function viewVoucherHistory(id, code) {
+            document.getElementById('historyModalVoucherCode').innerText = code;
+            var loading = document.getElementById('historyLoading');
+            var tableWrapper = document.getElementById('historyTableWrapper');
+            var empty = document.getElementById('historyEmpty');
+            var tbody = document.getElementById('historyTableBody');
+
+            loading.classList.remove('d-none');
+            tableWrapper.classList.add('d-none');
+            empty.classList.add('d-none');
+            empty.innerHTML = `
+                <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                Chưa có đơn hàng nào sử dụng mã voucher này.
+            `;
+            tbody.innerHTML = '';
+
+            var modalEl = document.getElementById('voucherHistoryModal');
+            var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+
+            fetch('@Url.Action("GetVoucherOrders", "VoucherManagement")?voucherId=' + id)
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Lỗi phản hồi máy chủ: ' + res.status);
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    loading.classList.add('d-none');
+                    if (data.success && data.orders && data.orders.length > 0) {
+                        tableWrapper.classList.remove('d-none');
+                        var html = '';
+                        data.orders.forEach(o => {
+                            var dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN') : '—';
+                            var subtotal = (o.subtotalAmount || 0).toLocaleString('vi-VN');
+                            var discount = (o.discountAmount || 0).toLocaleString('vi-VN');
+                            var total = (o.totalAmount || 0).toLocaleString('vi-VN');
+                            html += `
+                                <tr>
+                                    <td><strong class="font-monospace text-primary">${o.orderId || ''}</strong></td>
+                                    <td class="small text-muted">${dateStr}</td>
+                                    <td>
+                                        <div><strong>${o.customerName || 'Khách lẻ'}</strong></div>
+                                        <div class="small text-muted">${o.tableNumber || 'Mang về'}</div>
+                                    </td>
+                                    <td class="text-end font-monospace">${subtotal} đ</td>
+                                    <td class="text-end font-monospace text-danger">-${discount} đ</td>
+                                    <td class="text-end font-monospace fw-bold text-success">${total} đ</td>
+                                    <td class="small">${o.cashierName || '—'}</td>
+                                </tr>
+                            `;
+                        });
+                        tbody.innerHTML = html;
+                    } else if (data.success) {
+                        empty.classList.remove('d-none');
+                        empty.innerHTML = `
+                            <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                            Chưa có đơn hàng nào sử dụng mã voucher này.
+                        `;
+                    } else {
+                        empty.classList.remove('d-none');
+                        empty.innerHTML = `
+                            <i class="bi bi-exclamation-triangle display-6 d-block mb-2 text-danger"></i>
+                            <span class="text-danger">${data.message || 'Lỗi khi tải lịch sử đơn hàng.'}</span>
+                        `;
+                    }
+                })
+                .catch(err => {
+                    loading.classList.add('d-none');
+                    empty.classList.remove('d-none');
+                    empty.innerHTML = `
+                        <i class="bi bi-exclamation-triangle display-6 d-block mb-2 text-danger"></i>
+                        <span class="text-danger">${err.message || 'Không thể kết nối máy chủ để tải lịch sử đơn hàng.'}</span>
+                    `;
+                });
+        }
+    </script>
+}

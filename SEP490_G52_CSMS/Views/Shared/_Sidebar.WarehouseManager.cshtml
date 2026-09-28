@@ -1,0 +1,39 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string ActiveIf(string controller, string action = "")
+    {
+        bool controllerMatch = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        bool actionMatch = string.IsNullOrEmpty(action) ||
+                               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return (controllerMatch && actionMatch) ? "active" : "";
+    }
+}
+
+<li class="menu-item">
+    <a asp-controller="Warehouse" asp-action="Index" class="menu-link @ActiveIf("Warehouse", "Index")" title="Quản lý nguyên liệu">
+        <i class="bi bi-box-seam-fill"></i>
+        <span>Quản lý nguyên liệu</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Warehouse" asp-action="ImportHistory" class="menu-link @ActiveIf("Warehouse", "ImportHistory")" title="Quản lý nhập kho">
+        <i class="bi bi-box-arrow-in-down"></i>
+        <span>Quản lý nhập kho</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Warehouse" asp-action="ExportRequests" class="menu-link @ActiveIf("Warehouse", "ExportRequests")" title="Quản lý xuất kho">
+        <i class="bi bi-box-arrow-up"></i>
+        <span>Quản lý xuất kho</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a asp-controller="Warehouse" asp-action="Statistics" class="menu-link @ActiveIf("Warehouse", "Statistics")" title="Thống kê xuất nhập nguyên liệu">
+        <i class="bi bi-graph-up"></i>
+        <span>Thống kê xuất nhập</span>
+    </a>
+</li>

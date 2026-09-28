@@ -1,0 +1,36 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchDetailViewModel
+
+@{
+    ViewData["Title"] = "Ngừng hoạt động chi nhánh";
+}
+
+<div class="branch-page">
+    <section class="branch-main">
+        <div class="branch-header stretch">
+            <div>
+                <h2 class="page-title">XÁC NHẬN THAY ĐỔI TRẠNG THÁI</h2>
+            </div>
+            <div class="header-actions">
+                <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.BranchId">Hủy</a>
+            </div>
+        </div>
+
+        <div class="card section-card mb-4">
+            <div class="card-body">
+                <p class="text-danger"><strong>! CẢNH BÁO:</strong> Bạn đang yêu cầu NGỪNG HOẠT ĐỘNG chi nhánh:</p>
+                <p class="fw-bold">"@Model.BranchName (@Model.BranchId)"</p>
+                <ul>
+                    <li>Toàn bộ tài khoản nhân viên thuộc chi nhánh này sẽ không thể đăng nhập vào hệ thống POS/Bán hàng từ ngày mai.</li>
+                    <li>Dữ liệu doanh thu cũ vẫn được bảo toàn.</li>
+                </ul>
+                <p>Bạn có chắc chắn muốn tiếp tục?</p>
+            </div>
+        </div>
+
+        <form asp-action="DeactivateConfirmed" method="post">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <button type="submit" class="btn btn-danger">Đồng ý ngừng</button>
+            <a class="btn btn-outline-secondary ms-2" asp-action="Details" asp-route-id="@Model.BranchId">Hủy bỏ</a>
+        </form>
+    </section>
+</div>

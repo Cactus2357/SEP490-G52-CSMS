@@ -1,0 +1,217 @@
+@model SEP490_G52_CSMS.Models.ViewModels.ManagerLeaveRequestListViewModel
+
+@{
+    ViewData["Title"] = "Quản lý nghỉ phép";
+}
+
+<div class="warehouse-page p-4">
+    <!-- Header Title -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark m-0">QUẢN LÝ NGHỈ PHÉP</h2>
+            <span class="text-secondary fw-semibold fs-5"><i class="bi bi-calendar2-check text-primary me-1"></i>Xét duyệt &amp; Quản lý đơn nghỉ phép nhân viên</span>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm border-0 mb-4 rounded-3 bg-light">
+        <div class="card-body py-3">
+            <form method="get" asp-action="ManagerIndex" id="leaveManagerFilterForm" class="row g-3 align-items-end">
+                <!-- Search Keyword -->
+                <div class="col-md-3 col-sm-12">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tìm kiếm từ khóa</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="searchNameInput" name="searchName" value="@Model.SearchName" class="form-control border-start-0" placeholder="Tên nhân viên, lý do..." autocomplete="off" />
+                        @if (!string.IsNullOrWhiteSpace(Model.SearchName))
+                        {
+                            <button type="button" class="input-group-text bg-white border-start-0 text-muted" onclick="clearSearchInput()" title="Xóa tìm kiếm">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- From Date -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Từ ngày</label>
+                    <input type="date" id="fromDateInput" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                </div>
+
+                <!-- To Date -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đến ngày</label>
+                    <input type="date" id="toDateInput" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                </div>
+
+                <!-- Status Select -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Trạng thái</label>
+                    <select name="status" id="statusFilterSelect" class="form-select">
+                        <option value="Tất cả" selected="@(string.IsNullOrEmpty(Model.Status) || Model.Status == "Tất cả")">Tất cả</option>
+                        <option value="Chờ duyệt" selected="@(Model.Status == "Chờ duyệt")">Chờ duyệt</option>
+                        <option value="Đã duyệt" selected="@(Model.Status == "Đã duyệt")">Đã duyệt</option>
+                        <option value="Từ chối" selected="@(Model.Status == "Từ chối")">Từ chối</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="col-md-2 col-sm-6 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100 py-2 fw-bold">Tìm kiếm</button>
+                    <a asp-action="ManagerIndex" class="btn btn-outline-secondary py-2" title="Đặt lại bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Requests Grid / Table -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0 table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 22%;" class="ps-3">Nhân viên</th>
+                            <th style="width: 16%;">Thời gian nghỉ</th>
+                            <th style="width: 14%;">Ca nghỉ</th>
+                            <th style="width: 24%;">Lý do</th>
+                            <th style="width: 12%;">Trạng thái</th>
+                            <th style="width: 12%;" class="text-center pe-3">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Items.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-calendar-x fs-2 d-block mb-2 text-secondary-subtle"></i>
+                                    Không tìm thấy yêu cầu nghỉ phép nào phù hợp.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model.Items)
+                            {
+                                string rowStyle = item.Status == "Chờ duyệt" ? "table-warning" :
+                                                  item.Status == "Đã duyệt" ? "table-success" :
+                                                  item.Status == "Từ chối" ? "table-danger" : "";
+                                <tr class="@rowStyle">
+                                    <td class="ps-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle bg-dark text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm"
+                                                 style="width: 34px; height: 34px; font-size: 0.85rem;">
+                                                @item.EmployeeInitials
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">@item.EmployeeFullName</div>
+                                                <div class="text-muted small">NV#@item.EmployeeId</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@item.RequestDateStr</div>
+                                        @if (!string.IsNullOrEmpty(item.FullDateStr) && item.FullDateStr != item.RequestDateStr)
+                                        {
+                                            <div class="small text-muted">@item.FullDateStr</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border fw-semibold">
+                                            <i class="bi bi-clock me-1 text-primary"></i>@item.ShiftName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark text-truncate" style="max-width: 320px;" title="@item.Reason">
+                                            @item.Reason
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge @item.StatusBadgeClass rounded-pill px-3 py-2">
+                                            @item.Status
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="openLeaveDetailModal(@item.ApplicationId)">
+                                            Chi tiết
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container for UC48 Detail & Decision View -->
+<div id="leaveDetailModalContainer"></div>
+
+<style>
+    .warehouse-page {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 70px);
+    }
+    .table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #adb5bd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function clearSearchInput() {
+            document.getElementById('searchNameInput').value = '';
+            document.getElementById('leaveManagerFilterForm').submit();
+        }
+
+        function openLeaveDetailModal(applicationId) {
+            $.ajax({
+                url: '/LeaveRequest/GetDetailModal/' + applicationId,
+                type: 'GET',
+                success: function (htmlData) {
+                    $('#leaveDetailModalContainer').html(htmlData);
+                    var modalEl = document.getElementById('leaveDetailModal');
+                    if (modalEl) {
+                        var modal = new bootstrap.Modal(modalEl);
+                        modal.show();
+                    }
+                },
+                error: function (err) {
+                    if (window.showToast) {
+                        showToast("Không thể tải thông tin chi tiết đơn xin nghỉ.", "danger");
+                    } else {
+                        alert("Không thể tải thông tin chi tiết đơn xin nghỉ.");
+                    }
+                }
+            });
+        }
+
+        document.getElementById('leaveManagerFilterForm').addEventListener('submit', function (e) {
+            var fromVal = document.getElementById('fromDateInput').value;
+            var toVal = document.getElementById('toDateInput').value;
+            if (fromVal && toVal && fromVal > toVal) {
+                e.preventDefault();
+                if (window.showToast) {
+                    showToast("Ngày bắt đầu (Từ ngày) không được lớn hơn ngày kết thúc (Đến ngày).", "danger");
+                } else {
+                    alert("Ngày bắt đầu (Từ ngày) không được lớn hơn ngày kết thúc (Đến ngày).");
+                }
+            }
+        });
+    </script>
+}

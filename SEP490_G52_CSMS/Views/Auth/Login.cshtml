@@ -1,0 +1,500 @@
+@{
+    Layout = null;
+    bool hasCredsError = !ViewData.ModelState.IsValid;
+    var credsErrors = ViewData.ModelState
+        .SelectMany(kvp => kvp.Value?.Errors ?? new Microsoft.AspNetCore.Mvc.ModelBinding.ModelErrorCollection())
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập hệ thống - CSMS</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+
+</head>
+<body class="bg-light d-flex align-items-center justify-content-center vh-100">
+
+    <div class="card shadow-sm" style="max-width: 580px; width: 100%;">
+        <div class="card-header text-center bg-white">
+            <a class="d-inline-flex align-items-center justify-content-center border rounded fw-bold h5 mb-2 px-3 py-2 text-decoration-none text-dark"
+               asp-area="" asp-controller="Home" asp-action="Index">
+                SEP490_G52_CSMS
+            </a>
+            <h3 class="fw-bold text-uppercase mb-0">Đăng nhập hệ thống</h3>
+        </div>
+
+        @if (TempData["ForgotPasswordSuccess"] != null)
+        {
+            <div class="alert alert-success py-2 px-3 mx-4 mt-3 small text-center">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span>@TempData["ForgotPasswordSuccess"]</span>
+            </div>
+        }
+
+        <ul class="nav nav-tabs nav-fill" id="loginTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-0 @(hasCredsError ? "" : "active")"
+                        id="face-tab-btn"
+                        data-bs-toggle="tab"
+                        data-bs-target="#face-login"
+                        type="button"
+                        role="tab"
+                        aria-controls="face-login"
+                        aria-selected="@(hasCredsError ? "false" : "true")">
+                    Khuôn Mặt
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-0 @(hasCredsError ? "active" : "")"
+                        id="password-tab-btn"
+                        data-bs-toggle="tab"
+                        data-bs-target="#creds-login"
+                        type="button"
+                        role="tab"
+                        aria-controls="creds-login"
+                        aria-selected="@(hasCredsError ? "true" : "false")">
+                    Mật Khẩu
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content card-body p-4">
+            <div class="tab-pane fade @(hasCredsError ? "" : "show active")" id="face-login" role="tabpanel" aria-labelledby="face-tab-btn">
+                <div class="ratio ratio-4x3 bg-dark rounded mb-3 mx-auto" id="cameraFrame" style="max-width:480px;">
+                    <video id="webcamView" class="d-none" autoplay playsinline muted style="object-fit:cover; transform:scaleX(-1);"></video>
+
+                    <div class="text-white text-center d-flex flex-column align-items-center justify-content-center" id="cameraPlaceholder">
+                        <i class="bi bi-camera-video-fill fs-1 mb-2"></i>
+                        <span class="small">Đang kết nối camera...</span>
+                    </div>
+
+                    <div class="d-none align-items-center justify-content-center" id="scanSpinner">
+                        <div class="spinner-border text-success" role="status"><span class="visually-hidden">Đang quét...</span></div>
+                    </div>
+                </div>
+
+                <div class="d-none mb-3 mx-auto" id="scanProgressContainer" style="max-width:480px;">
+                    <div class="progress" style="height:6px;">
+                        <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-outline-dark" onclick="retryFaceScan()">Quét lại</button>
+                </div>
+
+                <div class="text-center text-secondary small" id="faceStatus">
+                    * Trạng thái: Đang kết nối camera...
+                </div>
+            </div>
+
+            <div class="tab-pane fade @(hasCredsError ? "show active" : "")" id="creds-login" role="tabpanel" aria-labelledby="password-tab-btn">
+                @if (hasCredsError && credsErrors.Any())
+                {
+                    <div class="alert alert-danger py-2 px-3 mb-4 small text-center">
+                        @foreach (var error in credsErrors)
+                        {
+                            <div class="d-flex align-items-center justify-content-center @(!error.Equals(credsErrors.Last()) ? "mb-1" : "")">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <span>@error</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <form method="post" action="/Auth/Login" class="needs-validation" novalidate id="credsLoginForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nhập Email/Username</label>
+                        <input type="text" name="username" class="form-control" placeholder="Nhập Email hoặc Tên tài khoản" required />
+                        <div class="invalid-feedback">Vui lòng nhập Email hoặc Tên tài khoản.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Nhập Mật khẩu</label>
+                        <input type="password" name="password" class="form-control" placeholder="Nhập Mật khẩu" required />
+                        <div class="invalid-feedback">Vui lòng nhập mật khẩu.</div>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-dark fw-bold">Đăng nhập</button>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/Auth/ForgotPassword" class="text-decoration-none fw-bold">Quên mật khẩu ></a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Popup: Thông tin quét khuôn mặt & Điểm danh -->
+    <div class="modal fade" id="faceSuccessModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="faceSuccessModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-success text-white py-3 px-4 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 34px; height: 34px;">
+                            <i class="bi bi-check-lg fw-bold fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0" id="faceSuccessModalLabel">NHẬN DIỆN THÀNH CÔNG</h5>
+                            <div class="small opacity-75">Xác thực khuôn mặt &amp; điểm danh ca làm</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-body p-4">
+                    <!-- Employee Info Card -->
+                    <div class="card border border-success border-opacity-25 bg-success bg-opacity-10 rounded-3 mb-3 p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-white border border-success text-success d-flex align-items-center justify-content-center shadow-sm me-3" style="width: 58px; height: 58px; flex-shrink: 0;">
+                                <i class="bi bi-person-fill fs-1"></i>
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <h5 class="fw-bold text-dark mb-1 text-truncate" id="modalEmpName">Nhân viên</h5>
+                                <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                                    <span class="badge bg-dark" id="modalEmpRole">Chức vụ</span>
+                                    <span class="badge bg-white text-secondary border" id="modalEmpUser">@@username</span>
+                                </div>
+                                <div class="small text-muted text-truncate">
+                                    <i class="bi bi-shop me-1 text-primary"></i><strong id="modalEmpBranch">Chi nhánh</strong>
+                                    <span class="ms-2">Mã NV: <strong id="modalEmpId">#--</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Check-in Info Card -->
+                    <div class="card border rounded-3 p-3" id="modalAttendanceCard">
+                        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="fw-bold text-dark small text-uppercase">
+                                <i class="bi bi-calendar-check me-1 text-success"></i>Thông tin điểm danh ca làm
+                            </span>
+                            <span class="badge bg-success" id="modalAttendanceBadge">Đúng giờ</span>
+                        </div>
+
+                        <div id="modalShiftDetailBlock">
+                            <div class="bg-light rounded p-2.5 mb-2 small border">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Ca làm việc:</span>
+                                    <strong class="text-dark" id="modalShiftName">Ca 1 (06:00 - 12:00)</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Giờ điểm danh:</span>
+                                    <span class="fw-semibold text-primary" id="modalCheckInTime">--:--:--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="small fw-semibold mt-1" id="modalAttendanceMessage">
+                            Đang xử lý điểm danh...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-0 py-3 px-4 d-flex justify-content-end align-items-center">
+                    <button type="button" class="btn btn-success fw-bold px-4 py-2.5 rounded-pill shadow-sm" id="btnEnterSystem" onclick="redirectToHome()">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Vào hệ thống
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- face-api.js Library loaded locally -->
+    <script src="/lib/face-api/face-api.min.js"></script>
+    <script src="/js/faceid.js" asp-append-version="true"></script>
+
+    <script>
+        const CREDS_LOGIN_ERROR = @Html.Raw(hasCredsError ? "true" : "false");
+
+        let webcamStream = null;
+        let isScanning = false;
+        let scanInterval = null;
+        let failedAttemptsCount = 0;
+
+        const faceTabBtn = document.getElementById('face-tab-btn');
+        const passwordTabBtn = document.getElementById('password-tab-btn');
+
+        faceTabBtn.addEventListener('shown.bs.tab', () => {
+            initWebcam();
+        });
+
+        passwordTabBtn.addEventListener('shown.bs.tab', () => {
+            stopWebcam();
+        });
+
+        function redirectToHome() {
+            window.location.href = '/';
+        }
+
+        async function initWebcam() {
+            const video = document.getElementById('webcamView');
+            const placeholder = document.getElementById('cameraPlaceholder');
+            const statusText = document.getElementById('faceStatus');
+
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+
+                video.srcObject = webcamStream;
+                video.classList.remove('d-none');
+                placeholder.classList.add('d-none');
+
+                statusText.textContent = "* Trạng thái: Đang kết nối camera...";
+                startFaceScanFlow();
+            } catch (err) {
+                console.error("Camera permission error:", err);
+                statusText.textContent = "* Trạng thái: Quyền truy cập camera là bắt buộc để đăng nhập bằng khuôn mặt.";
+                placeholder.innerHTML = `
+                    <i class="bi bi-camera-video-off-fill fs-1 mb-2 text-danger"></i>
+                    <span class="small text-danger fw-bold">Không có quyền truy cập Camera</span>
+                `;
+            }
+        }
+
+        function stopWebcam() {
+            const video = document.getElementById('webcamView');
+            const placeholder = document.getElementById('cameraPlaceholder');
+            const spinner = document.getElementById('scanSpinner');
+            const progressContainer = document.getElementById('scanProgressContainer');
+
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+
+            if (video) {
+                video.srcObject = null;
+                video.classList.add('d-none');
+            }
+
+            if (placeholder) {
+                placeholder.classList.remove('d-none');
+                placeholder.innerHTML = `
+                    <i class="bi bi-camera-video-fill fs-1 mb-2"></i>
+                    <span class="small">Đang kết nối camera...</span>
+                `;
+            }
+
+            if (spinner) {
+                spinner.classList.add('d-none');
+                spinner.classList.remove('d-flex');
+            }
+
+            if (progressContainer) {
+                progressContainer.classList.add('d-none');
+            }
+
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+
+            isScanning = false;
+        }
+
+        function startFaceScanFlow() {
+            if (isScanning) return;
+
+            if (failedAttemptsCount >= 5) {
+                document.getElementById('faceStatus').textContent = "* Trạng thái: Vượt quá giới hạn quét. Hãy đăng nhập bằng mật khẩu.";
+                return;
+            }
+
+            runRealFaceScan();
+        }
+
+        async function runRealFaceScan() {
+            isScanning = true;
+
+            const progressContainer = document.getElementById('scanProgressContainer');
+            const progressBar = document.getElementById('scanProgressBar');
+            const statusText = document.getElementById('faceStatus');
+            const video = document.getElementById('webcamView');
+            const spinner = document.getElementById('scanSpinner');
+
+            spinner.classList.remove('d-none');
+            spinner.classList.add('d-flex');
+            progressContainer.classList.remove('d-none');
+
+            statusText.textContent = "* Trạng thái: Đang khởi tạo mô hình nhận dạng khuôn mặt...";
+
+            try {
+                await CSMSFaceAPI.loadModels();
+            } catch (err) {
+                statusText.textContent = "* Trạng thái: Lỗi tải mô hình nhận diện khuôn mặt. Vui lòng thử lại.";
+                spinner.classList.add('d-none');
+                isScanning = false;
+                return;
+            }
+
+            statusText.textContent = "* Trạng thái: Đang quét... Hãy nhìn thẳng vào camera.";
+
+            let progress = 0;
+            progressBar.style.width = '0%';
+            let lastDescriptor = null;
+
+            scanInterval = setInterval(async () => {
+                if (!isScanning) {
+                    clearInterval(scanInterval);
+                    return;
+                }
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    try {
+                        const detection = await CSMSFaceAPI.detectFace(video);
+                        const validation = CSMSFaceAPI.validatePosition(detection, video);
+
+                        statusText.textContent = "* Trạng thái: " + validation.message;
+
+                        if (validation.valid) {
+                            progress += 10;
+                            if (progress > 100) progress = 100;
+
+                            progressBar.style.width = `${progress}%`;
+                            lastDescriptor = Array.from(detection.descriptor);
+
+                            if (progress >= 100) {
+                                clearInterval(scanInterval);
+                                isScanning = false;
+
+                                spinner.classList.add('d-none');
+                                spinner.classList.remove('d-flex');
+                                progressContainer.classList.add('d-none');
+
+                                await submitFaceLogin(JSON.stringify(lastDescriptor));
+                            }
+                        } else {
+                            // Slowly decay progress if face is out of view or invalid
+                            progress = Math.max(0, progress - 5);
+                            progressBar.style.width = `${progress}%`;
+                        }
+                    } catch (detectErr) {
+                        console.error(detectErr);
+                    }
+                }
+            }, 200);
+        }
+
+        async function submitFaceLogin(facialId) {
+            const statusText = document.getElementById('faceStatus');
+            statusText.textContent = "* Trạng thái: Đang đối khớp khuôn mặt với cơ sở dữ liệu...";
+
+            try {
+                const response = await fetch('/Auth/FaceLogin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        facialId: facialId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    stopWebcam();
+
+                    // Fill employee data
+                    const emp = result.employee || {};
+                    document.getElementById('modalEmpName').textContent = emp.fullName || 'Nhân viên';
+                    document.getElementById('modalEmpRole').textContent = emp.roleDisplayName || emp.role || 'Nhân viên';
+                    document.getElementById('modalEmpUser').textContent = '@@' + (emp.username || '');
+                    document.getElementById('modalEmpBranch').textContent = emp.branchName || 'Chi nhánh';
+                    document.getElementById('modalEmpId').textContent = '#' + (emp.employeeId || '');
+
+                    // Fill attendance data
+                    const att = result.attendance || {};
+                    const badgeEl = document.getElementById('modalAttendanceBadge');
+                    const shiftDetailEl = document.getElementById('modalShiftDetailBlock');
+                    const msgEl = document.getElementById('modalAttendanceMessage');
+
+                    if (att.hasShift) {
+                        shiftDetailEl.classList.remove('d-none');
+                        document.getElementById('modalShiftName').textContent = `${att.shiftName} (${att.shiftTimeRange})`;
+                        document.getElementById('modalCheckInTime').textContent = att.checkInTime || '';
+                        
+                        if (att.checkInStatus === 'OnTime') {
+                            badgeEl.className = 'badge bg-success';
+                            badgeEl.textContent = 'Đúng giờ';
+                            msgEl.className = 'small fw-semibold text-success mt-1';
+                        } else if (att.checkInStatus === 'Late') {
+                            badgeEl.className = 'badge bg-warning text-dark';
+                            badgeEl.textContent = 'Đi trễ';
+                            msgEl.className = 'small fw-semibold text-warning mt-1';
+                        } else {
+                            badgeEl.className = 'badge bg-info text-dark';
+                            badgeEl.textContent = att.statusText || 'Đã điểm danh';
+                            msgEl.className = 'small fw-semibold text-primary mt-1';
+                        }
+                        msgEl.textContent = att.message || result.attendanceMessage || 'Điểm danh thành công.';
+                    } else {
+                        shiftDetailEl.classList.add('d-none');
+                        badgeEl.className = 'badge bg-secondary';
+                        badgeEl.textContent = 'Không có ca';
+                        msgEl.className = 'small text-muted mt-1';
+                        msgEl.textContent = att.message || 'Nhân viên đăng nhập hệ thống (không có ca trực cần điểm danh tại thời điểm này).';
+                    }
+
+                    // Show Modal Popup
+                    const modalEl = document.getElementById('faceSuccessModal');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+
+                } else {
+                    failedAttemptsCount++;
+
+                    if (failedAttemptsCount >= 5) {
+                        statusText.textContent = "* Trạng thái: Vượt quá giới hạn quét. Hãy đăng nhập bằng mật khẩu.";
+                    } else {
+                        statusText.textContent = `* Trạng thái: ${result.errorMessage || "Không khớp khuôn mặt"}`;
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = "* Trạng thái: Lỗi kết nối với máy chủ.";
+            }
+        }
+
+        function retryFaceScan() {
+            failedAttemptsCount = Math.min(failedAttemptsCount, 4);
+            stopWebcam();
+            initWebcam();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (CREDS_LOGIN_ERROR) {
+                return;
+            }
+            initWebcam();
+        });
+
+        // Bootstrap Form Validation Script
+        (function () {
+            'use strict'
+            const forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })()
+    </script>
+</body>
+</html>

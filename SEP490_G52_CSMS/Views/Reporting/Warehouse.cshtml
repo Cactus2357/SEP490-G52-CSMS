@@ -1,0 +1,844 @@
+@model SEP490_G52_CSMS.Models.ViewModels.WarehouseReportViewModel
+
+@{
+    ViewData["Title"] = "BÁO CÁO XUẤT NHẬP KHO & CUNG ỨNG TOÀN CHUỖI";
+}
+
+<div class="container-fluid mt-3 px-4 pb-5">
+
+    <!-- Top Dashboard Header & Filters -->
+    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
+        <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                    <i class="bi bi-box-seam fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-muted small">Báo cáo hệ thống / Quản lý kho vận</span>
+                    <h4 class="fw-bold m-0 text-dark">BÁO CÁO XUẤT NHẬP KHO & CUNG ỨNG TOÀN CHUỖI</h4>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a asp-controller="Reporting" asp-action="Export" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm">
+                    <i class="bi bi-file-earmark-arrow-down-fill"></i> Xuất file báo cáo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar Card -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="get" id="warehouseFilterForm" class="row g-3 align-items-end">
+                <!-- Branch Selector -->
+                <div class="col-xl-3 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary mb-1">
+                        <i class="bi bi-shop text-primary me-1"></i>Chi nhánh:
+                    </label>
+                    <select id="branchId" name="branchId" class="form-select fw-semibold"
+                            asp-for="SelectedBranchId" asp-items="Model.BranchList" onchange="document.getElementById('warehouseFilterForm').submit();">
+                    </select>
+                </div>
+
+                <!-- Scope Selector -->
+                <div class="col-xl-2 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary mb-1">
+                        <i class="bi bi-diagram-3 text-primary me-1"></i>Phạm vi xem:
+                    </label>
+                    <select id="reportScope" name="reportScope" class="form-select fw-semibold" onchange="document.getElementById('warehouseFilterForm').submit();">
+                        <option value="all" selected="@(Model.SelectedScope == "all")">Toàn hệ thống</option>
+                        <option value="warehouse" selected="@(Model.SelectedScope == "warehouse")">Kho tổng</option>
+                        <option value="branch" selected="@(Model.SelectedScope == "branch")">Kho chi nhánh</option>
+                    </select>
+                </div>
+
+                <!-- Status Selector -->
+                <div class="col-xl-2 col-md-6">
+                    <label class="form-label small fw-semibold text-secondary mb-1">
+                        <i class="bi bi-funnel text-primary me-1"></i>Trạng thái đơn:
+                    </label>
+                    <select id="status" name="status" class="form-select fw-semibold"
+                            asp-for="SelectedStatus" asp-items="Model.StatusList" onchange="document.getElementById('warehouseFilterForm').submit();">
+                    </select>
+                </div>
+
+                <!-- From Date -->
+                <div class="col-xl-2 col-md-3 col-sm-6">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Từ ngày:</label>
+                    <input type="date" name="fromDate" class="form-control" value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <!-- To Date -->
+                <div class="col-xl-2 col-md-3 col-sm-6">
+                    <label class="form-label small fw-semibold text-secondary mb-1">Đến ngày:</label>
+                    <input type="date" name="toDate" class="form-control" value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <!-- Submit Button -->
+                <div class="col-xl-1 col-md-12 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                        <i class="bi bi-filter"></i> Lọc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Executive KPI Metric Summary Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Total Warehouse Imports -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Tổng Chi Phí Nhập Kho</div>
+                        <h4 class="fw-bold text-primary m-0">@Model.TotalImportCost.ToString("N0") đ</h4>
+                        <small class="text-secondary">@Model.TotalImportReceiptsCount phiếu nhập kho tổng</small>
+                    </div>
+                    <div class="bg-primary-subtle text-primary rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-box-arrow-in-down fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Total Branch Exports -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Giá Trị Xuất Cung Ứng</div>
+                        <h4 class="fw-bold text-success m-0">@Model.TotalExportValue.ToString("N0") đ</h4>
+                        <small class="text-secondary">@Model.TotalExportRequestsCount đơn yêu cầu cung ứng</small>
+                    </div>
+                    <div class="bg-success-subtle text-success rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-box-arrow-up fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Supply Fulfillment Rate -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Tỷ Lệ Đã Hoàn Thành</div>
+                        @{
+                            var rate = Model.TotalExportRequestsCount > 0
+                                ? ((double)Model.CompletedRequestsCount / Model.TotalExportRequestsCount * 100)
+                                : 100;
+                        }
+                        <h4 class="fw-bold text-info m-0">@rate.ToString("F1")%</h4>
+                        <small class="text-secondary">@Model.CompletedRequestsCount / @Model.TotalExportRequestsCount đơn hoàn tất</small>
+                    </div>
+                    <div class="bg-info-subtle text-info rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-check-circle fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Inspection Defects & Spoilage -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase small fw-bold text-muted mb-1">Hao Hụt & Hàng Lỗi</div>
+                        <h4 class="fw-bold @(Model.TotalDefectiveQuantity > 0 ? "text-danger" : "text-muted") m-0">
+                            @Model.TotalDefectiveQuantity.ToString("N1") đơn vị
+                        </h4>
+                        <small class="text-secondary">@Model.DefectiveIncidentsCount lượt phát hiện lỗi</small>
+                    </div>
+                    <div class="bg-danger-subtle text-danger rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-exclamation-octagon fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Import vs Export Trend -->
+        <div class="col-xl-7 col-lg-7">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-header bg-body-tertiary border-0 py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="fw-bold m-0 text-dark">
+                        <i class="bi bi-graph-up-arrow text-primary me-2"></i>BIẾN ĐỘNG NHẬP KHO TỔNG VS XUẤT CUNG ỨNG CHI NHÁNH
+                    </h6>
+                    <small class="text-muted">Đơn vị: VNĐ</small>
+                </div>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 320px; width: 100%;">
+                        <canvas id="warehouseTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 2: Supplier Import Cost Breakdown -->
+        <div class="col-xl-5 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-header bg-body-tertiary border-0 py-3">
+                    <h6 class="fw-bold m-0 text-dark">
+                        <i class="bi bi-pie-chart-fill text-success me-2"></i>CƠ CẤU NHẬP HÀNG THEO NHÀ CUNG CẤP
+                    </h6>
+                </div>
+                <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                    <div style="position: relative; height: 290px; width: 100%;">
+                        <canvas id="supplierDoughnutChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Chart 3: Branch Supply Distribution -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-header bg-body-tertiary border-0 py-3">
+                    <h6 class="fw-bold m-0 text-dark">
+                        <i class="bi bi-buildings text-info me-2"></i>PHÂN BỔ XUẤT CUNG ỨNG THEO TỪNG CHI NHÁNH
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="branchExportBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 4: Top Materials Exported -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+                <div class="card-header bg-body-tertiary border-0 py-3">
+                    <h6 class="fw-bold m-0 text-dark">
+                        <i class="bi bi-bar-chart-line-fill text-warning me-2"></i>TOP NGUYÊN LIỆU XUẤT KHO NHIỀU NHẤT
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="topMaterialsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multi-tab Data Detail Section -->
+    <div class="card border-0 shadow-sm rounded-3 bg-white">
+        <div class="card-header bg-white border-bottom border-light-subtle pt-3 px-4">
+            <ul class="nav nav-tabs card-header-tabs" id="reportTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold text-dark" id="receipts-tab" data-bs-toggle="tab" data-bs-target="#receipts-pane" type="button" role="tab">
+                        <i class="bi bi-box-arrow-in-down text-primary me-1"></i> Đơn nhập kho tổng (@Model.Receipts.Count)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold text-dark" id="supply-tab" data-bs-toggle="tab" data-bs-target="#supply-pane" type="button" role="tab">
+                        <i class="bi bi-truck text-success me-1"></i> Đơn xuất & Cung ứng chi nhánh (@Model.SupplyRequests.Count)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold text-dark" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory-pane" type="button" role="tab">
+                        <i class="bi bi-layers text-info me-1"></i> Tồn kho toàn hệ thống (@Model.Inventories.Count)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold text-dark" id="defective-tab" data-bs-toggle="tab" data-bs-target="#defective-pane" type="button" role="tab">
+                        <i class="bi bi-shield-x text-danger me-1"></i> Báo cáo lỗi & Hao hụt (@Model.DefectiveItems.Count)
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="tab-content" id="reportTabsContent">
+
+                <!-- TAB 1: CENTRAL WAREHOUSE RECEIPTS -->
+                <div class="tab-pane fade show active" id="receipts-pane" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="ps-3">Mã phiếu</th>
+                                    <th>Ngày nhập</th>
+                                    <th>Nhà cung cấp</th>
+                                    <th>Người giao</th>
+                                    <th>Người nhận</th>
+                                    <th>Số loại NL</th>
+                                    <th class="text-end">Tổng tiền (VNĐ)</th>
+                                    <th class="text-center">Trạng thái</th>
+                                    <th class="pe-3 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Receipts.Any())
+                                {
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted py-4">Không có dữ liệu phiếu nhập kho trong khoảng thời gian đã chọn.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var r in Model.Receipts)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 fw-bold text-primary">@r.ReceiptCode</td>
+                                            <td>@r.ImportDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="fw-semibold">@r.Supplier</td>
+                                            <td>
+                                                @r.DelivererName
+                                                @if (!string.IsNullOrEmpty(r.DelivererPhone))
+                                                {
+                                                    <small class="text-muted d-block">@r.DelivererPhone</small>
+                                                }
+                                            </td>
+                                            <td>@r.ReceiverName</td>
+                                            <td><span class="badge bg-light text-dark border">@r.ItemsCount loại</span></td>
+                                            <td class="text-end fw-bold text-success">@r.TotalAmount.ToString("N0") đ</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill">@r.Status</span>
+                                            </td>
+                                            <td class="pe-3 text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#receiptModal-@r.ReceiptId">
+                                                    <i class="bi bi-eye"></i> Chi tiết
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 2: BRANCH SUPPLY REQUESTS & EXPORTS -->
+                <div class="tab-pane fade" id="supply-pane" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="ps-3">Mã yêu cầu</th>
+                                    <th>Chi nhánh</th>
+                                    <th>Ngày yêu cầu</th>
+                                    <th>Người duyệt</th>
+                                    <th>Người giao</th>
+                                    <th>Người nhận</th>
+                                    <th class="text-center">Kiểm định</th>
+                                    <th class="text-center">Trạng thái</th>
+                                    <th class="text-end">Ước tính (VNĐ)</th>
+                                    <th class="pe-3 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.SupplyRequests.Any())
+                                {
+                                    <tr>
+                                        <td colspan="10" class="text-center text-muted py-4">Không có dữ liệu đơn cung ứng chi nhánh trong khoảng thời gian đã chọn.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var s in Model.SupplyRequests)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 fw-bold text-primary">@s.RequestCode</td>
+                                            <td class="fw-semibold">@s.BranchName</td>
+                                            <td>@s.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@(s.ApprovedBy ?? "-")</td>
+                                            <td>@(s.DelivererName ?? "-")</td>
+                                            <td>@(s.ReceiverName ?? "-")</td>
+                                            <td class="text-center">
+                                                @if (string.IsNullOrEmpty(s.InspectionStatus))
+                                                {
+                                                    <span class="text-muted small">Chưa kiểm định</span>
+                                                }
+                                                else if (s.InspectionStatus.Contains("lỗi") || s.InspectionStatus.Contains("Có hàng lỗi"))
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">
+                                                        <i class="bi bi-exclamation-triangle me-1"></i>Có lỗi
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                                        <i class="bi bi-check me-1"></i>Đạt chuẩn
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @{
+                                                    string badgeClass = s.Status switch
+                                                    {
+                                                        "Đã hoàn thành" => "bg-success-subtle text-success border-success-subtle",
+                                                        "Đã xuất kho" => "bg-info-subtle text-info border-info-subtle",
+                                                        "Chờ duyệt" => "bg-warning-subtle text-warning-emphasis border-warning-subtle",
+                                                        "Từ chối" or "Đã hủy" => "bg-danger-subtle text-danger border-danger-subtle",
+                                                        _ => "bg-secondary-subtle text-dark border-secondary-subtle"
+                                                    };
+                                                }
+                                                <span class="badge @badgeClass border px-2.5 py-1.5 rounded-pill">@s.Status</span>
+                                            </td>
+                                            <td class="text-end fw-semibold text-secondary">@s.TotalEstimatedValue.ToString("N0") đ</td>
+                                            <td class="pe-3 text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#supplyModal-@s.RequestId">
+                                                    <i class="bi bi-eye"></i> Chi tiết
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: SYSTEM INVENTORY -->
+                <div class="tab-pane fade" id="inventory-pane" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="ps-3">Mã NL</th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th>Danh mục</th>
+                                    <th>Kiểu</th>
+                                    <th>ĐVT</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-end">Tồn kho tổng</th>
+                                    <th class="text-end">Tồn chi nhánh</th>
+                                    <th class="text-end">Tổng tồn kho</th>
+                                    <th class="text-center">Định mức min</th>
+                                    <th class="pe-3 text-center">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Inventories.Any())
+                                {
+                                    <tr>
+                                        <td colspan="11" class="text-center text-muted py-4">Không có dữ liệu tồn kho.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var inv in Model.Inventories)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 fw-bold text-secondary">@inv.MaterialCode</td>
+                                            <td class="fw-bold text-dark">@inv.MaterialName</td>
+                                            <td><span class="badge bg-light text-dark border">@inv.Category</span></td>
+                                            <td class="text-secondary small">@inv.MaterialKind</td>
+                                            <td class="text-secondary small">@inv.StorageUnit</td>
+                                            <td class="text-end text-muted">@inv.StandardPrice.ToString("N0") đ</td>
+                                            <td class="text-end fw-semibold text-primary">@inv.CentralStockQuantity.ToString("N1")</td>
+                                            <td class="text-end fw-semibold text-info">@inv.BranchStockQuantity.ToString("N1")</td>
+                                            <td class="text-end fw-bold text-dark">@inv.TotalStockQuantity.ToString("N1")</td>
+                                            <td class="text-center text-muted">@inv.LowStockThreshold.ToString("N0")</td>
+                                            <td class="pe-3 text-center">
+                                                @if (inv.StockStatus == "Hết hàng")
+                                                {
+                                                    <span class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill">Hết hàng</span>
+                                                }
+                                                else if (inv.StockStatus == "Sắp hết")
+                                                {
+                                                    <span class="badge bg-warning text-dark px-2.5 py-1.5 rounded-pill">Sắp hết</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill">An toàn</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 4: DEFECTIVE ITEMS / SPOILAGE REPORT -->
+                <div class="tab-pane fade" id="defective-pane" role="tabpanel">
+                    <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="ps-3">Mã đơn</th>
+                                    <th>Chi nhánh</th>
+                                    <th>Thời gian đồng kiểm</th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th>ĐVT</th>
+                                    <th class="text-end text-danger">SL Lỗi/Hỏng</th>
+                                    <th>Phân loại lỗi</th>
+                                    <th>Ghi chú lỗi</th>
+                                    <th>Người kiểm định</th>
+                                    <th class="pe-3 text-center">Bằng chứng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.DefectiveItems.Any())
+                                {
+                                    <tr>
+                                        <td colspan="10" class="text-center text-muted py-4">
+                                            <i class="bi bi-shield-check text-success fs-3 d-block mb-1"></i>
+                                            Không có ghi nhận hàng lỗi hay hao hụt nào trong khoảng thời gian đã chọn.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var d in Model.DefectiveItems)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 fw-bold text-primary">@d.RequestCode</td>
+                                            <td class="fw-semibold">@d.BranchName</td>
+                                            <td>@(d.InspectedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                            <td class="fw-bold text-dark">@d.MaterialName</td>
+                                            <td>@d.StorageUnit</td>
+                                            <td class="text-end fw-bold text-danger">@d.QuantityDefective.ToString("N1")</td>
+                                            <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">@d.DefectType</span></td>
+                                            <td class="small text-secondary">@(d.DefectNote ?? "-")</td>
+                                            <td>@(d.InspectedBy ?? "-")</td>
+                                            <td class="pe-3 text-center">
+                                                @if (!string.IsNullOrEmpty(d.DefectImageUrl))
+                                                {
+                                                    <a href="@d.DefectImageUrl" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                                        <i class="bi bi-image"></i> Xem ảnh
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modals for Warehouse Receipts Details -->
+@foreach (var r in Model.Receipts)
+{
+    <div class="modal fade" id="receiptModal-@r.ReceiptId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom border-light-subtle bg-light rounded-top-4 py-3">
+                    <h6 class="modal-title fw-bold text-dark">
+                        <i class="bi bi-receipt text-primary me-2"></i>Chi tiết phiếu nhập: @r.ReceiptCode
+                    </h6>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-3 small">
+                        <div class="col-sm-6"><strong>Nhà cung cấp:</strong> @r.Supplier</div>
+                        <div class="col-sm-6"><strong>Ngày nhập:</strong> @r.ImportDate.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                        <div class="col-sm-6"><strong>Người giao:</strong> @r.DelivererName @(!string.IsNullOrEmpty(r.DelivererPhone) ? $"({r.DelivererPhone})" : "")</div>
+                        <div class="col-sm-6"><strong>Người nhận:</strong> @r.ReceiverName</div>
+                        <div class="col-sm-6"><strong>Người lập phiếu:</strong> @r.CreatedBy</div>
+                        <div class="col-sm-6"><strong>Trạng thái:</strong> <span class="badge bg-success-subtle text-success">@r.Status</span></div>
+                    </div>
+
+                    <div class="table-responsive border rounded-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Mã NL</th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th>ĐVT</th>
+                                    <th class="text-end">Số lượng</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="pe-3 text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in r.Items)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold text-secondary">@item.MaterialCode</td>
+                                        <td class="fw-bold text-dark">@item.MaterialName</td>
+                                        <td>@item.StorageUnit</td>
+                                        <td class="text-end">@item.Quantity.ToString("N1")</td>
+                                        <td class="text-end text-muted">@item.UnitPrice.ToString("N0") đ</td>
+                                        <td class="pe-3 text-end fw-bold text-success">@item.Amount.ToString("N0") đ</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="ps-3 fw-bold text-end">Tổng cộng:</td>
+                                    <td class="pe-3 text-end fw-bold text-success fs-6">@r.TotalAmount.ToString("N0") đ</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-light-subtle py-2">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modals for Supply Request Details -->
+@foreach (var s in Model.SupplyRequests)
+{
+    <div class="modal fade" id="supplyModal-@s.RequestId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom border-light-subtle bg-light rounded-top-4 py-3">
+                    <h6 class="modal-title fw-bold text-dark">
+                        <i class="bi bi-truck text-success me-2"></i>Chi tiết đơn cung ứng: @s.RequestCode - @s.BranchName
+                    </h6>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-3 small">
+                        <div class="col-sm-4"><strong>Chi nhánh:</strong> @s.BranchName</div>
+                        <div class="col-sm-4"><strong>Ngày tạo yêu cầu:</strong> @s.RequestDate.ToString("dd/MM/yyyy HH:mm")</div>
+                        <div class="col-sm-4"><strong>Trạng thái:</strong> <span class="badge bg-primary-subtle text-primary">@s.Status</span></div>
+                        <div class="col-sm-4"><strong>Người duyệt kho tổng:</strong> @(s.ApprovedBy ?? "-") (@(s.ApprovedDate?.ToString("dd/MM/yyyy") ?? "-"))</div>
+                        <div class="col-sm-4"><strong>Người giao hàng:</strong> @(s.DelivererName ?? "-") @(!string.IsNullOrEmpty(s.DelivererPhone) ? $"({s.DelivererPhone})" : "")</div>
+                        <div class="col-sm-4"><strong>Đơn vị vận chuyển:</strong> @(s.DeliveryProvider ?? "-")</div>
+                        <div class="col-sm-4"><strong>Người nhận chi nhánh:</strong> @(s.ReceiverName ?? "-") (@(s.ReceivedDate?.ToString("dd/MM/yyyy") ?? "-"))</div>
+                        <div class="col-sm-4"><strong>Người đồng kiểm:</strong> @(s.InspectedBy ?? "-")</div>
+                        <div class="col-sm-4"><strong>Kết quả kiểm định:</strong> <span class="badge bg-info-subtle text-info">@(s.InspectionStatus ?? "Chưa kiểm định")</span></div>
+                        @if (!string.IsNullOrEmpty(s.WarehouseNote))
+                        {
+                            <div class="col-12"><strong>Ghi chú kho tổng:</strong> <span class="text-secondary">@s.WarehouseNote</span></div>
+                        }
+                    </div>
+
+                    <div class="table-responsive border rounded-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Mã NL</th>
+                                    <th>Tên nguyên liệu</th>
+                                    <th>ĐVT</th>
+                                    <th class="text-end">SL Yêu Cầu</th>
+                                    <th class="text-end">SL Thực Xuất</th>
+                                    <th class="text-end">SL Thực Nhận</th>
+                                    <th class="text-end text-success">SL Đạt Chuẩn</th>
+                                    <th class="text-end text-danger">SL Lỗi/Hỏng</th>
+                                    <th>Loại lỗi / Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in s.Items)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold text-secondary">@item.MaterialCode</td>
+                                        <td class="fw-bold text-dark">@item.MaterialName</td>
+                                        <td>@item.StorageUnit</td>
+                                        <td class="text-end">@item.QuantityRequested.ToString("N1")</td>
+                                        <td class="text-end fw-semibold text-primary">@item.QuantityReleased.ToString("N1")</td>
+                                        <td class="text-end fw-semibold text-info">@item.QuantityReceived.ToString("N1")</td>
+                                        <td class="text-end fw-bold text-success">@item.QuantityAccepted.ToString("N1")</td>
+                                        <td class="text-end fw-bold @(item.QuantityDefective > 0 ? "text-danger" : "text-muted")">
+                                            @item.QuantityDefective.ToString("N1")
+                                        </td>
+                                        <td>
+                                            @if (item.QuantityDefective > 0)
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger me-1">@item.DefectType</span>
+                                                <small class="text-muted">@item.DefectNote</small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">-</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-light-subtle py-2">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Chart 1: Import vs Export Trend Line Chart
+            const trendCtx = document.getElementById('warehouseTrendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendLabels)),
+                    datasets: [
+                        {
+                            label: 'Nhập kho tổng (VNĐ)',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendImportData)),
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 3
+                        },
+                        {
+                            label: 'Xuất chi nhánh (VNĐ)',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendExportData)),
+                            borderColor: '#198754',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + Number(context.raw).toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return Number(value).toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Supplier Doughnut Chart
+            const supCtx = document.getElementById('supplierDoughnutChart').getContext('2d');
+            const supLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SupplierLabels));
+            const supData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SupplierData));
+
+            new Chart(supCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: supLabels.length ? supLabels : ['Chưa có dữ liệu'],
+                    datasets: [{
+                        data: supData.length ? supData : [1],
+                        backgroundColor: [
+                            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#6f42c1'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (!supData.length) return ' Chưa có dữ liệu';
+                                    return ' ' + context.label + ': ' + Number(context.raw).toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart 3: Branch Supply Bar Chart
+            const branchCtx = document.getElementById('branchExportBarChart').getContext('2d');
+            new Chart(branchCtx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BranchExportLabels)),
+                    datasets: [{
+                        label: 'Giá trị cung ứng (VNĐ)',
+                        data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BranchExportData)),
+                        backgroundColor: '#36b9cc',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Giá trị: ' + Number(context.raw).toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return Number(value).toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart 4: Top Materials Exported Chart
+            const matCtx = document.getElementById('topMaterialsChart').getContext('2d');
+            new Chart(matCtx, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopMaterialLabels)),
+                    datasets: [{
+                        label: 'Số lượng xuất',
+                        data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopMaterialData)),
+                        backgroundColor: '#f6c23e',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Số lượng: ' + Number(context.raw).toLocaleString('vi-VN');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        });
+    </script>
+}

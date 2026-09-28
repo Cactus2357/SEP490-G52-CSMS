@@ -1,0 +1,117 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchEditViewModel
+
+@{
+    ViewData["Title"] = "Sửa chi nhánh";
+}
+
+<div class="branch-page">
+    <section class="branch-main">
+        <div class="branch-header stretch">
+            <div>
+                <h2 class="page-title">SỬA CHI NHÁNH</h2>
+            </div>
+            <div class="header-actions">
+                <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.BranchId">Hủy</a>
+                <button type="submit" form="editForm" class="btn btn-primary">Lưu</button>
+            </div>
+        </div>
+
+        <form asp-action="Edit" method="post" id="editForm" class="row gx-4 gy-4">
+            <input asp-for="BranchId" type="hidden" />
+
+            <div class="col-12 mb-3">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" data-valmsg-summary="true"></div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card section-card">
+                    <div class="card-header">Thông tin cơ bản</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="BranchName" class="form-label"></label>
+                            <span class="text-danger">*</span>
+                            <input asp-for="BranchName" class="form-control form-control-lg" />
+                            <span asp-validation-for="BranchName" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label"></label>
+                            <span class="text-danger">*</span>
+                            <input asp-for="Address" class="form-control form-control-lg" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <input asp-for="PhoneNumber" type="tel" class="form-control form-control-lg" maxlength="10" placeholder="VD: 0912345678" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Email" class="form-label"></label>
+                                <input asp-for="Email" class="form-control form-control-lg" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card section-card mb-4">
+                    <div class="card-header">Thông tin vận hành</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="OpeningTime" class="form-label"></label>
+                            <input asp-for="OpeningTime" class="form-control form-control-lg" type="time" />
+                            <span asp-validation-for="OpeningTime" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="ClosingTime" class="form-label"></label>
+                            <input asp-for="ClosingTime" class="form-control form-control-lg" type="time" />
+                            <span asp-validation-for="ClosingTime" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card section-card mb-4">
+                    <div class="card-header">Gán quản lý chi nhánh</div>
+                    <div class="card-body">
+                        <label asp-for="ManagerId" class="form-label"></label>
+                        <select asp-for="ManagerId" class="form-select form-select-lg">
+                            <option value="">Chọn nhân viên quản lý</option>
+                            @foreach (var manager in Model.Managers)
+                            {
+                                <option value="@manager.ManagerId" selected="@(manager.ManagerId == Model.ManagerId)">@manager.ManagerName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card section-card mb-4">
+                    <div class="card-header">Trạng thái</div>
+                    <div class="card-body">
+                        <input asp-for="Status" class="form-control" readonly />
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        @section Scripts {
+            <partial name="_ValidationScriptsPartial" />
+            <script>
+                $('#editForm').on('submit', function(e) {
+                    if ($(this).data('confirmed')) return true;
+                    e.preventDefault();
+                    const form = this;
+                    showConfirmModal(
+                        'Xác nhận lưu chi nhánh',
+                        'Bạn có chắc chắn muốn lưu cập nhật thông tin chi nhánh này không?',
+                        function() {
+                            $(form).data('confirmed', true);
+                            form.submit();
+                        }
+                    );
+                });
+            </script>
+        }
+    </section>
+</div>

@@ -1,0 +1,776 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BranchSupplyRequestHistoryViewModel
+
+@{
+    ViewData["Title"] = "Lịch Sử Đơn Yêu Cầu Nhập Kho";
+}
+
+<div class="warehouse-page p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark m-0">LỊCH SỬ ĐƠN YÊU CẦU NHẬP KHO</h2>
+            <span class="text-secondary fw-semibold fs-5"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Chi nhánh: @ViewBag.BranchName</span>
+        </div>
+        <div>
+            <a href="@Url.Action("CreateRequest", "BranchWarehouse")" class="btn btn-outline-dark fw-bold">
+                <i class="bi bi-plus-lg me-2"></i> Tạo đơn nhập
+            </a>
+        </div>
+    </div>
+
+    <!-- Error Alert -->
+    @if (TempData["HistoryError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @TempData["HistoryError"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm border-0 mb-4 rounded-3 bg-light">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Từ ngày</label>
+                    <input type="date" name="fromDate" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Đến ngày</label>
+                    <input type="date" name="toDate" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Trạng thái</label>
+                    <select name="status" class="form-select">
+                        <option value="Tất cả" selected="@(Model.SelectedStatus == "Tất cả")">Tất cả</option>
+                        <option value="Chờ duyệt" selected="@(Model.SelectedStatus == "Chờ duyệt")">Chờ duyệt</option>
+                        <option value="Đang chuẩn bị xuất" selected="@(Model.SelectedStatus == "Đang chuẩn bị xuất")">Đang chuẩn bị xuất</option>
+                        <option value="Đã xuất kho" selected="@(Model.SelectedStatus == "Đã xuất kho")">Đã xuất kho</option>
+                        <option value="Đã hoàn thành" selected="@(Model.SelectedStatus == "Đã hoàn thành")">Đã hoàn thành</option>
+                        <option value="Đã nhận - Có hàng lỗi" selected="@(Model.SelectedStatus == "Đã nhận - Có hàng lỗi")">Đã nhận - Có hàng lỗi</option>
+                        <option value="Từ chối" selected="@(Model.SelectedStatus == "Từ chối")">Từ chối</option>
+                        <option value="Đã hủy" selected="@(Model.SelectedStatus == "Đã hủy")">Đã hủy</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100 py-2 fw-bold">Tìm kiếm</button>
+                    <a asp-action="RequestHistory" class="btn btn-outline-secondary py-2"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Requests History Grid -->
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0 table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 12%;" class="ps-3">Mã đơn</th>
+                            <th style="width: 17%;">Ngày yêu cầu</th>
+                            <th style="width: 18%;">Ngày cần nhận</th>
+                            <th style="width: 16%;">Trạng thái</th>
+                            <th style="width: 23%;">Ghi chú từ tổng kho</th>
+                            <th style="width: 14%;" class="text-center pe-3">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Requests != null && Model.Requests.Any())
+                        {
+                            var today = DateTime.Today;
+                            foreach (var item in Model.Requests)
+                            {
+                                string badgeClass = item.Status == "Chờ duyệt" ? "bg-warning text-dark" :
+                                                   item.Status == "Đang chuẩn bị xuất" ? "bg-primary text-white" :
+                                                   item.Status == "Đã xuất kho" ? "bg-info text-dark" :
+                                                   item.Status == "Đã hoàn thành" ? "bg-success text-white" :
+                                                   item.Status == "Đã nhận - Có hàng lỗi" ? "bg-danger text-white" :
+                                                   item.Status == "Từ chối" ? "bg-danger text-white" : "bg-secondary text-white";
+
+                                string rowStyle = item.Status == "Chờ duyệt" ? "table-warning" :
+                                                   item.Status == "Đang chuẩn bị xuất" ? "table-primary" :
+                                                   item.Status == "Đã xuất kho" ? "table-info" :
+                                                   item.Status == "Đã hoàn thành" ? "table-success" :
+                                                   item.Status == "Đã nhận - Có hàng lỗi" ? "table-danger" :
+                                                   item.Status == "Từ chối" ? "table-danger" : "";
+
+                                bool isPending = item.Status == "Chờ duyệt" || item.Status == "Đang chuẩn bị xuất";
+                                bool isOverdue = isPending && item.ExpectedDeliveryDate.HasValue && item.ExpectedDeliveryDate.Value.Date < today;
+                                bool isUrgent = isPending && item.ExpectedDeliveryDate.HasValue && item.ExpectedDeliveryDate.Value.Date >= today && item.ExpectedDeliveryDate.Value.Date <= today.AddDays(2);
+
+                                <tr class="@rowStyle">
+                                    <td class="ps-3 fw-bold text-dark">@item.RequestCode</td>
+                                    <td>
+                                        <div class="fw-semibold">@item.RequestDate.ToVietnamTimeString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>@item.RequestDate.ToRelativeTimeString()</div>
+                                    </td>
+                                    <td>
+                                        @if (item.ExpectedDeliveryDate.HasValue)
+                                        {
+                                            var relExpected = item.ExpectedDeliveryDate.Value.ToRelativeTimeString(isDateOnly: true);
+                                            <div>
+                                                <span class="fw-semibold">@item.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy")</span>
+                                                @if (isOverdue)
+                                                {
+                                                    <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 ms-1" title="Đã quá hạn ngày nhận">
+                                                        <i class="bi bi-exclamation-octagon-fill me-1"></i>Quá hạn
+                                                    </span>
+                                                }
+                                                else if (isUrgent)
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 ms-1" title="Cần nhận gấp trong vòng 48 giờ">
+                                                        <i class="bi bi-lightning-fill me-1"></i>Gấp
+                                                    </span>
+                                                }
+                                                <div class="small text-muted">@relExpected</div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">Càng sớm càng tốt</span>
+                                        }
+                                    </td>
+                                    <td><span class="badge @badgeClass rounded-pill px-3 py-2">@item.Status</span></td>
+                                    <td class="text-secondary small">@item.WarehouseNote</td>
+                                    <td class="text-center pe-3">
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-bold p-0" onclick="viewRequestDetails('@item.RequestCode')">
+                                            Chi tiết
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary-subtle"></i>
+                                    Không tìm thấy đơn yêu cầu phù hợp.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <div class="card-footer bg-white border-top py-3 d-flex justify-content-center">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm m-0">
+                            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("RequestHistory", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, page = Model.CurrentPage - 1 })">&laquo;</a>
+                            </li>
+                            @for (int p = 1; p <= Model.TotalPages; p++)
+                            {
+                                <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("RequestHistory", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, page = p })">@p</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("RequestHistory", new { fromDate = Model.FromDate.ToString("yyyy-MM-dd"), toDate = Model.ToDate.ToString("yyyy-MM-dd"), status = Model.SelectedStatus, page = Model.CurrentPage + 1 })">&raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal: Chi tiết đơn yêu cầu & Đồng kiểm (UC64 - Chuẩn phong cách YC-014) -->
+<div class="modal fade" id="requestDetailModal" tabindex="-1" aria-labelledby="requestDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold" id="requestDetailModalLabel">Chi tiết đơn yêu cầu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Info Header (Matching YC-014 template) -->
+                <div class="card bg-light border-0 mb-3 rounded-3">
+                    <div class="card-body py-3 small text-dark fs-6">
+                        <div class="row g-2">
+                            <div class="col-md-4"><strong>Mã đơn:</strong> <span id="lblDetailCode" class="fw-bold text-primary"></span></div>
+                            <div class="col-md-4"><strong>Chi nhánh:</strong> <span class="fw-semibold">@ViewBag.BranchName</span></div>
+                            <div class="col-md-4"><strong>Trạng thái:</strong> <span id="lblDetailStatus"></span></div>
+                            <div class="col-md-4"><strong>Người nhận hàng:</strong> <span id="lblDetailReceiver" class="fw-semibold"></span></div>
+                            <div class="col-md-4"><strong>SĐT người nhận:</strong> <span id="lblDetailReceiverPhone" class="fw-semibold"></span></div>
+                            <div class="col-md-4"><strong>Ngày cần nhận:</strong> <span id="lblDetailExpectedDate" class="fw-semibold text-danger"></span></div>
+                            <div class="col-md-4"><strong>Ngày yêu cầu:</strong> <span id="lblDetailDate" class="fw-semibold"></span></div>
+                            <div class="col-md-4"><strong>Người duyệt:</strong> <span id="lblDetailApprover" class="fw-semibold"></span></div>
+                            <div class="col-md-4"><strong>Người giao / SĐT:</strong> <span id="lblDetailDeliverer" class="fw-semibold text-primary"></span></div>
+                            <div class="col-md-4"><strong>Đơn vị vận chuyển:</strong> <span id="lblDetailProvider" class="fw-semibold"></span></div>
+                            <div class="col-md-4"><strong>Ghi chú chi nhánh:</strong> <span id="lblDetailRequestNote" class="fw-semibold text-secondary"></span></div>
+                            <div class="col-md-4"><strong>Ghi chú tổng kho:</strong> <span id="lblDetailWarehouseNote" class="fw-semibold text-secondary"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inspection Summary Banner if already inspected -->
+                <div id="roInspectionBanner" class="alert alert-info py-2 px-3 mb-3 rounded-3 d-none">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="bi bi-shield-check me-1"></i> Biên bản đồng kiểm:</strong>
+                            Người kiểm: <span id="roInspectedBy" class="fw-bold"></span> | Thời gian: <span id="roInspectedAt" class="fw-semibold"></span>
+                        </div>
+                        <div>
+                            <span id="roInspectionBadge" class="badge"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 1: CO-INSPECTION FORM (Active when Status == "Đã xuất kho") -->
+                <div id="coInspectView" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <h6 class="fw-bold m-0 text-dark">
+                            <i class="bi bi-shield-check text-primary me-1"></i> Biên bản đồng kiểm nguyên liệu thực nhận
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold shadow-sm" onclick="autoAcceptAll()">
+                            <i class="bi bi-check2-all me-1"></i> Nhận đủ 100% (Đạt chuẩn)
+                        </button>
+                    </div>
+
+                    <div class="row g-2 mb-3 align-items-center bg-light p-2 rounded border">
+                        <div class="col-md-6 d-flex align-items-center gap-2">
+                            <label class="small fw-bold text-muted text-uppercase text-nowrap mb-0">Người kiểm:</label>
+                            <input type="text" id="inspInspectorName" class="form-control form-control-sm" placeholder="Họ tên người đồng kiểm..." value="@User.Identity?.Name" />
+                        </div>
+                        <div class="col-md-6 text-end small text-muted">
+                            <i class="bi bi-truck text-primary me-1"></i>Tài xế giao hàng: <strong id="inspDelivererText" class="text-dark"></strong>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mb-3" style="max-height: 420px; overflow-y: auto;">
+                        <table class="table table-bordered table-sm align-middle text-nowrap m-0">
+                            <thead class="table-light sticky-top" style="z-index: 5;">
+                                <tr>
+                                    <th style="min-width: 150px;">Tên nguyên liệu</th>
+                                    <th style="min-width: 90px;">Loại NgL</th>
+                                    <th style="min-width: 120px;">SL xuất (Kho tổng)</th>
+                                    <th style="width: 130px; min-width: 130px;">SL đạt chuẩn</th>
+                                    <th style="width: 130px; min-width: 130px;">SL lỗi / hỏng</th>
+                                    <th style="min-width: 380px;">Phân loại lỗi & Ảnh bằng chứng (Tối đa 5 ảnh, <= 5MB/ảnh)</th>
+                                    <th class="text-center" style="width: 70px; min-width: 70px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coInspectTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Action Box (YC-014 processScreenB template) -->
+                    <div class="text-center py-3 bg-light rounded border p-3 mt-3">
+                        <i class="bi bi-box-seam text-primary fs-3 mb-2 d-block"></i>
+                        <p class="text-secondary small mb-1">Vui lòng đối soát kỹ quy cách, bao bì và số lượng thực nhận cùng người vận chuyển trước khi xác nhận.</p>
+                        <p class="text-danger small fw-semibold mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i> Lưu ý: Chỉ có số lượng đạt chuẩn mới được cộng vào tồn kho chi nhánh. Hàng lỗi sẽ lập biên bản gửi lên Tổng kho và Quản lý vùng.</p>
+                        <button type="button" class="btn btn-success px-5 py-2 fw-bold shadow-sm" onclick="submitGoodsInspection()">
+                            <i class="bi bi-check-circle me-1"></i> Xác nhận Đồng kiểm & Nhập kho
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: READ-ONLY ITEMS VIEW (For Chờ duyệt, Đang chuẩn bị xuất, Đã hoàn thành, v.v.) -->
+                <div id="readOnlyView" class="d-none">
+                    <h6 class="fw-bold mb-2">Chi tiết nguyên vật liệu</h6>
+                    <div class="table-responsive mb-3" style="max-height: 420px; overflow-y: auto;">
+                        <table class="table table-bordered table-sm align-middle text-nowrap m-0">
+                            <thead class="table-light sticky-top" style="z-index: 5;">
+                                <tr>
+                                    <th style="min-width: 150px;">Tên NgL</th>
+                                    <th style="min-width: 90px;">Loại NgL</th>
+                                    <th style="min-width: 100px;">Yêu cầu</th>
+                                    <th id="thRoReleased" class="d-none" style="min-width: 110px;">SL thực xuất</th>
+                                    <th id="thRoReceived" class="d-none" style="min-width: 110px;">SL thực nhận</th>
+                                    <th id="thRoAccepted" class="d-none" style="min-width: 110px;">SL đạt chuẩn</th>
+                                    <th id="thRoDefective" class="d-none" style="min-width: 250px;">SL lỗi / Bằng chứng</th>
+                                </tr>
+                            </thead>
+                            <tbody id="readOnlyTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <div>
+                    <!-- Cancel Request Button (Chờ duyệt) -->
+                    <button type="button" class="btn btn-danger fw-bold d-none" id="btnCancelRequest" onclick="submitCancelRequest()">Hủy đơn yêu cầu</button>
+                </div>
+                <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .warehouse-page {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 70px);
+    }
+    .table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .btn-outline-secondary {
+        border-color: #dee2e6;
+        color: #495057;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-color: #adb5bd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let activeRequestCode = null;
+        let activeRequestData = null;
+
+        // --- 1. LOAD DETAILS ---
+        function viewRequestDetails(code) {
+            activeRequestCode = code;
+
+            // Reset modal states
+            $('#coInspectView').addClass('d-none');
+            $('#readOnlyView').addClass('d-none');
+            $('#roInspectionBanner').addClass('d-none');
+            $('#btnCancelRequest').addClass('d-none');
+            $('#thRoReleased').addClass('d-none');
+            $('#thRoReceived').addClass('d-none');
+            $('#thRoAccepted').addClass('d-none');
+            $('#thRoDefective').addClass('d-none');
+
+            $.ajax({
+                url: '/BranchWarehouse/GetRequestDetails',
+                type: 'GET',
+                data: { code: code },
+                success: function(r) {
+                    activeRequestData = r;
+                    $('#requestDetailModalLabel').text('Chi tiết đơn yêu cầu: ' + r.requestCode);
+                    $('#lblDetailCode').text(r.requestCode);
+                    $('#lblDetailStatus').text(r.status);
+                    
+                    // Style status badge
+                    let badgeClass = "bg-secondary text-white";
+                    if (r.status === "Chờ duyệt") badgeClass = "bg-warning text-dark";
+                    else if (r.status === "Đang chuẩn bị xuất") badgeClass = "bg-primary text-white";
+                    else if (r.status === "Đã xuất kho") badgeClass = "bg-info text-dark";
+                    else if (r.status === "Đã hoàn thành") badgeClass = "bg-success text-white";
+                    else if (r.status === "Đã nhận - Có hàng lỗi") badgeClass = "bg-danger text-white";
+                    else if (r.status === "Từ chối") badgeClass = "bg-danger text-white";
+                    $('#lblDetailStatus').removeClass().addClass(`badge fs-6 rounded-pill px-3 ${badgeClass}`);
+
+                    // Populate info fields
+                    $('#lblDetailReceiver').text(r.receiverName || 'Chưa chỉ định');
+                    let expText = r.expectedDeliveryDate || 'Càng sớm càng tốt';
+                    if (r.expectedDeliveryDate && r.expectedDeliveryDateRelative) {
+                        expText += ` (${r.expectedDeliveryDateRelative})`;
+                    }
+                    $('#lblDetailExpectedDate').text(expText);
+
+                    let reqDateText = r.requestDate || '';
+                    if (r.requestDateRelative) {
+                        reqDateText += ` (${r.requestDateRelative})`;
+                    }
+                    $('#lblDetailDate').text(reqDateText);
+                    $('#lblDetailApprover').text(r.approvedBy || 'Chưa duyệt');
+
+                    let delivererText = "Chưa có";
+                    if (r.delivererName) {
+                        delivererText = `${r.delivererName} (SĐT: ${r.delivererPhone || 'Không có'})`;
+                    }
+                    $('#lblDetailDeliverer').text(delivererText);
+                    $('#lblDetailProvider').text(r.deliveryProvider || 'Không có');
+                    $('#lblDetailRequestNote').text(r.requestNote || 'Không có ghi chú');
+                    $('#lblDetailWarehouseNote').text(r.warehouseNote || 'Không có ghi chú');
+
+                    // Check status mode
+                    if (r.status === "Đã xuất kho") {
+                        // RENDER CO-INSPECTION SCREEN
+                        $('#inspDelivererText').text(delivererText);
+
+                        let inspectRows = "";
+                        r.items.forEach(item => {
+                            let released = (item.quantityReleased !== null && item.quantityReleased !== undefined && item.quantityReleased !== '')
+                                ? (parseFloat(item.quantityReleased) || 0)
+                                : (parseFloat(item.quantityRequested) || 0);
+                            let catText = item.category ? item.category : (item.materialKind || '');
+
+                            inspectRows += `
+                                <tr class="item-inspect-row" data-id="${item.materialId}" data-released="${released}" data-name="${item.materialName}" data-unit="${item.storageUnit}">
+                                    <td class="fw-bold text-dark">${item.materialName}</td>
+                                    <td>${catText}</td>
+                                    <td class="fw-bold text-primary">[${released}] ${item.storageUnit}</td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control input-accepted fw-bold text-success" value="${released}" min="0" max="${released}" step="any" oninput="onQuantityChanged(this)" />
+                                            <span class="input-group-text">${item.storageUnit}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control input-defective text-danger fw-bold" value="0" min="0" max="${released}" step="any" oninput="onQuantityChanged(this)" />
+                                            <span class="input-group-text text-danger">${item.storageUnit}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="defect-detail-box d-none">
+                                            <div class="d-inline-flex align-items-center gap-1">
+                                                <select class="form-select form-select-sm select-defect-type py-1" style="width: 145px; font-size: 0.78rem;">
+                                                    <option value="Hư hại do vận chuyển">Hư hại vận chuyển</option>
+                                                    <option value="Hết hạn sử dụng">Hết hạn / Cận date</option>
+                                                    <option value="Không đạt chất lượng">Kém chất lượng</option>
+                                                    <option value="Giao sai quy cách / Nhầm hàng">Sai quy cách / Nhầm</option>
+                                                    <option value="Thiếu số lượng">Giao thiếu SL</option>
+                                                    <option value="Khác">Lỗi khác</option>
+                                                </select>
+                                                <input type="text" class="form-control form-control-sm input-defect-note py-1" placeholder="Mô tả lỗi..." style="width: 130px; font-size: 0.78rem;" />
+                                                <label class="btn btn-sm btn-outline-danger text-nowrap mb-0 py-1 px-2 d-inline-flex align-items-center gap-1 btn-file-trigger" style="font-size: 0.75rem; cursor: pointer;" title="Tải tối đa 5 ảnh bằng chứng (<= 5MB/ảnh)">
+                                                    <i class="bi bi-camera"></i>
+                                                    <span class="file-text">Ảnh (0/5)</span>
+                                                    <input type="file" class="d-none input-defect-files" accept="image/png,image/jpeg,image/webp,image/jpg" multiple onchange="onDefectFilesChosen(this)" />
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <span class="defect-clean-badge text-success small fw-semibold"><i class="bi bi-check-circle me-1"></i>Đạt chuẩn</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 fw-semibold" onclick="setRowAccepted(this)">Đạt</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        $('#coInspectTableBody').html(inspectRows);
+                        $('#coInspectView').removeClass('d-none');
+
+                    } else {
+                        // RENDER READ-ONLY SCREEN
+                        let hasInspection = !!r.inspectionStatus;
+                        if (hasInspection) {
+                            $('#roInspectionBanner').removeClass('d-none');
+                            $('#roInspectedBy').text(r.inspectedBy || 'BManager');
+                            $('#roInspectedAt').text(r.inspectedAt || '');
+                            let badgeClass = r.inspectionStatus === "Đạt 100%" ? "bg-success" : "bg-danger";
+                            $('#roInspectionBadge').removeClass().addClass(`badge ${badgeClass}`).text(r.inspectionStatus);
+                            $('#thRoReceived').removeClass('d-none');
+                            $('#thRoAccepted').removeClass('d-none');
+                            $('#thRoDefective').removeClass('d-none');
+                        }
+
+                        let hasReleased = (r.status === "Đang chuẩn bị xuất" || r.status === "Đã xuất kho" || r.status === "Đã hoàn thành" || r.status === "Đã nhận - Có hàng lỗi");
+                        if (hasReleased) $('#thRoReleased').removeClass('d-none');
+
+                        let rows = "";
+                        r.items.forEach(item => {
+                            let releasedCol = "";
+                            if (hasReleased) {
+                                let qty = item.quantityReleased !== null ? item.quantityReleased : "0";
+                                releasedCol = `<td class="fw-bold text-success">[${qty}] ${item.storageUnit}</td>`;
+                            }
+
+                            let catText = item.category ? item.category : (item.materialKind || '');
+                            let inspCols = "";
+                            if (hasInspection) {
+                                let qRec = (item.quantityReceived !== null && item.quantityReceived !== undefined && item.quantityReceived !== '') ? item.quantityReceived : '-';
+                                let qAcc = (item.quantityAccepted !== null && item.quantityAccepted !== undefined && item.quantityAccepted !== '') ? item.quantityAccepted : '-';
+                                let qDef = item.quantityDefective ? parseFloat(item.quantityDefective) : 0;
+                                let defHtml = `<span class="text-success fw-bold">0</span>`;
+                                if (qDef > 0) {
+                                    let urls = [];
+                                    if (item.defectImageUrl) {
+                                        if (item.defectImageUrl.startsWith('[')) {
+                                            try { urls = JSON.parse(item.defectImageUrl); } catch(e) { urls = [item.defectImageUrl]; }
+                                        } else {
+                                            urls = item.defectImageUrl.split(',').map(s => s.trim()).filter(s => s);
+                                        }
+                                    }
+
+                                    let imgButtons = "";
+                                    if (urls.length > 0) {
+                                        imgButtons = urls.map((u, uIdx) => `
+                                            <a href="${u}" target="_blank" class="btn btn-outline-danger btn-xs py-0 px-2 fw-semibold" style="font-size:0.75rem;" title="Xem ảnh ${uIdx + 1}">
+                                                <i class="bi bi-image me-1"></i>Ảnh ${uIdx + 1}
+                                            </a>
+                                        `).join(' ');
+                                    }
+
+                                    let noteHtml = item.defectNote ? `<span class="badge bg-light text-secondary border ms-1" title="${item.defectNote}"><i class="bi bi-info-circle me-1"></i>${item.defectNote}</span>` : '';
+
+                                    defHtml = `
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            <span class="badge bg-danger-subtle text-danger fw-bold fs-7">[${qDef}] ${item.storageUnit}</span>
+                                            <span class="badge bg-danger">${item.defectType || 'Lỗi'}</span>
+                                            ${noteHtml}
+                                            ${imgButtons}
+                                        </div>
+                                    `;
+                                }
+
+                                inspCols = `
+                                    <td class="fw-bold text-dark">${qRec !== '-' ? qRec + ' ' + item.storageUnit : '-'}</td>
+                                    <td class="fw-bold text-success">${qAcc !== '-' ? qAcc + ' ' + item.storageUnit : '-'}</td>
+                                    <td>${defHtml}</td>
+                                `;
+                            }
+
+                            rows += `
+                                <tr>
+                                    <td class="fw-bold text-dark">${item.materialName}</td>
+                                    <td>${catText}</td>
+                                    <td>${item.quantityRequested} ${item.storageUnit}</td>
+                                    ${releasedCol}
+                                    ${inspCols}
+                                </tr>
+                            `;
+                        });
+                        $('#readOnlyTableBody').html(rows);
+                        $('#readOnlyView').removeClass('d-none');
+
+                        if (r.status === "Chờ duyệt") {
+                            $('#btnCancelRequest').removeClass('d-none');
+                        }
+                    }
+
+                    $('#requestDetailModal').modal('show');
+                },
+                error: function() {
+                    showToast('Không thể tải chi tiết đơn yêu cầu. Vui lòng thử lại.', 'danger');
+                }
+            });
+        }
+
+        // --- 2. CO-INSPECTION ROW QUANTITY HANDLERS ---
+        function onQuantityChanged(input) {
+            let row = $(input).closest('tr');
+            let released = parseFloat(row.attr('data-released')) || 0;
+            let isAcceptedInput = $(input).hasClass('input-accepted');
+
+            let acceptedVal = parseFloat(row.find('.input-accepted').val());
+            let defectiveVal = parseFloat(row.find('.input-defective').val());
+
+            if (isNaN(acceptedVal) || acceptedVal < 0) acceptedVal = 0;
+            if (isNaN(defectiveVal) || defectiveVal < 0) defectiveVal = 0;
+
+            if (isAcceptedInput) {
+                if (acceptedVal > released) {
+                    acceptedVal = released;
+                    row.find('.input-accepted').val(acceptedVal);
+                }
+                defectiveVal = Math.max(0, released - acceptedVal);
+                row.find('.input-defective').val(defectiveVal);
+            } else {
+                if (defectiveVal > released) {
+                    defectiveVal = released;
+                    row.find('.input-defective').val(defectiveVal);
+                }
+                acceptedVal = Math.max(0, released - defectiveVal);
+                row.find('.input-accepted').val(acceptedVal);
+            }
+
+            if (defectiveVal > 0) {
+                row.find('.defect-detail-box').removeClass('d-none');
+                row.find('.defect-clean-badge').addClass('d-none');
+                row.addClass('table-danger');
+            } else {
+                row.find('.defect-detail-box').addClass('d-none');
+                row.find('.defect-clean-badge').removeClass('d-none');
+                row.removeClass('table-danger');
+            }
+        }
+
+        function setRowAccepted(btn) {
+            let row = $(btn).closest('tr');
+            let released = parseFloat(row.attr('data-released')) || 0;
+            row.find('.input-accepted').val(released);
+            row.find('.input-defective').val(0);
+            row.find('.defect-detail-box').addClass('d-none');
+            row.find('.defect-clean-badge').removeClass('d-none');
+            row.removeClass('table-danger');
+        }
+
+        function autoAcceptAll() {
+            $('#coInspectTableBody tr.item-inspect-row').each(function() {
+                let released = parseFloat($(this).attr('data-released')) || 0;
+                $(this).find('.input-accepted').val(released);
+                $(this).find('.input-defective').val(0);
+                $(this).find('.defect-detail-box').addClass('d-none');
+                $(this).find('.defect-clean-badge').removeClass('d-none');
+                $(this).removeClass('table-danger');
+            });
+            showToast('Đã thiết lập toàn bộ nguyên liệu đạt chuẩn 100%!', 'success');
+        }
+
+        // --- VALIDATE & UPDATE DEFECT IMAGE INPUT ---
+        function onDefectFilesChosen(input) {
+            let files = input.files;
+            let label = $(input).closest('.btn-file-trigger');
+            let textSpan = label.find('.file-text');
+
+            if (!files || files.length === 0) {
+                textSpan.text('Ảnh (0/5)');
+                label.removeClass('btn-danger text-white').addClass('btn-outline-danger');
+                return;
+            }
+
+            if (files.length > 5) {
+                showToast('Chỉ được chọn tối đa 5 ảnh bằng chứng cho mỗi nguyên liệu lỗi.', 'warning');
+                input.value = '';
+                textSpan.text('Ảnh (0/5)');
+                label.removeClass('btn-danger text-white').addClass('btn-outline-danger');
+                return;
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].size > 5 * 1024 * 1024) {
+                    showToast(`Ảnh "${files[i].name}" vượt quá dung lượng tối đa 5MB.`, 'warning');
+                    input.value = '';
+                    textSpan.text('Ảnh (0/5)');
+                    label.removeClass('btn-danger text-white').addClass('btn-outline-danger');
+                    return;
+                }
+            }
+
+            textSpan.text(`Ảnh (${files.length}/5)`);
+            label.removeClass('btn-outline-danger').addClass('btn-danger text-white');
+        }
+
+        // --- 3. SUBMIT CO-INSPECTION ---
+        function submitGoodsInspection() {
+            if (!activeRequestCode) return;
+
+            let inspectorName = $('#inspInspectorName').val().trim();
+            if (!inspectorName) {
+                showToast('Vui lòng nhập họ tên người đồng kiểm.', 'warning');
+                $('#inspInspectorName').focus();
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('RequestCode', activeRequestCode);
+            formData.append('InspectorName', inspectorName);
+
+            let hasError = false;
+            let totalDefective = 0;
+
+            $('#coInspectTableBody tr.item-inspect-row').each(function(index) {
+                let matId = $(this).attr('data-id');
+                let name = $(this).attr('data-name');
+                let released = parseFloat($(this).attr('data-released')) || 0;
+                let accepted = parseFloat($(this).find('.input-accepted').val());
+                let defective = parseFloat($(this).find('.input-defective').val());
+
+                if (isNaN(accepted) || accepted < 0 || isNaN(defective) || defective < 0) {
+                    showToast(`Số lượng của "${name}" không hợp lệ.`, 'warning');
+                    hasError = true;
+                    return false;
+                }
+
+                let totalChecked = accepted + defective;
+                if (totalChecked > released) {
+                    showToast(`Tổng SL thực nhận của "${name}" vượt quá SL kho tổng đã xuất (${released}).`, 'warning');
+                    hasError = true;
+                    return false;
+                }
+
+                formData.append(`Items[${index}].MaterialId`, matId);
+                formData.append(`Items[${index}].QuantityReceived`, totalChecked);
+                formData.append(`Items[${index}].QuantityAccepted`, accepted);
+                formData.append(`Items[${index}].QuantityDefective`, defective);
+
+                if (defective > 0) {
+                    totalDefective += defective;
+                    let defectType = $(this).find('.select-defect-type').val();
+                    let defectNote = $(this).find('.input-defect-note').val().trim();
+                    formData.append(`Items[${index}].DefectType`, defectType);
+                    formData.append(`Items[${index}].DefectNote`, defectNote);
+
+                    let fileInput = $(this).find('.input-defect-files')[0];
+                    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                        for (let f = 0; f < Math.min(fileInput.files.length, 5); f++) {
+                            formData.append(`Items[${index}].DefectImages`, fileInput.files[f]);
+                        }
+                    }
+                }
+            });
+
+            if (hasError) return;
+
+            let confirmTitle = totalDefective > 0 ? 'Xác nhận biên bản có hàng lỗi' : 'Xác nhận nhập kho';
+            let confirmMsg = totalDefective > 0
+                ? `Biên bản ghi nhận ${totalDefective} nguyên liệu bị lỗi/hỏng. Chỉ số lượng đạt chuẩn mới được nhập kho. Xác nhận gửi báo cáo lên Tổng kho?`
+                : 'Xác nhận toàn bộ nguyên liệu đạt chuẩn 100% và nhập vào kho chi nhánh?';
+
+            showConfirmModal(confirmTitle, confirmMsg, function() {
+                $.ajax({
+                    url: '/BranchWarehouse/InspectAndReceiveGoods',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        if (res.success) {
+                            $('#requestDetailModal').modal('hide');
+                            showToast(res.message, 'success');
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            showToast(res.message, 'danger');
+                        }
+                    },
+                    error: function() {
+                        showToast('Lỗi kết nối máy chủ khi xác nhận đồng kiểm.', 'danger');
+                    }
+                });
+            });
+        }
+
+        // --- 4. CANCEL REQUEST ---
+        function submitCancelRequest() {
+            if (!activeRequestCode) return;
+            showConfirmModal(
+                'Hủy đơn yêu cầu',
+                'Bạn có chắc chắn muốn hủy đơn yêu cầu nhập kho này?',
+                function() {
+                    $.ajax({
+                        url: '/BranchWarehouse/CancelRequest',
+                        type: 'POST',
+                        data: { code: activeRequestCode },
+                        success: function(res) {
+                            if (res.success) {
+                                $('#requestDetailModal').modal('hide');
+                                showToast(res.message, 'success');
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1000);
+                            } else {
+                                showToast(res.message, 'danger');
+                            }
+                        },
+                        error: function() {
+                            showToast('Lỗi kết nối máy chủ khi hủy đơn.', 'danger');
+                        }
+                    });
+                }
+            );
+        }
+    </script>
+}

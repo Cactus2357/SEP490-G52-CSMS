@@ -1,0 +1,521 @@
+@model SEP490_G52_CSMS.Models.ViewModels.BartenderProductAvailabilityViewModel
+
+@{
+    ViewData["Title"] = "Quản lý sản phẩm";
+}
+
+<style>
+    .kpi-card {
+        border-radius: 12px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        border: 1px solid rgba(0,0,0,0.08);
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    }
+    .product-thumb {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+    .product-thumb-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f1f3f5;
+        color: #adb5bd;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .form-switch-lg .form-check-input {
+        width: 2.75rem;
+        height: 1.4rem;
+        cursor: pointer;
+    }
+    .form-switch-lg .form-check-input:focus {
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+    }
+    .form-switch-lg .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .filter-pill.active {
+        background-color: #0d6efd !important;
+        color: #fff !important;
+        border-color: #0d6efd !important;
+    }
+    .row-unavailable {
+        background-color: rgba(220, 53, 69, 0.04) !important;
+    }
+    .row-unavailable td {
+        background-color: transparent !important;
+    }
+</style>
+
+@if (ViewBag.NotInShift == true)
+{
+    <div class="container py-4 my-auto" style="min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center;">
+        <div class="row justify-content-center w-100">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden my-3">
+                    <div class="card-header bg-danger text-white py-3 px-4 border-0">
+                        <h5 class="card-title fw-bold mb-0">
+                            <i class="bi bi-exclamation-octagon-fill me-2"></i>CHƯA ĐỦ ĐIỀU KIỆN VÀO MÀN HÌNH QUẢN LÝ SẢN PHẨM
+                        </h5>
+                    </div>
+                    <div class="card-body p-4 p-md-5 text-center">
+                        <div class="mb-4">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3" style="width: 90px; height: 90px;">
+                                <i class="bi bi-cup-straw fs-1"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-2">
+                                @(ViewBag.ReasonCode == "OutsideOperatingHours" ? "Ngoài Khung Giờ Hoạt Động (06:00 - 24:00)" :
+                                 (ViewBag.ReasonCode == "NotScheduled" ? "Chưa Có Lịch Phân Công Ca Làm Việc" : 
+                                 (ViewBag.ReasonCode == "NotCheckedIn" ? "Chưa Điểm Danh Chấm Công Vào Ca" : 
+                                 (ViewBag.ReasonCode == "FirstShiftNotOpened" ? "Ca Đầu Ngày Chưa Được Mở Ca" : 
+                                 (ViewBag.ReasonCode == "ShiftClosed" ? "Ca Làm Việc Đã Được Đóng / Khóa Sổ" : 
+                                 (ViewBag.ReasonCode == "ShiftEnded" ? "Ca Làm Việc Đã Kết Thúc (Đã Ra Ca)" : "Chưa Nhận Bàn Giao Ca"))))))
+                            </h4>
+                            <p class="text-muted fs-6 mb-0">
+                                @ViewBag.NotInShiftMessage
+                            </p>
+                        </div>
+
+                        <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-dark py-3 px-4 rounded-3 text-start small mb-4">
+                            <i class="bi bi-info-circle-fill me-2 text-warning"></i>
+                            <strong>Quy định làm việc tại chi nhánh:</strong>
+                            <ul class="mb-0 mt-1">
+                                <li>Phải có lịch làm việc được xếp tại chi nhánh trong ngày hôm nay.</li>
+                                <li>Bắt buộc <strong>điểm danh chấm công (Check-in)</strong> trước khi vào màn hình làm việc.</li>
+                                @if (User.IsInRole("Cashier"))
+                                {
+                                    <li>Thu ngân cần hoàn tất <strong>Mở ca</strong> hoặc <strong>Nhận bàn giao ca</strong> tương ứng.</li>
+                                }
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            @if (ViewBag.IsLogoutRequired == true || ViewBag.ReasonCode == "NotCheckedIn")
+                            {
+                                <a href="/Auth/Logout" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất để Chấm công Face Login
+                                </a>
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-outline-primary btn-lg px-4 py-2.5 rounded-pill fw-semibold shadow-sm">
+                                    <i class="bi bi-calendar-check me-2"></i>Xem lịch làm việc
+                                </a>
+                            }
+                            else if (!string.IsNullOrEmpty(ViewBag.RedirectAction))
+                            {
+                                <a asp-action="@ViewBag.RedirectAction" asp-controller="@ViewBag.RedirectController" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>@ViewBag.RedirectButtonText
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-action="EmployeeIndex" asp-controller="WorkSchedule" class="btn btn-danger btn-lg px-4 py-2.5 rounded-pill fw-bold shadow-sm">
+                                    <i class="bi bi-calendar-check me-2"></i>Xem Lịch Làm Việc
+                                </a>
+                            }
+                            <a href="/Home/Index" class="btn btn-outline-secondary btn-lg px-4 py-2.5 rounded-pill fw-semibold">
+                                <i class="bi bi-house me-2"></i>Về Trang Chủ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container-fluid px-4 pt-3 pb-5">
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom flex-wrap gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h3 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-box-seam text-primary me-2"></i>Quản lý sản phẩm
+                </h3>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            @if (User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+            {
+                <a asp-controller="MenuManagement" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
+                    <i class="bi bi-journal-text me-2"></i>Quản lý thực đơn
+                </a>
+            }
+            @if (User.IsInRole("Cashier"))
+            {
+                <a asp-controller="SaleManagement" asp-action="CreateOrder" class="btn btn-primary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
+                    <i class="bi bi-cart3 me-2"></i>Quay lại bán hàng (POS)
+                </a>
+            }
+            @if (User.IsInRole("Bartender") || User.IsInRole("Barista") || User.IsInRole("BranchManager") || User.IsInRole("RManager"))
+            {
+                <a asp-controller="Brewing" asp-action="Index" class="btn btn-outline-primary rounded-pill px-3 py-1.5 shadow-sm small fw-semibold">
+                    <i class="bi bi-cup-hot me-2"></i>Màn hình pha chế
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4 col-12">
+            <div class="card kpi-card bg-white p-3 h-100 shadow-sm">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng số món</span>
+                        <h2 class="fw-bold text-dark mb-0 mt-1" id="kpiTotal">@Model.TotalProducts</h2>
+                    </div>
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-cup-straw fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-12">
+            <div class="card kpi-card bg-white p-3 h-100 shadow-sm border-start border-success border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Đang phục vụ</span>
+                        <h2 class="fw-bold text-success mb-0 mt-1" id="kpiAvailable">@Model.AvailableProducts</h2>
+                    </div>
+                    <div class="rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-check-circle fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-12">
+            <div class="card kpi-card bg-white p-3 h-100 shadow-sm border-start border-danger border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tạm hết nguyên liệu</span>
+                        <h2 class="fw-bold text-danger mb-0 mt-1" id="kpiOutOfStock">@Model.OutOfStockProducts</h2>
+                    </div>
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-exclamation-triangle fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-3">
+            <form method="get" asp-action="ProductAvailability" id="filterForm">
+                <input type="hidden" name="status" id="statusInput" value="@Model.StatusFilter" />
+                <div class="row g-2 align-items-center">
+                    <!-- Status Filter Pills -->
+                    <div class="col-12 col-lg-auto mb-2 mb-lg-0">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Status filter">
+                            <button type="button" class="btn btn-outline-secondary filter-pill px-3 py-1.5 fw-semibold @(Model.StatusFilter == "all" ? "active" : "")" onclick="selectStatus('all')">
+                                Tất cả (<span id="pillCountAll">@Model.TotalProducts</span>)
+                            </button>
+                            <button type="button" class="btn btn-outline-success filter-pill px-3 py-1.5 fw-semibold @(Model.StatusFilter == "available" ? "active" : "")" onclick="selectStatus('available')">
+                                <i class="bi bi-check2 me-1"></i>Đang phục vụ (<span id="pillCountAvailable">@Model.AvailableProducts</span>)
+                            </button>
+                            <button type="button" class="btn btn-outline-danger filter-pill px-3 py-1.5 fw-semibold @(Model.StatusFilter == "outofstock" ? "active" : "")" onclick="selectStatus('outofstock')">
+                                <i class="bi bi-slash-circle me-1"></i>Tạm hết (<span id="pillCountOutOfStock">@Model.OutOfStockProducts</span>)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category Dropdown -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <select name="categoryId" class="form-select form-select-sm" onchange="document.getElementById('filterForm').submit()">
+                            <option value="">-- Tất cả danh mục --</option>
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat.CategoryId" selected="@(Model.SelectedCategoryId == cat.CategoryId ? "selected" : null)">@cat.CategoryName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" name="search" id="searchInput" class="form-control border-start-0" placeholder="Tìm kiếm tên món..." value="@Model.SearchQuery" />
+                            @if (!string.IsNullOrEmpty(Model.SearchQuery))
+                            {
+                                <button type="button" class="btn btn-light border" onclick="clearSearch()"><i class="bi bi-x"></i></button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-auto ms-auto d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm px-3 fw-semibold">
+                            <i class="bi bi-funnel me-1"></i>Lọc
+                        </button>
+                        @if (!string.IsNullOrEmpty(Model.SearchQuery) || Model.SelectedCategoryId.HasValue || (Model.StatusFilter != "all" && !string.IsNullOrEmpty(Model.StatusFilter)))
+                        {
+                            <a asp-action="ProductAvailability" class="btn btn-outline-secondary btn-sm px-2.5" title="Xóa bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="productsTable">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th style="width: 50px;" class="text-center">#</th>
+                        <th style="min-width: 250px;">Món</th>
+                        <th style="min-width: 130px;">Danh mục</th>
+                        <th style="min-width: 170px;">Các Size & Giá</th>
+                        <th style="min-width: 140px;" class="text-center">Trạng thái</th>
+                        <th style="min-width: 180px;">Cập nhật lần cuối</th>
+                        <th style="width: 130px;" class="text-center"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Products == null || !Model.Products.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                Không có sản phẩm nào phù hợp với bộ lọc hiện tại.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int index = 1;
+                        foreach (var item in Model.Products)
+                        {
+                            <tr id="row-@item.ProductId" class="@(!item.IsAvailable ? "row-unavailable" : "")">
+                                <td class="text-center text-muted small fw-semibold">@(index++)</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" alt="@item.ProductName" class="product-thumb border me-3" />
+                                        }
+                                        else
+                                        {
+                                            <div class="product-thumb-placeholder border me-3">
+                                                <i class="bi bi-cup-straw"></i>
+                                            </div>
+                                        }
+                                        <div>
+                                            <div class="fw-bold text-dark fs-6" id="name-@item.ProductId">@item.ProductName</div>
+                                            <small class="text-muted">Mã món: #@item.ProductId</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
+                                        @item.CategoryName
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="small text-secondary fw-medium">
+                                        @if (item.Variants != null && item.Variants.Any())
+                                        {
+                                            <div class="d-flex flex-wrap gap-1">
+                                                @foreach (var v in item.Variants)
+                                                {
+                                                    <span class="badge bg-light text-dark border px-2 py-1 font-monospace">
+                                                        @v.SizeVariant: @v.SellingPrice.ToString("N0")đ
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span>@item.SizeAndPrice</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-center" id="status-col-@item.ProductId">
+                                    @if (item.IsAvailable)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fw-semibold" id="badge-@item.ProductId">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Đang phục vụ
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 fw-semibold" id="badge-@item.ProductId">
+                                            <i class="bi bi-slash-circle-fill me-1"></i>Tạm hết (Khóa POS)
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="small" id="updater-info-@item.ProductId">
+                                        @if (item.UpdatedAt.HasValue)
+                                        {
+                                            <div class="fw-semibold text-dark">
+                                                <i class="bi bi-person-fill text-muted me-1"></i>@(item.UpdatedByName ?? "Nhân viên")
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.78rem;">
+                                                <i class="bi bi-clock me-1"></i>@item.UpdatedAt.Value.ToVietnamTime().ToString("HH:mm - dd/MM/yyyy")
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">Mặc định ban đầu</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch form-switch-lg d-inline-block m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="switch-@item.ProductId"
+                                               checked="@(item.IsAvailable ? "checked" : null)"
+                                               onchange="toggleProductAvailability(@item.ProductId, this)"
+                                               title="@(item.IsAvailable ? "Gạt để báo Tạm hết nguyên liệu" : "Gạt để Mở lại phục vụ")" />
+                                    </div>
+                                    <div class="spinner-border spinner-border-sm text-primary d-none mt-1" id="spinner-@item.ProductId" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+}
+
+@section Scripts {
+    <script>
+        function selectStatus(status) {
+            document.getElementById('statusInput').value = status;
+            document.getElementById('filterForm').submit();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterForm').submit();
+        }
+
+        function toggleProductAvailability(productId, checkboxEl) {
+            const row = document.getElementById('row-' + productId);
+            const statusCol = document.getElementById('status-col-' + productId);
+            const updaterInfo = document.getElementById('updater-info-' + productId);
+            const spinner = document.getElementById('spinner-' + productId);
+            const pName = document.getElementById('name-' + productId)?.textContent?.trim() || 'Món #' + productId;
+
+            checkboxEl.disabled = true;
+            spinner.classList.remove('d-none');
+
+            $.ajax({
+                url: '/Brewing/ToggleProductAvailability',
+                type: 'POST',
+                data: { productId: productId },
+                success: function (res) {
+                    checkboxEl.disabled = false;
+                    spinner.classList.add('d-none');
+
+                    if (res.success) {
+                        const isNowAvailable = res.newState;
+                        checkboxEl.checked = isNowAvailable;
+                        checkboxEl.title = isNowAvailable ? 'Gạt để báo Tạm hết nguyên liệu' : 'Gạt để Mở lại phục vụ';
+
+                        // Cập nhật Badge trạng thái
+                        if (isNowAvailable) {
+                            row.classList.remove('row-unavailable');
+                            statusCol.innerHTML = `
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fw-semibold" id="badge-${productId}">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Đang phục vụ
+                                </span>
+                            `;
+                        } else {
+                            row.classList.add('row-unavailable');
+                            statusCol.innerHTML = `
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 fw-semibold" id="badge-${productId}">
+                                    <i class="bi bi-slash-circle-fill me-1"></i>Tạm hết (Khóa POS)
+                                </span>
+                            `;
+                        }
+
+                        // Cập nhật thông tin người cập nhật
+                        const now = new Date();
+                        const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2) + ' - ' +
+                                        ('0' + now.getDate()).slice(-2) + '/' + ('0' + (now.getMonth() + 1)).slice(-2) + '/' + now.getFullYear();
+                        updaterInfo.innerHTML = `
+                            <div class="fw-semibold text-dark">
+                                <i class="bi bi-person-fill text-muted me-1"></i>Bạn (Vừa cập nhật)
+                            </div>
+                            <div class="text-muted" style="font-size: 0.78rem;">
+                                <i class="bi bi-clock me-1"></i>${timeStr}
+                            </div>
+                        `;
+
+                        // Cập nhật counters
+                        updateKpiCounters(isNowAvailable);
+
+                        // Toast thông báo
+                        if (typeof showToast === 'function') {
+                            showToast(res.message || (isNowAvailable ? `Đã mở lại món ${pName}` : `Đã tắt món ${pName}`), isNowAvailable ? 'success' : 'warning');
+                        }
+                    } else {
+                        // Revert checkbox
+                        checkboxEl.checked = !checkboxEl.checked;
+                        if (typeof showToast === 'function') {
+                            showToast(res.message || 'Không thể cập nhật trạng thái món.', 'danger');
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    checkboxEl.disabled = false;
+                    spinner.classList.add('d-none');
+                    // Revert checkbox
+                    checkboxEl.checked = !checkboxEl.checked;
+
+                    let errMsg = 'Lỗi kết nối máy chủ khi cập nhật trạng thái món.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errMsg = xhr.responseJSON.message;
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast(errMsg, 'danger');
+                    } else {
+                        alert(errMsg);
+                    }
+                }
+            });
+        }
+
+        function updateKpiCounters(isNowAvailable) {
+            const kpiAvailable = document.getElementById('kpiAvailable');
+            const kpiOutOfStock = document.getElementById('kpiOutOfStock');
+            const pillAvailable = document.getElementById('pillCountAvailable');
+            const pillOutOfStock = document.getElementById('pillCountOutOfStock');
+
+            let avail = parseInt(kpiAvailable.textContent) || 0;
+            let outOfStock = parseInt(kpiOutOfStock.textContent) || 0;
+
+            if (isNowAvailable) {
+                avail++;
+                outOfStock = Math.max(0, outOfStock - 1);
+            } else {
+                avail = Math.max(0, avail - 1);
+                outOfStock++;
+            }
+
+            if (kpiAvailable) kpiAvailable.textContent = avail;
+            if (kpiOutOfStock) kpiOutOfStock.textContent = outOfStock;
+            if (pillAvailable) pillAvailable.textContent = avail;
+            if (pillOutOfStock) pillOutOfStock.textContent = outOfStock;
+        }
+    </script>
+}

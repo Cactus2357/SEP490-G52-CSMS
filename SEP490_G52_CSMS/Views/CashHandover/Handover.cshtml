@@ -1,0 +1,340 @@
+@model SEP490_G52_CSMS.Models.ViewModels.HandoverViewModel
+@{
+    ViewData["Title"] = "Bàn Giao Ca - Quản Lý Kết Tiền";
+}
+
+<div class="container-fluid px-4">
+    @* Tiêu đề module *@
+    <div class="d-flex align-items-center justify-content-between mb-3 pt-3">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-0">BÀN GIAO CA LÀM VIỆC</h1>
+            <p class="text-muted small mb-0">Ca hiện tại: <strong>@Model.ShiftName</strong> &bull; Chuyển giao sang: <strong>@Model.TargetShiftName (@Model.TargetShiftTimeRange)</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="EmergencyHandover"
+               asp-route-cashierId="@Model.OutgoingCashierId"
+               class="btn btn-outline-warning text-dark btn-sm fw-bold">
+                <i class="bi bi-exclamation-octagon me-1"></i>Bàn giao đột xuất
+            </a>
+            <a asp-action="History"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-clock-history me-1"></i>Lịch sử giao ca
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>@TempData["InfoMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 mb-3 border-danger-subtle rounded-3 shadow-sm" role="alert" style="background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b;">
+            <i class="bi bi-exclamation-circle-fill fs-5 text-danger flex-shrink-0"></i>
+            <div class="small fw-semibold flex-grow-1">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
+        </div>
+    }
+
+    <form asp-action="Handover" method="post" id="handoverForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="HandoverId" />
+        <input type="hidden" asp-for="OutgoingCashierId" />
+        <input type="hidden" asp-for="BranchId" />
+        <input type="hidden" asp-for="InitialCash" id="initialCashHidden" />
+        <input type="hidden" asp-for="MachineCashRevenue" id="machineRevenueHidden" />
+        <input type="hidden" asp-for="CashRefundAmount" id="cashRefundHidden" />
+        <input type="hidden" asp-for="IsSelfHandover" />
+
+        <div class="row g-3">
+            <!-- CỘT TRÁI: DOANH THU & ĐỐI SOÁT -->
+            <div class="col-md-6">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3 text-primary">
+                            <i class="bi bi-calculator me-1"></i>DOANH THU HỆ THỐNG GHI NHẬN
+                        </h6>
+
+                        <!-- Bảng chi tiết doanh thu đối soát -->
+                        <div class="table-responsive border rounded bg-white mb-3">
+                            <table class="table table-sm table-borderless align-middle mb-0">
+                                <tbody>
+                                    <tr class="border-bottom">
+                                        <td class="ps-3 py-2 text-muted fw-semibold" style="width: 58%;">Tiền mặt đầu ca:</td>
+                                        <td class="pe-3 py-2 text-end fw-bold text-dark fs-6" style="width: 42%;">@Model.InitialCash.ToString("N0") đ</td>
+                                    </tr>
+                                    <tr class="border-bottom">
+                                        <td class="ps-3 py-2 text-muted fw-semibold">Tiền mặt thu từ POS:</td>
+                                        <td class="pe-3 py-2 text-end fw-bold text-success fs-6">+@Model.MachineCashRevenue.ToString("N0") đ</td>
+                                    </tr>
+                                    <tr class="border-bottom">
+                                        <td class="ps-3 py-2 text-muted fw-semibold">Doanh thu CK (Không vào két):</td>
+                                        <td class="pe-3 py-2 text-end fw-bold text-secondary fs-6">@Model.BankTransferRevenue.ToString("N0") đ</td>
+                                    </tr>
+                                    <tr class="table-primary border-top">
+                                        <td class="ps-3 py-2.5 text-primary">
+                                            <span class="fw-bold d-block">☑ Tổng tiền mặt lý thuyết trong két:</span>
+                                            <small class="text-muted d-block" style="font-size: 0.78rem;">(Đầu ca + Thu tiền mặt)</small>
+                                        </td>
+                                        <td class="pe-3 py-2.5 text-end fw-bold text-primary fs-5" id="displayTheoretical">
+                                            @Model.TheoreticalCash.ToString("N0") đ
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr class="my-3" />
+
+                        <h6 class="fw-bold mb-3 text-dark">
+                            <i class="bi bi-cash-stack me-1"></i>ĐỐI SOÁT TIỀN THỰC TẾ
+                        </h6>
+
+                        <div class="mb-3">
+                            <label asp-for="ActualCash" class="form-label fw-semibold small text-dark mb-1">
+                                Tiền mặt thực tế đếm được trong két: <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-lg fw-bold" id="actualCashDisplay"
+                                       placeholder="VD: 4.500.000" value="@Model.ActualCash.ToString("N0")" inputmode="numeric" autocomplete="off" required />
+                                <input asp-for="ActualCash" type="hidden" id="actualCashInput" value="@Model.ActualCash" />
+                                <span class="input-group-text bg-light fw-bold">đ</span>
+                            </div>
+                            <span asp-validation-for="ActualCash" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted mb-1">Chênh lệch kết tiền (Thực tế - Lý thuyết):</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control bg-light fw-bold"
+                                       id="discrepancyDisplay" readonly value="0 đ" />
+                                <span class="input-group-text bg-light">đ</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label asp-for="Notes" class="form-label small text-muted mb-1" id="notesLabel">
+                                Lý do giải trình chênh lệch:
+                            </label>
+                            <textarea asp-for="Notes" class="form-control form-control-sm" rows="3" id="notesInput"
+                                      placeholder="Bắt buộc nhập nếu có chênh lệch tiền..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: XÁC NHẬN VÀ BÀN GIAO -->
+            <div class="col-md-6">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3 text-success">
+                            <i class="bi bi-shield-lock me-1"></i>XÁC NHẬN VÀ BÀN GIAO CA
+                        </h6>
+
+                        <div class="mb-3 p-3 bg-light rounded border">
+                            <div class="row mb-2">
+                                <div class="col-5 text-muted small">Người giao ca:</div>
+                                <div class="col-7 fw-bold text-dark">@Model.OutgoingCashierName</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-5 text-muted small">Ca bàn giao:</div>
+                                <div class="col-7"><span class="badge bg-primary">@Model.ShiftName</span></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-5 text-muted small">Thời điểm mở ca:</div>
+                                <div class="col-7 small text-secondary">@Model.OpenedAt.ToVietnamTimeString("HH:mm - dd/MM/yyyy")</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DelivererName" class="form-label small text-muted mb-1">
+                                Người giao tiền (nếu có người đại diện bàn giao):
+                            </label>
+                            <input asp-for="DelivererName" type="text" class="form-control form-control-sm"
+                                   placeholder="VD: @Model.OutgoingCashierName" />
+                            <span asp-validation-for="DelivererName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="IncomingCashierId" class="form-label small fw-semibold text-dark mb-1">
+                                Nhân viên nhận bàn giao ca kế tiếp: <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="IncomingCashierId" class="form-select" id="incomingCashierSelect" required>
+                                <option value="">-- Chọn nhân viên nhận ca --</option>
+                                @foreach (var cashier in Model.IncomingCashiers)
+                                {
+                                    <option value="@cashier.CashierId">@cashier.CashierName @(cashier.CashierId == Model.OutgoingCashierId ? " (Chính mình - 2 ca liên tiếp)" : "")</option>
+                                }
+                            </select>
+                            <span asp-validation-for="IncomingCashierId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="IncomingPassword" class="form-label small fw-semibold text-dark mb-1">
+                                Mật khẩu xác nhận của người nhận ca: <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="IncomingPassword" type="password"
+                                       class="form-control" id="passwordInput"
+                                       placeholder="Nhập mật khẩu để ký xác nhận" required />
+                                <button class="btn btn-outline-secondary" type="button"
+                                        onclick="togglePassword()" title="Hiện/Ẩn mật khẩu">
+                                    <i class="bi bi-eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="IncomingPassword" class="text-danger small"></span>
+                            <small class="text-muted d-block mt-1">Người nhận ca nhập mật khẩu đăng nhập cá nhân để xác thực nhận bàn giao.</small>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <a asp-controller="SaleManagement" asp-action="CreateOrder" class="btn btn-outline-secondary btn-lg flex-fill">
+                                <i class="bi bi-x-circle me-2"></i>Hủy / Bán hàng tiếp
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg flex-fill" id="submitHandoverBtn">
+                                <i class="bi bi-send-check me-2"></i>Ký Xác Nhận Bàn Giao Ca
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        const initialCash   = @Model.InitialCash;
+        const machineRevenue = @Model.MachineCashRevenue;
+        const theoretical   = initialCash + machineRevenue;
+
+        const actualDisplay = document.getElementById('actualCashDisplay');
+        const actualInput   = document.getElementById('actualCashInput');
+        const discDisplay   = document.getElementById('discrepancyDisplay');
+        const notesLabel    = document.getElementById('notesLabel');
+        const notesInput    = document.getElementById('notesInput');
+
+        let currentDiff = 0;
+
+        function updateCalculations() {
+            const actual = parseFloat(actualInput.value) || 0;
+            currentDiff  = actual - theoretical;
+            const fmt    = new Intl.NumberFormat('vi-VN').format(Math.abs(currentDiff));
+
+            if (currentDiff > 0) {
+                discDisplay.value = '+' + fmt + ' đ';
+                discDisplay.classList.remove('text-danger');
+                discDisplay.classList.add('text-success');
+                notesLabel.innerHTML = 'Lý do chênh lệch <span class="text-danger fw-bold">* (Dư +' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
+                notesInput.required = true;
+            } else if (currentDiff < 0) {
+                discDisplay.value = '-' + fmt + ' đ';
+                discDisplay.classList.remove('text-success');
+                discDisplay.classList.add('text-danger');
+                notesLabel.innerHTML = 'Lý do chênh lệch <span class="text-danger fw-bold">* (Thiếu -' + fmt + 'đ - Bắt buộc nhập giải trình)</span>:';
+                notesInput.required = true;
+            } else {
+                discDisplay.value = '0 đ';
+                discDisplay.classList.remove('text-success', 'text-danger');
+                notesLabel.innerHTML = 'Lý do giải trình chênh lệch (không bắt buộc nếu khớp):';
+                notesInput.required = false;
+            }
+        }
+
+        if (actualDisplay) {
+            actualDisplay.addEventListener('input', function () {
+                const raw = this.value.replace(/\D/g, '');
+                const num = parseInt(raw, 10) || 0;
+                this.value = num > 0 ? new Intl.NumberFormat('vi-VN').format(num) : (raw === '0' ? '0' : '');
+                actualInput.value = num;
+                updateCalculations();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', updateCalculations);
+        updateCalculations(); // Chạy ngay lập tức khi load trang
+
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon  = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+
+        const handoverForm = document.getElementById('handoverForm');
+        const submitHandoverBtn = document.getElementById('submitHandoverBtn');
+        const originalHandoverBtnHtml = submitHandoverBtn ? submitHandoverBtn.innerHTML : '<i class="bi bi-send-check me-2"></i>Ký Xác Nhận Bàn Giao Ca';
+
+        function resetHandoverButton() {
+            if (submitHandoverBtn) {
+                submitHandoverBtn.disabled = false;
+                submitHandoverBtn.innerHTML = originalHandoverBtnHtml;
+            }
+            if (handoverForm) {
+                handoverForm.dataset.submitting = 'false';
+                handoverForm.dataset.confirmed = 'false';
+            }
+        }
+
+        if (window.jQuery && handoverForm) {
+            $(handoverForm).on('invalid-form.validate', function () {
+                resetHandoverButton();
+            });
+        }
+
+        handoverForm.addEventListener('submit', function (e) {
+            // First check jQuery validation or HTML5 validation before proceeding
+            if (window.jQuery && $(this).valid && !$(this).valid()) {
+                e.preventDefault();
+                resetHandoverButton();
+                return false;
+            }
+
+            if (this.dataset.confirmed === 'true') {
+                if (window.jQuery && $(this).valid && !$(this).valid()) {
+                    e.preventDefault();
+                    resetHandoverButton();
+                    return false;
+                }
+                if (this.dataset.submitting === 'true') {
+                    e.preventDefault();
+                    return false;
+                }
+                this.dataset.submitting = 'true';
+                if (submitHandoverBtn) {
+                    submitHandoverBtn.disabled = true;
+                    submitHandoverBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                }
+                return true;
+            }
+
+            e.preventDefault();
+            const form = this;
+            showConfirmModal(
+                'Xác nhận bàn giao ca',
+                'Bạn có chắc chắn muốn ký xác nhận bàn giao ca cho người tiếp quản không?',
+                function () {
+                    form.dataset.confirmed = 'true';
+                    $(form).submit();
+                },
+                'Ký bàn giao',
+                'Hủy'
+            );
+        });
+    </script>
+}

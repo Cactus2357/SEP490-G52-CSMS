@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Core;
 using SEP490_G52_CSMS.Models.Employees;
-using SEP490_G52_CSMS.Models.Attendance;
 using SEP490_G52_CSMS.Models.Sales;
 namespace SEP490_G52_CSMS.Models
 {
@@ -25,6 +25,18 @@ namespace SEP490_G52_CSMS.Models
         public DbSet<MenuDetail> MenuDetails { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<Material> Materials { get; set; }
+        public DbSet<Recipe> Recipes { get; set; }
+        public DbSet<MaterialCategory> MaterialCategories { get; set; }
+        public DbSet<WarehouseReceipt> WarehouseReceipts { get; set; }
+        public DbSet<WarehouseReceiptItem> WarehouseReceiptItems { get; set; }
+        public DbSet<BranchInventory> BranchInventories { get; set; }
+        public DbSet<BranchSupplyRequest> BranchSupplyRequests { get; set; }
+        public DbSet<BranchSupplyRequestItem> BranchSupplyRequestItems { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<BranchSetting> BranchSettings { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -61,7 +73,7 @@ namespace SEP490_G52_CSMS.Models
 
                 // Khóa ngoại 3: Chi nhánh (Nên đổi luôn nếu gặp lỗi tương tự với bảng Branch)
                 entity.HasOne(ch => ch.Branch)
-                      .WithMany()
+                      .WithMany(b => b.CashHandovers)
                       .HasForeignKey(ch => ch.BranchId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
@@ -92,7 +104,14 @@ namespace SEP490_G52_CSMS.Models
                 .OnDelete(DeleteBehavior.Restrict);
             // Cấu hình các Composite Key (Khóa phức hợp nhiều trường)
             modelBuilder.Entity<BranchManager>().HasKey(bm => new { bm.BranchId, bm.ManagerId });
-            modelBuilder.Entity<MenuDetail>().HasKey(md => new { md.MenuId, md.VariantId });
+            modelBuilder.Entity<MenuDetail>(entity =>
+            {
+                entity.HasKey(md => new { md.MenuId, md.VariantId });
+                entity.HasOne(md => md.Updater)
+                      .WithMany()
+                      .HasForeignKey(md => md.UpdatedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
             modelBuilder.Entity<OrderItem>().HasKey(oi => new { oi.OrderId, oi.VariantId });
 
             // Cấu hình Unique Constraints (Ràng buộc duy nhất)
@@ -109,7 +128,189 @@ namespace SEP490_G52_CSMS.Models
             modelBuilder.Entity<AttendanceLog>()
                 .HasIndex(a => new { a.RosterId, a.EmployeeId }).IsUnique();
 
-            base.OnModelCreating(modelBuilder);
+            // Cấu hình Column Type cho các thuộc tính decimal để tránh cảnh báo mất dữ liệu
+            modelBuilder.Entity<AttendanceLog>(entity =>
+            {
+                entity.Property(e => e.CheckInConfidence).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.CheckOutConfidence).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<CashHandover>(entity =>
+            {
+                entity.Property(e => e.ActualCash).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.BankTransferRevenue).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.CashRefundAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.InitialCash).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.MachineCashRevenue).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.TheoreticalCash).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.SubtotalAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.TradeDiscountAmount).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(o => o.Branch)
+                      .WithMany(b => b.Orders)
+                      .HasForeignKey(o => o.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(o => o.Cashier)
+                      .WithMany()
+                      .HasForeignKey(o => o.CashierId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(o => o.Payments)
+                      .WithOne(p => p.Order)
+                      .HasForeignKey(p => p.OrderId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(o => o.Voucher)
+                      .WithMany(v => v.Orders)
+                      .HasForeignKey(o => o.VoucherId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Voucher>(entity =>
+            {
+                entity.Property(e => e.DiscountPercent).HasColumnType("decimal(5, 2)");
+
+                entity.HasOne(v => v.Branch)
+                      .WithMany()
+                      .HasForeignKey(v => v.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(v => v.Creator)
+                      .WithMany()
+                      .HasForeignKey(v => v.CreatedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Payment>(entity =>
+            {
+                entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.CustomerCash).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.ChangeAmount).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(p => p.Order)
+                      .WithMany(o => o.Payments)
+                      .HasForeignKey(p => p.OrderId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.Branch)
+                      .WithMany()
+                      .HasForeignKey(p => p.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.Cashier)
+                      .WithMany()
+                      .HasForeignKey(p => p.CashierId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<OrderItem>(entity =>
+            {
+                entity.HasKey(e => new { e.OrderId, e.VariantId });
+                entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<ProductVariant>(entity =>
+            {
+                entity.Property(e => e.SellingPrice).HasColumnType("decimal(18, 2)");
+            });
+
+            // Configure Material and Recipe relationships
+            modelBuilder.Entity<Material>(entity =>
+            {
+                entity.HasIndex(m => new { m.MaterialName, m.Supplier }).IsUnique();
+                entity.Property(m => m.UnitPrice).HasColumnType("decimal(18, 2)");
+                entity.Property(m => m.StockQuantity).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<Recipe>(entity =>
+            {
+                entity.Property(r => r.Quantity).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(r => r.ProductVariant)
+                      .WithMany()
+                      .HasForeignKey(r => r.VariantId)
+                      .OnDelete(DeleteBehavior.Cascade); // Deleting variant deletes its recipe lines
+
+                entity.HasOne(r => r.Material)
+                      .WithMany()
+                      .HasForeignKey(r => r.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict); // Keep materials safe from automatic cascade
+            });
+
+            modelBuilder.Entity<MaterialCategory>().HasIndex(mc => mc.CategoryName).IsUnique();
+
+            modelBuilder.Entity<WarehouseReceipt>(entity =>
+            {
+                entity.HasIndex(wr => wr.ReceiptCode).IsUnique();
+                entity.Property(wr => wr.TotalAmount).HasColumnType("decimal(18, 2)");
+            });
+
+            modelBuilder.Entity<WarehouseReceiptItem>(entity =>
+            {
+                entity.Property(wri => wri.Quantity).HasColumnType("decimal(18, 2)");
+                entity.Property(wri => wri.UnitPrice).HasColumnType("decimal(18, 2)");
+                entity.Property(wri => wri.Amount).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(wri => wri.WarehouseReceipt)
+                      .WithMany(wr => wr.Items)
+                      .HasForeignKey(wri => wri.ReceiptId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(wri => wri.Material)
+                      .WithMany()
+                      .HasForeignKey(wri => wri.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<BranchInventory>(entity =>
+            {
+                entity.HasIndex(bi => new { bi.BranchId, bi.MaterialId }).IsUnique();
+                entity.Property(bi => bi.StockQuantity).HasColumnType("decimal(18, 2)");
+                entity.Property(bi => bi.LowStockThreshold).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(bi => bi.Branch)
+                      .WithMany()
+                      .HasForeignKey(bi => bi.BranchId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(bi => bi.Material)
+                      .WithMany()
+                      .HasForeignKey(bi => bi.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<BranchSupplyRequestItem>(entity =>
+            {
+                entity.Property(ri => ri.QuantityRequested).HasColumnType("decimal(18, 2)");
+                entity.Property(ri => ri.QuantityReleased).HasColumnType("decimal(18, 2)");
+
+                entity.HasOne(ri => ri.BranchSupplyRequest)
+                      .WithMany(r => r.Items)
+                      .HasForeignKey(ri => ri.RequestId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ri => ri.Material)
+                      .WithMany()
+                      .HasForeignKey(ri => ri.MaterialId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<BranchSupplyRequest>(entity =>
+            {
+                entity.HasOne(r => r.Branch)
+                      .WithMany()
+                      .HasForeignKey(r => r.BranchId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            //base.OnModelCreating(modelBuilder);
         }
     }
 }

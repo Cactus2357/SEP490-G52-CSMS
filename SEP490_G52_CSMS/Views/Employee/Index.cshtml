@@ -1,0 +1,922 @@
+@using SEP490_G52_CSMS.Commons
+@model IEnumerable<SEP490_G52_CSMS.Models.Employees.Employee>
+@{
+    ViewData["Title"] = "Quản lý Nhân viên";
+    var userBranchId = User.GetBranchId() ?? "";
+}
+
+<div class="container-fluid mt-3 px-4 pb-5">
+    <!-- Header Section -->
+    <div class="card bg-body-tertiary border-0 rounded-3 mb-4 shadow-sm">
+        <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                    <i class="bi bi-people-fill fs-4"></i>
+                </div>
+                <div>
+                    <span class="text-muted small">Hệ thống / Quản lý nhân sự</span>
+                    <h4 class="fw-bold m-0 text-dark">QUẢN LÝ NHÂN VIÊN</h4>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="/Employee/Permissions" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                    <i class="bi bi-shield-lock me-1"></i>Phân quyền NV
+                </a>
+                <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createEmployeeModal" onclick="loadBranches()">
+                    <i class="bi bi-person-plus-fill me-1"></i>Tạo NV mới
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action & Filter Bar -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-7 col-lg-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" id="employeeSearchInput" class="form-control" placeholder="Tìm theo tên, sđt, email, username, CCCD..." oninput="filterEmployeesList()" onkeyup="filterEmployeesList()">
+                        <button type="button" class="btn btn-outline-secondary d-none" id="btnClearSearch" onclick="clearEmployeeSearch()" title="Xóa tìm kiếm">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false" aria-controls="filterPanel" title="Bộ lọc nâng cao">
+                            <i class="bi bi-funnel-fill me-1"></i>Lọc nâng cao
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-6 text-md-end">
+                    <span class="text-muted small fw-semibold" id="searchResultCount">Hiển thị @Model.Count() / @Model.Count() nhân viên</span>
+                </div>
+            </div>
+
+            <!-- Collapsible Filter Panel -->
+            <div id="filterPanel" class="collapse mt-3">
+                <div class="card card-body bg-body-tertiary border-0 rounded-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="filterRole" class="form-label fw-bold small text-muted text-uppercase">Lọc theo Vai trò</label>
+                            <select id="filterRole" class="form-select rounded-3" onchange="filterEmployeesList()">
+                                <option value="">Tất cả vai trò</option>
+                                <option value="Cashier">Thu ngân (Cashier)</option>
+                                <option value="Bartender">Pha chế (Bartender)</option>
+                                <option value="Busser">Phục vụ (Busser)</option>
+                                <option value="BranchManager">Quản lý chi nhánh</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="filterBranch" class="form-label fw-bold small text-muted text-uppercase">Lọc theo Chi nhánh</label>
+                            <select id="filterBranch" class="form-select rounded-3" onchange="filterEmployeesList()">
+                                <option value="">Tất cả chi nhánh</option>
+                                @foreach (var branchName in Model.Where(e => e.Branch != null).Select(e => e.Branch.BranchName).Distinct().OrderBy(b => b))
+                                {
+                                    <option value="@branchName">@branchName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Cards List Container -->
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+        <div id="employeesList">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox d-block fs-1 mb-2 opacity-50"></i>
+                    Chưa có nhân viên nào trong hệ thống.
+                </div>
+            }
+            else
+            {
+                @foreach (var emp in Model)
+                {
+                    string initials = "NV";
+                    if (!string.IsNullOrWhiteSpace(emp.FullName))
+                    {
+                        var parts = emp.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2)
+                        {
+                            initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+                        }
+                        else if (parts.Length == 1)
+                        {
+                            initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+                        }
+                    }
+
+                    string roleText = emp.Role switch
+                    {
+                        "Cashier" => "Thu ngân",
+                        "Bartender" => "Pha chế",
+                        "Busser" => "Phục vụ",
+                        "BranchManager" => "Quản lý chi nhánh",
+                        _ => emp.Role ?? ""
+                    };
+
+                    <div class="card border shadow-sm rounded-pill p-2 px-4 mb-3 d-flex flex-row align-items-center justify-content-between bg-white employee-card-item" 
+                         data-fullname="@emp.FullName" 
+                         data-username="@emp.Username" 
+                         data-phone="@emp.PhoneNumber"
+                         data-email="@emp.Email"
+                         data-citizenid="@emp.CitizenId"
+                         data-empid="@emp.EmployeeId"
+                         data-role="@emp.Role" 
+                         data-branch="@(emp.Branch?.BranchName ?? "Chi nhánh 1")">
+                        
+                        <!-- Left Info -->
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle border border-2 border-secondary d-flex align-items-center justify-content-center fw-bold text-dark bg-body-tertiary flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.05rem;">
+                                @initials
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold fs-6 text-dark">@emp.FullName</span>
+                                    <span class="badge bg-secondary-subtle text-dark border">@emp.EmploymentType</span>
+                                </div>
+                                <div class="small text-muted mt-1">
+                                    <span class="fw-semibold">@@@emp.Username</span> &bull; 
+                                    <span>@roleText</span> &bull; 
+                                    <span>@(emp.Branch?.BranchName ?? "Chi nhánh 1")</span>
+                                    @if (!string.IsNullOrEmpty(emp.PhoneNumber))
+                                    {
+                                        <span> &bull; @emp.PhoneNumber</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(emp.FaceData))
+                                    {
+                                        <span class="badge bg-success-subtle text-success border ms-2">
+                                            <i class="bi bi-check-circle-fill me-1"></i>FaceID
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Actions -->
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            @if (emp.Status == "Active")
+                            {
+                                <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" title="Ngừng hoạt động" onclick="triggerDeactivationCheck(@emp.EmployeeId)">
+                                    <i class="bi bi-slash-circle fs-5"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-secondary border-0 rounded-circle" title="Đã ngừng hoạt động" disabled>
+                                    <i class="bi bi-x-circle-fill fs-5"></i>
+                                </button>
+                            }
+                            
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="showEmployeeDetail(@emp.EmployeeId)">
+                                Chi tiết
+                            </button>
+                            
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" onclick="showEmployeeUpdate(@emp.EmployeeId)">
+                                Cập nhật
+                            </button>
+                            
+                            @if (string.IsNullOrEmpty(emp.FaceData))
+                            {
+                                <a href="/Employee/RegisterFace/@emp.EmployeeId" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                    <i class="bi bi-camera me-1"></i>Quét Face
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/Employee/RegisterFace/@emp.EmployeeId" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 fw-bold" title="Quét lại dữ liệu khuôn mặt">
+                                    <i class="bi bi-camera me-1"></i>Quét lại
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 fw-bold" onclick="deleteEmployeeFaceData(@emp.EmployeeId, '@emp.FullName')" title="Xóa dữ liệu khuôn mặt">
+                                    <i class="bi bi-trash me-1"></i>Xóa Face
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+
+            <!-- Dynamic Empty State when zero results match search -->
+            <div id="noResultsMsg" class="text-center py-5 text-muted d-none">
+                <i class="bi bi-search d-block fs-1 mb-2 opacity-50"></i>
+                Không tìm thấy nhân viên nào phù hợp với từ khóa tìm kiếm.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 1: Tạo tài khoản NV -->
+<div class="modal fade" id="createEmployeeModal" tabindex="-1" aria-labelledby="createEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header bg-body-tertiary">
+                <h5 class="modal-title fw-bold" id="createEmployeeModalLabel"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Tạo tài khoản NV mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="createEmployeeForm" class="needs-validation" novalidate>
+                    <div class="alert alert-danger d-none rounded-3 mb-3" id="formAlertBox"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6 border-end pe-md-4">
+                            <h6 class="fw-bold text-muted text-uppercase mb-3 small">Thông tin cá nhân</h6>
+                            <div class="mb-3">
+                                <label for="fullName" class="form-label fw-bold">Họ và tên *</label>
+                                <input type="text" class="form-control rounded-3" id="fullName" name="FullName" placeholder="VD: Nguyễn Văn A" required>
+                                <div class="invalid-feedback">Vui lòng nhập họ và tên.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label fw-bold">Số điện thoại *</label>
+                                <input type="tel" class="form-control rounded-3" id="phoneNumber" name="PhoneNumber" placeholder="VD: 0912345678" pattern="^0\d{9}$" maxlength="10" required>
+                                <div class="invalid-feedback">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label fw-bold">Email *</label>
+                                <input type="email" class="form-control rounded-3" id="email" name="Email" placeholder="VD: nguyenvana@gmail.com" required>
+                                <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="citizenId" class="form-label fw-bold">Số CCCD *</label>
+                                <input type="text" class="form-control rounded-3" id="citizenId" name="CitizenId" placeholder="VD: 012345678901" required>
+                                <div class="invalid-feedback">Vui lòng nhập số CCCD (12 chữ số).</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="createCccdFile" class="form-label fw-bold">Ảnh / Tệp CCCD (Tùy chọn)</label>
+                                <input type="file" class="form-control rounded-3" id="createCccdFile" name="CccdFile" accept="image/*,.pdf">
+                                <div class="form-text">Định dạng: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 ps-md-4">
+                            <h6 class="fw-bold text-muted text-uppercase mb-3 small">Thông tin công việc</h6>
+                            <div class="mb-3">
+                                <label for="role" class="form-label fw-bold">Vai trò / Vị trí *</label>
+                                <select class="form-select rounded-3" id="role" name="Role" required>
+                                    <option value="" disabled selected>Chọn vị trí làm việc...</option>
+                                    <option value="Cashier">Thu ngân (Cashier)</option>
+                                    <option value="Bartender">Pha chế (Bartender)</option>
+                                    <option value="Busser">Phục vụ (Busser)</option>
+                                </select>
+                                <div class="invalid-feedback">Vui lòng chọn vị trí làm việc.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Loại hợp đồng *</label>
+                                <div class="btn-group w-100 rounded-3 shadow-sm" role="group">
+                                    <button type="button" class="btn btn-primary active px-3" id="btnFullTime" onclick="setEmploymentType('Full-time')">Full-time</button>
+                                    <button type="button" class="btn btn-outline-secondary px-3" id="btnPartTime" onclick="setEmploymentType('Part-time')">Part-time</button>
+                                </div>
+                                <input type="hidden" id="employmentType" name="EmploymentType" value="Full-time">
+                            </div>
+                            <div class="mb-3">
+                                <label for="branchDisplay" class="form-label fw-bold">Chi nhánh *</label>
+                                <input type="text" class="form-control bg-light rounded-3" id="branchDisplay" value="Chi nhánh Quận 1" readonly>
+                                <input type="hidden" id="branchId" name="BranchId" value="@userBranchId">
+                            </div>
+                            <div class="mb-3">
+                                <label for="createContractFile" class="form-label fw-bold">Tệp hợp đồng lao động (Tùy chọn)</label>
+                                <input type="file" class="form-control rounded-3" id="createContractFile" name="ContractFile" accept="image/*,.pdf">
+                                <div class="form-text">Định dạng: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-body-tertiary">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="submitEmployeeForm()" id="btnSubmitForm">
+                    <span class="spinner-border spinner-border-sm d-none me-1" id="submitSpinner" role="status" aria-hidden="true"></span>
+                    <i class="bi bi-save me-1"></i>Tạo tài khoản
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: Cấp tài khoản NV thành công -->
+<div class="modal fade" id="credentialsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header bg-body-tertiary">
+                <h5 class="modal-title fw-bold" id="credentialsModalLabel"><i class="bi bi-shield-check-fill me-2 text-success"></i>Tài khoản đã tạo thành công</h5>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tên tài khoản</label>
+                    <input type="text" class="form-control bg-light font-monospace fw-bold rounded-3" id="displayUsername" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mật khẩu khởi tạo</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control bg-light font-monospace fw-bold text-danger rounded-start-3" id="displayPassword" readonly>
+                        <button class="btn btn-outline-secondary rounded-end-3" type="button" id="btnTogglePassword" onclick="togglePasswordVisibility()">
+                            <i class="bi bi-eye-slash" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-text text-muted mb-3">
+                    Lưu ý: Mật khẩu này đã được gửi qua email cho nhân viên. Nhân viên có thể dùng thông tin này để đăng nhập lần đầu.
+                </div>
+            </div>
+            <div class="modal-footer bg-body-tertiary justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="closeCredentialsModalAndReload()">Đóng</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnGoToFaceRegister" onclick="redirectToFaceRegister()">
+                    <i class="bi bi-camera me-1"></i>Đăng ký khuôn mặt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 3: Chi tiết nhân viên -->
+<div class="modal fade" id="employeeDetailModal" tabindex="-1" aria-labelledby="employeeDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0 shadow overflow-hidden" id="employeeDetailModalContent">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Đang tải thông tin...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 4: Cập nhật thông tin nhân viên -->
+<div class="modal fade" id="employeeUpdateModal" tabindex="-1" aria-labelledby="employeeUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0 shadow overflow-hidden" id="employeeUpdateModalContent">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Đang tải thông tin...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 5: Ngừng hoạt động (Vô hiệu hóa nhân viên) -->
+<div class="modal fade" id="deactivateEmployeeModal" tabindex="-1" aria-labelledby="deactivateEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0 shadow overflow-hidden">
+            <div class="modal-header bg-body-tertiary">
+                <h5 class="modal-title fw-bold" id="deactivateEmployeeModalLabel">
+                    <i class="bi bi-slash-circle me-2 text-danger"></i>Ngừng hoạt động nhân viên
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex align-items-center gap-3 p-3 mb-3 bg-body-tertiary rounded-3 border">
+                    <div class="rounded-circle border border-2 border-secondary d-flex align-items-center justify-content-center fw-bold text-dark bg-white" style="width: 48px; height: 48px; font-size: 1.1rem;" id="deactAvatar">NV</div>
+                    <div>
+                        <h6 class="fw-bold m-0 text-dark" id="deactFullName">Nguyen Minh Anh</h6>
+                        <p class="text-muted m-0 small"><span id="deactUsername">@@minhanhNV</span> &bull; <span id="deactRole">Thu ngân</span></p>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-warning d-flex align-items-start gap-2 d-none" id="deactWarningBanner">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-dark">Nhân viên còn ca chưa hoàn thành</div>
+                        <div class="text-muted small" id="deactWarningText">Các ca làm chưa bàn giao cần hoàn tất trước khi ngừng hoạt động.</div>
+                    </div>
+                </div>
+
+                <div class="mb-3 d-none" id="deactShiftsSection">
+                    <label class="form-label text-muted text-uppercase fw-bold small">Ca còn lại</label>
+                    <div class="border rounded-3 p-2 bg-light" id="deactShiftsContainer">
+                    </div>
+                </div>
+
+                <div class="alert alert-danger border-danger d-flex align-items-start gap-2">
+                    <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-danger">Cảnh báo vô hiệu hóa</div>
+                        <div class="text-muted small">Tài khoản sẽ bị khóa. Nhân viên sẽ không thể đăng nhập hệ thống sau khi bị vô hiệu hóa.</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="deactReason" class="form-label fw-bold">Lý do ngừng hoạt động *</label>
+                    <select class="form-select rounded-3" id="deactReason" required>
+                        <option value="" disabled selected>Chọn lý do...</option>
+                        <option value="Thôi việc / Nghỉ việc">Thôi việc / Nghỉ việc</option>
+                        <option value="Nghỉ chế độ / Thai sản">Nghỉ chế độ / Thai sản</option>
+                        <option value="Đình chỉ / Kỷ luật">Đình chỉ / Kỷ luật</option>
+                        <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="deactNotes" class="form-label fw-bold">Ghi chú thêm</label>
+                    <textarea class="form-control rounded-3" id="deactNotes" rows="2" placeholder="Ghi chú chi tiết nếu có..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-body-tertiary justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" id="deactConfirmBtn" onclick="confirmDeactivation()">Ngừng hoạt động</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var createdEmpId = null;
+        var pendingDeactEmpId = null;
+
+        function removeVietnameseTones(str) {
+            if (!str) return '';
+            return str
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+        }
+
+        function filterEmployeesList() {
+            var searchInput = document.getElementById('employeeSearchInput');
+            var rawSearchVal = searchInput.value.trim().toLowerCase();
+            var normSearchVal = removeVietnameseTones(rawSearchVal);
+            var btnClear = document.getElementById('btnClearSearch');
+
+            if (btnClear) {
+                if (rawSearchVal.length > 0) {
+                    btnClear.classList.remove('d-none');
+                } else {
+                    btnClear.classList.add('d-none');
+                }
+            }
+
+            var roleVal = document.getElementById('filterRole').value;
+            var branchVal = document.getElementById('filterBranch').value;
+
+            var items = document.querySelectorAll('#employeesList .employee-card-item');
+            var visibleCount = 0;
+
+            items.forEach(function(item) {
+                var fullname = item.getAttribute('data-fullname') || '';
+                var username = item.getAttribute('data-username') || '';
+                var phone = item.getAttribute('data-phone') || '';
+                var email = item.getAttribute('data-email') || '';
+                var citizenId = item.getAttribute('data-citizenid') || '';
+                var empId = item.getAttribute('data-empid') || '';
+
+                var role = item.getAttribute('data-role') || '';
+                var branch = item.getAttribute('data-branch') || '';
+
+                var matchSearch = !rawSearchVal || 
+                    (window.CSMSSearch ? window.CSMSSearch.fuzzyMatchAny(rawSearchVal, [fullname, username, phone, email, citizenId, empId, 'NV-' + empId])
+                                       : (fullname.toLowerCase().includes(rawSearchVal) || username.toLowerCase().includes(rawSearchVal)));
+
+                var matchRole = !roleVal || role === roleVal;
+                var matchBranch = !branchVal || branch === branchVal;
+
+                if (matchSearch && matchRole && matchBranch) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            var noResults = document.getElementById('noResultsMsg');
+            if (noResults) {
+                if (visibleCount === 0 && items.length > 0) {
+                    noResults.classList.remove('d-none');
+                } else {
+                    noResults.classList.add('d-none');
+                }
+            }
+
+            var resultCount = document.getElementById('searchResultCount');
+            if (resultCount) {
+                resultCount.textContent = `Hiển thị ${visibleCount} / ${items.length} nhân viên`;
+            }
+        }
+
+        function clearEmployeeSearch() {
+            var searchInput = document.getElementById('employeeSearchInput');
+            searchInput.value = '';
+            filterEmployeesList();
+            searchInput.focus();
+        }
+
+        function setEmploymentType(type) {
+            document.getElementById('employmentType').value = type;
+            var btnFull = document.getElementById('btnFullTime');
+            var btnPart = document.getElementById('btnPartTime');
+
+            if (type === 'Full-time') {
+                btnFull.classList.add('btn-primary', 'active');
+                btnFull.classList.remove('btn-outline-secondary');
+                btnPart.classList.add('btn-outline-secondary');
+                btnPart.classList.remove('btn-primary', 'active');
+            } else {
+                btnPart.classList.add('btn-primary', 'active');
+                btnPart.classList.remove('btn-outline-secondary');
+                btnFull.classList.add('btn-outline-secondary');
+                btnFull.classList.remove('btn-primary', 'active');
+            }
+        }
+
+        function loadBranches() {
+            fetch('/Employee/GetBranches')
+                .then(response => response.json())
+                .then(branches => {
+                    if (branches && branches.length > 0) {
+                        document.getElementById('branchDisplay').value = branches[0].branchName;
+                        document.getElementById('branchId').value = branches[0].branchId;
+                    }
+                })
+                .catch(err => console.error('Lỗi tải chi nhánh:', err));
+        }
+
+        function submitEmployeeForm() {
+            var form = document.getElementById('createEmployeeForm');
+            var alertBox = document.getElementById('formAlertBox');
+            alertBox.classList.add('d-none');
+            alertBox.innerHTML = '';
+
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            var fullName = document.getElementById('fullName').value.trim();
+            var phoneNumber = document.getElementById('phoneNumber').value.trim();
+            var email = document.getElementById('email').value.trim();
+            var citizenId = document.getElementById('citizenId').value.trim();
+            var role = document.getElementById('role').value;
+            var employmentType = document.getElementById('employmentType').value;
+            var branchId = document.getElementById('branchId').value;
+
+            // Extra client-side validation
+            if (!fullName) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Vui lòng nhập Họ và tên.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            var phoneRegex = /^0\d{9}$/;
+            if (!phoneNumber || !phoneRegex.test(phoneNumber)) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            if (!email || !/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email)) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Email nhập vào chưa đúng định dạng (VD: name@@domain.com).';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            if (!citizenId || !/^\d{12}$/.test(citizenId)) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Số CCCD phải bao gồm đúng 12 chữ số.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            if (!role) {
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Vui lòng chọn vị trí làm việc.';
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
+            var formData = new FormData(form);
+
+            showConfirmModal(
+                'Xác nhận tạo tài khoản',
+                'Bạn có chắc chắn muốn tạo tài khoản nhân viên mới này không?',
+                function() {
+                    var btnSubmit = document.getElementById('btnSubmitForm');
+                    var spinner = document.getElementById('submitSpinner');
+                    btnSubmit.disabled = true;
+                    spinner.classList.remove('d-none');
+
+                    fetch('/Employee/CreateAccount', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        btnSubmit.disabled = false;
+                        spinner.classList.add('d-none');
+
+                        if (data.success) {
+                            createdEmpId = data.employeeId;
+                            document.getElementById('displayUsername').value = data.username;
+                            document.getElementById('displayPassword').value = data.password || data.generatedPassword;
+
+                            var createModalEl = document.getElementById('createEmployeeModal');
+                            var createModal = bootstrap.Modal.getInstance(createModalEl);
+                            if (createModal) createModal.hide();
+
+                            var credentialsModal = new bootstrap.Modal(document.getElementById('credentialsModal'));
+                            credentialsModal.show();
+                            if (typeof showToast === 'function') {
+                                showToast('Tạo tài khoản nhân viên mới thành công!', 'success');
+                            }
+                        } else {
+                            alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Tạo thất bại.');
+                            alertBox.classList.remove('d-none');
+                            if (typeof showToast === 'function') {
+                                showToast(data.errorMessage || 'Tạo thất bại.', 'danger');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        btnSubmit.disabled = false;
+                        spinner.classList.add('d-none');
+                        alertBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi tạo tài khoản.';
+                        alertBox.classList.remove('d-none');
+                    });
+                }
+            );
+        }
+
+        function togglePasswordVisibility() {
+            var pwdInput = document.getElementById('displayPassword');
+            var eyeIcon = document.getElementById('eyeIcon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.className = 'bi bi-eye';
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.className = 'bi bi-eye-slash';
+            }
+        }
+
+        function closeCredentialsModalAndReload() {
+            location.reload();
+        }
+
+        function redirectToFaceRegister() {
+            if (createdEmpId) {
+                window.location.href = '/Employee/RegisterFace/' + createdEmpId;
+            } else {
+                location.reload();
+            }
+        }
+
+        function showEmployeeDetail(empId) {
+            var modalContent = document.getElementById('employeeDetailModalContent');
+            modalContent.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Đang tải thông tin...</p>
+                </div>
+            `;
+            var modal = new bootstrap.Modal(document.getElementById('employeeDetailModal'));
+            modal.show();
+
+            // Original server endpoint: /Employee/Detail?id=
+            fetch('/Employee/Detail?id=' + empId)
+                .then(r => r.text())
+                .then(html => {
+                    modalContent.innerHTML = html;
+                })
+                .catch(err => {
+                    modalContent.innerHTML = '<div class="alert alert-danger m-3">Không thể tải thông tin nhân viên.</div>';
+                });
+        }
+
+        function closeEmployeeDetail() {
+            var modalEl = document.getElementById('employeeDetailModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+        function showEmployeeUpdate(empId) {
+            var modalContent = document.getElementById('employeeUpdateModalContent');
+            modalContent.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Đang tải thông tin...</p>
+                </div>
+            `;
+            var modal = new bootstrap.Modal(document.getElementById('employeeUpdateModal'));
+            modal.show();
+
+            // Original server endpoint: /Employee/UpdateForm?id=
+            fetch('/Employee/UpdateForm?id=' + empId)
+                .then(r => r.text())
+                .then(html => {
+                    modalContent.innerHTML = html;
+                })
+                .catch(err => {
+                    modalContent.innerHTML = '<div class="alert alert-danger m-3">Không thể tải form cập nhật.</div>';
+                });
+        }
+
+        function closeEmployeeUpdate() {
+            var modalEl = document.getElementById('employeeUpdateModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+        function previewUploadFile(input, type) {
+            var container = document.getElementById(type + 'PreviewContainer');
+            if (container && input.files && input.files[0]) {
+                var file = input.files[0];
+                container.innerHTML = `<div class="small text-primary fw-bold"><i class="bi bi-file-earmark-check-fill me-1"></i>Đã chọn: ${file.name} (${(file.size/1024).toFixed(1)} KB)</div>`;
+            }
+        }
+
+        function submitEmployeeUpdate() {
+            var form = document.getElementById('updateEmployeeForm');
+            if (!form) return;
+
+            var errBox = document.getElementById('updErrorBox');
+            if (errBox) {
+                errBox.classList.add('d-none');
+                errBox.innerHTML = '';
+            }
+
+            var empIdEl = form.querySelector('input[name="EmployeeId"]');
+            var empId = empIdEl ? empIdEl.value : '';
+
+            var phoneEl = form.querySelector('input[name="PhoneNumber"]');
+            var phoneVal = phoneEl ? phoneEl.value.trim() : '';
+            var phoneRegex = /^0\d{9}$/;
+            if (!phoneVal || !phoneRegex.test(phoneVal)) {
+                if (errBox) {
+                    errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).';
+                    errBox.classList.remove('d-none');
+                } else {
+                    showToast('Số điện thoại không hợp lệ (phải gồm 10 chữ số và bắt đầu bằng số 0).', 'danger');
+                }
+                if (phoneEl) phoneEl.focus();
+                return;
+            }
+
+            var btn = document.getElementById('btnSaveUpdate');
+            var spinner = document.getElementById('saveUpdateSpinner');
+            var formData = new FormData(form);
+
+            showConfirmModal(
+                'Xác nhận cập nhật',
+                'Bạn có chắc chắn muốn lưu cập nhật thông tin nhân viên này không?',
+                function() {
+                    if (btn) btn.disabled = true;
+                    if (spinner) spinner.classList.remove('d-none');
+
+                    fetch('/Employee/Update/' + empId, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (btn) btn.disabled = false;
+                        if (spinner) spinner.classList.add('d-none');
+
+                        if (data.success) {
+                            closeEmployeeUpdate();
+                            showToast('Cập nhật thông tin nhân viên thành công!', 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            if (errBox) {
+                                errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>' + (data.errorMessage || 'Cập nhật thất bại.');
+                                errBox.classList.remove('d-none');
+                            } else {
+                                showToast(data.errorMessage || 'Cập nhật thất bại.', 'danger');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        if (btn) btn.disabled = false;
+                        if (spinner) spinner.classList.add('d-none');
+                        if (errBox) {
+                            errBox.innerHTML = '<i class="bi bi-exclamation-circle-fill me-2"></i>Lỗi hệ thống khi cập nhật.';
+                            errBox.classList.remove('d-none');
+                        } else {
+                            showToast('Lỗi hệ thống khi cập nhật.', 'danger');
+                        }
+                    });
+                }
+            );
+        }
+
+        function triggerDeactivationCheck(empId) {
+            pendingDeactEmpId = empId;
+            // Original server endpoint: /Employee/CheckDeactivation?id=
+            fetch('/Employee/CheckDeactivation?id=' + empId)
+                .then(r => r.json())
+                .then(data => {
+                    var fn = data.fullName || '';
+                    var parts = fn.trim().split(' ');
+                    var initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : 'NV';
+                    
+                    document.getElementById('deactAvatar').textContent = initials;
+                    document.getElementById('deactFullName').textContent = fn;
+                    document.getElementById('deactUsername').textContent = '@@' + (data.username || '');
+                    
+                    var roleMap = { 'Cashier': 'Thu ngân', 'Bartender': 'Pha chế', 'Busser': 'Phục vụ', 'BranchManager': 'Quản lý' };
+                    document.getElementById('deactRole').textContent = roleMap[data.role] || data.role || '';
+
+                    var warningBanner = document.getElementById('deactWarningBanner');
+                    var warningText = document.getElementById('deactWarningText');
+                    var shiftsSec = document.getElementById('deactShiftsSection');
+                    var shiftsContainer = document.getElementById('deactShiftsContainer');
+
+                    var shifts = data.uncompletedShifts || [];
+                    if (shifts.length > 0 || !data.canDeactivate) {
+                        warningText.textContent = shifts.length + ' ca chưa được bàn giao. Cần hoàn tất trước khi ngừng hoạt động.';
+                        warningBanner.classList.remove('d-none');
+
+                        if (shifts.length > 0) {
+                            var shiftHtml = '';
+                            shifts.forEach(s => {
+                                shiftHtml += `<div class="d-flex justify-content-between py-1 border-bottom border-secondary-subtle">
+                                    <span><strong>${s.date}</strong> &bull; ${s.shiftName}</span>
+                                    <span class="badge bg-warning text-dark">${s.status}</span>
+                                </div>`;
+                            });
+                            shiftsContainer.innerHTML = shiftHtml;
+                            shiftsSec.classList.remove('d-none');
+                        }
+                    } else {
+                        warningBanner.classList.add('d-none');
+                        shiftsSec.classList.add('d-none');
+                    }
+
+                    document.getElementById('deactReason').value = '';
+                    document.getElementById('deactNotes').value = '';
+
+                    var modal = new bootstrap.Modal(document.getElementById('deactivateEmployeeModal'));
+                    modal.show();
+                })
+                .catch(err => {
+                    showToast('Không thể lấy thông tin nhân viên.', 'danger');
+                });
+        }
+
+        function confirmDeactivation() {
+            if (!pendingDeactEmpId) return;
+            var reason = document.getElementById('deactReason').value;
+            if (!reason) {
+                showToast('Vui lòng chọn lý do ngừng hoạt động.', 'warning');
+                return;
+            }
+
+            var notes = document.getElementById('deactNotes').value;
+            showConfirmModal(
+                'Xác nhận ngừng hoạt động',
+                'Bạn có chắc chắn muốn ngừng hoạt động tài khoản nhân viên này không?',
+                function() {
+                    var btn = document.getElementById('deactConfirmBtn');
+                    btn.disabled = true;
+
+                    fetch('/Employee/Deactivate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            EmployeeId: pendingDeactEmpId,
+                            Reason: reason,
+                            Notes: notes
+                        })
+                    })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.success) {
+                    var modalEl = document.getElementById('deactivateEmployeeModal');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    showToast('Đã ngừng hoạt động nhân viên thành công.', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(data.errorMessage || 'Thao tác thất bại.', 'danger');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                showToast('Lỗi hệ thống khi ngừng hoạt động nhân viên.', 'danger');
+            });
+            });
+        }
+
+        function deleteEmployeeFaceData(empId, empName) {
+            showConfirmModal(
+                'Xác nhận xóa dữ liệu FaceID',
+                `Bạn có chắc chắn muốn <strong>xóa dữ liệu khuôn mặt (FaceID)</strong> của nhân viên <strong>${empName}</strong> không?<br><br><span class="text-danger small"><i class="bi bi-exclamation-triangle-fill me-1"></i>Sau khi xóa, nhân viên này sẽ không thể điểm danh hoặc đăng nhập bằng khuôn mặt cho đến khi được quét lại.</span>`,
+                function() {
+                    fetch('/Employee/DeleteFaceData', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'employeeId=' + empId
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(function() { window.location.reload(); }, 1000);
+                        } else {
+                            showToast(data.message || 'Không thể xóa dữ liệu khuôn mặt.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Lỗi khi gửi yêu cầu xóa khuôn mặt.', 'danger');
+                    });
+                }
+            );
+        }
+    </script>
+}

@@ -1,0 +1,149 @@
+@model SEP490_G52_CSMS.Models.Employees.Employee
+@{
+    string initials = "NV";
+    if (!string.IsNullOrWhiteSpace(Model.FullName))
+    {
+        var parts = Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            initials = (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+        else if (parts.Length == 1)
+            initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+    }
+
+    string roleText = Model.Role switch
+    {
+        "Cashier"       => "Thu ngân",
+        "Bartender"     => "Pha chế",
+        "Busser"        => "Phục vụ bàn",
+        "BranchManager" => "Quản lý chi nhánh",
+        _               => Model.Role ?? ""
+    };
+
+    bool hasCccd = !string.IsNullOrEmpty(Model.CccdFilePath);
+    bool hasContract = !string.IsNullOrEmpty(Model.ContractFilePath);
+}
+
+<div class="p-4 bg-white">
+    <!-- Header -->
+    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
+        <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0" style="width: 36px; height: 36px;" onclick="closeEmployeeUpdate()" title="Hủy">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </button>
+        <h5 class="fw-bold m-0 text-dark">Cập nhật thông tin nhân viên</h5>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-body-tertiary">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle border border-2 border-primary bg-primary text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.1rem;">
+                @initials
+            </div>
+            <div>
+                <h6 class="fw-bold m-0 text-dark">@Model.FullName</h6>
+                <p class="text-muted m-0 small">@@@Model.Username &bull; @roleText &bull; @(Model.Branch?.BranchName ?? "Chi nhánh 1")</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Native Bootstrap Nav Pills Tabs -->
+    <ul class="nav nav-pills nav-justified mb-4 bg-light p-1 rounded-3 border" id="employeeUpdateTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-uppercase small py-2 rounded-3" id="upd-tab-btn-info" data-bs-toggle="tab" data-bs-target="#upd-tab-panel-info" type="button" role="tab" aria-controls="upd-tab-panel-info" aria-selected="true">
+                <i class="bi bi-person-badge me-1"></i>Thông tin cá nhân
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-uppercase small py-2 rounded-3" id="upd-tab-btn-docs" data-bs-toggle="tab" data-bs-target="#upd-tab-panel-docs" type="button" role="tab" aria-controls="upd-tab-panel-docs" aria-selected="false">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Tải hồ sơ
+            </button>
+        </li>
+    </ul>
+
+    <!-- Form -->
+    <form id="updateEmployeeForm" enctype="multipart/form-data">
+        <input type="hidden" name="EmployeeId" value="@Model.EmployeeId" />
+
+        <div class="alert alert-danger d-none rounded-3 mb-3" id="updErrorBox"></div>
+
+        <!-- Tab Contents -->
+        <div class="tab-content" id="employeeUpdateTabContent">
+            <!-- TAB 1: Thông tin cá nhân -->
+            <div class="tab-pane fade show active" id="upd-tab-panel-info" role="tabpanel" aria-labelledby="upd-tab-btn-info">
+                <div class="card border-0 shadow-sm rounded-3 mb-3 bg-body-tertiary">
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold text-uppercase small text-muted mb-3 border-bottom pb-2">Họ tên &amp; Liên hệ</h6>
+                        <div class="mb-3">
+                            <label for="updFullName" class="form-label fw-bold">Họ và tên *</label>
+                            <input type="text" class="form-control rounded-3" id="updFullName" name="FullName" value="@Model.FullName" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updPhoneNumber" class="form-label fw-bold">Số điện thoại *</label>
+                            <input type="tel" class="form-control rounded-3" id="updPhoneNumber" name="PhoneNumber" value="@Model.PhoneNumber" pattern="^0\d{9}$" maxlength="10" placeholder="VD: 0912345678" required />
+                            <div class="invalid-feedback">Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="updEmail" class="form-label fw-bold">Email *</label>
+                            <input type="email" class="form-control rounded-3" id="updEmail" name="Email" value="@Model.Email" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updCitizenId" class="form-label fw-bold">Số CCCD (12 số) *</label>
+                            <input type="text" class="form-control rounded-3" id="updCitizenId" name="CitizenId" value="@Model.CitizenId" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updDateOfBirth" class="form-label fw-bold">Ngày sinh</label>
+                            <input type="date" class="form-control rounded-3" id="updDateOfBirth" name="DateOfBirth" value="@(Model.DateOfBirth.ToString("yyyy-MM-dd"))" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="updAddress" class="form-label fw-bold">Địa chỉ</label>
+                            <input type="text" class="form-control rounded-3" id="updAddress" name="Address" value="@Model.Address" placeholder="Nhập địa chỉ..." />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Tải hồ sơ -->
+            <div class="tab-pane fade" id="upd-tab-panel-docs" role="tabpanel" aria-labelledby="upd-tab-btn-docs">
+                <div class="card border-0 shadow-sm rounded-3 mb-3 bg-body-tertiary">
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold text-uppercase small text-muted mb-3 border-bottom pb-2">Tải tệp CCCD &amp; Hợp đồng lao động</h6>
+                        
+                        <!-- CCCD Upload Zone -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Ảnh / Tệp CCCD</label>
+                            <input type="file" class="form-control rounded-3" name="CccdFile" accept="image/*,.pdf" onchange="previewUploadFile(this, 'cccd')" />
+                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
+                            <div id="cccdPreviewContainer" class="mt-2">
+                                @if (hasCccd)
+                                {
+                                    <div class="small text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Đã có tệp đính kèm: @Model.CccdFilePath</div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Contract Upload Zone -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tệp hợp đồng lao động</label>
+                            <input type="file" class="form-control rounded-3" name="ContractFile" accept="image/*,.pdf" onchange="previewUploadFile(this, 'contract')" />
+                            <div class="form-text">Định dạng hỗ trợ: JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
+                            <div id="contractPreviewContainer" class="mt-2">
+                                @if (hasContract)
+                                {
+                                    <div class="small text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Đã có tệp đính kèm: @Model.ContractFilePath</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" onclick="closeEmployeeUpdate()">Hủy</button>
+            <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSaveUpdate" onclick="submitEmployeeUpdate()">
+                <span class="spinner-border spinner-border-sm d-none me-1" id="saveUpdateSpinner" role="status"></span>
+                <i class="bi bi-save me-1"></i>Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
